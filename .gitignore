@@ -1,9 +1,16 @@
 # MATLAB generated files #
 .asv
 
+# Python Files
+*.py[cod]
+
+# PyCharm IDE
+.idea/
+
+# Sphinx
+doc/_build/*
 
 # OS generated files #
-
 .DS_Store
 .DS_Store?
 ._*
