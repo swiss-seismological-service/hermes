@@ -29,7 +29,7 @@ class EventHistory:
 
     @abc.abstractmethod
     def get_events_between(self, start_date, end_date):
-        """ Returns all events that occurred between a given start and end date
+        """Returns all events that occurred between a given start and end date
 
         :param start_date: start date of the history to return
         :type start_date: datetime
@@ -43,4 +43,19 @@ class EventHistory:
     @abc.abstractmethod
     def latest_event(self):
         """Returns the latest event in the event history"""
+        return
+
+    @abc.abstractmethod
+    def __getitem__(self, item):
+        """Returns the event at the specified index
+
+        :param item: index (0 being the newest)
+        :type item: int
+        """
+        return
+
+
+    @abc.abstractmethod
+    def __len__(self):
+        """Returns the number of events in the event history"""
         return

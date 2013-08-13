@@ -6,8 +6,11 @@ Defines the EventStore class which writes and reads event data from a database
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-
+from tools import PageCache
 import base
+
+
+DATE_ATTR_NAME = 'date_time'
 
 
 class EventStore:
@@ -33,7 +36,16 @@ class EventStore:
         base.Base.metadata.create_all(engine, checkfirst=True)
         Session = sessionmaker(bind=engine)
         self._session = Session()
+        self._query = None
+        self._page_cache = PageCache()
+        self._num_events = 0
         self.event_class = event_class
+
+    def reset(self):
+        """Deletes all data from the catalog"""
+        if self._query:
+            self._page_cache.invalidate()
+            self._query.delete()
 
     def commit(self):
         """Commits pending changes to the store immediately"""
@@ -47,6 +59,7 @@ class EventStore:
 
         """
         self._session.add(event)
+        self._page_cache.invalidate()
 
     def write_events(self, events):
         """Write multiple events to the store
@@ -56,6 +69,7 @@ class EventStore:
 
         """
         self._session.add_all(events)
+        self._page_cache.invalidate()
 
     def read_events(self, criteria):
         """Read and return all events from the store that meet the criteria provided by the caller
@@ -66,17 +80,37 @@ class EventStore:
 
         """
         if criteria is not None:
-            results = self._session.query().filter(criteria)
+            results = self._query.filter(criteria)
         else:
-            results = self._session.query().all()
+            results = self._query.all()
         return results
 
-    def latest_event(self, date_attr_name='date_time'):
+    def latest_event(self):
         """Read and return the latest event from the store
 
-        :param date_attr_name: Name of the event attribute that contains the date
-        :type date_attr_name: str
         :rtype: Base
 
         """
-        return self._session.query(self.event_class).order_by(desc(date_attr_name)).first()
+        return self._query.first()
+
+    def __getitem__(self, item):
+        """Return the event at the specified index
+
+        :param item: event index (0 being the newest)
+        :type item: int
+        :rtype: Base
+
+        """
+        return self._page_cache[item]
+
+    def num_events(self):
+        return self._num_events
+
+    def refresh(self):
+        query = self._session.query(self.event_class).order_by(desc(DATE_ATTR_NAME))
+        self._query = query
+        self._page_cache.query = query
+        self._num_events = query.count()
+
+    def close(self):
+        self._session.close()

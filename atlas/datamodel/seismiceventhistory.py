@@ -26,11 +26,29 @@ class SeismicEventHistory(EventHistory):
         event = self.store.latest_event()
         return event
 
+    def __getitem__(self, item):
+        event = self.store[item]
+        return event
+
     def import_from_csv(self, path, base_date=datetime(1970,1,1)):
-        fields = ('seq_no', 'd_days', 'lat', 'lon', 'mag')
+        """Imports seismic events from a csv file
+
+        The csv file must have a header row which identifies the following
+        fields: seq_no: sequence number
+                d_days: time offset in days
+                lat: latitude
+                lon: longitude
+                mag: magnitude
+
+        :param path: path to the csv file
+        :type path: str
+        :param base_date: the d_days number of days is added to the base date
+        :type base_date: datetime
+        """
+        self.store.reset()
         with open(path, 'rb') as csv_file:
             csv.register_dialect('magcat', delimiter=' ', skipinitialspace=True)
-            reader = csv.DictReader(csv_file, fields, dialect='magcat')
+            reader = csv.DictReader(csv_file, dialect='magcat')
             reader.next()    # skip header
             for entry in reader:
                 location = Location(float(entry['lon']), float(entry['lat']))
@@ -38,3 +56,7 @@ class SeismicEventHistory(EventHistory):
                 date_time = base_date + dt
                 event = SeismicEvent(date_time, float(entry['mag']), location)
                 self.store.write_event(event)
+        self.store.refresh()
+
+    def __len__(self):
+        return self.store.num_events()

@@ -29,5 +29,8 @@ class AtlasEngine:
         on an in-memory sqlite database (for now).
 
         """
-        store = EventStore(SeismicEvent, 'sqlite:///:memory')
+        store = EventStore(SeismicEvent, 'sqlite:///catalog.sqlite')
         self.event_history = SeismicEventHistory(store)
+
+    def stop(self):
+        self.event_history.store.close()
