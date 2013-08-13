@@ -32,20 +32,22 @@ class EventStore:
         :param store_url: Database url
 
         """
-        engine = create_engine(store_url, echo=False)
-        base.Base.metadata.create_all(engine, checkfirst=True)
-        Session = sessionmaker(bind=engine)
+        self._engine = create_engine(store_url, echo=False)
+        base.Base.metadata.create_all(self._engine, checkfirst=True)
+        Session = sessionmaker(bind=self._engine)
         self._session = Session()
         self._query = None
         self._page_cache = PageCache()
         self._num_events = 0
-        self.event_class = event_class
+        self._event_class = event_class
+        self.refresh()
 
-    def reset(self):
+    def purge(self):
         """Deletes all data from the catalog"""
-        if self._query:
-            self._page_cache.invalidate()
-            self._query.delete()
+        self._page_cache.invalidate()
+        self._query = None
+        base.Base.metadata.drop_all(bind=self._engine)
+        base.Base.metadata.create_all(self._engine)
 
     def commit(self):
         """Commits pending changes to the store immediately"""
@@ -60,6 +62,8 @@ class EventStore:
         """
         self._session.add(event)
         self._page_cache.invalidate()
+        self.commit()
+        self.refresh()
 
     def write_events(self, events):
         """Write multiple events to the store
@@ -70,6 +74,8 @@ class EventStore:
         """
         self._session.add_all(events)
         self._page_cache.invalidate()
+        self.commit()
+        self.refresh()
 
     def read_events(self, criteria):
         """Read and return all events from the store that meet the criteria provided by the caller
@@ -107,7 +113,7 @@ class EventStore:
         return self._num_events
 
     def refresh(self):
-        query = self._session.query(self.event_class).order_by(desc(DATE_ATTR_NAME))
+        query = self._session.query(self._event_class).order_by(desc(DATE_ATTR_NAME))
         self._query = query
         self._page_cache.query = query
         self._num_events = query.count()

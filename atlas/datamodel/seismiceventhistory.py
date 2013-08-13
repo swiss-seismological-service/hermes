@@ -45,18 +45,18 @@ class SeismicEventHistory(EventHistory):
         :param base_date: the d_days number of days is added to the base date
         :type base_date: datetime
         """
-        self.store.reset()
+        self.store.purge()
         with open(path, 'rb') as csv_file:
             csv.register_dialect('magcat', delimiter=' ', skipinitialspace=True)
             reader = csv.DictReader(csv_file, dialect='magcat')
-            reader.next()    # skip header
+            events = []
             for entry in reader:
                 location = Location(float(entry['lon']), float(entry['lat']))
                 dt = timedelta(days=float(entry['d_days']))
                 date_time = base_date + dt
                 event = SeismicEvent(date_time, float(entry['mag']), location)
-                self.store.write_event(event)
-        self.store.refresh()
+                events.append(event)
+        self.store.write_events(events)
 
     def __len__(self):
         return self.store.num_events()
