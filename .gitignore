@@ -10,6 +10,9 @@
 # Sphinx
 doc/_build/*
 
+# QT Creator
+*.autosave
+
 # OS generated files #
 .DS_Store
 .DS_Store?
