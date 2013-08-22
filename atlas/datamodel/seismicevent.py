@@ -14,6 +14,8 @@ class SeismicEvent(Base):
 
     :ivar date_time: Date and time when the event occurred
     :type date_time: datetime
+    :ivar decay_time: The date and time at which the influence of the event on future forecasts becomes insignificant
+    :type decay_time: datetime
     :ivar magnitude: Event magnitude
     :type magnitude: float
     :ivar latitude: Event latitude
@@ -30,6 +32,7 @@ class SeismicEvent(Base):
     id = Column(Integer, primary_key=True)
     magnitude = Column(Float)
     date_time = Column(DateTime)
+    decay_time = Column(DateTime)
     latitude = Column(Float)
     longitude = Column(Float)
     depth = Column(Float)

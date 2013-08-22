@@ -16,19 +16,23 @@ from location import Location
 
 class SeismicEventHistory(EventHistory):
 
+
     def get_events_between(self, start_date, end_date):
         criteria = (SeismicEvent.date_time >= start_date,
                     SeismicEvent.end_time <= end_date)
         events = self.store.read_events(criteria)
         return events
 
+
     def latest_event(self):
         event = self.store.latest_event()
         return event
 
+
     def __getitem__(self, item):
         event = self.store[item]
         return event
+
 
     def import_from_csv(self, path, base_date=datetime(1970,1,1)):
         """Imports seismic events from a csv file
@@ -44,6 +48,7 @@ class SeismicEventHistory(EventHistory):
         :type path: str
         :param base_date: the d_days number of days is added to the base date
         :type base_date: datetime
+
         """
         self.store.purge()
         with open(path, 'rb') as csv_file:
@@ -57,6 +62,7 @@ class SeismicEventHistory(EventHistory):
                 event = SeismicEvent(date_time, float(entry['mag']), location)
                 events.append(event)
         self.store.write_events(events)
+
 
     def __len__(self):
         return self.store.num_events()

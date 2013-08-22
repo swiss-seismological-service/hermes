@@ -34,3 +34,8 @@ class AtlasEngine:
 
     def stop(self):
         self.event_history.store.close()
+
+    def replayEvents(self, speed):
+        """Replays the events from the seismic history
+
+        """

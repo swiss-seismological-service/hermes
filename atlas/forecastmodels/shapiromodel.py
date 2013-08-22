@@ -4,5 +4,6 @@
 from forecastmodel import ForecastModel
 
 
+
 class ShapiroModel(ForecastModel):
     pass
