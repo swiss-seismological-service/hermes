@@ -27,7 +27,7 @@ class Simulator(object):
         :type history: SeismicEventHistory
         :param handler: function that is called on each simulation step
             The handler function must accept three arguments:
-            handler(time, event_occurred, done), where *simulation time* is a
+            handler(time, event_occurred, done), where *time* is a
             date time object that contains the current simulation time,
             *event_occurred* is True if an event occurred during the last
             simulation step and *done* is True if this was the last simulation

@@ -1,21 +1,28 @@
-# Atlas
-#
-# Abstract class that provides an auto-updating
-# history of real world events. Events
-# are read and written to/from an event store.
-#
-# Copyright (C) 2013 Lukas Heiniger
+# -*- encoding: utf-8 -*-
+"""
+History of seismic events
+
+"""
 
 from datetime import datetime, timedelta
 import csv
 
-from eventhistory import EventHistory
 from datamodel.seismicevent import SeismicEvent
 from location import Location
+from PyQt4 import QtCore
 
 
-class SeismicEventHistory(EventHistory):
+class SeismicEventHistory(QtCore.QObject):
+    """
+    Provides a history of seismic events and functions to read and write them
+    from/to a persistent store. The class uses Qt signals to signal changes.
 
+    :ivar history_changed: Qt signal, emitted when the history changes
+
+    """
+
+    def __init__(self):
+        self.history_changed = QtCore.pyqtSignal(dict)
 
     def get_events_between(self, start_date, end_date):
         criteria = (SeismicEvent.date_time >= start_date,
@@ -34,8 +41,13 @@ class SeismicEventHistory(EventHistory):
         return event
 
 
+    def __len__(self):
+        return len(self.store)
+
+
     def import_from_csv(self, path, base_date=datetime(1970,1,1)):
-        """Imports seismic events from a csv file
+        """
+        Imports seismic events from a csv file
 
         The csv file must have a header row which identifies the following
         fields: seq_no: sequence number
@@ -62,7 +74,3 @@ class SeismicEventHistory(EventHistory):
                 event = SeismicEvent(date_time, float(entry['mag']), location)
                 events.append(event)
         self.store.write_events(events)
-
-
-    def __len__(self):
-        return self.store.num_events()

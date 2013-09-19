@@ -8,20 +8,19 @@ The Main file sets up the user interface and bootstraps the application
 import sys
 from PyQt4 import QtGui
 from ui.mainwindow import MainWindow
-from atlasengine import AtlasEngine
+from atlas import Atlas
 
 
 def main():
-    """Creates and launches the user interface"""
+    """
+    Launches Atlas i.s.
 
-    # Start the engine
-    engine = AtlasEngine()
+    Creates the Atlas top level object and passes control to it.
 
-    # Create and start the user interface
-    app = QtGui.QApplication(sys.argv)
-    window = MainWindow(engine)
-    window.show()
-    sys.exit(app.exec_())
+    """
+    atlas = Atlas()
+    atlas.launch()
+
 
 if __name__ == "__main__":
     main()

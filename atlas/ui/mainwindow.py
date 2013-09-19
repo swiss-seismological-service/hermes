@@ -8,6 +8,7 @@ from PyQt4 import QtGui
 from views.uimainwindow import Ui_MainWindow
 from models.catalogmodel import CatalogModel
 from datetime import datetime
+import datamodel.seismiceventhistory
 import os
 
 import numpy as np
@@ -15,13 +16,16 @@ import numpy as np
 
 # Create a class for our main window
 class MainWindow(QtGui.QMainWindow):
-    """Class that manages the main application window"""
+    """
+    Class that manages the main application window
 
-    def __init__(self, engine):
+    """
+
+    def __init__(self, atlas_core):
         QtGui.QMainWindow.__init__(self)
 
         # A reference to the engine (business logic)
-        self.engine = engine
+        self.atlas_core = atlas_core
 
         # Setup the user interface
         self.ui = Ui_MainWindow()
@@ -42,7 +46,7 @@ class MainWindow(QtGui.QMainWindow):
 
         if path:
             self.statusBar().showMessage('Importing catalog...')
-            self.engine.event_history.import_from_csv(path)
+            self.atlas_core.event_history.import_from_csv(path)
             self.statusBar().showMessage('Ready')
             self.ui.label.setText('Catalog: ' + path)
             self._replot_catalog()
@@ -54,13 +58,22 @@ class MainWindow(QtGui.QMainWindow):
         self.table_view.show()
 
 
+    def update_plots(self, time=None):
+        """
+        Updates all plots
+
+        :param time: if not none, the current time is assumed to be *time*
+
+        """
+
     # Plot Helpers
 
 
 
-    def _replot_catalog(self, update=False):
+    def _replot_catalog(self, update=False, max_time=None):
         """Plot the data in the catalog
 
+        :param max_time: if not None, plot catalog up to max_time only
         :param update: If false (default) the entire catalog is replotted
         :type update: bool
 
@@ -69,7 +82,7 @@ class MainWindow(QtGui.QMainWindow):
             pass
         else:
             epoch = datetime(1970, 1, 1)
-            events = self.engine.event_history
+            events = self.atlas_core.event_history
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events]
             self.ui.catalog_plot.plot.setData(pos=data)

@@ -99,6 +99,18 @@ class EventStore:
         """
         return self._query.first()
 
+    def refresh(self):
+        query = self._session.query(self._event_class).order_by(desc(DATE_ATTR_NAME))
+        self._query = query
+        self._page_cache.query = query
+        self._num_events = query.count()
+
+    def close(self):
+        self._session.close()
+
+    def __len__(self):
+        return self._num_events
+
     def __getitem__(self, item):
         """Return the event at the specified index
 
@@ -108,15 +120,3 @@ class EventStore:
 
         """
         return self._page_cache[item]
-
-    def num_events(self):
-        return self._num_events
-
-    def refresh(self):
-        query = self._session.query(self._event_class).order_by(desc(DATE_ATTR_NAME))
-        self._query = query
-        self._page_cache.query = query
-        self._num_events = query.count()
-
-    def close(self):
-        self._session.close()
