@@ -17,12 +17,16 @@ class SeismicEventHistory(QtCore.QObject):
     Provides a history of seismic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
 
+    :ivar store: event store (interface to persistent store / db)
     :ivar history_changed: Qt signal, emitted when the history changes
 
     """
 
-    def __init__(self):
-        self.history_changed = QtCore.pyqtSignal(dict)
+    history_changed = QtCore.pyqtSignal(dict)
+
+    def __init__(self, store):
+        super(SeismicEventHistory, self).__init__()
+        self.store = store
 
     def get_events_between(self, start_date, end_date):
         criteria = (SeismicEvent.date_time >= start_date,
@@ -74,3 +78,4 @@ class SeismicEventHistory(QtCore.QObject):
                 event = SeismicEvent(date_time, float(entry['mag']), location)
                 events.append(event)
         self.store.write_events(events)
+        self.history_changed.emit({})

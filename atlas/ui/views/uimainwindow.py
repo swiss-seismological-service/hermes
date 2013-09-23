@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Thu Aug 22 14:17:46 2013
+# Created: Mon Sep 23 16:28:23 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -46,6 +46,8 @@ class Ui_MainWindow(object):
         self.menuBar.setObjectName(_fromUtf8("menuBar"))
         self.menu_Catalog = QtGui.QMenu(self.menuBar)
         self.menu_Catalog.setObjectName(_fromUtf8("menu_Catalog"))
+        self.menuSimulation = QtGui.QMenu(self.menuBar)
+        self.menuSimulation.setObjectName(_fromUtf8("menuSimulation"))
         MainWindow.setMenuBar(self.menuBar)
         self.mainToolBar = QtGui.QToolBar(MainWindow)
         self.mainToolBar.setObjectName(_fromUtf8("mainToolBar"))
@@ -57,10 +59,14 @@ class Ui_MainWindow(object):
         self.action_Import.setObjectName(_fromUtf8("action_Import"))
         self.actionView_Data = QtGui.QAction(MainWindow)
         self.actionView_Data.setObjectName(_fromUtf8("actionView_Data"))
+        self.actionStartSimulation = QtGui.QAction(MainWindow)
+        self.actionStartSimulation.setObjectName(_fromUtf8("actionStartSimulation"))
         self.menu_Catalog.addAction(self.action_Import)
         self.menu_Catalog.addSeparator()
         self.menu_Catalog.addAction(self.actionView_Data)
+        self.menuSimulation.addAction(self.actionStartSimulation)
         self.menuBar.addAction(self.menu_Catalog.menuAction())
+        self.menuBar.addAction(self.menuSimulation.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -69,7 +75,9 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "ATLAS i.s.", None))
         self.label.setText(_translate("MainWindow", "Earthquake Catalog", None))
         self.menu_Catalog.setTitle(_translate("MainWindow", "&Catalog", None))
+        self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
         self.action_Import.setText(_translate("MainWindow", "&Import...", None))
         self.actionView_Data.setText(_translate("MainWindow", "View Data", None))
+        self.actionStartSimulation.setText(_translate("MainWindow", "Start Simulation", None))
 
 from plots import SeismicityPlotWidget

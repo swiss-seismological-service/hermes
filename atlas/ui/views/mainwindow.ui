@@ -71,7 +71,14 @@
     <addaction name="separator"/>
     <addaction name="actionView_Data"/>
    </widget>
+   <widget class="QMenu" name="menuSimulation">
+    <property name="title">
+     <string>Simulation</string>
+    </property>
+    <addaction name="actionStartSimulation"/>
+   </widget>
    <addaction name="menu_Catalog"/>
+   <addaction name="menuSimulation"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -90,6 +97,11 @@
   <action name="actionView_Data">
    <property name="text">
     <string>View Data</string>
+   </property>
+  </action>
+  <action name="actionStartSimulation">
+   <property name="text">
+    <string>Start Simulation</string>
    </property>
   </action>
  </widget>

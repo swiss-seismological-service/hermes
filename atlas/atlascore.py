@@ -13,9 +13,11 @@ from datamodel.seismiceventhistory import SeismicEventHistory
 from datamodel.seismicevent import SeismicEvent
 from forecastengine import ForecastEngine
 from simulator import Simulator
+from datetime import datetime
+from PyQt4 import QtCore
 
 
-class AtlasCore:
+class AtlasCore(QtCore.QObject):
     """
     Top level class for ATLAS i.s.
 
@@ -25,6 +27,9 @@ class AtlasCore:
 
     """
 
+    # Signals
+    simulation_event = QtCore.pyqtSignal(dict)
+
     def __init__(self):
         """
         Bootstraps and controls the Atlas core logic
@@ -33,18 +38,22 @@ class AtlasCore:
         on an in-memory sqlite database (for now).
 
         """
+        super(AtlasCore, self).__init__()
         store = EventStore(SeismicEvent, 'sqlite:///catalog.sqlite')
         self.event_history = SeismicEventHistory(store)
         self.forecast_engine = ForecastEngine()
         self.simulator = Simulator(self.event_history, self.simulation_handler)
+        self.project_time = datetime.now()
 
-    def replay_history(self, speed):
+    def replay_history(self):
         """
         Replays the events from the seismic history
 
         :param speed: simulation speed (factor)
 
         """
+        self.simulation_event.emit({'event': 'start'})
+        self.simulator.start()
 
     def compute_forecast(self, time):
         """
@@ -57,5 +66,9 @@ class AtlasCore:
 
 
     # Simulation
-    def simulation_handler(simulation_time, event_occurred, simulation_ended):
-        pass
+
+    def simulation_handler(self, simulation_time, event_occurred, simulation_ended):
+        self.project_time = simulation_time
+        if event_occurred:
+            change_dict = {'simulation_time': simulation_time}
+            self.event_history.history_changed.emit(change_dict)

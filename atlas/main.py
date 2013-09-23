@@ -7,7 +7,7 @@ The Main file sets up the user interface and bootstraps the application
 """
 import sys
 from PyQt4 import QtGui
-from ui.mainwindow import MainWindow
+from ui.mainwindowcontroller import MainWindowController
 from atlas import Atlas
 
 

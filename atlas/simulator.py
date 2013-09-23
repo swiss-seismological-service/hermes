@@ -8,6 +8,7 @@ Simulates incoming seismic events and triggers updates on the forecast
 
 from datamodel.seismiceventhistory import SeismicEventHistory
 from PyQt4.QtCore import QTimer
+from datetime import timedelta
 import inspect
 
 
@@ -40,13 +41,13 @@ class Simulator(object):
 
         self._history_iterator = None
         self._next_event = None
-        self._simulation_time = None
+        self._simulation_time = 0
         self.step_time = 1
         self.speed = 1
 
         self._timer = QTimer()
-        self._timer.timeout.connect(self._step())
         self._stopped = False
+        self._timer.timeout.connect(self._step)
 
 
     def start(self):
@@ -57,9 +58,9 @@ class Simulator(object):
         first_event = self._event_history[0]
         self._history_iterator = iter(self._event_history)
         self._simulation_time = first_event.date_time
-        self._next_event = self._history_iterator.next
+        self._next_event = self._history_iterator.next()
         self._stopped = False
-        self._timer.singleShot(self.step_time / self.speed)
+        self._timer.singleShot(self.step_time / self.speed, self._step)
 
 
     def stop(self):
@@ -70,12 +71,15 @@ class Simulator(object):
     def _step(self):
         event_occurred = False
         simulation_ended = False
-        self._simulation_time += self.step_time / self.speed
+        self._simulation_time += timedelta(seconds=self.step_time / self.speed)
         # check if one or more event occurred during the simulation step
         while self._next_event and \
                 self._next_event.date_time < self._simulation_time:
             event_occurred = True
-            self._next_event = self._history_iterator.next
+            try:
+                self._next_event = self._history_iterator.next()
+            except:
+                self._next_event = None
 
         if self._stopped or self._next_event is None:
             simulation_ended = True
@@ -83,5 +87,5 @@ class Simulator(object):
         self._handler(self._simulation_time, event_occurred, simulation_ended)
 
         if not simulation_ended:
-            self._timer.singleShot(self.step_time / self.speed)
+            self._timer.singleShot(self.step_time / self.speed, self._step)
 

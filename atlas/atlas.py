@@ -9,8 +9,8 @@ the GUI and the Atlas core application).
 
 import sys
 from PyQt4 import QtGui
-from ui.mainwindow import MainWindow
-from atlascore import AtlasEngine
+from ui.mainwindowcontroller import MainWindowController
+from atlascore import AtlasCore
 
 
 class Atlas(object):
@@ -29,10 +29,10 @@ class Atlas(object):
         """
 
         # Start the core application
-        atlas_core = AtlasEngine()
+        atlas_core = AtlasCore()
 
         # Create and start the user interface
         app = QtGui.QApplication(sys.argv)
-        window = MainWindow(atlas_core)
+        window = MainWindowController(atlas_core)
         window.show()
         sys.exit(app.exec_())
