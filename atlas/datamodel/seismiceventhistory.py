@@ -35,8 +35,12 @@ class SeismicEventHistory(QtCore.QObject):
         return events
 
 
-    def latest_event(self):
-        event = self.store.latest_event()
+    def latest_event(self, time=None):
+        if time is None:
+            event = self.store.latest_event()
+        else:
+            criteria = (SeismicEvent.date_time < time)
+            event = self.store.read_last(criteria)
         return event
 
 

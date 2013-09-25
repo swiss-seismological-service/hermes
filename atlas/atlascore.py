@@ -16,6 +16,11 @@ from simulator import Simulator
 from datetime import datetime
 from PyQt4 import QtCore
 
+class AtlasCoreState:
+    IDLE = 0
+    PAUSED = 1
+    SIMULATING = 2
+    FORECASTING = 3
 
 class AtlasCore(QtCore.QObject):
     """
@@ -28,7 +33,7 @@ class AtlasCore(QtCore.QObject):
     """
 
     # Signals
-    simulation_event = QtCore.pyqtSignal(dict)
+    state_changed = QtCore.pyqtSignal(int)
 
     def __init__(self):
         """
@@ -44,16 +49,31 @@ class AtlasCore(QtCore.QObject):
         self.forecast_engine = ForecastEngine()
         self.simulator = Simulator(self.event_history, self.simulation_handler)
         self.project_time = datetime.now()
+        self.state = AtlasCoreState.IDLE
 
-    def replay_history(self):
+
+    # Simulation
+
+    def start_simulation(self):
         """
         Replays the events from the seismic history
 
         :param speed: simulation speed (factor)
 
         """
-        self.simulation_event.emit({'event': 'start'})
         self.simulator.start()
+        self.state = AtlasCoreState.SIMULATING
+        self.state_changed.emit(self.state)
+
+    def pause_simulation(self):
+        self.simulator.pause()
+        self.state = AtlasCoreState.PAUSED
+        self.state_changed.emit(self.state)
+
+    def stop_simulation(self):
+        self.simulator.stop()
+        self.state = AtlasCoreState.IDLE
+        self.state_changed.emit(self.state)
 
     def compute_forecast(self, time):
         """

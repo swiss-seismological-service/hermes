@@ -14,7 +14,8 @@ DATE_ATTR_NAME = 'date_time'
 
 
 class EventStore:
-    """Manages access to the event store (database)
+    """
+    Manages access to the event store (database)
 
     The event store uses sqlalchemy to persist event objects to the
     database. As a consequence all objects that need to be persisted
@@ -43,18 +44,25 @@ class EventStore:
         self.refresh()
 
     def purge(self):
-        """Deletes all data from the catalog"""
+        """
+        Deletes all data from the catalog
+
+        """
         self._page_cache.invalidate()
         self._query = None
         base.Base.metadata.drop_all(bind=self._engine)
         base.Base.metadata.create_all(self._engine)
 
     def commit(self):
-        """Commits pending changes to the store immediately"""
+        """
+        Commits pending changes to the store immediately
+
+        """
         self._session.commit()
 
     def write_event(self, event):
-        """Write a new event to the store
+        """
+        Write a new event to the store
 
         :param event: Event to write
         :type event: Base
@@ -66,7 +74,8 @@ class EventStore:
         self.refresh()
 
     def write_events(self, events):
-        """Write multiple events to the store
+        """
+        Write multiple events to the store
 
         :param events: List of events to write
         :type events: list
@@ -77,10 +86,34 @@ class EventStore:
         self.commit()
         self.refresh()
 
-    def read_events(self, criteria):
-        """Read and return all events from the store that meet the criteria provided by the caller
+    def read_first(self, criteria):
+        """
+        Read and return the first event from the store that meets the criteria provided by the caller
 
-        :param criteria: List of logical criteria, e.g. (Event.data < a_date, Event.id > 10)
+        :param criteria: List of logical criteria, e.g. (Event.date < a_date, Event.id > 10)
+        :type criteria: list
+        :rtype: list
+
+        """
+        if criteria is not None:
+            result = self._query.filter(criteria).first()
+        else:
+            result = self._query.first()
+        return result
+
+    def read_last(self, criteria):
+        q = self._query.order_by(None)  # cancel existing order first
+        if criteria is not None:
+            result = q.filter(criteria).order_by(desc(DATE_ATTR_NAME)).first()
+        else:
+            result = q.order_by(desc(DATE_ATTR_NAME)).first()
+        return result
+
+    def read_events(self, criteria):
+        """
+        Read and return all events from the store that meet the criteria provided by the caller
+
+        :param criteria: List of logical criteria, e.g. (Event.date < a_date, Event.id > 10)
         :type criteria: list
         :rtype: list
 
@@ -92,7 +125,8 @@ class EventStore:
         return results
 
     def latest_event(self):
-        """Read and return the latest event from the store
+        """
+        Read and return the latest event from the store
 
         :rtype: Base
 
@@ -100,7 +134,7 @@ class EventStore:
         return self._query.first()
 
     def refresh(self):
-        query = self._session.query(self._event_class).order_by(desc(DATE_ATTR_NAME))
+        query = self._session.query(self._event_class).order_by(DATE_ATTR_NAME)
         self._query = query
         self._page_cache.query = query
         self._num_events = query.count()
@@ -112,7 +146,8 @@ class EventStore:
         return self._num_events
 
     def __getitem__(self, item):
-        """Return the event at the specified index
+        """
+        Return the event at the specified index
 
         :param item: event index (0 being the newest)
         :type item: int

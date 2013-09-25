@@ -47,6 +47,7 @@ class Simulator(object):
 
         self._timer = QTimer()
         self._stopped = False
+        self._paused = False
         self._timer.timeout.connect(self._step)
 
 
@@ -55,23 +56,30 @@ class Simulator(object):
         catalog.
 
         """
-        first_event = self._event_history[0]
-        self._history_iterator = iter(self._event_history)
-        self._simulation_time = first_event.date_time
-        self._next_event = self._history_iterator.next()
-        self._stopped = False
-        self._timer.singleShot(self.step_time / self.speed, self._step)
+        if not self._paused:
+            first_event = self._event_history[0]
+            self._history_iterator = iter(self._event_history)
+            self._simulation_time = first_event.date_time
+            self._next_event = self._history_iterator.next()
+            self._stopped = False
+        self._paused = False
+        self._timer.singleShot(float(self.step_time) / self.speed * 1000,
+                               self._step)
 
+    def pause(self):
+        self._paused = True
+        self._timer.stop()
 
     def stop(self):
         """Stops the simulation"""
+        self._paused = False
         self._stopped = True
 
 
     def _step(self):
         event_occurred = False
         simulation_ended = False
-        self._simulation_time += timedelta(seconds=self.step_time / self.speed)
+        self._simulation_time += timedelta(seconds=self.step_time)
         # check if one or more event occurred during the simulation step
         while self._next_event and \
                 self._next_event.date_time < self._simulation_time:
@@ -87,5 +95,6 @@ class Simulator(object):
         self._handler(self._simulation_time, event_occurred, simulation_ended)
 
         if not simulation_ended:
-            self._timer.singleShot(self.step_time / self.speed, self._step)
+            self._timer.singleShot(float(self.step_time) / self.speed * 1000,
+                                   self._step)
 

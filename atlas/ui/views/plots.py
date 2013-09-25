@@ -65,4 +65,5 @@ class SeismicityPlotWidget(TimePlotWidget):
         super(SeismicityPlotWidget, self).__init__(parent, **kargs)
         self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
                                        brush=pg.mkBrush(255, 255, 255, 120))
+        self.setMouseEnabled(y=False)
         self.addItem(self.plot)

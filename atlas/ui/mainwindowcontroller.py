@@ -8,6 +8,7 @@ from PyQt4 import QtGui
 from views.uimainwindow import Ui_MainWindow
 from models.catalogmodel import CatalogModel
 from datetime import datetime
+from atlascore import AtlasCore, AtlasCoreState
 import datamodel.seismiceventhistory
 import os
 
@@ -30,28 +31,38 @@ class MainWindowController(QtGui.QMainWindow):
         # Setup the user interface
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.statusBar().showMessage('Ready')
 
         # Hook up the menu
         self.ui.action_Import.triggered.connect(self.import_seismic_catalog)
         self.ui.actionView_Data.triggered.connect(self.view_catalog_data)
-        self.ui.actionStartSimulation.triggered.connect(self.start_simulation)
+        self.ui.actionStart_Simulation.triggered.connect(self.start_simulation)
+        self.ui.actionPause_Simulation.triggered.connect(self.pause_simulation)
+        self.ui.actionStop_Simulation.triggered.connect(self.stop_simulation)
+        # ... buttons
+        self.ui.startButton.pressed.connect(self.start_forecast)
+        self.ui.pauseButton.pressed.connect(self.pause_forecast)
+        self.ui.stopButton.pressed.connect(self.stop_forecast)
+        # ... other controls
+        self.ui.simulationCheckBox.stateChanged.connect(self.sim_state_changed)
+        self.ui.speedBox.valueChanged.connect(self.sim_speed_changed)
+
 
         # Hook up model change signals
-        self.atlas_core.simulation_event.connect(self.handle_simulation_event)
+        self.atlas_core.state_changed.connect(self.handle_core_state_change)
         self.atlas_core.event_history.history_changed.connect(self.handle_history_change)
 
         self._replot_catalog()
+        self.update_status()
+        self.update_controls()
 
-    # menu actions
+    # Menu Actions
 
     def import_seismic_catalog(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(self, 'Open catalog file', home)
 
         if path:
-            self.statusBar().showMessage('Importing catalog...')
-            self.atlas_core.event_history.import_from_csv(path)
+            self.statusBar().event_history.import_from_csv(path)
             self.statusBar().showMessage('Ready')
             self.ui.label.setText('Catalog: ' + path)
 
@@ -61,8 +72,48 @@ class MainWindowController(QtGui.QMainWindow):
         self.table_view.setModel(model)
         self.table_view.show()
 
+    # ... Simulation
+
     def start_simulation(self):
-        self.atlas_core.replay_history()
+        self._clear_plots()
+        speed = self.ui.speedBox.value()
+        self.atlas_core.simulator.speed = speed
+        self.atlas_core.start_simulation()
+
+    def pause_simulation(self):
+        self.atlas_core.pause_simulation()
+
+    def stop_simulation(self):
+        self.atlas_core.stop_simulation()
+        self._replot_catalog()
+
+
+    # Button Actions
+
+    def start_forecast(self):
+        if self.ui.simulationCheckBox.isChecked():
+            self.start_simulation()
+        else:
+            pass
+
+    def pause_forecast(self):
+        if self.ui.simulationCheckBox.isChecked():
+            self.pause_simulation()
+        else:
+            pass
+
+    def stop_forecast(self):
+        if self.ui.simulationCheckBox.isChecked():
+            self.stop_simulation()
+        else:
+            pass
+
+    def sim_state_changed(self):
+        pass
+
+    def sim_speed_changed(self):
+        speed = self.ui.speedBox.value()
+        self.atlas_core.simulator.speed = speed
 
 
     # Qt Signal Slots
@@ -73,10 +124,71 @@ class MainWindowController(QtGui.QMainWindow):
             self._replot_catalog()
         else:
             self._replot_catalog(update=True, max_time=time)
+        self.update_status()
 
-    def handle_simulation_event(self, dict):
-        if dict['event'] == 'start':
-            self._clear_plots()
+    def handle_core_state_change(self, state):
+        self.update_controls()
+        self.update_status()
+
+    # Control Updates
+
+    def update_controls(self):
+        state = self.atlas_core.state
+        if state == AtlasCoreState.SIMULATING:
+            self.ui.simulationCheckBox.setEnabled(False)
+            self.ui.startButton.setEnabled(False)
+            self.ui.pauseButton.setEnabled(True)
+            self.ui.stopButton.setEnabled(True)
+            self.ui.actionStart_Simulation.setEnabled(False)
+            self.ui.actionPause_Simulation.setEnabled(True)
+            self.ui.actionStop_Simulation.setEnabled(True)
+        elif state == AtlasCoreState.PAUSED:
+            self.ui.simulationCheckBox.setEnabled(False)
+            self.ui.startButton.setEnabled(True)
+            self.ui.pauseButton.setEnabled(False)
+            self.ui.stopButton.setEnabled(True)
+            self.ui.actionStart_Simulation.setEnabled(True)
+            self.ui.actionPause_Simulation.setEnabled(False)
+            self.ui.actionStop_Simulation.setEnabled(True)
+        elif state == AtlasCoreState.FORECASTING:
+            self.ui.simulationCheckBox.setEnabled(False)
+            self.ui.startButton.setEnabled(False)
+            self.ui.pauseButton.setEnabled(True)
+            self.ui.stopButton.setEnabled(True)
+            self.ui.actionStart_Simulation.setEnabled(False)
+            self.ui.actionPause_Simulation.setEnabled(True)
+            self.ui.actionStop_Simulation.setEnabled(True)
+        else:
+            # IDLE
+            self.ui.simulationCheckBox.setEnabled(True)
+            self.ui.startButton.setEnabled(True)
+            self.ui.pauseButton.setEnabled(False)
+            self.ui.stopButton.setEnabled(False)
+            self.ui.actionStart_Simulation.setEnabled(True)
+            self.ui.actionPause_Simulation.setEnabled(False)
+            self.ui.actionStop_Simulation.setEnabled(False)
+
+    # Status Updates
+
+    def update_status(self):
+        """
+        Updates the status message in the status bar.
+
+        """
+        core = self.atlas_core
+        time = core.project_time
+        if core.state == AtlasCoreState.SIMULATING:
+            event = self.atlas_core.event_history.latest_event(time)
+            self.statusBar().showMessage('Simulating - Latest Event: ' + repr(event))
+        elif core.state == AtlasCoreState.FORECASTING:
+            event = self.atlas_core.event_history.latest_event()
+            self.statusBar().showMessage('Forecasting - Latest Event: ' + repr(event))
+        elif core.state == AtlasCoreState.PAUSED:
+            event = self.atlas_core.event_history.latest_event(time)
+            self.statusBar().showMessage('Paused - Latest Event: ' + repr(event))
+        else:
+            num_events = len(core.event_history)
+            self.statusBar().showMessage('Idle - ' + str(num_events) + ' events in catalog')
 
     # Plot Helpers
 
