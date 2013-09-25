@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Wed Sep 25 11:20:01 2013
+# Created: Wed Sep 25 15:32:05 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(877, 523)
+        MainWindow.resize(877, 571)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName(_fromUtf8("centralWidget"))
         self.label = QtGui.QLabel(self.centralWidget)
@@ -39,6 +39,11 @@ class Ui_MainWindow(object):
         self.frame.setObjectName(_fromUtf8("frame"))
         self.catalog_plot = SeismicityPlotWidget(self.frame)
         self.catalog_plot.setGeometry(QtCore.QRect(-1, -1, 851, 151))
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.catalog_plot.sizePolicy().hasHeightForWidth())
+        self.catalog_plot.setSizePolicy(sizePolicy)
         self.catalog_plot.setObjectName(_fromUtf8("catalog_plot"))
         self.controlsBox = QtGui.QGroupBox(self.centralWidget)
         self.controlsBox.setEnabled(True)
@@ -108,10 +113,22 @@ class Ui_MainWindow(object):
         self.menu_Catalog.setObjectName(_fromUtf8("menu_Catalog"))
         self.menuSimulation = QtGui.QMenu(self.menuBar)
         self.menuSimulation.setObjectName(_fromUtf8("menuSimulation"))
+        self.menuWindow = QtGui.QMenu(self.menuBar)
+        self.menuWindow.setObjectName(_fromUtf8("menuWindow"))
         MainWindow.setMenuBar(self.menuBar)
         self.mainToolBar = QtGui.QToolBar(MainWindow)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.mainToolBar.sizePolicy().hasHeightForWidth())
+        self.mainToolBar.setSizePolicy(sizePolicy)
+        self.mainToolBar.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.mainToolBar.setMovable(False)
+        self.mainToolBar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+        self.mainToolBar.setFloatable(False)
         self.mainToolBar.setObjectName(_fromUtf8("mainToolBar"))
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.mainToolBar)
+        MainWindow.insertToolBarBreak(self.mainToolBar)
         self.statusBar = QtGui.QStatusBar(MainWindow)
         self.statusBar.setObjectName(_fromUtf8("statusBar"))
         MainWindow.setStatusBar(self.statusBar)
@@ -125,14 +142,22 @@ class Ui_MainWindow(object):
         self.actionPause_Simulation.setObjectName(_fromUtf8("actionPause_Simulation"))
         self.actionStop_Simulation = QtGui.QAction(MainWindow)
         self.actionStop_Simulation.setObjectName(_fromUtf8("actionStop_Simulation"))
+        self.actionShow_GR = QtGui.QAction(MainWindow)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/toolbar-buttons/images/view-gr-toolbar-button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionShow_GR.setIcon(icon)
+        self.actionShow_GR.setObjectName(_fromUtf8("actionShow_GR"))
         self.menu_Catalog.addAction(self.action_Import)
         self.menu_Catalog.addSeparator()
         self.menu_Catalog.addAction(self.actionView_Data)
         self.menuSimulation.addAction(self.actionStart_Simulation)
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
+        self.menuWindow.addAction(self.actionShow_GR)
         self.menuBar.addAction(self.menu_Catalog.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
+        self.menuBar.addAction(self.menuWindow.menuAction())
+        self.mainToolBar.addAction(self.actionShow_GR)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -157,10 +182,13 @@ class Ui_MainWindow(object):
         self.nextForecastLabel.setText(_translate("MainWindow", "-", None))
         self.menu_Catalog.setTitle(_translate("MainWindow", "&Catalog", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
+        self.menuWindow.setTitle(_translate("MainWindow", "Window", None))
         self.action_Import.setText(_translate("MainWindow", "&Import...", None))
         self.actionView_Data.setText(_translate("MainWindow", "View Data", None))
         self.actionStart_Simulation.setText(_translate("MainWindow", "Start Simulation", None))
         self.actionPause_Simulation.setText(_translate("MainWindow", "Pause Simulation", None))
         self.actionStop_Simulation.setText(_translate("MainWindow", "Stop Simulation", None))
+        self.actionShow_GR.setText(_translate("MainWindow", "GR Relation", None))
 
 from plots import SeismicityPlotWidget
+import images_rc

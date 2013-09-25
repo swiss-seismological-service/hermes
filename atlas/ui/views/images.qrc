@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/toolbar-buttons">
+        <file>images/view-gr-toolbar-button.png</file>
+    </qresource>
+</RCC>

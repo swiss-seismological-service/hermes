@@ -5,7 +5,7 @@ Controller module for the main window
 """
 
 from PyQt4 import QtGui
-from views.uimainwindow import Ui_MainWindow
+from views.ui_mainwindow import Ui_MainWindow
 from models.catalogmodel import CatalogModel
 from datetime import datetime
 from atlascore import AtlasCore, AtlasCoreState
