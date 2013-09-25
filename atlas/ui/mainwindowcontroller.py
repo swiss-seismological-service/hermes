@@ -25,6 +25,9 @@ class MainWindowController(QtGui.QMainWindow):
     def __init__(self, atlas_core):
         QtGui.QMainWindow.__init__(self)
 
+        # Project time as displayed in status bar
+        self.displayed_project_time = None
+
         # A reference to the engine (business logic)
         self.atlas_core = atlas_core
 
@@ -50,6 +53,7 @@ class MainWindowController(QtGui.QMainWindow):
         # Hook up model change signals
         self.atlas_core.state_changed.connect(self.handle_core_state_change)
         self.atlas_core.event_history.history_changed.connect(self.handle_history_change)
+        self.atlas_core.project_time_changed.connect(self.handle_project_time_change)
 
         self._replot_catalog()
         self.update_status()
@@ -128,6 +132,12 @@ class MainWindowController(QtGui.QMainWindow):
 
     def handle_core_state_change(self, state):
         self.update_controls()
+        if self.atlas_core.state == AtlasCoreState.SIMULATING:
+            self.displayed_project_time = self.atlas_core.project_time
+        self.update_status()
+
+    def handle_project_time_change(self, time):
+        self.displayed_project_time = time
         self.update_status()
 
     # Control Updates
@@ -177,18 +187,29 @@ class MainWindowController(QtGui.QMainWindow):
         """
         core = self.atlas_core
         time = core.project_time
+        speed = self.atlas_core.simulator.speed
         if core.state == AtlasCoreState.SIMULATING:
             event = self.atlas_core.event_history.latest_event(time)
-            self.statusBar().showMessage('Simulating - Latest Event: ' + repr(event))
+            self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
+            self.ui.projectTimeLabel.setText(self.displayed_project_time.ctime())
+            self.ui.lastEventLabel.setText(str(event))
         elif core.state == AtlasCoreState.FORECASTING:
             event = self.atlas_core.event_history.latest_event()
-            self.statusBar().showMessage('Forecasting - Latest Event: ' + repr(event))
+            self.ui.coreStatusLabel.setText('Forecasting')
+            self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
+            self.ui.lastEventLabel.setText(str(event))
         elif core.state == AtlasCoreState.PAUSED:
             event = self.atlas_core.event_history.latest_event(time)
-            self.statusBar().showMessage('Paused - Latest Event: ' + repr(event))
+            self.ui.coreStatusLabel.setText('Paused')
+            self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
+            self.ui.lastEventLabel.setText(str(event))
         else:
             num_events = len(core.event_history)
-            self.statusBar().showMessage('Idle - ' + str(num_events) + ' events in catalog')
+            self.ui.coreStatusLabel.setText('Idle')
+            self.ui.projectTimeLabel.setText('-')
+            self.ui.lastEventLabel.setText('-')
+            self.statusBar().showMessage(str(num_events) +
+                                         ' events in catalog')
 
     # Plot Helpers
 

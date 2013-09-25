@@ -53,5 +53,8 @@ class SeismicEvent(Base):
         self.longitude = location.longitude
         self.depth = -location.altitude
 
+    def __str__(self):
+        return "M%.1f @ %s" % (self.magnitude, self.date_time.ctime())
+
     def __repr__(self):
         return "<SeismicEvent('%s' @ '%s')>" % (self.magnitude, self.date_time)

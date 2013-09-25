@@ -34,6 +34,7 @@ class AtlasCore(QtCore.QObject):
 
     # Signals
     state_changed = QtCore.pyqtSignal(int)
+    project_time_changed = QtCore.pyqtSignal(datetime)
 
     def __init__(self):
         """
@@ -50,6 +51,7 @@ class AtlasCore(QtCore.QObject):
         self.simulator = Simulator(self.event_history, self.simulation_handler)
         self.project_time = datetime.now()
         self.state = AtlasCoreState.IDLE
+        self._last_time_change_notification = datetime.now()
 
 
     # Simulation
@@ -88,7 +90,15 @@ class AtlasCore(QtCore.QObject):
     # Simulation
 
     def simulation_handler(self, simulation_time, event_occurred, simulation_ended):
+
         self.project_time = simulation_time
+        now = datetime.now()
+        t_elapsed = now - self._last_time_change_notification
+
+        if t_elapsed.total_seconds() > 1:
+            self.project_time_changed.emit(simulation_time)
+            self._last_time_change_notification = now
+
         if event_occurred:
             change_dict = {'simulation_time': simulation_time}
             self.event_history.history_changed.emit(change_dict)
