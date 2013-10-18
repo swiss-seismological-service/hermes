@@ -4,6 +4,7 @@ History of seismic events
 
 """
 
+from eventhistory import EventHistory
 from datetime import datetime, timedelta
 import csv
 
@@ -12,46 +13,15 @@ from location import Location
 from PyQt4 import QtCore
 
 
-class SeismicEventHistory(QtCore.QObject):
+class SeismicEventHistory(EventHistory):
     """
     Provides a history of seismic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
 
-    :ivar store: event store (interface to persistent store / db)
-    :ivar history_changed: Qt signal, emitted when the history changes
-
     """
 
-    history_changed = QtCore.pyqtSignal(dict)
-
     def __init__(self, store):
-        super(SeismicEventHistory, self).__init__()
-        self.store = store
-
-    def get_events_between(self, start_date, end_date):
-        criteria = (SeismicEvent.date_time >= start_date,
-                    SeismicEvent.end_time <= end_date)
-        events = self.store.read_events(criteria)
-        return events
-
-
-    def latest_event(self, time=None):
-        if time is None:
-            event = self.store.latest_event()
-        else:
-            criteria = (SeismicEvent.date_time < time)
-            event = self.store.read_last(criteria)
-        return event
-
-
-    def __getitem__(self, item):
-        event = self.store[item]
-        return event
-
-
-    def __len__(self):
-        return len(self.store)
-
+        super(EventHistory, self).__init__(store, SeismicEvent)
 
     def import_from_csv(self, path, base_date=datetime(1970,1,1)):
         """
@@ -70,7 +40,7 @@ class SeismicEventHistory(QtCore.QObject):
         :type base_date: datetime
 
         """
-        self.store.purge()
+        self.store.purge(self.entity)
         with open(path, 'rb') as csv_file:
             csv.register_dialect('magcat', delimiter=' ', skipinitialspace=True)
             reader = csv.DictReader(csv_file, dialect='magcat')
@@ -81,5 +51,5 @@ class SeismicEventHistory(QtCore.QObject):
                 date_time = base_date + dt
                 event = SeismicEvent(date_time, float(entry['mag']), location)
                 events.append(event)
-        self.store.write_events(events)
+        self.store.add(events)
         self.history_changed.emit({})

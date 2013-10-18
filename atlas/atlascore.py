@@ -8,9 +8,11 @@ control facilities should be hooked up in the Atlas class instead.
 
 """
 
-from datamodel.eventstore import EventStore
+from datamodel.store import EventStore
 from datamodel.seismiceventhistory import SeismicEventHistory
+from datamodel.hydrauliceventhistory import HydraulicEventHistory
 from datamodel.seismicevent import SeismicEvent
+from datamodel.hydraulicevent import HydraulicEvent
 from forecastengine import ForecastEngine
 from simulator import Simulator
 from datetime import datetime
@@ -45,8 +47,9 @@ class AtlasCore(QtCore.QObject):
 
         """
         super(AtlasCore, self).__init__()
-        store = EventStore(SeismicEvent, 'sqlite:///catalog.sqlite')
-        self.event_history = SeismicEventHistory(store)
+        store = EventStore(SeismicEvent, 'sqlite:///data.sqlite')
+        self.event_history = SeismicEventHistory(store, SeismicEvent)
+        self.hydraulic_history = HydraulicEventHistory(store, HydraulicEvent)
         self.forecast_engine = ForecastEngine()
         self.simulator = Simulator(self.event_history, self.simulation_handler)
         self.project_time = datetime.now()
