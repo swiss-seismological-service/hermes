@@ -66,7 +66,7 @@ class MainWindowController(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(self, 'Open catalog file', home)
 
         if path:
-            self.statusBar().event_history.import_from_csv(path)
+            self.atlas_core.event_history.import_from_csv(path)
             self.statusBar().showMessage('Ready')
             self.ui.label.setText('Catalog: ' + path)
 

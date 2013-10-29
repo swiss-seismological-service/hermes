@@ -9,7 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 import os
 import logging
-from mock import MagicMock, patch, call
+from mock import MagicMock, call
 from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, Float, DateTime
 from datamodel.base import Base
@@ -20,6 +20,7 @@ DB_FILE = 'test.sqlite'
 # Data Model
 
 class EventA(Base):
+    """ A dummy event class for testing """
     # ORM declarations for SQLAlchemy
     __tablename__ = 'a_events'
     id = Column(Integer, primary_key=True)
@@ -32,6 +33,7 @@ class EventA(Base):
 
 
 class EventB(Base):
+    """ A dummy event class for testing """
     # ORM declarations for SQLAlchemy
     __tablename__ = 'b_events'
     id = Column(Integer, primary_key=True)
@@ -118,6 +120,8 @@ class ReadingAndWriting(unittest.TestCase):
         predicate = (2 == EventB.value)
         b2 = self.store.read_last(EventB, predicate, order='date_time')
         self.assertEqual(b2.value, 2)
+        b3 = self.store.read(EventB, 1, predicate, order='date_time')
+        self.assertEqual(b2.value, 3)
 
     def test_counting(self):
         """ Test object counting """

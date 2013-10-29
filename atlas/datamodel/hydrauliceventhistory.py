@@ -21,7 +21,7 @@ class HydraulicEventHistory(EventHistory):
     """
 
     def __init__(self, store):
-        super(EventHistory, self).__init__(store, HydraulicEvent)
+        super(HydraulicEventHistory, self).__init__(store, HydraulicEvent)
 
     def import_from_csv(self, path, base_date=datetime(1970, 1, 1)):
         """
@@ -56,7 +56,6 @@ class HydraulicEventHistory(EventHistory):
                     flow_in=entry['flow_in'],
                     pressure_dh=entry['pressure_dh'],
                     pressure_xt=entry['pressure_xt'],
-                    flow_in=entry['flow_in'],
                     const=entry['const'],
                 )
                 event = HydraulicEvent(date_time, data)

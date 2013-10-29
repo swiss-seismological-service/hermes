@@ -53,10 +53,19 @@ class EventHistory(QtCore.QObject):
         events = self.store.read_all(self.entity, predicate)
         return events
 
-
     def latest_event(self, time=None):
+        """
+        Returns the latest event before time *time*
+
+        If not time constraint is given, the latest event in the entire history
+        is returned.
+
+        :param time: time constraint for latest event
+        :type time: datetime
+
+        """
         if time is None:
-            event = self.store.latest_event()
+            event = self.store.read_last(self.entity)
         else:
             predicate = (self.entity.date_time < time)
             event = self.store.read_last(self.entity, predicate)
@@ -71,5 +80,5 @@ class EventHistory(QtCore.QObject):
 
     def _emit_change_signal(self, change_dict):
         default_dict = {'history': self}
-        d = default_dict.items() + change_dict.items()
+        d = dict(default_dict.items() + change_dict.items())
         self.history_changed.emit(d)

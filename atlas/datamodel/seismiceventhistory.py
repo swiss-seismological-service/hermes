@@ -21,9 +21,9 @@ class SeismicEventHistory(EventHistory):
     """
 
     def __init__(self, store):
-        super(EventHistory, self).__init__(store, SeismicEvent)
+        super(SeismicEventHistory, self).__init__(store, SeismicEvent)
 
-    def import_from_csv(self, path, base_date=datetime(1970,1,1)):
+    def import_from_csv(self, path, base_date=datetime(1970, 1, 1)):
         """
         Imports seismic events from a csv file
 
@@ -52,4 +52,4 @@ class SeismicEventHistory(EventHistory):
                 event = SeismicEvent(date_time, float(entry['mag']), location)
                 events.append(event)
         self.store.add(events)
-        self.history_changed.emit({})
+        self._emit_change_signal({})
