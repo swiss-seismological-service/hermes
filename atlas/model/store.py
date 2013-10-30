@@ -9,8 +9,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-import base
-
 
 class SequentialReadCache:
     """
@@ -41,6 +39,7 @@ class SequentialReadCache:
 
     def invalidate(self):
         self._page_start = 0
+        self._num_events = 0
         self._cached_results = None
 
     def __len__(self):
@@ -84,13 +83,15 @@ class Store:
 
     """
 
-    def __init__(self, store_url):
+    def __init__(self, store_url, model):
         """
         :param store_url: Database url
+        :param model: sqlalchemy data model (declarative base)
 
         """
         self.engine = create_engine(store_url, echo=False)
-        base.Base.metadata.create_all(self.engine, checkfirst=True)
+        self.model = model
+        self.model.metadata.create_all(self.engine, checkfirst=True)
         Session = sessionmaker(bind=self.engine)
         self._read_caches = {}
         self.session = Session()
@@ -103,13 +104,14 @@ class Store:
 
         """
         if entity is not None:
-            cache = self._read_caches[entity]
+            cache = self._read_caches.get(entity)
             if cache is not None:
                 cache.invalidate()
-            entity.__table__.delete()
+            delete = entity.__table__.delete()
+            self.engine.execute(delete)
         else:
-            base.Base.metadata.drop_all(bind=self.engine)
-            base.Base.metadata.create_all(self.engine)
+            self.model.metadata.drop_all(bind=self.engine)
+            self.model.metadata.create_all(self.engine)
 
     def commit(self):
         """
@@ -130,7 +132,7 @@ class Store:
         objects must be of the same type (class).
 
         :param objects: A list of objects
-        :type event: List of 'Base' derived objects
+        :type event: List of model derived objects
 
         """
         self.session.add_all(objects)
@@ -222,7 +224,7 @@ class Store:
         provided by the caller
 
         :param entity: object entity (class) to read
-        :type entity: Base derived class
+        :type entity: model derived class
         :param predicate: sqlalchemy filter predicate
         :type predicate: sqlalchemy filter predicate
         :param order: Attribute to order objects by. Optional
@@ -278,7 +280,7 @@ class Store:
         predicate provided by the caller
 
         :param entity: object entity (class) to read
-        :type entity: Base derived class
+        :type entity: model derived class
         :param predicate: sqlalchemy filter predicate
         :type predicate: sqlalchemy filter predicate
         :rtype: integer
@@ -300,7 +302,7 @@ class Store:
         during sequential access.
 
         :param entity: the class for the entity that should be cached
-        :type entity: Base
+        :type entity: datamodel
         :order: the class attribute that defines the order
         :type order: string
 

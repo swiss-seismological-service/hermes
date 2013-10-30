@@ -5,7 +5,7 @@ Provides SeismicEvent, a class to represent a seismic event
 """
 
 from sqlalchemy import Column, Integer, Float, DateTime
-from datamodel.base import Base
+from datamodel import DataModel
 import location
 import collections
 
@@ -16,7 +16,7 @@ HydraulicEventData = collections.namedtuple('HydraulicEventData',
 
 
 
-class HydraulicEvent(Base):
+class HydraulicEvent(DataModel):
     """Represents a hydraulic event (change in fluxrate or pressure)
 
     :ivar date_time: Date and time when the event occurred

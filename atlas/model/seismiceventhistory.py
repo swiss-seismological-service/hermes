@@ -8,7 +8,7 @@ from eventhistory import EventHistory
 from datetime import datetime, timedelta
 import csv
 
-from datamodel.seismicevent import SeismicEvent
+from seismicevent import SeismicEvent
 from location import Location
 from PyQt4 import QtCore
 

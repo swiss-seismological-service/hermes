@@ -8,7 +8,7 @@ from eventhistory import EventHistory
 from datetime import datetime, timedelta
 import csv
 
-from datamodel.hydraulicevent import HydraulicEvent, HydraulicEventData
+from hydraulicevent import HydraulicEvent, HydraulicEventData
 from location import Location
 from PyQt4 import QtCore
 

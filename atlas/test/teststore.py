@@ -12,14 +12,17 @@ import logging
 from mock import MagicMock, call
 from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, Float, DateTime
-from datamodel.base import Base
-from datamodel.store import *
+from sqlalchemy.ext.declarative import declarative_base
+from model.store import Store, SequentialReadCache
 
 DB_FILE = 'test.sqlite'
 
+TestModel = declarative_base()
+
+
 # Data Model
 
-class EventA(Base):
+class EventA(TestModel):
     """ A dummy event class for testing """
     # ORM declarations for SQLAlchemy
     __tablename__ = 'a_events'
@@ -32,7 +35,7 @@ class EventA(Base):
         self.value = value
 
 
-class EventB(Base):
+class EventB(TestModel):
     """ A dummy event class for testing """
     # ORM declarations for SQLAlchemy
     __tablename__ = 'b_events'
@@ -54,7 +57,7 @@ class OpenStore(unittest.TestCase):
         """ We start out with an empty db """
         if os.path.exists(DB_FILE):
             os.remove(DB_FILE)
-        self.store = Store('sqlite:///' + DB_FILE)
+        self.store = Store('sqlite:///' + DB_FILE, TestModel)
 
     def tearDown(self):
         """ Close and delete the test store """
@@ -74,7 +77,7 @@ class OpenStore(unittest.TestCase):
         an_event = EventA(datetime.now(), 1)
         self.store.add([an_event])
         self.store.close()
-        self.store = Store('sqlite:///' + DB_FILE)
+        self.store = Store('sqlite:///' + DB_FILE, TestModel)
         content = self.store.read_all(EventA)
         self.assertEqual(len(content), 1)
         self.assertEqual(content[0].value, 1)
@@ -87,7 +90,7 @@ class ReadingAndWriting(unittest.TestCase):
         """ We start out with one A and two Bs """
         if os.path.exists(DB_FILE):
             os.remove(DB_FILE)
-        self.store = Store('sqlite:///' + DB_FILE)
+        self.store = Store('sqlite:///' + DB_FILE, TestModel)
         date = datetime.now()
         a_list = [EventA(date + timedelta(seconds=1), 1)]
         b_list = [EventB(date + timedelta(seconds=2), 2),
@@ -142,6 +145,61 @@ class ReadingAndWriting(unittest.TestCase):
         self.store.init_sequential_read_cache(EventB, 'date_time', 5)
         b = self.store.read_last(EventB)
         self.assertEqual(b.value, 3)
+
+
+class Purging(unittest.TestCase):
+    """ Test removing of data """
+
+    def setUp(self):
+        """ We start out with one A and two Bs """
+        if os.path.exists(DB_FILE):
+            os.remove(DB_FILE)
+        self.store = Store('sqlite:///' + DB_FILE, TestModel)
+        date = datetime.now()
+        a_list = [EventA(date + timedelta(seconds=1), 1)]
+        b_list = [EventB(date + timedelta(seconds=2), 2),
+                  EventB(date + timedelta(seconds=3), 3)]
+        self.store.add(a_list)
+        self.store.add(b_list)
+
+    def tearDown(self):
+        """ Close and delete the test store """
+        self.store.close()
+        os.remove(DB_FILE)
+
+    def test_purge_specific(self):
+        """ Test deletion of specific entity """
+        self.store.purge(EventB)
+        count_a = self.store.count(EventA)
+        count_b = self.store.count(EventB)
+        self.assertEqual(count_a, 1)
+        self.assertEqual(count_b, 0)
+
+        # Make sure the store is still functional by re-adding events
+        b_list = [EventB(datetime.now() + timedelta(seconds=2), 2)]
+        self.store.add(b_list)
+        count_b = self.store.count(EventB)
+        self.assertEqual(count_b, 1)
+
+    def test_purge_with_cache(self):
+        """ Test deletion when a read cache is present """
+        self.store.init_sequential_read_cache(EventB, order='date_time')
+        self.test_purge_specific()
+
+    def test_purge_all(self):
+        """ Test deletion of all data """
+        self.store.purge()
+        count_a = self.store.count(EventA)
+        count_b = self.store.count(EventB)
+        self.assertEqual(count_a, 0)
+        self.assertEqual(count_b, 0)
+
+        # Make sure the store is still functional by re-adding events
+        b_list = [EventB(datetime.now() + timedelta(seconds=2), 2)]
+        self.store.add(b_list)
+        count_b = self.store.count(EventB)
+        self.assertEqual(count_b, 1)
+
 
 
 class ReadCached(unittest.TestCase):
