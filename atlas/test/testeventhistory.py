@@ -31,16 +31,31 @@ class MockStore(MagicMock):
     """ A mock store class to inject into the history for testing """
 
     def __init__(self, test_content):
-        super(MockStore, self).__init__(name="StoreMock")
+        """
+        Initialize Mock store.
+
+        Provide the test content in the named argument 'test_content'
+
+        """
+        super(MockStore, self).__init__()
+        self.test_content = test_content
 
         # Read function for mock store
         def store_read(entity, index, predicate=None, order=None):
             return self.test_content[index]
 
-        self.count = Mock(return_value=len(test_content))
+        self.count = Mock(return_value=len(self.test_content))
         self.read = Mock(side_effect=store_read)
-        self.read_all = Mock(return_value=test_content)
-        self.read_last = Mock(return_value=test_content[-1])
+        self.read_all = Mock(return_value=self.test_content)
+        self.read_last = Mock(return_value=self.test_content[-1])
+
+    def _get_child_mock(self, **kw):
+        """
+        If this is not implemented, the superclass will attempt to create child
+        mocks of class MockStore which fails since it can't provide test_content
+
+        """
+        return MagicMock(**kw)
 
 
 class BasicOperation(unittest.TestCase):
@@ -60,18 +75,7 @@ class BasicOperation(unittest.TestCase):
             test_content.append(Event(self.date + timedelta(seconds=i), i))
         self.test_content = test_content
 
-        # self.mock_store = MockStore(test_content=self.test_content)
-        # Read function for mock store
-        def store_read(entity, index, predicate=None, order=None):
-            return self.test_content[index]
-
-        store = MagicMock(name="MockStore")
-        store.count = Mock(return_value=len(test_content))
-        store.read = Mock(side_effect=store_read)
-        store.read_all = Mock(return_value=test_content)
-        store.read_last = Mock(return_value=test_content[-1])
-        self.mock_store = store
-
+        self.mock_store = MockStore(test_content)
         self.history = EventHistory(self.mock_store, Event)
 
     def test_read_cache_creation(self):
