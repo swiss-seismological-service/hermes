@@ -8,14 +8,17 @@ control facilities should be hooked up in the Atlas class instead.
 
 """
 
+from datetime import datetime
+
+from PyQt4 import QtCore
+
 from model.store import Store
 from model.seismiceventhistory import SeismicEventHistory
 from model.hydrauliceventhistory import HydraulicEventHistory
 from model.datamodel import DataModel
 from forecastengine import ForecastEngine
-from simulator import Simulator
-from datetime import datetime
-from PyQt4 import QtCore
+from model.simulator import Simulator
+
 
 class AtlasCoreState:
     IDLE = 0

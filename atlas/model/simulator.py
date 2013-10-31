@@ -6,10 +6,9 @@ Simulates incoming seismic events and triggers updates on the forecast
     
 """
 
-from datamodel.seismiceventhistory import SeismicEventHistory
+from model.seismiceventhistory import SeismicEventHistory
 from PyQt4.QtCore import QTimer
 from datetime import timedelta
-import inspect
 
 
 class Simulator(object):
@@ -24,8 +23,8 @@ class Simulator(object):
 
     def __init__(self, event_history, handler):
         """
-        :param history: history of seismic events
-        :type history: SeismicEventHistory
+        :param event_history: history of seismic events
+        :type event_history: SeismicEventHistory
         :param handler: function that is called on each simulation step
             The handler function must accept three arguments:
             handler(time, event_occurred, done), where *time* is a
@@ -50,7 +49,6 @@ class Simulator(object):
         self._paused = False
         self._timer.timeout.connect(self._step)
 
-
     def start(self):
         """Starts the simulation at the time of the first event in the
         catalog.
@@ -67,16 +65,21 @@ class Simulator(object):
                                self._step)
 
     def pause(self):
+        """ Pauses the simulation. Unpause with start. """
         self._paused = True
         self._timer.stop()
 
     def stop(self):
-        """Stops the simulation"""
+        """ Stops the simulation"""
         self._paused = False
         self._stopped = True
 
-
     def _step(self):
+
+        # skip any spurious events
+        if self._paused or self._stopped:
+            return
+
         event_occurred = False
         simulation_ended = False
         self._simulation_time += timedelta(seconds=self.step_time)
@@ -89,7 +92,7 @@ class Simulator(object):
             except:
                 self._next_event = None
 
-        if self._stopped or self._next_event is None:
+        if self._next_event is None:
             simulation_ended = True
 
         self._handler(self._simulation_time, event_occurred, simulation_ended)
