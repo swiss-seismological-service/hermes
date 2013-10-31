@@ -27,11 +27,11 @@ class BasicOperation(unittest.TestCase):
     def test_csv_import(self):
         """ Test if the csv import works as expected """
         base_date = datetime(2013, 3, 15)
-        e1 = SeismicEvent(base_date + timedelta(days=0.17), 4.0,
+        e1 = SeismicEvent(base_date + timedelta(days=0.17), 0.4,
                           Location(7.5, 47.5, 0))
-        e2 = SeismicEvent(base_date + timedelta(days=0.23), 8.0,
+        e2 = SeismicEvent(base_date + timedelta(days=0.23), 0.8,
                           Location(7.6, 47.6, 0))
-        e3 = SeismicEvent(base_date + timedelta(days=0.26), 4.5,
+        e3 = SeismicEvent(base_date + timedelta(days=0.26), 0.45,
                           Location(7.7, 47.7, 0))
         expected = [e1, e2, e3]
 

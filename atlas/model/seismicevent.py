@@ -58,10 +58,18 @@ class SeismicEvent(DataModel):
     def __repr__(self):
         return "<SeismicEvent('%s' @ '%s')>" % (self.magnitude, self.date_time)
 
-    def __cmp__(self, other):
-        return self.date_time == other.date_time and \
-               self.magnitude == other.magnitude and \
-               self.latitude  == other.latitude  and \
-               self.longitude == other.longitude and \
-               self.depth     == other.depth
+    def __eq__(self, other):
+        if isinstance(other, SeismicEvent):
+            return (self.date_time == other.date_time and
+                    self.magnitude == other.magnitude and
+                    self.latitude == other.latitude and
+                    self.longitude == other.longitude and
+                    self.depth == other.depth)
+        return NotImplemented
 
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        else:
+            return not result
