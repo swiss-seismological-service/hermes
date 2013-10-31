@@ -30,7 +30,7 @@ class Event():
 class MockStore(MagicMock):
     """ A mock store class to inject into the history for testing """
 
-    def __init__(self, test_content):
+    def __init__(self, test_content=None):
         """
         Initialize Mock store.
 
@@ -39,6 +39,9 @@ class MockStore(MagicMock):
         """
         super(MockStore, self).__init__()
         self.test_content = test_content
+
+        if test_content is None:
+            return
 
         # Read function for mock store
         def store_read(entity, index, predicate=None, order=None):
