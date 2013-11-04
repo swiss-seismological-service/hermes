@@ -35,7 +35,8 @@ class BasicOperation(unittest.TestCase):
                           Location(7.7, 47.7, 0))
         expected = [e1, e2, e3]
 
-        self.history.import_from_csv('resources/test_catalog.csv', base_date)
+        self.history.import_from_csv('resources/test_catalog.csv',
+                                     base_date=base_date)
         self.mock_store.purge.assert_called_once_with(SeismicEvent)
         self.mock_store.add.assert_called_once_with(expected)
 
