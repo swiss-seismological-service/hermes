@@ -65,8 +65,6 @@ class AtlasCore(QtCore.QObject):
         """
         Replays the events from the seismic history
 
-        :param speed: simulation speed (factor)
-
         """
         self.simulator.start()
         self.state = AtlasCoreState.SIMULATING

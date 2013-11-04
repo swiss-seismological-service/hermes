@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Simulates forcasting
+Simulates forecasting
 
 Simulates incoming seismic events and triggers updates on the forecast
     
@@ -83,6 +83,7 @@ class Simulator(object):
         event_occurred = False
         simulation_ended = False
         self._simulation_time += timedelta(seconds=self.step_time)
+
         # check if one or more event occurred during the simulation step
         while self._next_event and \
                 self._next_event.date_time < self._simulation_time:
