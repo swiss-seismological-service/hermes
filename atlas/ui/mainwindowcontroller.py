@@ -6,10 +6,9 @@ Controller module for the main window
 
 from PyQt4 import QtGui
 from views.ui_mainwindow import Ui_MainWindow
-from models.catalogmodel import CatalogModel
+from models.seismicdatamodel import SeismicDataModel
 from datetime import datetime
-from atlascore import AtlasCore, AtlasCoreState
-import datamodel.seismiceventhistory
+from atlascore import AtlasCoreState
 import os
 
 import numpy as np
@@ -36,8 +35,11 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.setupUi(self)
 
         # Hook up the menu
-        self.ui.action_Import.triggered.connect(self.import_seismic_catalog)
-        self.ui.actionView_Data.triggered.connect(self.view_catalog_data)
+        self.ui.actionImport_Seismic_Data.triggered.connect(
+            self.import_seismic_data)
+        self.ui.actionImport_Hydraulic_Data.triggered.connect(
+            self.import_hydraulic_data)
+        self.ui.actionView_Data.triggered.connect(self.view_seismic_data)
         self.ui.actionStart_Simulation.triggered.connect(self.start_simulation)
         self.ui.actionPause_Simulation.triggered.connect(self.pause_simulation)
         self.ui.actionStop_Simulation.triggered.connect(self.stop_simulation)
@@ -49,30 +51,46 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.simulationCheckBox.stateChanged.connect(self.sim_state_changed)
         self.ui.speedBox.valueChanged.connect(self.sim_speed_changed)
 
-
         # Hook up model change signals
         self.atlas_core.state_changed.connect(self.handle_core_state_change)
-        self.atlas_core.event_history.history_changed.connect(self.handle_history_change)
-        self.atlas_core.project_time_changed.connect(self.handle_project_time_change)
+        self.atlas_core.seismic_history.history_changed.connect(
+            self.handle_seismic_history_change)
+        self.atlas_core.hydraulic_history.history_changed.connect(
+            self.handle_hydraulic_history_change)
+        self.atlas_core.project_time_changed.connect(
+            self.handle_project_time_change)
 
-        self._replot_catalog()
+        self._replot_seismic_data()
+        self._replot_hydraulic_data()
         self.update_status()
         self.update_controls()
 
     # Menu Actions
 
-    def import_seismic_catalog(self):
+    def import_seismic_data(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.getOpenFileName(self, 'Open catalog file', home)
+        path = QtGui.QFileDialog.getOpenFileName(None,
+                                                 'Open seismic data file',
+                                                 home)
 
         if path:
-            self.atlas_core.event_history.import_from_csv(path)
+            self.atlas_core.seismic_history.import_from_csv(path)
             self.statusBar().showMessage('Ready')
-            self.ui.label.setText('Catalog: ' + path)
 
-    def view_catalog_data(self):
+    def import_hydraulic_data(self):
+        home = os.path.expanduser("~")
+        path = QtGui.QFileDialog.getOpenFileName(None,
+                                                 'Open hydraulic data file',
+                                                 home)
+
+        if path:
+            date_format = '%d.%m.%YT%H:%M:%S'
+            self.atlas_core.hydraulic_history.import_from_csv(path, date_format)
+            self.statusBar().showMessage('Ready')
+
+    def view_seismic_data(self):
         self.table_view = QtGui.QTableView()
-        model = CatalogModel(self.engine.event_history)
+        model = SeismicDataModel(self.engine.seismic_history)
         self.table_view.setModel(model)
         self.table_view.show()
 
@@ -89,7 +107,8 @@ class MainWindowController(QtGui.QMainWindow):
 
     def stop_simulation(self):
         self.atlas_core.stop_simulation()
-        self._replot_catalog()
+        self._replot_seismic_data()
+        self._replot_hydraulic_data()
 
 
     # Button Actions
@@ -122,12 +141,20 @@ class MainWindowController(QtGui.QMainWindow):
 
     # Qt Signal Slots
 
-    def handle_history_change(self, dict):
+    def handle_seismic_history_change(self, dict):
         time = dict.get('simulation_time')
         if time is None:
-            self._replot_catalog()
+            self._replot_seismic_data()
         else:
-            self._replot_catalog(update=True, max_time=time)
+            self._replot_seismic_data(update=True, max_time=time)
+        self.update_status()
+
+    def handle_hydraulic_history_change(self, dict):
+        time = dict.get('simulation_time')
+        if time is None:
+            self._replot_hydraulic_data()
+        else:
+            self._replot_hydraulic_data(update=True, max_time=time)
         self.update_status()
 
     def handle_core_state_change(self, state):
@@ -189,35 +216,36 @@ class MainWindowController(QtGui.QMainWindow):
         time = core.project_time
         speed = self.atlas_core.simulator.speed
         if core.state == AtlasCoreState.SIMULATING:
-            event = self.atlas_core.event_history.latest_event(time)
+            event = self.atlas_core.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
             self.ui.projectTimeLabel.setText(self.displayed_project_time.ctime())
             self.ui.lastEventLabel.setText(str(event))
         elif core.state == AtlasCoreState.FORECASTING:
-            event = self.atlas_core.event_history.latest_event()
+            event = self.atlas_core.seismic_history.latest_event()
             self.ui.coreStatusLabel.setText('Forecasting')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
         elif core.state == AtlasCoreState.PAUSED:
-            event = self.atlas_core.event_history.latest_event(time)
+            event = self.atlas_core.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Paused')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
         else:
-            num_events = len(core.event_history)
+            num_events = len(core.seismic_history)
             self.ui.coreStatusLabel.setText('Idle')
             self.ui.projectTimeLabel.setText('-')
             self.ui.lastEventLabel.setText('-')
             self.statusBar().showMessage(str(num_events) +
-                                         ' events in catalog')
+                                         ' events in seismic catalog')
 
     # Plot Helpers
 
     def _clear_plots(self):
-        self.ui.catalog_plot.plot.setData()
+        self.ui.seismic_data_plot.plot.setData()
+        self.ui.hydraulic_data_plot.plot.setData()
 
-    def _replot_catalog(self, update=False, max_time=None):
-        """Plot the data in the catalog
+    def _replot_seismic_data(self, update=False, max_time=None):
+        """Plot the data in the seismic catalog
 
         :param max_time: if not None, plot catalog up to max_time only
         :param update: If false (default) the entire catalog is replotted
@@ -225,11 +253,30 @@ class MainWindowController(QtGui.QMainWindow):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.atlas_core.event_history
+        events = self.atlas_core.seismic_history.get_all_events()
         if max_time:
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events if e.date_time < max_time]
         else:
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events]
-        self.ui.catalog_plot.plot.setData(pos=data)
+        self.ui.seismic_data_plot.plot.setData(pos=data)
+
+    def _replot_hydraulic_data(self, update=False, max_time=None):
+        """Plot the data in the hydraulic catalog
+
+        :param max_time: if not None, plot catalog up to max_time only
+        :param update: If false (default) the entire catalog is replotted
+        :type update: bool
+
+        """
+        epoch = datetime(1970, 1, 1)
+        events = self.atlas_core.hydraulic_history.get_all_events()
+        if max_time is None:
+            max_time = datetime.max
+
+        data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
+                for e in events if e.date_time < max_time]
+
+        x, y = map(list, zip(*data))
+        self.ui.hydraulic_data_plot.plot.setData(x, y)

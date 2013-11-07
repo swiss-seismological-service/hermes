@@ -9,7 +9,7 @@ Serves up seismic catalog data for Qt
 from PyQt4 import QtCore
 
 
-class CatalogModel(QtCore.QAbstractTableModel):
+class SeismicDataModel(QtCore.QAbstractTableModel):
     """ Represents the seismic catalog in Qt
 
         :ivar _headers: column headers

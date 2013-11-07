@@ -47,7 +47,8 @@ class SeismicEventHistory(EventHistory):
         """
         self.store.purge(self.entity)
         with open(path, 'rb') as csv_file:
-            csv.register_dialect('magcat', delimiter=' ', skipinitialspace=True)
+            csv.register_dialect('magcat', delimiter=' ',
+                                 skipinitialspace=True)
             reader = csv.DictReader(csv_file, dialect='magcat')
             events = []
             for entry in reader:

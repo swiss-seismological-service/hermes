@@ -11,7 +11,8 @@ from datetime import time, datetime, timedelta
 
 
 class DateAxis(pg.AxisItem):
-    """An AxisItem that displays dates
+    """
+    An AxisItem that displays dates
 
     The display format is adjusted automatically depending on the date range
     given in values.
@@ -46,7 +47,7 @@ class DateAxis(pg.AxisItem):
 
 
 class TimePlotWidget(pg.PlotWidget):
-    """ A plot widget where the x-Axis is a DateAxis"""
+    """ A plot widget where the x-Axis is a DateAxis """
 
     def __init__(self, parent=None, **kargs):
         axis = DateAxis(orientation='bottom')
@@ -55,7 +56,8 @@ class TimePlotWidget(pg.PlotWidget):
 
 
 class SeismicityPlotWidget(TimePlotWidget):
-    """pyqtgraph PlotWidget configured to display seismic data
+    """
+    pyqtgraph PlotWidget configured to display seismic data
 
     :ivar plot: :class:`ScatterPlotItem` that holds the scatter plot data
 
@@ -65,5 +67,21 @@ class SeismicityPlotWidget(TimePlotWidget):
         super(SeismicityPlotWidget, self).__init__(parent, **kargs)
         self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
                                        brush=pg.mkBrush(255, 255, 255, 120))
+        self.setMouseEnabled(y=False)
+        self.addItem(self.plot)
+
+
+class HydraulicsPlotWidget(TimePlotWidget):
+    '''
+    pyqtgraph PlotWidget configured to display hydraulic data
+
+    :ivar plot: :class:`PlotCurveItem` that holds the line plot data
+
+    '''
+    def __init__(self, parent=None, **kargs):
+        super(HydraulicsPlotWidget, self).__init__(parent, **kargs)
+        #self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
+        #                               brush=pg.mkBrush(255, 255, 255, 120))
+        self.plot = pg.PlotCurveItem()
         self.setMouseEnabled(y=False)
         self.addItem(self.plot)

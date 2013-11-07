@@ -296,7 +296,7 @@ class Store:
 
     # Sequential Read Cache Management
 
-    def init_sequential_read_cache(self, entity, order, size=100):
+    def init_sequential_read_cache(self, entity, order, size=10000):
         """
         Creates and subsequently manages a read cache for better performance
         during sequential access.

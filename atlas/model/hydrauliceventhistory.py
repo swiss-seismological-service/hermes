@@ -48,7 +48,7 @@ class HydraulicEventHistory(EventHistory):
         """
         self.store.purge(self.entity)
         with open(path, 'rb') as csv_file:
-            csv.register_dialect('hydr_data', delimiter=' ',
+            csv.register_dialect('hydr_data', delimiter='\t',
                                  skipinitialspace=True)
             reader = csv.DictReader(csv_file, dialect='hydr_data')
             events = []
@@ -60,10 +60,10 @@ class HydraulicEventHistory(EventHistory):
                     time_struct = strptime(entry['date'], date_format)
                     date_time = datetime.fromtimestamp(mktime(time_struct))
                 event = HydraulicEvent(date_time,
-                                       flow_dh=float(entry['flow_dh']),
-                                       flow_xt=float(entry['flow_xt']),
-                                       pr_dh=float(entry['pr_dh']),
-                                       pr_xt=float(entry['pr_xt']))
+                                       flow_dh=float(entry.get('flow_dh') or 0),
+                                       flow_xt=float(entry.get('flow_xt') or 0),
+                                       pr_dh=float(entry.get('pr_dh') or 0),
+                                       pr_xt=float(entry.get('pr_xt') or 0))
                 events.append(event)
         self.store.add(events)
         self._emit_change_signal({})

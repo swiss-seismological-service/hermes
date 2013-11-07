@@ -47,6 +47,9 @@ class EventHistory(QtCore.QObject):
         self.store = store
         self.entity = entity
 
+    def get_all_events(self):
+        return self.store.read_all(self.entity)
+
     def get_events_between(self, start_date, end_date):
         predicate = (self.entity.date_time >= start_date,
                      self.entity.date_time <= end_date)

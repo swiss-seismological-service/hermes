@@ -32,7 +32,7 @@ class AtlasCore(QtCore.QObject):
 
     Instantiation this class bootstraps the entire application
 
-    :ivar event_history: Provides the history of seismic events
+    :ivar seismic_history: Provides the history of seismic events
 
     """
 
@@ -50,10 +50,10 @@ class AtlasCore(QtCore.QObject):
         """
         super(AtlasCore, self).__init__()
         store = Store('sqlite:///data.sqlite', DataModel)
-        self.event_history = SeismicEventHistory(store)
+        self.seismic_history = SeismicEventHistory(store)
         self.hydraulic_history = HydraulicEventHistory(store)
         self.forecast_engine = ForecastEngine()
-        self.simulator = Simulator(self.event_history, self.simulation_handler)
+        self.simulator = Simulator(self.seismic_history, self.simulation_handler)
         self.project_time = datetime.now()
         self.state = AtlasCoreState.IDLE
         self._last_time_change_notification = datetime.now()
@@ -87,7 +87,7 @@ class AtlasCore(QtCore.QObject):
         """
 
     def quit(self):
-        self.event_history.store.close()
+        self.seismic_history.store.close()
 
 
     # Simulation
@@ -104,4 +104,4 @@ class AtlasCore(QtCore.QObject):
 
         if event_occurred:
             change_dict = {'simulation_time': simulation_time}
-            self.event_history.history_changed.emit(change_dict)
+            self.seismic_history.history_changed.emit(change_dict)

@@ -30,7 +30,7 @@
      <string>Seismicity</string>
     </property>
    </widget>
-   <widget class="QFrame" name="catalog_frame">
+   <widget class="QFrame" name="seismic_data_frame">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -45,7 +45,7 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="SeismicityPlotWidget" name="catalog_plot" native="true">
+    <widget class="SeismicityPlotWidget" name="seismic_data_plot" native="true">
      <property name="geometry">
       <rect>
        <x>-1</x>
@@ -296,7 +296,7 @@
      </property>
     </widget>
    </widget>
-   <widget class="QFrame" name="injection_frame">
+   <widget class="QFrame" name="hydraulic_data_frame">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -311,7 +311,7 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="SeismicityPlotWidget" name="injection_plot" native="true">
+    <widget class="HydraulicsPlotWidget" name="hydraulic_data_plot" native="true">
      <property name="geometry">
       <rect>
        <x>-1</x>
@@ -328,7 +328,7 @@
      </property>
     </widget>
    </widget>
-   <widget class="QLabel" name="injectionTitleLabel">
+   <widget class="QLabel" name="hydraulicsTitleLabel">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -351,11 +351,12 @@
      <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu_Catalog">
+   <widget class="QMenu" name="menu_Data">
     <property name="title">
-     <string>&amp;Catalog</string>
+     <string>&amp;Data</string>
     </property>
-    <addaction name="action_Import"/>
+    <addaction name="actionImport_Seismic_Data"/>
+    <addaction name="actionImport_Hydraulic_Data"/>
     <addaction name="separator"/>
     <addaction name="actionView_Data"/>
    </widget>
@@ -373,7 +374,7 @@
     </property>
     <addaction name="actionShow_GR"/>
    </widget>
-   <addaction name="menu_Catalog"/>
+   <addaction name="menu_Data"/>
    <addaction name="menuSimulation"/>
    <addaction name="menuWindow"/>
   </widget>
@@ -405,9 +406,9 @@
    <addaction name="actionShow_GR"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_Import">
+  <action name="actionImport_Seismic_Data">
    <property name="text">
-    <string>&amp;Import...</string>
+    <string>&amp;Import Seismic Data...</string>
    </property>
   </action>
   <action name="actionView_Data">
@@ -439,11 +440,22 @@
     <string>GR Relation</string>
    </property>
   </action>
+  <action name="actionImport_Hydraulic_Data">
+   <property name="text">
+    <string>Import Hydraulic Data...</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
    <class>SeismicityPlotWidget</class>
+   <extends>QWidget</extends>
+   <header>plots</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>HydraulicsPlotWidget</class>
    <extends>QWidget</extends>
    <header>plots</header>
    <container>1</container>

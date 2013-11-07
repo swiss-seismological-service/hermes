@@ -1,0 +1,14 @@
+Data Formats
+
+
+
+basel_hydr_1sec.dat
+
+Date, Pressure Downhole [bar], Temp. Downhole [°C], Flow Downhole [l/min], Pressure X-Mas Tree [bar], Temp. X-Mas Tree [°C], Flow X-Mas Tree [l/min]
+
+
+
+basel_hydr_1min.dat
+
+% DATUM	ZEIT	PressAnnular	PressXTree	PressDownhole	FlowIN	   Volcum
+%				[ bar ]	        [ bar ]     [ kPa ]         [ l/min ]  [ l ]
