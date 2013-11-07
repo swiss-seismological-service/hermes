@@ -60,6 +60,12 @@ class MainWindowController(QtGui.QMainWindow):
         self.atlas_core.project_time_changed.connect(
             self.handle_project_time_change)
 
+        # Link the x axis of the seismicity view with the x axis of the
+        # hydraulics view
+        h_view = self.ui.hydraulic_data_plot.plotItem.getViewBox()
+        s_view = self.ui.seismic_data_plot.plotItem.getViewBox()
+        h_view.setXLink(s_view)
+
         self._replot_seismic_data()
         self._replot_hydraulic_data()
         self.update_status()
@@ -166,6 +172,7 @@ class MainWindowController(QtGui.QMainWindow):
     def handle_project_time_change(self, time):
         self.displayed_project_time = time
         self.update_status()
+
 
     # Control Updates
 
