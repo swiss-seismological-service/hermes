@@ -93,15 +93,5 @@ class AtlasCore(QtCore.QObject):
     # Simulation
 
     def simulation_handler(self, simulation_time, event_occurred, simulation_ended):
-
         self.project_time = simulation_time
-        now = datetime.now()
-        t_elapsed = now - self._last_time_change_notification
-
-        if t_elapsed.total_seconds() > 1:
-            self.project_time_changed.emit(simulation_time)
-            self._last_time_change_notification = now
-
-        #if event_occurred:
-        #    change_dict = {'simulation_time': simulation_time}
-        #    self.seismic_history.history_changed.emit(change_dict)
+        self.project_time_changed.emit(simulation_time)

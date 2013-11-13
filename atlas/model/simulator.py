@@ -41,13 +41,14 @@ class Simulator(object):
         self._history_iterator = None
         self._next_event = None
         self._simulation_time = 0
-        self.step_time = 1
-        self.speed = 1
+        self.step_time = 50            # simulation step in ms
+        self.speed = 1000
 
         self._timer = QTimer()
+        self._timer.setInterval(self.step_time)
         self._stopped = False
         self._paused = False
-        self._timer.timeout.connect(self._step)
+        self._timer.timeout.connect(self._do_step)
 
     def start(self):
         """Starts the simulation at the time of the first event in the
@@ -61,8 +62,7 @@ class Simulator(object):
             self._next_event = self._history_iterator.next()
             self._stopped = False
         self._paused = False
-        self._timer.singleShot(float(self.step_time) / self.speed * 1000,
-                               self._step)
+        self._timer.start()
 
     def pause(self):
         """ Pauses the simulation. Unpause with start. """
@@ -73,8 +73,9 @@ class Simulator(object):
         """ Stops the simulation"""
         self._paused = False
         self._stopped = True
+        self._timer.stop()
 
-    def _step(self):
+    def _do_step(self):
 
         # skip any spurious events on start stop
         if self._paused or self._stopped:
@@ -82,7 +83,8 @@ class Simulator(object):
 
         event_occurred = False
         simulation_ended = False
-        self._simulation_time += timedelta(seconds=self.step_time)
+        dt = self.step_time * self.speed / 1000
+        self._simulation_time += timedelta(seconds=dt)
 
         # check if one or more event occurred during the simulation step
         while self._next_event and \
@@ -98,7 +100,6 @@ class Simulator(object):
 
         self._handler(self._simulation_time, event_occurred, simulation_ended)
 
-        if not simulation_ended:
-            self._timer.singleShot(float(self.step_time) / self.speed * 1000,
-                                   self._step)
+        if simulation_ended:
+            self.stop()
 
