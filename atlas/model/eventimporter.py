@@ -36,6 +36,8 @@ class EventImporter:
         Checks whether the file contains relative dates and the importer expects
         a base date to parse the file.
 
+        Side effect: rewinds the file when called for the first time
+
         :param path: path to the csv file
         :type path: string
 

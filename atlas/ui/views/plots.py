@@ -74,7 +74,7 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
         self.addItem(self.v_line)
 
-    def set_time_pos(self, t):
+    def set_marker_pos(self, t):
         self.v_line.setPos(t)
 
 
@@ -96,5 +96,5 @@ class HydraulicsPlotWidget(TimePlotWidget):
         self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
         self.addItem(self.v_line)
 
-    def set_time_pos(self, t):
+    def set_marker_pos(self, t):
         self.v_line.setPos(t)

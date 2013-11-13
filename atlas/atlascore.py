@@ -102,6 +102,6 @@ class AtlasCore(QtCore.QObject):
             self.project_time_changed.emit(simulation_time)
             self._last_time_change_notification = now
 
-        if event_occurred:
-            change_dict = {'simulation_time': simulation_time}
-            self.seismic_history.history_changed.emit(change_dict)
+        #if event_occurred:
+        #    change_dict = {'simulation_time': simulation_time}
+        #    self.seismic_history.history_changed.emit(change_dict)

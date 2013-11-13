@@ -76,7 +76,7 @@ class Simulator(object):
 
     def _step(self):
 
-        # skip any spurious events
+        # skip any spurious events on start stop
         if self._paused or self._stopped:
             return
 

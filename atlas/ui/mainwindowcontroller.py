@@ -72,6 +72,7 @@ class MainWindowController(QtGui.QMainWindow):
         self._replot_hydraulic_data()
         self.update_status()
         self.update_controls()
+        self._reset_plot_marker()
 
     # Menu Actions
 
@@ -93,8 +94,7 @@ class MainWindowController(QtGui.QMainWindow):
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
 
-    @staticmethod
-    def _import_file_to_history(path, history, delimiter=' '):
+    def _import_file_to_history(self, path, history, delimiter=' '):
         with open(path, 'rb') as csv_file:
             importer = EventImporter(csv_file, delimiter=delimiter)
             if importer.expects_base_date:
@@ -106,6 +106,9 @@ class MainWindowController(QtGui.QMainWindow):
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
 
+        first_event = history[0]
+        self._set_plot_marker_time(first_event.date_time)
+
     def view_seismic_data(self):
         self.table_view = QtGui.QTableView()
         model = SeismicDataModel(self.engine.seismic_history)
@@ -115,7 +118,7 @@ class MainWindowController(QtGui.QMainWindow):
     # ... Simulation
 
     def start_simulation(self):
-        self._clear_plots()
+        #self._clear_plots()
         speed = self.ui.speedBox.value()
         self.atlas_core.simulator.speed = speed
         self.atlas_core.start_simulation()
@@ -125,8 +128,9 @@ class MainWindowController(QtGui.QMainWindow):
 
     def stop_simulation(self):
         self.atlas_core.stop_simulation()
-        self._replot_seismic_data()
-        self._replot_hydraulic_data()
+        #self._replot_seismic_data()
+        #self._replot_hydraulic_data()
+        self._reset_plot_marker()
 
 
     # Button Actions
@@ -183,6 +187,7 @@ class MainWindowController(QtGui.QMainWindow):
 
     def handle_project_time_change(self, time):
         self.displayed_project_time = time
+        self._set_plot_marker_time(time)
         self.update_status()
 
 
@@ -258,6 +263,23 @@ class MainWindowController(QtGui.QMainWindow):
                                          ' events in seismic catalog')
 
     # Plot Helpers
+
+    def _set_plot_marker_pos(self, pos):
+        self.ui.seismic_data_plot.set_marker_pos(pos)
+        self.ui.hydraulic_data_plot.set_marker_pos(pos)
+
+    def _set_plot_marker_time(self, time):
+        epoch = datetime(1970, 1, 1)
+        pos = (time - epoch).total_seconds()
+        self._set_plot_marker_pos(pos)
+
+    def _reset_plot_marker(self):
+        s_bounds = self.ui.seismic_data_plot.plot.dataBounds(0)
+        h_bounds = self.ui.hydraulic_data_plot.plot.dataBounds(0)
+        t0 = min(min(h_bounds, s_bounds))
+        self._set_plot_marker_pos(t0)
+        vb = self.ui.seismic_data_plot.plot.getViewBox()
+        vb.setXRange(t0, t0 + 7*24*3600)
 
     def _clear_plots(self):
         self.ui.seismic_data_plot.plot.setData()
