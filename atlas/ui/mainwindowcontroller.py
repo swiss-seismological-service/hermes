@@ -6,6 +6,8 @@ Controller module for the main window
 
 from PyQt4 import QtGui
 from views.ui_mainwindow import Ui_MainWindow
+from model.eventimporter import EventImporter
+import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
 from datetime import datetime
 from atlascore import AtlasCoreState
@@ -78,21 +80,31 @@ class MainWindowController(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open seismic data file',
                                                  home)
-
+        history = self.atlas_core.seismic_history
         if path:
-            self.atlas_core.seismic_history.import_from_csv(path)
-            self.statusBar().showMessage('Ready')
+            self._import_file_to_history(path, history)
 
     def import_hydraulic_data(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open hydraulic data file',
                                                  home)
-
+        history = self.atlas_core.hydraulic_history
         if path:
-            date_format = '%d.%m.%YT%H:%M:%S'
-            self.atlas_core.hydraulic_history.import_from_csv(path, date_format)
-            self.statusBar().showMessage('Ready')
+            self._import_file_to_history(path, history, delimiter='\t')
+
+    @staticmethod
+    def _import_file_to_history(path, history, delimiter=' '):
+        with open(path, 'rb') as csv_file:
+            importer = EventImporter(csv_file, delimiter=delimiter)
+            if importer.expects_base_date:
+                date, accepted = helpers.DateDialog.get_date_time()
+                if not accepted:
+                    return
+                importer.base_date = date
+            else:
+                importer.date_format = '%d.%m.%YT%H:%M:%S'
+            history.import_events(importer)
 
     def view_seismic_data(self):
         self.table_view = QtGui.QTableView()

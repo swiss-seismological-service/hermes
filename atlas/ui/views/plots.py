@@ -70,6 +70,13 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.setMouseEnabled(y=False)
         self.addItem(self.plot)
 
+        # Current time indicator (vertical line)
+        self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
+        self.addItem(self.v_line)
+
+    def set_time_pos(self, t):
+        self.v_line.setPos(t)
+
 
 class HydraulicsPlotWidget(TimePlotWidget):
     '''
@@ -85,3 +92,9 @@ class HydraulicsPlotWidget(TimePlotWidget):
         self.plot = pg.PlotCurveItem()
         self.setMouseEnabled(y=False)
         self.addItem(self.plot)
+
+        self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
+        self.addItem(self.v_line)
+
+    def set_time_pos(self, t):
+        self.v_line.setPos(t)

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Mon Nov  4 17:37:08 2013
+# Created: Tue Nov 12 10:54:31 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -199,7 +199,7 @@ class Ui_MainWindow(object):
         self.projectTimeLabel.setText(_translate("MainWindow", "-", None))
         self.lastEventLabel.setText(_translate("MainWindow", "-", None))
         self.nextForecastLabel.setText(_translate("MainWindow", "-", None))
-        self.hydraulicsTitleLabel.setText(_translate("MainWindow", "Injection", None))
+        self.hydraulicsTitleLabel.setText(_translate("MainWindow", "Hydraulics", None))
         self.menu_Data.setTitle(_translate("MainWindow", "&Data", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
         self.menuWindow.setTitle(_translate("MainWindow", "Window", None))
