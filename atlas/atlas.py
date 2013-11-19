@@ -8,31 +8,57 @@ the GUI and the Atlas core application).
 """
 
 import sys
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 from ui.mainwindowcontroller import MainWindowController
 from atlascore import AtlasCore
 
 
-class Atlas(object):
+class Atlas(QtCore.QObject):
     """
     Top level application object
 
+    Emits the app_launched signal as soon as the program has started (i.e.
+    as soon as the event loop becomes active)
+
     """
 
-    def launch(self):
+    # Signals
+    app_launched = QtCore.pyqtSignal()
+
+    def __init__(self):
         """
-        Launches Atlas i.s.
+        Instantiates the Atlas core and the Qt app (run loop) and
+        wires the GUI.
 
-        Instantiates the Atlas core and connects the GUI. This function does
-        not return until the program quits.
+        """
+        super(Atlas, self).__init__()
+        self.atlas_core = AtlasCore()
+        self.qt_app = QtGui.QApplication(sys.argv)
+        self.main_window = MainWindowController(self)
+        self.app_launched.connect(self.on_app_launched)
+
+    def run(self):
+        """
+        Launches and runs Atlas i.s.
+
+        The app launch signal will be delivered as soon as the event loop
+        starts (which happens in exec_(). This function does not return until
+        the app exits.
 
         """
 
-        # Start the core application
-        atlas_core = AtlasCore()
+        self.main_window.show()
+        QtCore.QTimer.singleShot(0, self._emit_app_launched)
+        sys.exit(self.qt_app.exec_())
 
-        # Create and start the user interface
-        app = QtGui.QApplication(sys.argv)
-        window = MainWindowController(atlas_core)
-        window.show()
-        sys.exit(app.exec_())
+    def on_app_launched(self):
+        """
+        Start the core after the app has finished launching and the event loop
+        is running
+
+        """
+
+        self.atlas_core.start()
+
+    def _emit_app_launched(self):
+        self.app_launched.emit()

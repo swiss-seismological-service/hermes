@@ -11,6 +11,7 @@ import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
 from datetime import datetime
 from atlascore import AtlasCoreState
+from ui.views.plots import DisplayRange
 import os
 
 import numpy as np
@@ -23,14 +24,14 @@ class MainWindowController(QtGui.QMainWindow):
 
     """
 
-    def __init__(self, atlas_core):
+    def __init__(self, atlas):
         QtGui.QMainWindow.__init__(self)
 
         # Project time as displayed in status bar
-        self.displayed_project_time = None
+        self.displayed_project_time = datetime.now()
 
-        # A reference to the engine (business logic)
-        self.atlas_core = atlas_core
+        # Keep a reference to the engine (business logic)
+        self.atlas_core = atlas.atlas_core
 
         # Setup the user interface
         self.ui = Ui_MainWindow()
@@ -54,13 +55,14 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.speedBox.valueChanged.connect(self.sim_speed_changed)
 
         # Hook up model change signals
-        self.atlas_core.state_changed.connect(self.handle_core_state_change)
+        atlas.app_launched.connect(self.on_app_launch)
+        self.atlas_core.state_changed.connect(self.on_core_state_change)
         self.atlas_core.seismic_history.history_changed.connect(
-            self.handle_seismic_history_change)
+            self.on_seismic_history_change)
         self.atlas_core.hydraulic_history.history_changed.connect(
-            self.handle_hydraulic_history_change)
+            self.on_hydraulic_history_change)
         self.atlas_core.project_time_changed.connect(
-            self.handle_project_time_change)
+            self.on_project_time_change)
 
         # Link the x axis of the seismicity view with the x axis of the
         # hydraulics view
@@ -68,11 +70,52 @@ class MainWindowController(QtGui.QMainWindow):
         s_view = self.ui.seismic_data_plot.plotItem.getViewBox()
         h_view.setXLink(s_view)
 
+    # Qt Signal Slots
+
+    def on_app_launch(self):
         self._replot_seismic_data()
         self._replot_hydraulic_data()
         self.update_status()
         self.update_controls()
-        self._reset_plot_marker()
+        self.ui.seismic_data_plot.zoom(display_range=DisplayRange.WEEK)
+
+    def on_seismic_history_change(self, dict):
+        time = dict.get('simulation_time')
+        if time is None:
+            self._replot_seismic_data()
+        else:
+            self._replot_seismic_data(update=True, max_time=time)
+        self.update_status()
+
+    def on_hydraulic_history_change(self, dict):
+        time = dict.get('simulation_time')
+        if time is None:
+            self._replot_hydraulic_data()
+        else:
+            self._replot_hydraulic_data(update=True, max_time=time)
+        self.update_status()
+
+    def on_core_state_change(self, state):
+        self.update_controls()
+        if self.atlas_core.state == AtlasCoreState.SIMULATING:
+            self.displayed_project_time = self.atlas_core.project_time
+        self.update_status()
+
+    def on_project_time_change(self, time):
+        dt = (time - self.displayed_project_time).total_seconds()
+        self.displayed_project_time = time
+
+        # we do a more efficient relative change if the change is not too big
+        if abs(dt) > self.ui.seismic_data_plot.display_range:
+            epoch = datetime(1970, 1, 1)
+            pos = (time - epoch).total_seconds()
+            self.ui.seismic_data_plot.marker_pos = pos
+            self.ui.hydraulic_data_plot.marker_pos = pos
+            self.ui.seismic_data_plot.zoom_to_marker()
+        else:
+            self.ui.seismic_data_plot.advance_time(dt)
+            self.ui.hydraulic_data_plot.advance_time(dt)
+        self.update_status()
 
     # Menu Actions
 
@@ -106,9 +149,6 @@ class MainWindowController(QtGui.QMainWindow):
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
 
-        first_event = history[0]
-        self._set_plot_marker_time(first_event.date_time)
-
     def view_seismic_data(self):
         self.table_view = QtGui.QTableView()
         model = SeismicDataModel(self.engine.seismic_history)
@@ -118,7 +158,6 @@ class MainWindowController(QtGui.QMainWindow):
     # ... Simulation
 
     def start_simulation(self):
-        #self._clear_plots()
         speed = self.ui.speedBox.value()
         self.atlas_core.simulator.speed = speed
         self.atlas_core.start_simulation()
@@ -128,10 +167,6 @@ class MainWindowController(QtGui.QMainWindow):
 
     def stop_simulation(self):
         self.atlas_core.stop_simulation()
-        #self._replot_seismic_data()
-        #self._replot_hydraulic_data()
-        self._reset_plot_marker()
-
 
     # Button Actions
 
@@ -159,37 +194,6 @@ class MainWindowController(QtGui.QMainWindow):
     def sim_speed_changed(self):
         speed = self.ui.speedBox.value()
         self.atlas_core.simulator.speed = speed
-
-
-    # Qt Signal Slots
-
-    def handle_seismic_history_change(self, dict):
-        time = dict.get('simulation_time')
-        if time is None:
-            self._replot_seismic_data()
-        else:
-            self._replot_seismic_data(update=True, max_time=time)
-        self.update_status()
-
-    def handle_hydraulic_history_change(self, dict):
-        time = dict.get('simulation_time')
-        if time is None:
-            self._replot_hydraulic_data()
-        else:
-            self._replot_hydraulic_data(update=True, max_time=time)
-        self.update_status()
-
-    def handle_core_state_change(self, state):
-        self.update_controls()
-        if self.atlas_core.state == AtlasCoreState.SIMULATING:
-            self.displayed_project_time = self.atlas_core.project_time
-        self.update_status()
-
-    def handle_project_time_change(self, time):
-        self.displayed_project_time = time
-        self._set_plot_marker_time(time)
-        self.update_status()
-
 
     # Control Updates
 
@@ -264,29 +268,13 @@ class MainWindowController(QtGui.QMainWindow):
 
     # Plot Helpers
 
-    def _set_plot_marker_pos(self, pos):
-        self.ui.seismic_data_plot.set_marker_pos(pos)
-        self.ui.hydraulic_data_plot.set_marker_pos(pos)
-
-    def _set_plot_marker_time(self, time):
-        epoch = datetime(1970, 1, 1)
-        pos = (time - epoch).total_seconds()
-        self._set_plot_marker_pos(pos)
-
-    def _reset_plot_marker(self):
-        s_bounds = self.ui.seismic_data_plot.plot.dataBounds(0)
-        h_bounds = self.ui.hydraulic_data_plot.plot.dataBounds(0)
-        t0 = min(min(h_bounds, s_bounds))
-        self._set_plot_marker_pos(t0)
-        vb = self.ui.seismic_data_plot.plot.getViewBox()
-        vb.setXRange(t0, t0 + 7*24*3600)
-
     def _clear_plots(self):
         self.ui.seismic_data_plot.plot.setData()
         self.ui.hydraulic_data_plot.plot.setData()
 
     def _replot_seismic_data(self, update=False, max_time=None):
-        """Plot the data in the seismic catalog
+        """
+        Plot the data in the seismic catalog
 
         :param max_time: if not None, plot catalog up to max_time only
         :param update: If false (default) the entire catalog is replotted

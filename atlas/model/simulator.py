@@ -41,11 +41,10 @@ class Simulator(object):
         self._history_iterator = None
         self._next_event = None
         self._simulation_time = 0
-        self.step_time = 50            # simulation step in ms
+        self.step_time = 200            # simulation step in ms
         self.speed = 1000
 
         self._timer = QTimer()
-        self._timer.setInterval(self.step_time)
         self._stopped = False
         self._paused = False
         self._timer.timeout.connect(self._do_step)
@@ -62,7 +61,7 @@ class Simulator(object):
             self._next_event = self._history_iterator.next()
             self._stopped = False
         self._paused = False
-        self._timer.start()
+        self._timer.start(self.step_time)
 
     def pause(self):
         """ Pauses the simulation. Unpause with start. """
@@ -76,7 +75,6 @@ class Simulator(object):
         self._timer.stop()
 
     def _do_step(self):
-
         # skip any spurious events on start stop
         if self._paused or self._stopped:
             return

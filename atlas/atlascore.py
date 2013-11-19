@@ -19,6 +19,7 @@ from model.datamodel import DataModel
 from forecastengine import ForecastEngine
 from model.simulator import Simulator
 
+from tools import Profiler
 
 class AtlasCoreState:
     IDLE = 0
@@ -54,9 +55,34 @@ class AtlasCore(QtCore.QObject):
         self.hydraulic_history = HydraulicEventHistory(store)
         self.forecast_engine = ForecastEngine()
         self.simulator = Simulator(self.seismic_history, self.simulation_handler)
-        self.project_time = datetime.now()
+        self._project_time = datetime.now()
         self.state = AtlasCoreState.IDLE
         self._last_time_change_notification = datetime.now()
+
+    @property
+    def project_time(self):
+        return self._project_time
+
+    @project_time.setter
+    def project_time(self, value):
+        self._project_time = value
+        self.project_time_changed.emit(value)
+
+    def start(self):
+        es = self.seismic_history[0]
+        eh = self.hydraulic_history[0]
+
+        if es is None and eh is None:
+            t0 = datetime.now()
+        elif es is None:
+            t0 = eh.date_time
+        elif eh is None:
+            t0 = es.date_time
+        else:
+            t0 = eh.date_time if eh.date_time < es.date_time else es.date_time
+
+        self.project_time = t0
+
 
 
     # Simulation
@@ -85,6 +111,7 @@ class AtlasCore(QtCore.QObject):
         Computes the forecast at time *time*
 
         """
+        pass
 
     def quit(self):
         self.seismic_history.store.close()
@@ -92,6 +119,6 @@ class AtlasCore(QtCore.QObject):
 
     # Simulation
 
-    def simulation_handler(self, simulation_time, event_occurred, simulation_ended):
+    def simulation_handler(self, simulation_time, event_occurred, ended):
         self.project_time = simulation_time
-        self.project_time_changed.emit(simulation_time)
+

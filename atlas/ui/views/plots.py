@@ -7,7 +7,13 @@ Atlas specific classes used in various places of the user interface
 """
 
 import pyqtgraph as pg
-from datetime import time, datetime, timedelta
+from datetime import datetime, timedelta
+
+
+class DisplayRange(object):
+    WEEK = 7*24*3600
+    MONTH = 30*7*24*3600
+    DEFAULT = WEEK
 
 
 class DateAxis(pg.AxisItem):
@@ -30,11 +36,11 @@ class DateAxis(pg.AxisItem):
         #    return pg.AxisItem.tickStrings(self, values, scale, spacing)
         if rng < 3600*24:
             string = '%H:%M:%S'
-        elif rng >= 3600*24 and rng < 3600*24*30:
+        elif rng < 3600*24*30:
             string = '%d'
-        elif rng >= 3600*24*30 and rng < 3600*24*30*24:
+        elif rng < 3600*24*30*24:
             string = '%b'
-        elif rng >=3600*24*30*24:
+        else:
             string = '%Y'
         for x in dates:
             try:
@@ -45,7 +51,6 @@ class DateAxis(pg.AxisItem):
         return strns
 
 
-
 class TimePlotWidget(pg.PlotWidget):
     """ A plot widget where the x-Axis is a DateAxis """
 
@@ -53,6 +58,61 @@ class TimePlotWidget(pg.PlotWidget):
         axis = DateAxis(orientation='bottom')
         super(TimePlotWidget, self).__init__(parent, axisItems={'bottom': axis},
                                              **kargs)
+
+        self.setMouseEnabled(y=False)
+        self._range = DisplayRange.DEFAULT
+
+        # Current time indicator (vertical line)
+        self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
+        self.addItem(self.v_line)
+
+    @property
+    def marker_pos(self):
+        return self.v_line.value()
+
+    @marker_pos.setter
+    def marker_pos(self, t):
+        self.v_line.setValue(t)
+
+    @property
+    def display_range(self):
+        return self._range
+
+    def advance_time(self, dt, translate=False):
+        """
+        Advances the plot marker by dt and translates the view range if
+        necessary.
+
+        """
+        self.marker_pos = self.marker_pos + dt
+        if translate:
+            vb = self.plot.getViewBox()
+            vb.translateBy((dt, 0))
+
+    def zoom_to_marker(self):
+        t_marker = self.marker_pos
+        self.zoom(pos=t_marker)
+
+    def zoom(self, pos=None, display_range=None):
+        """
+        Zooms to position *pos* with zoom level *zoom*. If either parameter is
+        not specified, the current value for that parameter will be used
+
+        :param pos: Position to zoom to
+        :type pos: float
+        :param display_range: Zoom level
+        :type display_range: DisplayRange
+
+        """
+        vb = self.plot.getViewBox()
+        if pos is None:
+            pos = vb.viewRange()[0][0]
+        if display_range is None:
+            display_range = self.display_range
+        else:
+            self._range = display_range
+
+        vb.setXRange(pos, pos + display_range)
 
 
 class SeismicityPlotWidget(TimePlotWidget):
@@ -67,34 +127,19 @@ class SeismicityPlotWidget(TimePlotWidget):
         super(SeismicityPlotWidget, self).__init__(parent, **kargs)
         self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
                                        brush=pg.mkBrush(255, 255, 255, 120))
-        self.setMouseEnabled(y=False)
         self.addItem(self.plot)
-
-        # Current time indicator (vertical line)
-        self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
-        self.addItem(self.v_line)
-
-    def set_marker_pos(self, t):
-        self.v_line.setPos(t)
 
 
 class HydraulicsPlotWidget(TimePlotWidget):
-    '''
+    """
     pyqtgraph PlotWidget configured to display hydraulic data
 
     :ivar plot: :class:`PlotCurveItem` that holds the line plot data
 
-    '''
+    """
     def __init__(self, parent=None, **kargs):
         super(HydraulicsPlotWidget, self).__init__(parent, **kargs)
         #self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
         #                               brush=pg.mkBrush(255, 255, 255, 120))
         self.plot = pg.PlotCurveItem()
-        self.setMouseEnabled(y=False)
         self.addItem(self.plot)
-
-        self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
-        self.addItem(self.v_line)
-
-    def set_marker_pos(self, t):
-        self.v_line.setPos(t)

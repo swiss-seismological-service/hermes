@@ -5,9 +5,7 @@ Main file
 The Main file sets up the user interface and bootstraps the application
 
 """
-import sys
-from PyQt4 import QtGui
-from ui.mainwindowcontroller import MainWindowController
+
 from atlas import Atlas
 
 
@@ -19,7 +17,7 @@ def main():
 
     """
     atlas = Atlas()
-    atlas.launch()
+    atlas.run()
 
 
 if __name__ == "__main__":
