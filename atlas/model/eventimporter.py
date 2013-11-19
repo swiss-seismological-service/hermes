@@ -23,6 +23,15 @@ class EventImporter:
     """
 
     def __init__(self, csv_file, delimiter=' ', date_field='date'):
+        """
+        Creates a new importer to read a csv file. EventImporter expects a
+        file that is ready for reading, i.e. it needs to be opened externally
+
+        :param csv_file: file handle
+        :param delimiter: single character that delimits the columns
+        :param date_field: name of the column that contains the date
+        
+        """
         self.file = csv_file
         self.delimiter = delimiter
         self.date_field = date_field

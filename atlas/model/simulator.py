@@ -29,7 +29,7 @@ class Simulator(object):
             The handler function must accept three arguments:
             handler(time, event_occurred, done), where *time* is a
             date time object that contains the current simulation time,
-            *event_occurred* is True if an event occurred during the last
+            *num_events* has the number of events that occurred during the last
             simulation step and *done* is True if this was the last simulation
             step.
 
@@ -79,15 +79,15 @@ class Simulator(object):
         if self._paused or self._stopped:
             return
 
-        event_occurred = False
         simulation_ended = False
         dt = self.step_time * self.speed / 1000
         self._simulation_time += timedelta(seconds=dt)
 
         # check if one or more event occurred during the simulation step
-        while self._next_event and \
+        num_events = 0
+        while self._next_event is not None and \
                 self._next_event.date_time < self._simulation_time:
-            event_occurred = True
+            num_events += 1
             try:
                 self._next_event = self._history_iterator.next()
             except:
@@ -96,7 +96,7 @@ class Simulator(object):
         if self._next_event is None:
             simulation_ended = True
 
-        self._handler(self._simulation_time, event_occurred, simulation_ended)
+        self._handler(self._simulation_time, num_events, simulation_ended)
 
         if simulation_ended:
             self.stop()

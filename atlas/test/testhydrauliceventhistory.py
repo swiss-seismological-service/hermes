@@ -7,6 +7,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
+from mock import MagicMock
 from model.hydraulicevent import HydraulicEvent
 from model.hydrauliceventhistory import HydraulicEventHistory
 from testeventhistory import MockStore
@@ -20,11 +21,8 @@ class BasicOperation(unittest.TestCase):
         """ Create a mock store for the history under test """
         self.mock_store = MockStore()
         self.history = HydraulicEventHistory(self.mock_store)
-
-    def test_csv_import(self):
-        """ Test if the csv import works as expected """
         base_date = datetime(2013, 3, 15)
-        expected = []
+        self.expected = []
         for i in range(3):
             date = base_date + timedelta(seconds=i)
             event = HydraulicEvent(date,
@@ -32,12 +30,24 @@ class BasicOperation(unittest.TestCase):
                                    flow_xt=(132.0 + i*0.1),
                                    pr_dh=(719 + i*0.1),
                                    pr_xt=(269 + i*0.1))
-            expected.append(event)
+            self.expected.append(event)
 
-        date_format = '%Y-%m-%dT%H:%M:%S'
-        self.history.import_from_csv('resources/test_hydr.csv', date_format)
+        def mock_iter():
+            for e in self.expected:
+                row = {'flow_dh': e.flow_dh,
+                       'flow_xt': e.flow_xt,
+                       'pr_dh': e.pr_dh,
+                       'pr_xt': e.pr_xt}
+                yield e.date_time, row
+
+        self.mock_importer = MagicMock()
+        self.mock_importer.__iter__.side_effect = mock_iter
+
+    def test_import(self):
+        """ Test if the event import works as expected """
+        self.history.import_events(self.mock_importer)
         self.mock_store.purge.assert_called_once_with(HydraulicEvent)
-        self.mock_store.add.assert_called_once_with(expected)
+        self.mock_store.add.assert_called_once_with(self.expected)
 
 
 if __name__ == '__main__':
