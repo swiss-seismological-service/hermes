@@ -27,19 +27,17 @@ class IshaModel(QtCore.QObject):
     finished = QtCore.pyqtSignal()
 
     def run(self):
-        """ Runs the model. Override in subclass. """
+        """ Runs the model. Override this function in a subclass. """
         pass
 
 
 class IshaModelController(QtCore.QObject):
     """
-    The handler handles communication between a specific ISHA model and the
+    The controller handles communication between a specific ISHA model and the
     forecast framework. It launches models in detached threads and communicates
     status updates back to the framework.
 
     """
-
-    isha_model_finished = QtCore.pyqtSignal()
 
     def __init__(self, isha_model):
         """
