@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Unit test for the IshaModelController
+Unit test for the ISHA model package
 
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
@@ -9,10 +9,11 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from PyQt4 import QtCore
 from mock import MagicMock
-from model.ishamodel import IshaModelController, IshaModelParameters, IshaModel
+from isha.control import ModelController
+from isha.common import RunData, Model
 
 
-class MockIshaModel(IshaModel):
+class MockIshaModel(Model):
     """
     Mock ISHA Model that the model_controller under test controls. Does
     nothing except emitting the finished signal.
@@ -34,7 +35,7 @@ class MyTestCase(unittest.TestCase):
         """
         self.app = QtCore.QCoreApplication([])
         self.mock_model = MockIshaModel()
-        self.model_controller = IshaModelController(self.mock_model)
+        self.model_controller = ModelController(self.mock_model)
 
     def test_initialization(self):
         """ Make sure the model is not associated with the main thread """
@@ -45,7 +46,7 @@ class MyTestCase(unittest.TestCase):
         """ Check if the model starts and terminates as expected """
         finished_slot = MagicMock()
         self.mock_model.finished.connect(finished_slot)
-        dummy_info = IshaModelParameters()
+        dummy_info = RunData()
         self.model_controller.start_forecast(dummy_info)
         # wait until the model thread emits its signals
         while self.app.hasPendingEvents() is False:
