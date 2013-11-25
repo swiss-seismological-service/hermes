@@ -47,6 +47,7 @@ class ModelController(QtCore.QObject):
         :type run_data: RunData
 
         """
+        self.model.prepare_run(run_data)
         self._qthread.start()
 
     def _on_model_finished(self):

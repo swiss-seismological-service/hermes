@@ -12,12 +12,26 @@ from datetime import datetime, timedelta
 
 
 class RunData:
-    """ Holds ISHA model inputs and parameters """
+    """
+    Holds ISHA model inputs and parameters for the next run. Not all models may
+    require all of the inputs.
+
+    :ivar magnitude_range: Tuple that specifies Mmin, Mmax
+    :type magnitude_range: Tuple with two floats
+    :ivar seismic_events: List of recorded seismic events
+    :type seismic_events: List of SeismicEvent objects
+    :ivar forecast_times: List of times (datetime) at which to forecast
+    :type forecast_times: List of datetime objects
+    :ivar t_bin: Forecast bin size in hours. The default is 6h)
+    :type t_bin: float
+
+    """
+
     def __init__(self):
+        self.magnitude_range = None
         self.seismic_events = None
-        self.hydraulic_events = None
-        self.forecast_start = datetime.now()
-        self.forecast_end = self.forecast_start + timedelta(hours=6)
+        self.forecast_times = None
+        self.t_bin = 6
 
 
 class Model(QtCore.QObject):
@@ -25,13 +39,19 @@ class Model(QtCore.QObject):
     Abstract model class that provides the common functionality for ISHA
     forecast models
 
+    .. pyqt4:signal:finished: emitted when the model has finished its run
+
+    :ivar run_results: results of the last run
+
     """
+
     finished = QtCore.pyqtSignal()
 
     def __init__(self):
         """ Initializes the model """
         super(Model, self).__init__()
         self._run_data = None
+        self.run_results = None
 
     def prepare_run(self, run_data):
         """
@@ -45,5 +65,12 @@ class Model(QtCore.QObject):
         self._run_data = run_data
 
     def run(self):
-        """ Runs the model. Override this function in a subclass. """
-        pass
+        """
+        Invoked when the model should perform a run. The default implementation
+        just checks if the run data has been provided.
+
+        You should Override this function in a subclass. Make sure you emit the
+        :pyqt4:signal:finished signal at the end of your implementation.
+
+        """
+        assert(self._run_data is not None)
