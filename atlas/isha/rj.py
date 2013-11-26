@@ -2,20 +2,24 @@
 """
 Reasenberg-Jones aftershock forecast model
 
-Reasenberg P. and L. Jones (1989), "Earthquake hazard after a main shock in
-California", Science 243, 1173-1176
+Reasenberg P. and L. Jones (1989, 1994), "Earthquake hazard after a main shock
+in California", Science 243, 1173-1176
     
 """
 
 from common import Model
 import numpy as np
-from math import log
+from math import log, exp
 
 
 class Rj(Model):
     """
     Reasenberg & Jones aftershock forecast model. The model predicts aftershocks
     using an empirical relation to the main shock.
+
+    The result of the model run is a list of tuples containing for each forecast
+    time interval the rate of events in the magnitude range *forecast_mag_range*
+    and the probability of one or more events occurring as (rate, probability)
 
     :ivar a: RJ parameter a (not Gutenberg-Richter)
     :ivar b: Gutenberg-Richter b value
@@ -42,14 +46,18 @@ class Rj(Model):
         given in the run data (see prepare_forecast) and *t + bin_size*.
 
         The forecast model predicts the rate lambda of events with magnitude M
-        at time t after a main shock of magnitude Mm as
+        or larger at time t after a main shock of magnitude Mm as
 
         .. math:: \lambda(t, M) = 10^(a'+b(Mm-M)) / (t + c)^p
 
         where a', b, c and p are empirical constants and M > Mc (magnitude of
-        completeness). Integrated over the entire magnitude range and over the
-        length of the forecast time bin, we arrive at the number of events
-        with Mc < M < Mmax which is what this function returns.
+        completeness). Thus, by integrating over t, the number of events in the
+        magnitude range [M1, M2] and time interval [T1, T2] after the main shock
+        can be computed as
+
+        .. math:: \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} * [10^{a+b(M_m-M_1)}-10^{a+b(M_m-M_2)}]
+
+        with is what this model returns.
 
         """
 
@@ -61,25 +69,37 @@ class Rj(Model):
         events = self._run_data.seismic_events
         forecast_times = self._run_data.forecast_times
         t_bin = self._run_data.t_bin
-        m_min, m_max = self._run_data.magnitude_range
+        m_min, m_max = self._run_data.forecast_mag_range
+        num_t = len(forecast_times)
 
         # extract main shock event magnitudes and (relative) times of occurrence
         # into numpy arrays
         m = np.array([e.magnitude for e in events])
 
-        forecast_rates = []
-        for t in forecast_times:
+        forecast_rates = np.zeros(num_t)
+        for t, i in zip(forecast_times, range(0, num_t)):
             # Convert event times to relative hours
             t1 = np.array([(t - e.date_time).total_seconds() / 3600.0
                            for e in events])
             t2 = t1 + t_bin
 
-            # Compute the integral of lambda(t, M) over the magnitude range and
-            # time bin length
-            rate = ((t1+c)**(1-p) - (t2+c)**(1-p)) / ((1-p)*b*log(10)) * \
-                   ((10 ** (a+b*(m-m_max))) - (10 ** (a+b*(m-m_min))))
+            # Compute the integral of lambda(t, M) over the time bin interval
+            # and subtract the upper magnitude limit from the lower limit
+            rate = ((t2+c)**(1-p) - (t1+c)**(1-p)) / (1-p) * \
+                   ((10 ** (a+b*(m-m_min))) - (10 ** (a+b*(m-m_max))))
 
-            forecast_rates = rate.tolist()
+            # The implementation below is found in various SED codes. It's
+            # based on a mistake in the original RJ '89 paper (see correction in
+            # RJ '94). Do not use. It's just here for reference.
+            # rate = ((t1+c)**(1-p) - (t2+c)**(1-p)) / ((1-p)*b*log(10)) * \
+            #        ((10 ** (a+b*(m-m_max))) - (10 ** (a+b*(m-m_min))))
 
-        self.run_results = forecast_rates
+            # Sum up the contributions from each event
+            forecast_rates[i] = rate.sum()
+
+        # Compute the resulting probabilities of one or more events occurring
+        probabilities = 1 - np.exp(-forecast_rates)
+
+        # Finish up
+        self.run_results = zip(forecast_rates.tolist(), probabilities.tolist())
         self.finished.emit()

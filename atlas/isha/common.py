@@ -16,8 +16,8 @@ class RunData:
     Holds ISHA model inputs and parameters for the next run. Not all models may
     require all of the inputs.
 
-    :ivar magnitude_range: Tuple that specifies Mmin, Mmax
-    :type magnitude_range: Tuple with two floats
+    :ivar forecast_mag_range: Tuple that specifies Mmin, Mmax for the forecast
+    :type forecast_mag_range: Tuple with two floats
     :ivar seismic_events: List of recorded seismic events
     :type seismic_events: List of SeismicEvent objects
     :ivar forecast_times: List of times (datetime) at which to forecast
@@ -28,7 +28,7 @@ class RunData:
     """
 
     def __init__(self):
-        self.magnitude_range = None
+        self.forecast_mag_range = None
         self.seismic_events = None
         self.forecast_times = None
         self.t_bin = 6
