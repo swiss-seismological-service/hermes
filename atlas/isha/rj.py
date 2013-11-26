@@ -55,9 +55,13 @@ class Rj(Model):
         magnitude range [M1, M2] and time interval [T1, T2] after the main shock
         can be computed as
 
-        .. math:: \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} * [10^{a+b(M_m-M_1)}-10^{a+b(M_m-M_2)}]
+        .. math:: \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} * \
+                  [10^{a+b(M_m-M_1)}-10^{a+b(M_m-M_2)}]
 
         with is what this model returns.
+
+        Note that any events occurring after the start of each forecast window
+        are ignored for the respective forecast.
 
         """
 
@@ -72,16 +76,20 @@ class Rj(Model):
         m_min, m_max = self._run_data.forecast_mag_range
         num_t = len(forecast_times)
 
-        # extract main shock event magnitudes and (relative) times of occurrence
-        # into numpy arrays
-        m = np.array([e.magnitude for e in events])
+        # extract all main shock event magnitudes into a numpy array
+        m_all = np.array([e.magnitude for e in events])
 
+        # Compute rate for each forecast time interval
         forecast_rates = np.zeros(num_t)
         for t, i in zip(forecast_times, range(0, num_t)):
             # Convert event times to relative hours
-            t1 = np.array([(t - e.date_time).total_seconds() / 3600.0
-                           for e in events])
+            t_all = np.array([(t - e.date_time).total_seconds() / 3600.0
+                             for e in events])
+
+            # Filter out any events after the start of the forecast interval
+            t1 = t_all[t_all >= 0]
             t2 = t1 + t_bin
+            m = m_all[t_all >= 0]
 
             # Compute the integral of lambda(t, M) over the time bin interval
             # and subtract the upper magnitude limit from the lower limit
