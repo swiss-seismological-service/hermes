@@ -9,6 +9,7 @@ in California", Science 243, 1173-1176
 
 from common import Model
 import numpy as np
+import logging
 from math import log, exp
 
 
@@ -37,6 +38,7 @@ class Rj(Model):
         self.b = b
         self.p = p
         self.c = c
+        self._logger = logging.getLogger(__name__)
 
     def run(self):
         """
@@ -64,6 +66,7 @@ class Rj(Model):
         are ignored for the respective forecast.
 
         """
+        self._logger.info('Model run initiated')
 
         # copy everything into local variables for better readability
         a = self.a
@@ -111,4 +114,5 @@ class Rj(Model):
 
         # Finish up
         self.run_results = zip(forecast_rates.tolist(), probabilities.tolist())
-        self.finished.emit()
+        self._logger.info('Model run completed')
+        self.finished.emit(self)

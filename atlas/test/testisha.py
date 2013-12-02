@@ -101,7 +101,7 @@ class RjTest(unittest.TestCase):
         # Deliver signals manually and check if the 'finished' signal has been
         # emitted as expected
         self.app.processEvents()
-        self.on_finished.assert_called_once_with()
+        self.on_finished.assert_called_once_with(self.model)
 
         # Compare the result with a precomputed known result for this case
         rate, prob = self.model.run_results[0]
@@ -124,7 +124,7 @@ class RjTest(unittest.TestCase):
         # Deliver signals manually and check if the 'finished' signal has been
         # emitted as expected
         self.app.processEvents()
-        self.on_finished.assert_called_once_with()
+        self.on_finished.assert_called_once_with(self.model)
 
         # Compare the result with a precomputed known result for this case
         precomputed = [(0.564, 0.431), (0.066, 0.064)]
@@ -150,7 +150,7 @@ class RjTest(unittest.TestCase):
         # Deliver signals manually and check if the 'finished' signal has been
         # emitted as expected
         self.app.processEvents()
-        self.on_finished.assert_called_once_with()
+        self.on_finished.assert_called_once_with(self.model)
 
         # Compare the result with a precomputed known result for this case
         rate, prob = self.model.run_results[0]

@@ -39,13 +39,14 @@ class Model(QtCore.QObject):
     Abstract model class that provides the common functionality for ISHA
     forecast models
 
-    .. pyqt4:signal:finished: emitted when the model has finished its run
+    .. pyqt4:signal:finished: emitted when the model has finished its run.
+    Carries the model object as payload.
 
     :ivar run_results: results of the last run
 
     """
 
-    finished = QtCore.pyqtSignal()
+    finished = QtCore.pyqtSignal(object)
 
     def __init__(self):
         """ Initializes the model """
