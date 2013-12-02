@@ -10,7 +10,7 @@ from model.eventimporter import EventImporter
 import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
 from datetime import datetime
-from atlascore import AtlasCoreState
+from atlascore import CoreState
 from ui.views.plots import DisplayRange
 import os
 
@@ -97,7 +97,7 @@ class MainWindowController(QtGui.QMainWindow):
 
     def on_core_state_change(self, state):
         self.update_controls()
-        if self.atlas_core.state == AtlasCoreState.SIMULATING:
+        if self.atlas_core.state == CoreState.SIMULATING:
             self.displayed_project_time = self.atlas_core.project_time
         self.update_status()
 
@@ -199,7 +199,7 @@ class MainWindowController(QtGui.QMainWindow):
 
     def update_controls(self):
         state = self.atlas_core.state
-        if state == AtlasCoreState.SIMULATING:
+        if state == CoreState.SIMULATING:
             self.ui.simulationCheckBox.setEnabled(False)
             self.ui.startButton.setEnabled(False)
             self.ui.pauseButton.setEnabled(True)
@@ -207,7 +207,7 @@ class MainWindowController(QtGui.QMainWindow):
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(True)
             self.ui.actionStop_Simulation.setEnabled(True)
-        elif state == AtlasCoreState.PAUSED:
+        elif state == CoreState.PAUSED:
             self.ui.simulationCheckBox.setEnabled(False)
             self.ui.startButton.setEnabled(True)
             self.ui.pauseButton.setEnabled(False)
@@ -215,7 +215,7 @@ class MainWindowController(QtGui.QMainWindow):
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(True)
-        elif state == AtlasCoreState.FORECASTING:
+        elif state == CoreState.FORECASTING:
             self.ui.simulationCheckBox.setEnabled(False)
             self.ui.startButton.setEnabled(False)
             self.ui.pauseButton.setEnabled(True)
@@ -243,17 +243,17 @@ class MainWindowController(QtGui.QMainWindow):
         core = self.atlas_core
         time = core.project_time
         speed = self.atlas_core.simulator.speed
-        if core.state == AtlasCoreState.SIMULATING:
+        if core.state == CoreState.SIMULATING:
             event = self.atlas_core.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
             self.ui.projectTimeLabel.setText(self.displayed_project_time.ctime())
             self.ui.lastEventLabel.setText(str(event))
-        elif core.state == AtlasCoreState.FORECASTING:
+        elif core.state == CoreState.FORECASTING:
             event = self.atlas_core.seismic_history.latest_event()
             self.ui.coreStatusLabel.setText('Forecasting')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
-        elif core.state == AtlasCoreState.PAUSED:
+        elif core.state == CoreState.PAUSED:
             event = self.atlas_core.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Paused')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
@@ -282,7 +282,7 @@ class MainWindowController(QtGui.QMainWindow):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.atlas_core.seismic_history.get_all_events()
+        events = self.atlas_core.seismic_history.all_events()
         if max_time:
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events if e.date_time < max_time]
@@ -300,7 +300,7 @@ class MainWindowController(QtGui.QMainWindow):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.atlas_core.hydraulic_history.get_all_events()
+        events = self.atlas_core.hydraulic_history.all_events()
         if max_time is None:
             max_time = datetime.max
 

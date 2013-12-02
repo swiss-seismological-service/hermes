@@ -49,6 +49,10 @@ class Simulator(object):
         self._paused = False
         self._timer.timeout.connect(self._do_step)
 
+    @property
+    def simulation_time(self):
+        return self._simulation_time
+
     def start(self):
         """Starts the simulation at the time of the first event in the
         catalog.

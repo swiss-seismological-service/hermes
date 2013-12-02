@@ -111,7 +111,7 @@ class BasicOperation(unittest.TestCase):
         """ Read events in specific time interval """
         earliest = self.date + timedelta(seconds=2.1)
         latest = self.date + timedelta(seconds=5.9)
-        events = self.history.get_events_between(earliest, latest)
+        events = self.history.events_between(earliest, latest)
         args, kwargs = self.mock_store.read_all.call_args
         entity, predicate = args
         # It's difficult to test the content of the predicate since there

@@ -47,12 +47,28 @@ class EventHistory(QtCore.QObject):
         self.store = store
         self.entity = entity
 
-    def get_all_events(self):
+    def all_events(self):
         return self.store.read_all(self.entity)
 
-    def get_events_between(self, start_date, end_date):
+    def events_between(self, start_date, end_date):
+        """
+        Returns all events between and including *start_date* and *end_date*.
+
+        """
         predicate = (self.entity.date_time >= start_date,
                      self.entity.date_time <= end_date)
+        events = self.store.read_all(self.entity, predicate)
+        return events
+
+    def events_before(self, end_date):
+        """ Returns all events before and including *end_date* """
+        predicate = (self.entity.date_time <= end_date)
+        events = self.store.read_all(self.entity, predicate)
+        return events
+
+    def events_after(self, start_date):
+        """ Returns all events after and including *start_date* """
+        predicate = (self.entity.date_time >= start_date)
         events = self.store.read_all(self.entity, predicate)
         return events
 
