@@ -7,6 +7,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import functools
+import logging
 from cProfile import Profile
 import pstats
 import StringIO

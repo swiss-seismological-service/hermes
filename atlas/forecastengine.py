@@ -24,11 +24,11 @@ class ForecastEngine(QtCore.QObject):
     def __init__(self):
         self.last_forecast_time = None
         self.state = ForecastEngineState.IDLE
-        self.log = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
 
     def run(self, h_events, s_events, t):
         """
-        Run a new forecast with the data given in *run_data*
+        Run a new forecast with the events given in the function parameters.
 
         :param h_events: list of hydraulic events
         :type h_events: list of HydraulicEvent objects
@@ -41,11 +41,11 @@ class ForecastEngine(QtCore.QObject):
 
         # Skip this forecast if the engine is not IDLE
         if self.state != ForecastEngineState.IDLE:
-            self.log.warning('Attempted to initiate forecast while the engine'
+            self.logger.warning('Attempted to initiate forecast while the engine'
                              'is not idle. Skipping forecast at t=' + str(t))
             return
 
-        self.log.info('initiating forecast at t=' + str(t))
+        self.logger.info('Initiating forecast at t=' + str(t))
 
     def get_forecast_results(self):
         pass

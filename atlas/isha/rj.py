@@ -100,7 +100,7 @@ class Rj(Model):
             # The implementation below is found in various SED codes. It's
             # based on a mistake in the original RJ '89 paper (see correction in
             # RJ '94). Do not use. It's just here for reference.
-            # rate = ((t1+c)**(1-p) - (t2+c)**(1-p)) / ((1-p)*b*log(10)) * \
+            # rate = ((t1+c)**(1-p) - (t2+c)**(1-p)) / ((1-p)*b*logger(10)) * \
             #        ((10 ** (a+b*(m-m_max))) - (10 ** (a+b*(m-m_min))))
 
             # Sum up the contributions from each event

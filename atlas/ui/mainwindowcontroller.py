@@ -242,22 +242,26 @@ class MainWindowController(QtGui.QMainWindow):
         """
         core = self.atlas_core
         time = core.project_time
+        t_forecast = core.t_next_forecast
         speed = self.atlas_core.simulator.speed
         if core.state == CoreState.SIMULATING:
             event = self.atlas_core.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
             self.ui.projectTimeLabel.setText(self.displayed_project_time.ctime())
             self.ui.lastEventLabel.setText(str(event))
+            self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         elif core.state == CoreState.FORECASTING:
             event = self.atlas_core.seismic_history.latest_event()
             self.ui.coreStatusLabel.setText('Forecasting')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
+            self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         elif core.state == CoreState.PAUSED:
             event = self.atlas_core.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Paused')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
+            self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         else:
             num_events = len(core.seismic_history)
             self.ui.coreStatusLabel.setText('Idle')
@@ -265,6 +269,7 @@ class MainWindowController(QtGui.QMainWindow):
             self.ui.lastEventLabel.setText('-')
             self.statusBar().showMessage(str(num_events) +
                                          ' events in seismic catalog')
+            self.ui.nextForecastLabel.setText('-')
 
     # Plot Helpers
 

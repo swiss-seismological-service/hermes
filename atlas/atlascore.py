@@ -19,6 +19,7 @@ from model.datamodel import DataModel
 from forecastengine import ForecastEngine
 from model.simulator import Simulator
 from datetime import timedelta
+import logging
 
 from tools import Profiler
 
@@ -53,6 +54,7 @@ class AtlasCore(QtCore.QObject):
         super(AtlasCore, self).__init__()
         store = Store('sqlite:///data.sqlite', DataModel)
         self.settings = QtCore.QSettings()
+        self.logger = logging.getLogger(__name__)
 
         # Initialize core components
         self.seismic_history = SeismicEventHistory(store)
@@ -64,12 +66,16 @@ class AtlasCore(QtCore.QObject):
         # Time and state
         self._project_time = datetime.now()     # current time in the project
         self._t_forecast = None                 # time of next forecast
-        self.state = CoreState.IDLE        # core state
+        self.state = CoreState.IDLE             # core state
 
 
     @property
     def project_time(self):
         return self._project_time
+
+    @property
+    def t_next_forecast(self):
+        return self._t_forecast
 
     def start(self):
         es = self.seismic_history[0]
@@ -85,6 +91,7 @@ class AtlasCore(QtCore.QObject):
             t0 = eh.date_time if eh.date_time < es.date_time else es.date_time
 
         self._update_project_time(t0)
+        self.logger.info('Atlas core started')
 
 
 
@@ -100,6 +107,7 @@ class AtlasCore(QtCore.QObject):
         self._t_forecast = self.simulator.simulation_time + timedelta(hours=dt)
         self.state = CoreState.SIMULATING
         self.state_changed.emit(self.state)
+        self.logger.info('Starting simulation')
 
     def pause_simulation(self):
         self.simulator.pause()
@@ -110,13 +118,7 @@ class AtlasCore(QtCore.QObject):
         self.simulator.stop()
         self.state = CoreState.IDLE
         self.state_changed.emit(self.state)
-
-    def compute_forecast(self, time):
-        """
-        Computes the forecast at time *time*
-
-        """
-        pass
+        self.logger.info('Stopping simulation')
 
     def quit(self):
         self.seismic_history.store.close()

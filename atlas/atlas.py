@@ -8,6 +8,7 @@ the GUI and the Atlas core application).
 """
 
 import sys
+import logging
 from PyQt4 import QtGui, QtCore
 from ui.mainwindowcontroller import MainWindowController
 from atlascore import AtlasCore
@@ -43,7 +44,14 @@ class Atlas(QtCore.QObject):
         self.main_window = MainWindowController(self)
         self.app_launched.connect(self.on_app_launched)
 
-
+        # Configure Logging
+        ch = logging.StreamHandler()        # Log to console
+        formatter = logging.Formatter('%(asctime)s %(levelname)s: '
+                                      '[%(name)s] %(message)s')
+        ch.setFormatter(formatter)
+        self.logger = logging.getLogger()
+        self.logger.addHandler(ch)
+        self.logger.setLevel(logging.INFO)
 
     def run(self):
         """
@@ -54,6 +62,7 @@ class Atlas(QtCore.QObject):
         the app exits.
 
         """
+        self.logger.info('Atlas is starting')
 
         self.main_window.show()
         QtCore.QTimer.singleShot(0, self._emit_app_launched)
