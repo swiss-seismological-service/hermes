@@ -32,10 +32,18 @@ class Atlas(QtCore.QObject):
 
         """
         super(Atlas, self).__init__()
-        self.atlas_core = AtlasCore()
+
         self.qt_app = QtGui.QApplication(sys.argv)
+        self.qt_app.setApplicationName('Atlas')
+        self.qt_app.setOrganizationDomain('seismo.ethz.ch')
+        self.qt_app.setApplicationVersion('0.1')
+        self.qt_app.setOrganizationName('SED')
+
+        self.atlas_core = AtlasCore()
         self.main_window = MainWindowController(self)
         self.app_launched.connect(self.on_app_launched)
+
+
 
     def run(self):
         """
