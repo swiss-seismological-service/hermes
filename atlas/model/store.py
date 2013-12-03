@@ -293,7 +293,6 @@ class Store:
             query = self._get_read_query(entity, predicate)
             return query.count()
 
-
     # Sequential Read Cache Management
 
     def init_sequential_read_cache(self, entity, order, size=10000):
