@@ -297,7 +297,8 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.seismic_data_plot.plot.setData(pos=data)
 
     def _replot_hydraulic_data(self, update=False, max_time=None):
-        """Plot the data in the hydraulic catalog
+        """
+        Plot the data in the hydraulic catalog
 
         :param max_time: if not None, plot catalog up to max_time only
         :param update: If false (default) the entire catalog is replotted
@@ -314,3 +315,10 @@ class MainWindowController(QtGui.QMainWindow):
 
         x, y = map(list, zip(*data))
         self.ui.hydraulic_data_plot.plot.setData(x, y)
+
+    def _replot_seismic_rates(self):
+        """
+        Replots the forecasted and actual seismic rates
+
+        """
+        pass
