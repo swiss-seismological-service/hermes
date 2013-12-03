@@ -139,7 +139,20 @@ class HydraulicsPlotWidget(TimePlotWidget):
     """
     def __init__(self, parent=None, **kargs):
         super(HydraulicsPlotWidget, self).__init__(parent, **kargs)
-        #self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
-        #                               brush=pg.mkBrush(255, 255, 255, 120))
         self.plot = pg.PlotCurveItem()
         self.addItem(self.plot)
+
+
+class RateForecastPlotWidget(TimePlotWidget):
+    """
+    pyqtgraph PlotWidget configured to display forecasted and actual seismicity
+    reates.
+
+    :ivar forecast_plot: Bar graph of forecasted rates
+    :ivar rate_plot: Actual rates plot
+
+    """
+    def __init__(self, parent=None, **kargs):
+        super(RateForecastPlotWidget, self).__init__(parent, **kargs)
+        self.rate_plot = pg.PlotCurveItem()
+        self.addItem(self.rate_plot)

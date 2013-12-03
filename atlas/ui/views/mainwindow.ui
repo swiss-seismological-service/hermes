@@ -341,6 +341,32 @@
      <string>Hydraulics</string>
     </property>
    </widget>
+   <widget class="QFrame" name="frame">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>380</y>
+      <width>481</width>
+      <height>231</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="RateForecastPlotWidget" name="rate_forecast_plot" native="true">
+     <property name="geometry">
+      <rect>
+       <x>-1</x>
+       <y>-1</y>
+       <width>481</width>
+       <height>231</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -456,6 +482,12 @@
   </customwidget>
   <customwidget>
    <class>HydraulicsPlotWidget</class>
+   <extends>QWidget</extends>
+   <header>plots</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RateForecastPlotWidget</class>
    <extends>QWidget</extends>
    <header>plots</header>
    <container>1</container>

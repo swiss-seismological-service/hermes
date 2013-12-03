@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Tue Nov 12 10:54:31 2013
+# Created: Tue Dec  3 09:20:14 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -122,6 +122,14 @@ class Ui_MainWindow(object):
         self.hydraulicsTitleLabel = QtGui.QLabel(self.centralWidget)
         self.hydraulicsTitleLabel.setGeometry(QtCore.QRect(10, 190, 141, 20))
         self.hydraulicsTitleLabel.setObjectName(_fromUtf8("hydraulicsTitleLabel"))
+        self.frame = QtGui.QFrame(self.centralWidget)
+        self.frame.setGeometry(QtCore.QRect(380, 380, 481, 231))
+        self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.frame.setObjectName(_fromUtf8("frame"))
+        self.rate_forecast_plot = RateForecastPlotWidget(self.frame)
+        self.rate_forecast_plot.setGeometry(QtCore.QRect(-1, -1, 481, 231))
+        self.rate_forecast_plot.setObjectName(_fromUtf8("rate_forecast_plot"))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
@@ -211,5 +219,5 @@ class Ui_MainWindow(object):
         self.actionShow_GR.setText(_translate("MainWindow", "GR Relation", None))
         self.actionImport_Hydraulic_Data.setText(_translate("MainWindow", "Import Hydraulic Data...", None))
 
-from plots import SeismicityPlotWidget, HydraulicsPlotWidget
+from plots import SeismicityPlotWidget, HydraulicsPlotWidget, RateForecastPlotWidget
 import images_rc
