@@ -17,6 +17,8 @@ from isha.common import RunData, Model
 from isha.rj import Rj
 
 
+from time import sleep
+
 class MockIshaModel(Model):
     """
     Mock ISHA Model that the model_controller under test controls. Does
@@ -26,7 +28,7 @@ class MockIshaModel(Model):
 
     def run(self):
         super(MockIshaModel, self).run()
-        self.finished.emit()
+        self.finished.emit(self)
 
 
 class ModelControllerTest(unittest.TestCase):
@@ -34,8 +36,8 @@ class ModelControllerTest(unittest.TestCase):
     def setUp(self):
         """
         We need to setup a QCoreApplication because the QThread stuff expects
-        an event loop to be present. We never start the event loop however and
-        thus need to process events manually.
+        an event loop to be present. Since we never start the event loop we
+        need to process events manually.
 
         """
         self.app = QtCore.QCoreApplication([])
@@ -53,11 +55,11 @@ class ModelControllerTest(unittest.TestCase):
         self.mock_model.finished.connect(finished_slot)
         dummy_run_data = RunData()
         self.model_controller.start_forecast(dummy_run_data)
-        # wait until the model thread emits its signals
-        while self.app.hasPendingEvents() is False:
-            pass
+        # Wait until the model thread emits its signals. This is a bit fragile
+        # since event delivery from the model thread might take longer
+        sleep(0.2)
         self.app.processEvents()
-        finished_slot.assert_called_once_with()
+        finished_slot.assert_called_once_with(self.mock_model)
 
 
 class RjTest(unittest.TestCase):
