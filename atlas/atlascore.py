@@ -21,19 +21,61 @@ from model.simulator import Simulator
 from datetime import timedelta
 import logging
 
-from tools import Profiler
 
 class CoreState:
+    """ AtlasCore states """
     IDLE = 0
     PAUSED = 1
     SIMULATING = 2
     FORECASTING = 3
 
+
+class CoreScheduler(object):
+    """
+    Manages the core internal schedule for forecasts and other recurring
+    computations.
+
+    """
+    DEF_FC_INT = 6.0  # Default forecast interval in hours
+    DEF_RT_INT = 1.0  # Default rate update interval in minutes
+
+    def __init__(self):
+        self.settings = QtCore.QSettings()
+        self.t_forecast = None      # Time of next forecast
+        self.t_rate_upd = None      # Time of next seismic rate update
+
+    def start(self, t0):
+        """
+        Start the scheduler by scheduling the first computations based on t0.
+
+        """
+        self.t_forecast = t0
+        self.t_rate_upd = t0
+        self.schedule_next_forecast()
+        self.schedule_next_rate_update()
+
+    def reset(self):
+        self.t_forecast = None
+        self.t_rate_upd = None
+
+    def schedule_next_forecast(self):
+        """ Schedules the next forecast based on the previous one. """
+        dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        self.t_forecast += timedelta(hours=dt)
+
+    def schedule_next_rate_update(self):
+        """ Schedules the next rate update based on the previous one. """
+        dt = self.settings.value('engine/rt_interval', self.DEF_RT_INT, float)
+        self.t_rate_upd += timedelta(minutes=dt)
+
+
+
+
 class AtlasCore(QtCore.QObject):
     """
     Top level class for ATLAS i.s.
 
-    Instantiation this class bootstraps the entire application
+    Instantiation of this class bootstraps the entire application
 
     :ivar seismic_history: Provides the history of seismic events
 
@@ -65,7 +107,7 @@ class AtlasCore(QtCore.QObject):
 
         # Time and state
         self._project_time = datetime.now()     # current time in the project
-        self._t_forecast = None                 # time of next forecast
+        self._scheduler = CoreScheduler()       # scheduler for computations
         self.state = CoreState.IDLE             # core state
 
 
@@ -75,9 +117,15 @@ class AtlasCore(QtCore.QObject):
 
     @property
     def t_next_forecast(self):
-        return self._t_forecast
+        return self._scheduler.t_forecast
 
     def start(self):
+        """
+        Starts the core.
+
+        Updates the project time to the first event in the catalog.
+
+        """
         es = self.seismic_history[0]
         eh = self.hydraulic_history[0]
 
@@ -93,29 +141,32 @@ class AtlasCore(QtCore.QObject):
         self._update_project_time(t0)
         self.logger.info('Atlas core started')
 
-
-
     # Simulation
 
     def start_simulation(self):
         """
-        Replays the events from the seismic history
+        Starts the simulation.
+
+        Replays the events from the seismic history.
 
         """
         dt = self.settings.value('engine/fc_interval', 6, float)
         self.simulator.start()
-        self._t_forecast = self.simulator.simulation_time + timedelta(hours=dt)
+        self._scheduler.start(self.simulator.simulation_time)
         self.state = CoreState.SIMULATING
         self.state_changed.emit(self.state)
         self.logger.info('Starting simulation')
 
     def pause_simulation(self):
+        """ Pauses the simulation. """
         self.simulator.pause()
         self.state = CoreState.PAUSED
         self.state_changed.emit(self.state)
 
     def stop_simulation(self):
+        """ Stops the simulation """
         self.simulator.stop()
+        self._scheduler.reset()
         self.state = CoreState.IDLE
         self.state_changed.emit(self.state)
         self.logger.info('Stopping simulation')
@@ -123,10 +174,10 @@ class AtlasCore(QtCore.QObject):
     def quit(self):
         self.seismic_history.store.close()
 
-
-    # Simulation
+    # Simulation handling
 
     def _simulation_handler(self, simulation_time, num_events, ended):
+        """ Invoked by the simulation whenever the project time changes """
         self._update_project_time(simulation_time)
 
     # Project time updates
@@ -134,18 +185,28 @@ class AtlasCore(QtCore.QObject):
     def _update_project_time(self, t):
         """
         Updates the project time to the time *t*, emits the project time change
-        signal and starts a new forecast if needed
+        signal and starts a new forecast if needed.
 
         """
         self._project_time = t
         self.project_time_changed.emit(t)
 
+        # Project time changes also occur on startup or due to manual user
+        # interaction. In those cases we don't trigger any computations.
         forecast_states = [CoreState.SIMULATING, CoreState.FORECASTING]
-        if self.state in forecast_states and t > self._t_forecast:
-            dt = self.settings.value('engine/fc_interval', 6, float)
-            self._t_forecast += timedelta(hours=dt)
+        if self.state not in forecast_states:
+            return
 
-            h_events = self.hydraulic_history.events_before(self._t_forecast)
-            s_events = self.seismic_history.events_before(self._t_forecast)
+        # Run forecasts
+        t_fc = self._scheduler.t_forecast
+        if t > t_fc:
+            self._scheduler.schedule_next_forecast()
+            h_events = self.hydraulic_history.events_before(t_fc)
+            s_events = self.seismic_history.events_before(t_fc)
+            self.forecast_engine.run(h_events, s_events, t_fc)
 
-            self.forecast_engine.run(h_events, s_events, self._t_forecast)
+        # Compute new rates
+        t_rt = self._scheduler.t_rate_upd
+        if t > t_rt:
+            self._scheduler.schedule_next_rate_update()
+            self.logger.debug('Computing rates')
