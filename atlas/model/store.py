@@ -55,6 +55,10 @@ class SequentialReadCache:
         if self.query is None:
             return None
 
+        # Translate python style relative index to absolute index
+        if index < 0:
+            index += self._num_events
+
         page_end = self._page_start + self._page_size
         page_offset = index % self._page_size
 
