@@ -7,13 +7,9 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
-from collections import namedtuple
 from PyQt4 import QtCore
-from mock import MagicMock, call
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
-from model.seismicevent import SeismicEvent
-from model.location import Location
 from model.simulator import Simulator
 
 # Sets the test speed to 10x. If run on a busy system where the delivery of
@@ -27,8 +23,7 @@ class BasicOperation(unittest.TestCase):
         """
         Test Preparation
 
-        We setup three events with a temporal distance of 1 second each.
-        The simulator should deliver those events in intervals of
+        The simulator should deliver the time change signal in intervals of
         one second divided by TEST_SPEED.
         Since the simulator delivers event through the QtCore event loop, we
         need to setup a qt application.
@@ -36,22 +31,20 @@ class BasicOperation(unittest.TestCase):
         """
         self.app = QtCore.QCoreApplication([])
         self.history = []
-        location = Location(7.5, 47.5, -100)
-        for i in range(3):
-            date = datetime(2010, 10, 13, 14, 00, i)
-            self.history.append(SeismicEvent(date, 3.2, location))
         self.time_step = 1/TEST_SPEED
-        self.simulator = Simulator(self.history, self._callback)
+        self.simulator = Simulator(self.callback)
         self.simulator.speed = TEST_SPEED
         # state variables
+        self.simulation_time = None
         self.t_elapsed = 0
-        self.num_events = 0
 
-    def tearDown(self):
-        self.app.exit()
+    def callback(self, t):
+        self.simulation_time = t
 
-    def _callback(self, t, num_events, ended):
-        self.num_events += num_events
+    def configure_time_range(self, seconds):
+        start = datetime(2013, 12, 4, 9)
+        end = start + timedelta(seconds=seconds)
+        self.simulator.time_range = (start, end)
 
     def step_time(self):
         """ a helper function that increases the time step """
@@ -59,52 +52,63 @@ class BasicOperation(unittest.TestCase):
         self.t_elapsed += self.time_step
 
     def test_delivery(self):
-        """ Tests event delivery by the simulator """
+        """ Tests signal delivery by the simulator """
+        duration = 2
+        max_t = (duration + 1.5) / TEST_SPEED
+        min_t = (duration - 0.2) / TEST_SPEED
+        self.configure_time_range(duration)
         self.simulator.start()
-        # All three events from the history should be delivered in
-        # approximately 3 time units. We give it a bit of leeway by setting
-        # the timeout/assertion a bit higher
-        timeout = 5/TEST_SPEED
 
-        while self.t_elapsed < timeout and self.num_events < 3:
+        while (self.t_elapsed < max_t and
+               (self.simulation_time is None or
+                self.simulation_time < self.simulator.time_range[1])):
             self.app.processEvents()
             self.step_time()
-        self.assertLess(self.t_elapsed, 5.5/TEST_SPEED,
+        self.assertLess(self.t_elapsed, max_t,
                         'Events were not delivered in time (' +
                         str(self.t_elapsed) +
                         ')')
-        self.assertGreater(self.t_elapsed, 2.5/TEST_SPEED,
+        self.assertGreater(self.t_elapsed, min_t,
                            'Event delivery too fast')
 
     def test_pause(self):
         """ Tests pausing the simulator """
+        duration = 3
+        max_t = 8 / TEST_SPEED
+        min_t = 5 / TEST_SPEED
+        self.configure_time_range(duration)
         self.simulator.start()
 
-        # All three events from the history should be delivered
         # No events should be delivered during the pause
-        while self.t_elapsed < 10/TEST_SPEED and self.num_events < 3:
+        while (self.t_elapsed < max_t and
+               (self.simulation_time is None or
+                self.simulation_time < self.simulator.time_range[1])):
             self.app.processEvents()
             if self.t_elapsed == 2/TEST_SPEED:
                 self.simulator.pause()
             elif self.t_elapsed == 5/TEST_SPEED:
                 self.simulator.start()
             self.step_time()
-        self.assertLess(self.t_elapsed, 10/TEST_SPEED,
-                        'Events were not delivered in time')
-        self.assertGreater(self.t_elapsed, 5/TEST_SPEED,
+        self.assertLess(self.t_elapsed, max_t,
+                        'Events were not delivered in time (' +
+                        str(self.t_elapsed) +
+                        ')')
+        self.assertGreater(self.t_elapsed, min_t,
                            'Event delivery too fast')
 
     def test_stop(self):
         """ Tests premature simulation stop """
+        duration = 3
+        max_t = 5 / TEST_SPEED
+        self.configure_time_range(duration)
         self.simulator.start()
 
-        # Only two events from the history should be delivered
-        while self.t_elapsed < 5/TEST_SPEED and self.num_events < 3:
+        while self.t_elapsed < max_t:
             self.app.processEvents()
             if self.t_elapsed == 2/TEST_SPEED:
                 self.simulator.stop()
             self.step_time()
-        self.assertEqual(self.num_events, 2)
+        self.assertLess(self.simulation_time, self.simulator.time_range[1])
 
 
 if __name__ == '__main__':

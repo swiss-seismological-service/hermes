@@ -14,8 +14,8 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
 
         :ivar _headers: column headers
         :type _headers: list
-        :ivar _event_history: seismic event history
-        :type _event_history: SeismicEventHistory
+        :ivar seismic_history: seismic event history
+        :type seismic_history: SeismicEventHistory
 
     """
 

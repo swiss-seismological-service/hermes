@@ -13,8 +13,7 @@ from datetime import datetime
 from PyQt4 import QtCore
 
 from model.store import Store
-from model.seismiceventhistory import SeismicEventHistory
-from model.hydrauliceventhistory import HydraulicEventHistory
+from model.atlasproject import AtlasProject
 from model.datamodel import DataModel
 from forecastengine import ForecastEngine
 from model.simulator import Simulator
@@ -69,8 +68,6 @@ class CoreScheduler(object):
         self.t_rate_upd += timedelta(minutes=dt)
 
 
-
-
 class AtlasCore(QtCore.QObject):
     """
     Top level class for ATLAS i.s.
@@ -83,63 +80,40 @@ class AtlasCore(QtCore.QObject):
 
     # Signals
     state_changed = QtCore.pyqtSignal(int)
-    project_time_changed = QtCore.pyqtSignal(datetime)
+    project_loaded = QtCore.pyqtSignal(object)
 
     def __init__(self):
-        """
-        Bootstraps and controls the Atlas core logic
-
-        The bootstrap process sets up a :class:`SeismicEventHistory` based
-        on an in-memory sqlite database (for now).
-
-        """
+        """ Bootstraps the Atlas core logic """
         super(AtlasCore, self).__init__()
-        store = Store('sqlite:///data.sqlite', DataModel)
         self.settings = QtCore.QSettings()
-        self.logger = logging.getLogger(__name__)
+        self.project = None
 
         # Initialize core components
-        self.seismic_history = SeismicEventHistory(store)
-        self.hydraulic_history = HydraulicEventHistory(store)
         self.forecast_engine = ForecastEngine()
-        self.simulator = Simulator(self.seismic_history,
-                                   self._simulation_handler)
+        self.simulator = Simulator(self._simulation_handler)
 
-        # Time and state
-        self._project_time = datetime.now()     # current time in the project
+        # Time, state and other internals
+        self._logger = logging.getLogger(__name__)
         self._scheduler = CoreScheduler()       # scheduler for computations
         self.state = CoreState.IDLE             # core state
-
-
-    @property
-    def project_time(self):
-        return self._project_time
 
     @property
     def t_next_forecast(self):
         return self._scheduler.t_forecast
 
-    def start(self):
-        """
-        Starts the core.
+    # Project handling
 
-        Updates the project time to the first event in the catalog.
+    def open_project(self, path):
+        store_path = 'sqlite://' + path
+        store = Store(store_path, DataModel)
+        self.project = AtlasProject(store)
+        self.project.project_time_changed.connect(self._on_project_time_change)
+        self.project_loaded.emit(self.project)
+        self._logger.info('Opened project at ' + path)
 
-        """
-        es = self.seismic_history[0]
-        eh = self.hydraulic_history[0]
-
-        if es is None and eh is None:
-            t0 = datetime.now()
-        elif es is None:
-            t0 = eh.date_time
-        elif eh is None:
-            t0 = es.date_time
-        else:
-            t0 = eh.date_time if eh.date_time < es.date_time else es.date_time
-
-        self._update_project_time(t0)
-        self.logger.info('Atlas core started')
+    def close_project(self):
+        self.project.close()
+        self.project = None
 
     # Simulation
 
@@ -150,12 +124,15 @@ class AtlasCore(QtCore.QObject):
         Replays the events from the seismic history.
 
         """
-        dt = self.settings.value('engine/fc_interval', 6, float)
+        if self.project is None:
+            return
+
+        self.simulator.time_range = self.project.event_time_range()
         self.simulator.start()
         self._scheduler.start(self.simulator.simulation_time)
         self.state = CoreState.SIMULATING
         self.state_changed.emit(self.state)
-        self.logger.info('Starting simulation')
+        self._logger.info('Starting simulation')
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -169,29 +146,24 @@ class AtlasCore(QtCore.QObject):
         self._scheduler.reset()
         self.state = CoreState.IDLE
         self.state_changed.emit(self.state)
-        self.logger.info('Stopping simulation')
-
-    def quit(self):
-        self.seismic_history.store.close()
+        self._logger.info('Stopping simulation')
 
     # Simulation handling
 
-    def _simulation_handler(self, simulation_time, num_events, ended):
+    def _simulation_handler(self, simulation_time):
         """ Invoked by the simulation whenever the project time changes """
-        self._update_project_time(simulation_time)
+        self.project.update_project_time(simulation_time)
 
     # Project time updates
 
-    def _update_project_time(self, t):
+    def _on_project_time_change(self, t):
         """
-        Updates the project time to the time *t*, emits the project time change
-        signal and starts a new forecast if needed.
+        Invoked when the project time changes. Triggers computations at fixed
+        intervals.
 
         """
-        self._project_time = t
-        self.project_time_changed.emit(t)
 
-        # Project time changes also occur on startup or due to manual user
+        # Project time changes can also occur on startup or due to manual user
         # interaction. In those cases we don't trigger any computations.
         forecast_states = [CoreState.SIMULATING, CoreState.FORECASTING]
         if self.state not in forecast_states:
@@ -201,12 +173,12 @@ class AtlasCore(QtCore.QObject):
         t_fc = self._scheduler.t_forecast
         if t > t_fc:
             self._scheduler.schedule_next_forecast()
-            h_events = self.hydraulic_history.events_before(t_fc)
-            s_events = self.seismic_history.events_before(t_fc)
+            h_events = self.project.hydraulic_history.events_before(t_fc)
+            s_events = self.project.seismic_history.events_before(t_fc)
             self.forecast_engine.run(h_events, s_events, t_fc)
 
         # Compute new rates
         t_rt = self._scheduler.t_rate_upd
         if t > t_rt:
             self._scheduler.schedule_next_rate_update()
-            self.logger.debug('Computing rates')
+            self._logger.debug('Computing rates')

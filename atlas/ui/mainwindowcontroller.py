@@ -11,6 +11,7 @@ import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
 from datetime import datetime
 from atlascore import CoreState
+from model.atlasproject import AtlasProject
 from ui.views.plots import DisplayRange
 import os
 
@@ -30,8 +31,10 @@ class MainWindowController(QtGui.QMainWindow):
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
 
-        # Keep a reference to the engine (business logic)
+        # Keep a reference to the engine (business logic) and the currently
+        # loaded project
         self.atlas_core = atlas.atlas_core
+        self.project = None
 
         # Setup the user interface
         self.ui = Ui_MainWindow()
@@ -57,12 +60,7 @@ class MainWindowController(QtGui.QMainWindow):
         # Hook up model change signals
         atlas.app_launched.connect(self.on_app_launch)
         self.atlas_core.state_changed.connect(self.on_core_state_change)
-        self.atlas_core.seismic_history.history_changed.connect(
-            self.on_seismic_history_change)
-        self.atlas_core.hydraulic_history.history_changed.connect(
-            self.on_hydraulic_history_change)
-        self.atlas_core.project_time_changed.connect(
-            self.on_project_time_change)
+        self.atlas_core.project_loaded.connect(self.on_project_load)
 
         # Link the x axis of the seismicity view with the x axis of the
         # hydraulics view
@@ -73,11 +71,8 @@ class MainWindowController(QtGui.QMainWindow):
     # Qt Signal Slots
 
     def on_app_launch(self):
-        self._replot_seismic_data()
-        self._replot_hydraulic_data()
         self.update_status()
         self.update_controls()
-        self.ui.seismic_data_plot.zoom(display_range=DisplayRange.WEEK)
 
     def on_seismic_history_change(self, dict):
         time = dict.get('simulation_time')
@@ -98,8 +93,31 @@ class MainWindowController(QtGui.QMainWindow):
     def on_core_state_change(self, state):
         self.update_controls()
         if self.atlas_core.state == CoreState.SIMULATING:
-            self.displayed_project_time = self.atlas_core.project_time
+            self.displayed_project_time = self.project.project_time
         self.update_status()
+
+    def on_project_load(self, project):
+        self.project = project
+
+        # Make sure we get updated on project changes
+        project.will_close.connect(self.on_project_will_close)
+        project.project_time_changed.connect(self.on_project_time_change)
+        project.seismic_history.history_changed.connect(
+            self.on_seismic_history_change)
+        project.hydraulic_history.history_changed.connect(
+            self.on_hydraulic_history_change)
+
+        # Update all plots and our status
+        self._replot_hydraulic_data()
+        self._replot_seismic_data()
+        self._replot_seismic_rates()
+        self.ui.seismic_data_plot.zoom(display_range=DisplayRange.WEEK)
+        # Trigger a project time change manually, so the plots will update
+        self.on_project_time_change(project.project_time)
+
+    def on_project_will_close(self, project):
+        self.project = None
+        self._clear_plots()
 
     def on_project_time_change(self, time):
         dt = (time - self.displayed_project_time).total_seconds()
@@ -124,7 +142,7 @@ class MainWindowController(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open seismic data file',
                                                  home)
-        history = self.atlas_core.seismic_history
+        history = self.project.seismic_history
         if path:
             self._import_file_to_history(path, history)
 
@@ -133,7 +151,7 @@ class MainWindowController(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open hydraulic data file',
                                                  home)
-        history = self.atlas_core.hydraulic_history
+        history = self.project.hydraulic_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
 
@@ -151,7 +169,7 @@ class MainWindowController(QtGui.QMainWindow):
 
     def view_seismic_data(self):
         self.table_view = QtGui.QTableView()
-        model = SeismicDataModel(self.engine.seismic_history)
+        model = SeismicDataModel(self.project.seismic_history)
         self.table_view.setModel(model)
         self.table_view.show()
 
@@ -240,32 +258,40 @@ class MainWindowController(QtGui.QMainWindow):
         Updates the status message in the status bar.
 
         """
+        if self.project is None:
+            self.ui.coreStatusLabel.setText('Idle')
+            self.ui.projectTimeLabel.setText('-')
+            self.ui.lastEventLabel.setText('-')
+            self.statusBar().showMessage('No project loaded')
+            self.ui.nextForecastLabel.setText('-')
+            return
+
         core = self.atlas_core
-        time = core.project_time
+        time = self.project.project_time
         t_forecast = core.t_next_forecast
         speed = self.atlas_core.simulator.speed
         if core.state == CoreState.SIMULATING:
-            event = self.atlas_core.seismic_history.latest_event(time)
+            event = self.project.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
             self.ui.projectTimeLabel.setText(self.displayed_project_time.ctime())
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         elif core.state == CoreState.FORECASTING:
-            event = self.atlas_core.seismic_history.latest_event()
+            event = self.project.seismic_history.latest_event()
             self.ui.coreStatusLabel.setText('Forecasting')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         elif core.state == CoreState.PAUSED:
-            event = self.atlas_core.seismic_history.latest_event(time)
+            event = self.project.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Paused')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         else:
-            num_events = len(core.seismic_history)
+            num_events = len(self.project.seismic_history)
             self.ui.coreStatusLabel.setText('Idle')
-            self.ui.projectTimeLabel.setText('-')
+            self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
             self.ui.lastEventLabel.setText('-')
             self.statusBar().showMessage(str(num_events) +
                                          ' events in seismic catalog')
@@ -276,6 +302,7 @@ class MainWindowController(QtGui.QMainWindow):
     def _clear_plots(self):
         self.ui.seismic_data_plot.plot.setData()
         self.ui.hydraulic_data_plot.plot.setData()
+        self.ui.rate_forecast_plot.plot.setData()
 
     def _replot_seismic_data(self, update=False, max_time=None):
         """
@@ -287,7 +314,7 @@ class MainWindowController(QtGui.QMainWindow):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.atlas_core.seismic_history.all_events()
+        events = self.project.seismic_history.all_events()
         if max_time:
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events if e.date_time < max_time]
@@ -306,7 +333,7 @@ class MainWindowController(QtGui.QMainWindow):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.atlas_core.hydraulic_history.all_events()
+        events = self.project.hydraulic_history.all_events()
         if max_time is None:
             max_time = datetime.max
 

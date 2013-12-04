@@ -69,13 +69,8 @@ class Atlas(QtCore.QObject):
         sys.exit(self.qt_app.exec_())
 
     def on_app_launched(self):
-        """
-        Start the core after the app has finished launching and the event loop
-        is running
-
-        """
-
-        self.atlas_core.start()
+        """ Load the default project """
+        self.atlas_core.open_project('/data.sqlite')
 
     def _emit_app_launched(self):
         self.app_launched.emit()
