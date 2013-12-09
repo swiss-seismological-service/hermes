@@ -17,6 +17,8 @@ from model.atlasproject import AtlasProject
 from model.datamodel import DataModel
 from forecastengine import ForecastEngine
 from model.simulator import Simulator
+from model.taskscheduler import TaskScheduler, ScheduledTask
+from collections import namedtuple
 from datetime import timedelta
 import logging
 
@@ -29,43 +31,8 @@ class CoreState:
     FORECASTING = 3
 
 
-class CoreScheduler(object):
-    """
-    Manages the core internal schedule for forecasts and other recurring
-    computations.
-
-    """
-    DEF_FC_INT = 6.0  # Default forecast interval in hours
-    DEF_RT_INT = 1.0  # Default rate update interval in minutes
-
-    def __init__(self):
-        self.settings = QtCore.QSettings()
-        self.t_forecast = None      # Time of next forecast
-        self.t_rate_upd = None      # Time of next seismic rate update
-
-    def start(self, t0):
-        """
-        Start the scheduler by scheduling the first computations based on t0.
-
-        """
-        self.t_forecast = t0
-        self.t_rate_upd = t0
-        self.schedule_next_forecast()
-        self.schedule_next_rate_update()
-
-    def reset(self):
-        self.t_forecast = None
-        self.t_rate_upd = None
-
-    def schedule_next_forecast(self):
-        """ Schedules the next forecast based on the previous one. """
-        dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
-        self.t_forecast += timedelta(hours=dt)
-
-    def schedule_next_rate_update(self):
-        """ Schedules the next rate update based on the previous one. """
-        dt = self.settings.value('engine/rt_interval', self.DEF_RT_INT, float)
-        self.t_rate_upd += timedelta(minutes=dt)
+# Used internally to pass information to repeating tasks
+RunInfo = namedtuple('RunInfo', 't, h_events, s_events')
 
 
 class AtlasCore(QtCore.QObject):
@@ -82,6 +49,9 @@ class AtlasCore(QtCore.QObject):
     state_changed = QtCore.pyqtSignal(int)
     project_loaded = QtCore.pyqtSignal(object)
 
+    DEF_FC_INT = 6  # default forecast interval is 6 hours
+    DEF_RT_INT = 1  # default rate computation interval is 1 minute
+
     def __init__(self):
         """ Bootstraps the Atlas core logic """
         super(AtlasCore, self).__init__()
@@ -94,12 +64,23 @@ class AtlasCore(QtCore.QObject):
 
         # Time, state and other internals
         self._logger = logging.getLogger(__name__)
-        self._scheduler = CoreScheduler()       # scheduler for computations
         self.state = CoreState.IDLE             # core state
+
+        # Initialize scheduled tasks
+        self._scheduler = TaskScheduler()
+        # ...forecasting
+        dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        forecast_task = ScheduledTask(self.run_forecast, dt, 'Forecast')
+        self._scheduler.add_task(forecast_task)
+        self._forecast_task = forecast_task  # keep a reference for later
+        # ...rate computations
+        dt = self.settings.value('engine/rt_interval', self.DEF_RT_INT, float)
+        rate_update_task = ScheduledTask(self.update_rates, dt, 'Rate update')
+        self._scheduler.add_task(rate_update_task)
 
     @property
     def t_next_forecast(self):
-        return self._scheduler.t_forecast
+        return self._forecast_task.run_time
 
     # Project handling
 
@@ -129,7 +110,7 @@ class AtlasCore(QtCore.QObject):
 
         self.simulator.time_range = self.project.event_time_range()
         self.simulator.start()
-        self._scheduler.start(self.simulator.simulation_time)
+        self._scheduler.reset_schedule(self.simulator.simulation_time)
         self.state = CoreState.SIMULATING
         self.state_changed.emit(self.state)
         self._logger.info('Starting simulation')
@@ -143,7 +124,6 @@ class AtlasCore(QtCore.QObject):
     def stop_simulation(self):
         """ Stops the simulation """
         self.simulator.stop()
-        self._scheduler.reset()
         self.state = CoreState.IDLE
         self.state_changed.emit(self.state)
         self._logger.info('Stopping simulation')
@@ -169,16 +149,16 @@ class AtlasCore(QtCore.QObject):
         if self.state not in forecast_states:
             return
 
-        # Run forecasts
-        t_fc = self._scheduler.t_forecast
-        if t > t_fc:
-            self._scheduler.schedule_next_forecast()
-            h_events = self.project.hydraulic_history.events_before(t_fc)
-            s_events = self.project.seismic_history.events_before(t_fc)
-            self.forecast_engine.run(h_events, s_events, t_fc)
+        if self._scheduler.has_pending_tasks(t):
+            h_events = self.project.hydraulic_history.events_before(t)
+            s_events = self.project.seismic_history.events_before(t)
+            info = RunInfo(t=t, h_events=h_events, s_events=s_events)
+            self._scheduler.run_pending_tasks(t, info)
 
-        # Compute new rates
-        t_rt = self._scheduler.t_rate_upd
-        if t > t_rt:
-            self._scheduler.schedule_next_rate_update()
-            self._logger.debug('Computing rates')
+    # Repeating tasks
+
+    def run_forecast(self, info):
+        self.forecast_engine.run(info.h_events, info.s_events, info.t)
+
+    def update_rates(self, info):
+        pass
