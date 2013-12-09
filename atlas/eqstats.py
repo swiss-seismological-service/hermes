@@ -1,9 +1,15 @@
-# ATLAS
-# Copyright (C) 2013 Lukas Heiniger
+# -*- encoding: utf-8 -*-
+"""
+Provides a class to manage Atlas project data
+
+Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+
+"""
 
 import collections
 import numpy as np
-from math import log, log10, sqrt
+from math import log, log10, sqrt, exp
+from datetime import timedelta
 import bisect
 
 GrParams = collections.namedtuple('GrParams', 'a b std_b')
@@ -20,7 +26,7 @@ def estimate_gr_params(magnitudes, mc=None):
     :returns: Gutenberg Richter parameter estimates as named tuple
 
     """
-    mags = array(magnitudes)
+    mags = np.array(magnitudes)
     if mc is None:
         mc = mags.min()
     else:
@@ -30,51 +36,66 @@ def estimate_gr_params(magnitudes, mc=None):
     b = 1 / (log(10) * (m_mean - mc))
     a = log10(n) + b * mc
     std_b = 2.3 * sqrt(sum((mags - m_mean)**2) / (n * (n - 1))) * b**2
-    return GrParams(a,b,std_b)
+    return GrParams(a, b, std_b)
 
 
-def compute_seismic_rates(magnitudes, t, t_range, m_range):
+class SeismicRate:
+    def __init__(self, rate, p, t, dt):
+        self.rate = rate
+        self.p = p
+        self.t = t
+        self.dt = dt
+
+
+class SeismicRateHistory:
     """
-    Computes the seismic rates from an event catalog.
-
-    The rates are computed from the events given in *events* within
-    the time range *t_range* and magnitude range *m_range*. Both t_range and
-    m_range are lists containing the boundaries for the respective bins. Bins
-    include the lower boundary but exclude the upper boundary, except for the
-    last bin, where the upper boundary is included too. I.e. the m_range
-    sequence 2,3,4,5 will result in the following bins
-
-    [2,3[  [3,4[  [4,5]
-
-    The function returns a len(t_range)*len(m_range) array with seismic rates in
-    units of [1/h].
-
-    :param magnitudes: list of events magnitudes
-    :type magnitudes: list of floats
-    :param t: times of occurrence for the events in *events*
-    :type t: list of datetime objects
-    :param t_range: time bin boundaries to compute rates for
-    :type t_range: list of datetime objects
-    :param m_range: magnitude bin boundaries to compute rates for
-    :type m_range: list of floats
-
-    :returns: 2D array of size len(t_range)*len(m_range) containing the rates
-        in [1/h]
+    A simpler alternative to the SeismicRateHistory
 
     """
-    m_bins = np.array(m_range)
+    def __init__(self):
+        self.rates = []
+        self.times = []
 
-    rates = []
-    for t_start, t_end in zip(t_range[:-1], t_range[1:]):
-        dt = (t_end - t_start).total_seconds() / 3600
-        idx_start = bisect.bisect_left(t, t_start)
-        # include the upper boundary for the last bin
-        if t_end == t_range[-1]:
-            idx_end = bisect.bisect_right(t, t_end)
-        else:
-            idx_end = bisect.bisect_left(t, t_end)
-        m = np.array(magnitudes[idx_start:idx_end])
-        bin_rates = np.histogram(m, bins=m_bins)[0] / dt
-        rates.append(bin_rates.tolist())
+    def lookup_rate(self, t):
+        idx = self.times.index(t)
+        if idx:
+            return self.rates[idx]
 
-    return rates
+    def clear(self):
+        self.rates = []
+        self.times = []
+
+    def compute_and_add(self, m, t_m, t_rates, dt):
+        """
+        Compute seismic rates for the events given in *t_m* (time) and *m*
+        (magnitudes). The rates are computed for *dt* length bins backward from
+        the times given in *t_rates*. Computed rates are automatically added to
+        the history and returned to the caller.
+
+        :param dt: time bin length for rate computation in hours
+
+        """
+        m_np = np.array(m)
+
+        computed = []
+        for t_end in t_rates:
+            t_start = t_end - timedelta(hours=dt)
+
+            idx_t_start = bisect.bisect_left(t_m, t_start)
+            # ...including the upper boundary for the last bin
+            if t_end == t_rates[-1]:
+                idx_t_end = bisect.bisect_right(t_m, t_end)
+            else:
+                idx_t_end = bisect.bisect_left(t_m, t_end)
+
+            # Compute rates for all magnitude bins within this time bin
+            m_in_bin = np.array(m_np[idx_t_start:idx_t_end])
+            rate = len(m_in_bin) / dt
+            p = 1 - exp(rate)
+            computed.append(SeismicRate(rate, p, t_end, dt))
+
+        self.rates.append(computed)
+        # Store the time and magnitude lower bin boundaries for reference
+        self.times.append(t_rates)
+        return computed
+
