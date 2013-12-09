@@ -41,15 +41,20 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.setupUi(self)
 
         # Hook up the menu
+        # ...Project
+        self.ui.actionNew_Project.triggered.connect(self.create_new_project)
+        self.ui.actionOpen_Project.triggered.connect(self.open_project)
         self.ui.actionImport_Seismic_Data.triggered.connect(
             self.import_seismic_data)
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
             self.import_hydraulic_data)
         self.ui.actionView_Data.triggered.connect(self.view_seismic_data)
+        # ...Simulation
         self.ui.actionStart_Simulation.triggered.connect(self.start_simulation)
         self.ui.actionPause_Simulation.triggered.connect(self.pause_simulation)
         self.ui.actionStop_Simulation.triggered.connect(self.stop_simulation)
-        # ... buttons
+
+        # Connect buttons
         self.ui.startButton.pressed.connect(self.start_forecast)
         self.ui.pauseButton.pressed.connect(self.pause_forecast)
         self.ui.stopButton.pressed.connect(self.stop_forecast)
@@ -137,6 +142,12 @@ class MainWindowController(QtGui.QMainWindow):
 
     # Menu Actions
 
+    def open_project(self):
+        pass
+
+    def create_new_project(self):
+        pass
+
     def import_seismic_data(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(None,
@@ -156,6 +167,12 @@ class MainWindowController(QtGui.QMainWindow):
             self._import_file_to_history(path, history, delimiter='\t')
 
     def _import_file_to_history(self, path, history, delimiter=' '):
+        """
+        Import happens on the view level (instead of inside Project) because
+        the process is interactive. The function checks if the file contains
+        relative dates. If yes, the user is asked to provide a base date.
+
+        """
         with open(path, 'rb') as csv_file:
             importer = EventImporter(csv_file, delimiter=delimiter)
             if importer.expects_base_date:

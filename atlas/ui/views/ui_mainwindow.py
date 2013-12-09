@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Tue Dec  3 09:20:14 2013
+# Created: Thu Dec  5 11:48:01 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -134,8 +134,8 @@ class Ui_MainWindow(object):
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
         self.menuBar.setObjectName(_fromUtf8("menuBar"))
-        self.menu_Data = QtGui.QMenu(self.menuBar)
-        self.menu_Data.setObjectName(_fromUtf8("menu_Data"))
+        self.menu_Project = QtGui.QMenu(self.menuBar)
+        self.menu_Project.setObjectName(_fromUtf8("menu_Project"))
         self.menuSimulation = QtGui.QMenu(self.menuBar)
         self.menuSimulation.setObjectName(_fromUtf8("menuSimulation"))
         self.menuWindow = QtGui.QMenu(self.menuBar)
@@ -173,15 +173,22 @@ class Ui_MainWindow(object):
         self.actionShow_GR.setObjectName(_fromUtf8("actionShow_GR"))
         self.actionImport_Hydraulic_Data = QtGui.QAction(MainWindow)
         self.actionImport_Hydraulic_Data.setObjectName(_fromUtf8("actionImport_Hydraulic_Data"))
-        self.menu_Data.addAction(self.actionImport_Seismic_Data)
-        self.menu_Data.addAction(self.actionImport_Hydraulic_Data)
-        self.menu_Data.addSeparator()
-        self.menu_Data.addAction(self.actionView_Data)
+        self.actionOpen_Project = QtGui.QAction(MainWindow)
+        self.actionOpen_Project.setObjectName(_fromUtf8("actionOpen_Project"))
+        self.actionNew_Project = QtGui.QAction(MainWindow)
+        self.actionNew_Project.setObjectName(_fromUtf8("actionNew_Project"))
+        self.menu_Project.addAction(self.actionNew_Project)
+        self.menu_Project.addAction(self.actionOpen_Project)
+        self.menu_Project.addSeparator()
+        self.menu_Project.addAction(self.actionImport_Seismic_Data)
+        self.menu_Project.addAction(self.actionImport_Hydraulic_Data)
+        self.menu_Project.addSeparator()
+        self.menu_Project.addAction(self.actionView_Data)
         self.menuSimulation.addAction(self.actionStart_Simulation)
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
         self.menuWindow.addAction(self.actionShow_GR)
-        self.menuBar.addAction(self.menu_Data.menuAction())
+        self.menuBar.addAction(self.menu_Project.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
         self.menuBar.addAction(self.menuWindow.menuAction())
         self.mainToolBar.addAction(self.actionShow_GR)
@@ -208,7 +215,7 @@ class Ui_MainWindow(object):
         self.lastEventLabel.setText(_translate("MainWindow", "-", None))
         self.nextForecastLabel.setText(_translate("MainWindow", "-", None))
         self.hydraulicsTitleLabel.setText(_translate("MainWindow", "Hydraulics", None))
-        self.menu_Data.setTitle(_translate("MainWindow", "&Data", None))
+        self.menu_Project.setTitle(_translate("MainWindow", "&Project", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
         self.menuWindow.setTitle(_translate("MainWindow", "Window", None))
         self.actionImport_Seismic_Data.setText(_translate("MainWindow", "&Import Seismic Data...", None))
@@ -218,6 +225,8 @@ class Ui_MainWindow(object):
         self.actionStop_Simulation.setText(_translate("MainWindow", "Stop Simulation", None))
         self.actionShow_GR.setText(_translate("MainWindow", "GR Relation", None))
         self.actionImport_Hydraulic_Data.setText(_translate("MainWindow", "Import Hydraulic Data...", None))
+        self.actionOpen_Project.setText(_translate("MainWindow", "&Open Project...", None))
+        self.actionNew_Project.setText(_translate("MainWindow", "New Project...", None))
 
 from plots import SeismicityPlotWidget, HydraulicsPlotWidget, RateForecastPlotWidget
 import images_rc

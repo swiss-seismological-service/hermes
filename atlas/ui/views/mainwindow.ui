@@ -377,10 +377,13 @@
      <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu_Data">
+   <widget class="QMenu" name="menu_Project">
     <property name="title">
-     <string>&amp;Data</string>
+     <string>&amp;Project</string>
     </property>
+    <addaction name="actionNew_Project"/>
+    <addaction name="actionOpen_Project"/>
+    <addaction name="separator"/>
     <addaction name="actionImport_Seismic_Data"/>
     <addaction name="actionImport_Hydraulic_Data"/>
     <addaction name="separator"/>
@@ -400,7 +403,7 @@
     </property>
     <addaction name="actionShow_GR"/>
    </widget>
-   <addaction name="menu_Data"/>
+   <addaction name="menu_Project"/>
    <addaction name="menuSimulation"/>
    <addaction name="menuWindow"/>
   </widget>
@@ -469,6 +472,16 @@
   <action name="actionImport_Hydraulic_Data">
    <property name="text">
     <string>Import Hydraulic Data...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Project">
+   <property name="text">
+    <string>&amp;Open Project...</string>
+   </property>
+  </action>
+  <action name="actionNew_Project">
+   <property name="text">
+    <string>New Project...</string>
    </property>
   </action>
  </widget>
