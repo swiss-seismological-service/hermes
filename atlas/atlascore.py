@@ -8,8 +8,6 @@ control facilities should be hooked up in the Atlas class instead.
 
 """
 
-from datetime import datetime
-
 from PyQt4 import QtCore
 
 from model.store import Store
@@ -19,8 +17,11 @@ from forecastengine import ForecastEngine
 from model.simulator import Simulator
 from model.taskscheduler import TaskScheduler, ScheduledTask
 from collections import namedtuple
-from datetime import timedelta
 import logging
+
+
+# Used internally to pass information to repeating tasks
+RunInfo = namedtuple('RunInfo', 't, h_events, s_events')
 
 
 class CoreState:
@@ -29,10 +30,6 @@ class CoreState:
     PAUSED = 1
     SIMULATING = 2
     FORECASTING = 3
-
-
-# Used internally to pass information to repeating tasks
-RunInfo = namedtuple('RunInfo', 't, h_events, s_events')
 
 
 class AtlasCore(QtCore.QObject):
