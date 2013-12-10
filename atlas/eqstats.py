@@ -50,7 +50,7 @@ class SeismicRate:
 
 class SeismicRateHistory(QtCore.QObject):
     """
-    Manages a history of seismic _rates and computes new _rates on request.
+    Manages a history of seismic rates and computes new rates on request.
 
     """
 
@@ -73,6 +73,7 @@ class SeismicRateHistory(QtCore.QObject):
     @rates.setter
     def rates(self, value):
         self._rates = value
+        self.times = [rate.t for rate in value]
         self.history_changed.emit()
 
     def lookup_rate(self, t):
@@ -83,13 +84,14 @@ class SeismicRateHistory(QtCore.QObject):
     def clear(self):
         self._rates = []
         self.times = []
+        self.history_changed.emit()
 
     def compute_and_add(self, m, t_m, t_rates):
         """
-        Compute seismic _rates for the events given in *t_m* (time) and *m*
-        (magnitudes). The _rates are computed for *t_bin* length bins (given
+        Compute seismic rates for the events given in *t_m* (time) and *m*
+        (magnitudes). The rates are computed for *t_bin* length bins (given
         at initialization time) backward from the times given in *t_rates*.
-        Computed _rates are automatically added to the history and returned to
+        Computed rates are automatically added to the history and returned to
         the caller.
 
         :param m: list of magnitudes (floats)
@@ -110,7 +112,7 @@ class SeismicRateHistory(QtCore.QObject):
             else:
                 idx_t_end = bisect.bisect_left(t_m, t_end)
 
-            # Compute _rates for all magnitude bins within this time bin
+            # Compute rates for all magnitude bins within this time bin
             m_in_bin = np.array(m_np[idx_t_start:idx_t_end])
             rate = len(m_in_bin) / t_bin_h
             p = 1 - exp(rate)
