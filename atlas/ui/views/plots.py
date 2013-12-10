@@ -104,7 +104,7 @@ class TimePlotWidget(pg.PlotWidget):
         :type display_range: DisplayRange
 
         """
-        vb = self.plot.getViewBox()
+        vb = self.plotItem.getViewBox()
         if pos is None:
             pos = vb.viewRange()[0][0]
         if display_range is None:
