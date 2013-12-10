@@ -146,7 +146,7 @@ class HydraulicsPlotWidget(TimePlotWidget):
 class RateForecastPlotWidget(TimePlotWidget):
     """
     pyqtgraph PlotWidget configured to display forecasted and actual seismicity
-    reates.
+    rates.
 
     :ivar forecast_plot: Bar graph of forecasted _rates
     :ivar rate_plot: Actual _rates plot
