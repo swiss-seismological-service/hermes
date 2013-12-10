@@ -11,6 +11,7 @@ import numpy as np
 from math import log, log10, sqrt, exp
 from datetime import timedelta
 import bisect
+from PyQt4 import QtCore
 
 GrParams = collections.namedtuple('GrParams', 'a b std_b')
 
@@ -47,16 +48,20 @@ class SeismicRate:
         self.dt = dt
 
 
-class SeismicRateHistory:
+class SeismicRateHistory(QtCore.QObject):
     """
-    A simpler alternative to the SeismicRateHistory
+    Manages a history of seismic rates and computes new rates on request.
 
     """
+
+    history_changed = QtCore.pyqtSignal()
+
     def __init__(self):
         """
         Create a new seismic history with a default bin length of 6 hours
 
         """
+        super(SeismicRateHistory, self).__init__()
         self.t_bin = timedelta(hours=6)
         self.rates = []
         self.times = []
@@ -102,8 +107,9 @@ class SeismicRateHistory:
             p = 1 - exp(rate)
             computed.append(SeismicRate(rate, p, t_end, t_bin_h))
 
-        self.rates.append(computed)
+        self.rates += computed
         # Store the time and magnitude lower bin boundaries for reference
         self.times.append(t_rates)
+        self.history_changed.emit()
         return computed
 

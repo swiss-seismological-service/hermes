@@ -95,6 +95,9 @@ class MainWindowController(QtGui.QMainWindow):
             self._replot_hydraulic_data(update=True, max_time=time)
         self.update_status()
 
+    def on_rate_history_change(self):
+        self._replot_seismic_rates()
+
     def on_core_state_change(self, state):
         self.update_controls()
         if self.atlas_core.state == CoreState.SIMULATING:
@@ -111,12 +114,16 @@ class MainWindowController(QtGui.QMainWindow):
             self.on_seismic_history_change)
         project.hydraulic_history.history_changed.connect(
             self.on_hydraulic_history_change)
+        project.rate_history.history_changed.connect(
+            self.on_rate_history_change
+        )
 
         # Update all plots and our status
         self._replot_hydraulic_data()
         self._replot_seismic_data()
         self._replot_seismic_rates()
         self.ui.seismic_data_plot.zoom(display_range=DisplayRange.WEEK)
+        self.ui.rate_forecast_plot.zoom(display_range=DisplayRange.WEEK)
         # Trigger a project time change manually, so the plots will update
         self.on_project_time_change(project.project_time)
 
@@ -135,9 +142,12 @@ class MainWindowController(QtGui.QMainWindow):
             self.ui.seismic_data_plot.marker_pos = pos
             self.ui.hydraulic_data_plot.marker_pos = pos
             self.ui.seismic_data_plot.zoom_to_marker()
+            self.ui.rate_forecast_plot.marker_pos = pos
+            self.ui.rate_forecast_plot.zoom_to_marker()
         else:
             self.ui.seismic_data_plot.advance_time(dt)
             self.ui.hydraulic_data_plot.advance_time(dt)
+            self.ui.rate_forecast_plot.advance_time(dt)
         self.update_status()
 
     # Menu Actions
@@ -365,4 +375,11 @@ class MainWindowController(QtGui.QMainWindow):
         Replots the forecasted and actual seismic rates
 
         """
-        pass
+        epoch = datetime(1970, 1, 1)
+        data = [((r.t - epoch).total_seconds(), r.rate)
+                for r in self.project.rate_history.rates]
+        if len(data) == 0:
+            return
+
+        x, y = map(list, zip(*data))
+        self.ui.rate_forecast_plot.rate_plot.setData(x, y)
