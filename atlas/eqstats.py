@@ -53,6 +53,11 @@ class SeismicRateHistory:
 
     """
     def __init__(self):
+        """
+        Create a new seismic history with a default bin length of 6 hours
+
+        """
+        self.t_bin = timedelta(hours=6)
         self.rates = []
         self.times = []
 
@@ -65,21 +70,24 @@ class SeismicRateHistory:
         self.rates = []
         self.times = []
 
-    def compute_and_add(self, m, t_m, t_rates, dt):
+    def compute_and_add(self, m, t_m, t_rates):
         """
         Compute seismic rates for the events given in *t_m* (time) and *m*
-        (magnitudes). The rates are computed for *dt* length bins backward from
-        the times given in *t_rates*. Computed rates are automatically added to
-        the history and returned to the caller.
+        (magnitudes). The rates are computed for *t_bin* length bins (given
+        at initialization time) backward from the times given in *t_rates*.
+        Computed rates are automatically added to the history and returned to
+        the caller.
 
-        :param dt: time bin length for rate computation in hours
+        :param m: list of magnitudes (floats)
+        :param t_m: list of time (datetime) at which m occurred
 
         """
         m_np = np.array(m)
 
         computed = []
         for t_end in t_rates:
-            t_start = t_end - timedelta(hours=dt)
+            t_start = t_end - self.t_bin
+            t_bin_h = self.t_bin.total_seconds() / 3600.0
 
             idx_t_start = bisect.bisect_left(t_m, t_start)
             # ...including the upper boundary for the last bin
@@ -90,9 +98,9 @@ class SeismicRateHistory:
 
             # Compute rates for all magnitude bins within this time bin
             m_in_bin = np.array(m_np[idx_t_start:idx_t_end])
-            rate = len(m_in_bin) / dt
+            rate = len(m_in_bin) / t_bin_h
             p = 1 - exp(rate)
-            computed.append(SeismicRate(rate, p, t_end, dt))
+            computed.append(SeismicRate(rate, p, t_end, t_bin_h))
 
         self.rates.append(computed)
         # Store the time and magnitude lower bin boundaries for reference

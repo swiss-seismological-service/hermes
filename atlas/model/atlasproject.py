@@ -11,6 +11,7 @@ from PyQt4 import QtCore
 from datetime import datetime
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
+from eqstats import SeismicRateHistory
 
 
 class AtlasProject(project.Project):
@@ -31,10 +32,11 @@ class AtlasProject(project.Project):
     project_time_changed = QtCore.pyqtSignal(datetime)
 
     def __init__(self, store):
-        """ Opens the project file located at *path* """
+        """ Create a project based on the data that is contained in *store* """
         super(AtlasProject, self).__init__(store)
         self.seismic_history = SeismicEventHistory(self._store)
         self.hydraulic_history = HydraulicEventHistory(self._store)
+        self.rate_history = SeismicRateHistory()
 
         # Set the project time to the time of the first event
         event = self.earliest_event()
@@ -88,7 +90,11 @@ class AtlasProject(project.Project):
         else:
             return eh if eh.date_time > es.date_time else es
 
+    # Project time
+
     def update_project_time(self, t):
         self._project_time = t
         self.project_time_changed.emit(t)
+
+
 

@@ -16,6 +16,7 @@ from model.datamodel import DataModel
 from forecastengine import ForecastEngine
 from model.simulator import Simulator
 from model.taskscheduler import TaskScheduler, ScheduledTask
+from datetime import timedelta
 from collections import namedtuple
 import logging
 
@@ -61,18 +62,23 @@ class AtlasCore(QtCore.QObject):
 
         # Time, state and other internals
         self._logger = logging.getLogger(__name__)
+        #self._logger.setLevel(logging.DEBUG)
         self.state = CoreState.IDLE             # core state
 
         # Initialize scheduled tasks
         self._scheduler = TaskScheduler()
         # ...forecasting
         dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
-        forecast_task = ScheduledTask(self.run_forecast, dt, 'Forecast')
+        forecast_task = ScheduledTask(self.run_forecast,
+                                      timedelta(hours=dt),
+                                      'Forecast')
         self._scheduler.add_task(forecast_task)
         self._forecast_task = forecast_task  # keep a reference for later
         # ...rate computations
         dt = self.settings.value('engine/rt_interval', self.DEF_RT_INT, float)
-        rate_update_task = ScheduledTask(self.update_rates, dt, 'Rate update')
+        rate_update_task = ScheduledTask(self.update_rates,
+                                         timedelta(minutes=dt),
+                                         'Rate update')
         self._scheduler.add_task(rate_update_task)
 
     @property
@@ -158,4 +164,12 @@ class AtlasCore(QtCore.QObject):
         self.forecast_engine.run(info.h_events, info.s_events, info.t)
 
     def update_rates(self, info):
-        pass
+        data = [(e.date_time, e.magnitude) for e in info.s_events]
+        if len(data) == 0:
+            return
+
+        t, m = zip(*data)
+        t = list(t)
+        m = list(m)
+        rates = self.project.rate_history.compute_and_add(m, t, [info.t])
+        self._logger.debug('New rate computed: ' + str(rates[0].rate))
