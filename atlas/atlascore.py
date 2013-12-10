@@ -23,6 +23,8 @@ import logging
 
 
 # Used internally to pass information to repeating tasks
+# t is the time when the task i launched, h_events and s_events is a list
+# containing all seismic and hydraulic events that occurred before t
 RunInfo = namedtuple('RunInfo', 't, h_events, s_events')
 
 
@@ -48,8 +50,10 @@ class AtlasCore(QtCore.QObject):
     state_changed = QtCore.pyqtSignal(int)
     project_loaded = QtCore.pyqtSignal(object)
 
-    DEF_FC_INT = 6  # default forecast interval is 6 hours
-    DEF_RT_INT = 1  # default rate computation interval is 1 minute
+    # Defaults
+    DEF_FC_INT = 6       # default forecast interval is 6 hours
+    DEF_NUM_FC_BINS = 6  # number of forecast bins to compute
+    DEF_RT_INT = 1       # default rate computation interval is 1 minute
 
     def __init__(self):
         """ Bootstraps the Atlas core logic """
@@ -160,9 +164,7 @@ class AtlasCore(QtCore.QObject):
         if self._scheduler.has_pending_tasks(t):
             h_events = self.project.hydraulic_history.events_before(t)
             s_events = self.project.seismic_history.events_before(t)
-            dt = timedelta(hours=6)
-            times = [t + i * dt for i in range(6)]
-            info = RunInfo(t=times, h_events=h_events, s_events=s_events)
+            info = RunInfo(t=t, h_events=h_events, s_events=s_events)
             self._scheduler.run_pending_tasks(t, info)
 
     # Forecast engine handling
@@ -171,13 +173,18 @@ class AtlasCore(QtCore.QObject):
         rj = models[0]
         rates = [SeismicRate(rate, prob, t, timedelta(hours=6))
                  for t, rate, prob in rj.run_results]
-        self._logger.info('adding ' + str(len(rates)) + ' new rates to project')
+        self._logger.debug('Adding ' + str(len(rates)) + ' rates to project')
         self.project.forecast_history.rates = rates
 
     # Repeating tasks
 
     def run_forecast(self, info):
-        self.forecast_engine.run(info.h_events, info.s_events, info.t)
+        dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        num_bins = self.settings.value('engine/num_fc_bins',
+                                       self.DEF_NUM_FC_BINS,
+                                       int)
+        fc_times = [info.t + i * dt for i in range(num_bins)]
+        self.forecast_engine.run(info.h_events, info.s_events, fc_times)
 
     def update_rates(self, info):
         data = [(e.date_time, e.magnitude) for e in info.s_events]
@@ -187,5 +194,5 @@ class AtlasCore(QtCore.QObject):
         t, m = zip(*data)
         t = list(t)
         m = list(m)
-        rates = self.project.rate_history.compute_and_add(m, t, [info.t[0]])
+        rates = self.project.rate_history.compute_and_add(m, t, [info.t])
         self._logger.debug('New rate computed: ' + str(rates[0].rate))
