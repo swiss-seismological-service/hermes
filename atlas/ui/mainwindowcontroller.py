@@ -14,6 +14,7 @@ from atlascore import CoreState
 from model.atlasproject import AtlasProject
 from ui.views.plots import DisplayRange
 import os
+import logging
 
 import numpy as np
 
@@ -27,6 +28,7 @@ class MainWindowController(QtGui.QMainWindow):
 
     def __init__(self, atlas):
         QtGui.QMainWindow.__init__(self)
+        self.logger = logging.getLogger(__name__)
 
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
@@ -98,6 +100,9 @@ class MainWindowController(QtGui.QMainWindow):
     def on_rate_history_change(self):
         self._replot_seismic_rates()
 
+    def on_forecast_history_change(self):
+        self._replot_forecasts()
+
     def on_core_state_change(self, state):
         self.update_controls()
         if self.atlas_core.state == CoreState.SIMULATING:
@@ -115,8 +120,9 @@ class MainWindowController(QtGui.QMainWindow):
         project.hydraulic_history.history_changed.connect(
             self.on_hydraulic_history_change)
         project.rate_history.history_changed.connect(
-            self.on_rate_history_change
-        )
+            self.on_rate_history_change)
+        project.forecast_history.history_changed.connect(
+            self.on_forecast_history_change)
 
         # Update all plots and our status
         self._replot_hydraulic_data()
@@ -372,7 +378,7 @@ class MainWindowController(QtGui.QMainWindow):
 
     def _replot_seismic_rates(self):
         """
-        Replots the forecasted and actual seismic rates
+        Replots the forecasted and actual seismic _rates
 
         """
         epoch = datetime(1970, 1, 1)
@@ -383,3 +389,15 @@ class MainWindowController(QtGui.QMainWindow):
 
         x, y = map(list, zip(*data))
         self.ui.rate_forecast_plot.rate_plot.setData(x, y)
+
+    def _replot_forecasts(self):
+
+        epoch = datetime(1970, 1, 1)
+        data = [((r.t - epoch).total_seconds(), r.rate)
+                for r in self.project.forecast_history.rates]
+        if len(data) == 0:
+            return
+
+        x, y = map(list, zip(*data))
+        self.logger.info('replotting forecasts with h=' + str(y) + ' x=' + str(x))
+        self.ui.rate_forecast_plot.set_forecast_data(x, y)

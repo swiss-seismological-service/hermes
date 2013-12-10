@@ -113,6 +113,8 @@ class Rj(Model):
         probabilities = 1 - np.exp(-forecast_rates)
 
         # Finish up
-        self.run_results = zip(forecast_rates.tolist(), probabilities.tolist())
+        self.run_results = zip(forecast_times,
+                               forecast_rates.tolist(),
+                               probabilities.tolist())
         self._logger.info('Model run completed')
         self.finished.emit(self)

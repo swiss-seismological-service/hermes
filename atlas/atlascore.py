@@ -18,6 +18,7 @@ from model.simulator import Simulator
 from model.taskscheduler import TaskScheduler, ScheduledTask
 from datetime import timedelta
 from collections import namedtuple
+from eqstats import SeismicRate
 import logging
 
 
@@ -56,8 +57,12 @@ class AtlasCore(QtCore.QObject):
         self.settings = QtCore.QSettings()
         self.project = None
 
-        # Initialize core components
-        self.forecast_engine = ForecastEngine()
+        # Initialize forecast engine
+        engine = ForecastEngine()
+        engine.forecast_complete.connect(self.on_forecast_complete)
+        self.forecast_engine = engine
+
+        # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)
 
         # Time, state and other internals
@@ -155,8 +160,19 @@ class AtlasCore(QtCore.QObject):
         if self._scheduler.has_pending_tasks(t):
             h_events = self.project.hydraulic_history.events_before(t)
             s_events = self.project.seismic_history.events_before(t)
-            info = RunInfo(t=t, h_events=h_events, s_events=s_events)
+            dt = timedelta(hours=6)
+            times = [t + i * dt for i in range(6)]
+            info = RunInfo(t=times, h_events=h_events, s_events=s_events)
             self._scheduler.run_pending_tasks(t, info)
+
+    # Forecast engine handling
+
+    def on_forecast_complete(self, models):
+        rj = models[0]
+        rates = [SeismicRate(rate, prob, t, timedelta(hours=6))
+                 for t, rate, prob in rj.run_results]
+        self._logger.info('adding ' + str(len(rates)) + ' new rates to project')
+        self.project.forecast_history.rates = rates
 
     # Repeating tasks
 
@@ -171,5 +187,5 @@ class AtlasCore(QtCore.QObject):
         t, m = zip(*data)
         t = list(t)
         m = list(m)
-        rates = self.project.rate_history.compute_and_add(m, t, [info.t])
+        rates = self.project.rate_history.compute_and_add(m, t, [info.t[0]])
         self._logger.debug('New rate computed: ' + str(rates[0].rate))

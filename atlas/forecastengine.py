@@ -27,13 +27,15 @@ class ForecastEngine(QtCore.QObject):
     necessary.
 
     .. pyqt4:signal:finished: emitted when all models have finished and results
-    are ready to be collected.
+    are ready to be collected. The payload contains the list of models that
+    were run during the forecast.
 
     """
 
-    forecast_complete = QtCore.pyqtSignal()
+    forecast_complete = QtCore.pyqtSignal(list)
 
     def __init__(self):
+        super(ForecastEngine, self).__init__()
         self.last_forecast_time = None
         self.state = ForecastEngineState.IDLE
         self.logger = logging.getLogger(__name__)
@@ -52,8 +54,8 @@ class ForecastEngine(QtCore.QObject):
         :type h_events: list of HydraulicEvent objects
         :param s_events: list of seismic events
         :type s_events: list of SeismicEvent objects
-        :param t: forecast time
-        :type t: datetime
+        :param t: forecast times
+        :type t: list of datetime objects
 
         """
         # Skip this forecast if the engine is not IDLE
@@ -67,21 +69,27 @@ class ForecastEngine(QtCore.QObject):
         run_data = RunData()
         run_data.seismic_events = s_events
         run_data.hydraulic_events = h_events
-        run_data.forecast_times = [t]
-        run_data.forecast_mag_range = (1, 6)
-        # Run models
+        run_data.forecast_times = t
+        run_data.forecast_mag_range = (0, 6)
+
+        # The following cannot be done in one step, since some model run
+        # asynchronously and might finish before _update_state gets called
+
+        # Prepare models
         for model in self._models:
             self._model_states[model] = ForecastEngineState.FORECASTING
             model.prepare_run(run_data)
+        self._update_global_state()
+        # Run models
+        for model in self._models:
             model.run()
-        self._update_state()
 
     def get_forecast_results(self):
         pass
 
     # State handling
 
-    def _update_state(self):
+    def _update_global_state(self):
         """ Set the engine state according to the individual model states """
         if ForecastEngineState.FORECASTING in self._model_states.values():
             new_state = ForecastEngineState.FORECASTING
@@ -90,11 +98,12 @@ class ForecastEngine(QtCore.QObject):
         if self.state != new_state:
             self.state = new_state
             if new_state == ForecastEngineState.IDLE:
-                self.forecast_complete.emit()
+                self.logger.info('Forecast complete')
+                self.forecast_complete.emit(self._models)
 
     # Model completion handlers
 
     def _on_rj_finished(self, model):
         self._model_states[model] = ForecastEngineState.IDLE
         self.logger.debug('RJ run results: ' + str(model.run_results))
-        self._update_state()
+        self._update_global_state()

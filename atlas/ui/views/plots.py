@@ -148,11 +148,23 @@ class RateForecastPlotWidget(TimePlotWidget):
     pyqtgraph PlotWidget configured to display forecasted and actual seismicity
     reates.
 
-    :ivar forecast_plot: Bar graph of forecasted rates
-    :ivar rate_plot: Actual rates plot
+    :ivar forecast_plot: Bar graph of forecasted _rates
+    :ivar rate_plot: Actual _rates plot
 
     """
     def __init__(self, parent=None, **kargs):
         super(RateForecastPlotWidget, self).__init__(parent, **kargs)
         self.rate_plot = pg.PlotCurveItem()
         self.addItem(self.rate_plot)
+        self.forecast_plot = None
+
+
+    def set_forecast_data(self, x, y):
+        # FIXME: this looks like a bug in bargraphitem (the fact that it doesn't
+        # allow initialization without data
+        if self.forecast_plot is not None:
+            self.removeItem(self.forecast_plot)
+        self.forecast_plot = pg.BarGraphItem(x0=x, height=y, width=3600*6,
+                                             brush=(205, 72, 66, 100),
+                                             pen=(205, 72, 66, 150))
+        self.addItem(self.forecast_plot)

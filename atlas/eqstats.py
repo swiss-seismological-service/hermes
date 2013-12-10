@@ -50,7 +50,7 @@ class SeismicRate:
 
 class SeismicRateHistory(QtCore.QObject):
     """
-    Manages a history of seismic rates and computes new rates on request.
+    Manages a history of seismic _rates and computes new _rates on request.
 
     """
 
@@ -63,24 +63,33 @@ class SeismicRateHistory(QtCore.QObject):
         """
         super(SeismicRateHistory, self).__init__()
         self.t_bin = timedelta(hours=6)
-        self.rates = []
+        self._rates = []
         self.times = []
+
+    @property
+    def rates(self):
+        return self._rates
+
+    @rates.setter
+    def rates(self, value):
+        self._rates = value
+        self.history_changed.emit()
 
     def lookup_rate(self, t):
         idx = self.times.index(t)
         if idx:
-            return self.rates[idx]
+            return self._rates[idx]
 
     def clear(self):
-        self.rates = []
+        self._rates = []
         self.times = []
 
     def compute_and_add(self, m, t_m, t_rates):
         """
-        Compute seismic rates for the events given in *t_m* (time) and *m*
-        (magnitudes). The rates are computed for *t_bin* length bins (given
+        Compute seismic _rates for the events given in *t_m* (time) and *m*
+        (magnitudes). The _rates are computed for *t_bin* length bins (given
         at initialization time) backward from the times given in *t_rates*.
-        Computed rates are automatically added to the history and returned to
+        Computed _rates are automatically added to the history and returned to
         the caller.
 
         :param m: list of magnitudes (floats)
@@ -101,13 +110,13 @@ class SeismicRateHistory(QtCore.QObject):
             else:
                 idx_t_end = bisect.bisect_left(t_m, t_end)
 
-            # Compute rates for all magnitude bins within this time bin
+            # Compute _rates for all magnitude bins within this time bin
             m_in_bin = np.array(m_np[idx_t_start:idx_t_end])
             rate = len(m_in_bin) / t_bin_h
             p = 1 - exp(rate)
             computed.append(SeismicRate(rate, p, t_end, t_bin_h))
 
-        self.rates += computed
+        self._rates += computed
         # Store the time and magnitude lower bin boundaries for reference
         self.times.append(t_rates)
         self.history_changed.emit()
