@@ -70,6 +70,7 @@ class ForecastEngine(QtCore.QObject):
         run_data.seismic_events = s_events
         run_data.hydraulic_events = h_events
         run_data.forecast_times = t
+        # FIXME: the range should probably not be hardcoded
         run_data.forecast_mag_range = (0, 6)
 
         # The following cannot be done in one step, since some model run
