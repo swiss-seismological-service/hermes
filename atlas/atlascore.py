@@ -179,7 +179,8 @@ class AtlasCore(QtCore.QObject):
     # Repeating tasks
 
     def run_forecast(self, info):
-        dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        dt_h = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        dt = timedelta(hours=dt_h)
         num_bins = self.settings.value('engine/num_fc_bins',
                                        self.DEF_NUM_FC_BINS,
                                        int)
