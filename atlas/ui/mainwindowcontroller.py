@@ -129,7 +129,7 @@ class MainWindowController(QtGui.QMainWindow):
         self._replot_seismic_data()
         self._replot_seismic_rates()
         self.ui.seismic_data_plot.zoom(display_range=DisplayRange.WEEK)
-        self.ui.rate_forecast_plot.zoom(display_range=DisplayRange.WEEK)
+        self.ui.rate_forecast_plot.zoom(display_range=2*DisplayRange.DAY)
         # Trigger a project time change manually, so the plots will update
         self.on_project_time_change(project.project_time)
 

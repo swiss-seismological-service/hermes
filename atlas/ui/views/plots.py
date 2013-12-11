@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 
 class DisplayRange(object):
+    DAY = 24*3600
     WEEK = 7*24*3600
     MONTH = 30*7*24*3600
     DEFAULT = WEEK
