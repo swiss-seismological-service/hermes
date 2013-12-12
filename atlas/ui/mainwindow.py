@@ -6,6 +6,7 @@ Controller module for the main window
 
 from PyQt4 import QtGui
 from views.ui_mainwindow import Ui_MainWindow
+from forecastwindow import ForecastWindow
 from model.eventimporter import EventImporter
 import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
@@ -20,7 +21,7 @@ import numpy as np
 
 
 # Create a class for our main window
-class MainWindowController(QtGui.QMainWindow):
+class MainWindow(QtGui.QMainWindow):
     """
     Class that manages the main application window
 
@@ -29,6 +30,9 @@ class MainWindowController(QtGui.QMainWindow):
     def __init__(self, atlas):
         QtGui.QMainWindow.__init__(self)
         self.logger = logging.getLogger(__name__)
+
+        # Other windows which are lazy-loaded
+        self.forecast_window = None
 
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
@@ -55,6 +59,8 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.actionStart_Simulation.triggered.connect(self.start_simulation)
         self.ui.actionPause_Simulation.triggered.connect(self.pause_simulation)
         self.ui.actionStop_Simulation.triggered.connect(self.stop_simulation)
+        # ...Window
+        self.ui.actionForecasts.triggered.connect(self.show_forecasts)
 
         # Connect buttons
         self.ui.startButton.pressed.connect(self.start_forecast)
@@ -64,7 +70,7 @@ class MainWindowController(QtGui.QMainWindow):
         self.ui.simulationCheckBox.stateChanged.connect(self.sim_state_changed)
         self.ui.speedBox.valueChanged.connect(self.sim_speed_changed)
 
-        # Hook up model change signals
+        # Hook up essential signals from the core and the forecast engine
         atlas.app_launched.connect(self.on_app_launch)
         self.atlas_core.state_changed.connect(self.on_core_state_change)
         self.atlas_core.project_loaded.connect(self.on_project_load)
@@ -97,12 +103,6 @@ class MainWindowController(QtGui.QMainWindow):
             self._replot_hydraulic_data(update=True, max_time=time)
         self.update_status()
 
-    def on_rate_history_change(self):
-        self._replot_seismic_rates()
-
-    def on_forecast_history_change(self):
-        self._replot_forecasts()
-
     def on_core_state_change(self, state):
         self.update_controls()
         if self.atlas_core.state == CoreState.SIMULATING:
@@ -119,17 +119,11 @@ class MainWindowController(QtGui.QMainWindow):
             self.on_seismic_history_change)
         project.hydraulic_history.history_changed.connect(
             self.on_hydraulic_history_change)
-        project.rate_history.history_changed.connect(
-            self.on_rate_history_change)
-        project.forecast_history.history_changed.connect(
-            self.on_forecast_history_change)
 
         # Update all plots and our status
         self._replot_hydraulic_data()
         self._replot_seismic_data()
-        self._replot_seismic_rates()
         self.ui.seismic_data_plot.zoom(display_range=DisplayRange.WEEK)
-        self.ui.rate_forecast_plot.zoom(display_range=2*DisplayRange.DAY)
         # Trigger a project time change manually, so the plots will update
         self.on_project_time_change(project.project_time)
 
@@ -148,12 +142,9 @@ class MainWindowController(QtGui.QMainWindow):
             self.ui.seismic_data_plot.marker_pos = pos
             self.ui.hydraulic_data_plot.marker_pos = pos
             self.ui.seismic_data_plot.zoom_to_marker()
-            self.ui.rate_forecast_plot.marker_pos = pos
-            self.ui.rate_forecast_plot.zoom_to_marker()
         else:
             self.ui.seismic_data_plot.advance_time(dt)
             self.ui.hydraulic_data_plot.advance_time(dt)
-            self.ui.rate_forecast_plot.advance_time(dt)
         self.update_status()
 
     # Menu Actions
@@ -199,6 +190,12 @@ class MainWindowController(QtGui.QMainWindow):
             else:
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
+
+    def show_forecasts(self):
+        if self.forecast_window is None:
+            self.forecast_window = ForecastWindow(atlas_core=self.atlas_core,
+                                                  parent=self)
+            self.forecast_window.show()
 
     def view_seismic_data(self):
         self.table_view = QtGui.QTableView()
@@ -335,7 +332,6 @@ class MainWindowController(QtGui.QMainWindow):
     def _clear_plots(self):
         self.ui.seismic_data_plot.plot.setData()
         self.ui.hydraulic_data_plot.plot.setData()
-        self.ui.rate_forecast_plot.plot.setData()
 
     def _replot_seismic_data(self, update=False, max_time=None):
         """
@@ -375,29 +371,3 @@ class MainWindowController(QtGui.QMainWindow):
 
         x, y = map(list, zip(*data))
         self.ui.hydraulic_data_plot.plot.setData(x, y)
-
-    def _replot_seismic_rates(self):
-        """
-        Replots the forecasted and actual seismic _rates
-
-        """
-        epoch = datetime(1970, 1, 1)
-        data = [((r.t - epoch).total_seconds(), r.rate)
-                for r in self.project.rate_history.rates]
-        if len(data) == 0:
-            return
-
-        x, y = map(list, zip(*data))
-        self.ui.rate_forecast_plot.rate_plot.setData(x, y)
-
-    def _replot_forecasts(self):
-
-        epoch = datetime(1970, 1, 1)
-        data = [((r.t - epoch).total_seconds(), r.rate)
-                for r in self.project.forecast_history.rates]
-        if len(data) == 0:
-            return
-
-        x, y = map(list, zip(*data))
-        self.logger.info('replotting forecasts with h=' + str(y) + ' x=' + str(x))
-        self.ui.rate_forecast_plot.set_forecast_data(x, y)

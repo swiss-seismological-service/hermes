@@ -54,7 +54,7 @@ class SeismicRateHistory(QtCore.QObject):
 
     """
 
-    history_changed = QtCore.pyqtSignal()
+    history_changed = QtCore.pyqtSignal(object)
 
     def __init__(self):
         """
@@ -74,7 +74,7 @@ class SeismicRateHistory(QtCore.QObject):
     def rates(self, value):
         self._rates = value
         self.times = [rate.t for rate in value]
-        self.history_changed.emit()
+        self.history_changed.emit(self)
 
     def lookup_rate(self, t):
         idx = self.times.index(t)
@@ -84,7 +84,7 @@ class SeismicRateHistory(QtCore.QObject):
     def clear(self):
         self._rates = []
         self.times = []
-        self.history_changed.emit()
+        self.history_changed.emit(self)
 
     def compute_and_add(self, m, t_m, t_rates):
         """
@@ -121,6 +121,6 @@ class SeismicRateHistory(QtCore.QObject):
         self._rates += computed
         # Store the time and magnitude lower bin boundaries for reference
         self.times.append(t_rates)
-        self.history_changed.emit()
+        self.history_changed.emit(self)
         return computed
 

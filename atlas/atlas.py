@@ -10,7 +10,7 @@ the GUI and the Atlas core application).
 import sys
 import logging
 from PyQt4 import QtGui, QtCore
-from ui.mainwindowcontroller import MainWindowController
+from ui.mainwindow import MainWindow
 from atlascore import AtlasCore
 
 
@@ -41,7 +41,7 @@ class Atlas(QtCore.QObject):
         self.qt_app.setOrganizationName('SED')
 
         self.atlas_core = AtlasCore()
-        self.main_window = MainWindowController(self)
+        self.main_window = MainWindow(self)
         self.app_launched.connect(self.on_app_launched)
 
         # Configure Logging

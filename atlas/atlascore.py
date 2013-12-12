@@ -8,18 +8,20 @@ control facilities should be hooked up in the Atlas class instead.
 
 """
 
+import logging
+from datetime import timedelta
+from collections import namedtuple
+
 from PyQt4 import QtCore
 
+from forecastengine import ForecastEngine
+from isha.common import RunInput
 from model.store import Store
 from model.atlasproject import AtlasProject
 from model.datamodel import DataModel
-from forecastengine import ForecastEngine
 from model.simulator import Simulator
 from model.taskscheduler import TaskScheduler, ScheduledTask
-from datetime import timedelta
-from collections import namedtuple
 from eqstats import SeismicRate
-import logging
 
 
 # Used internally to pass information to repeating tasks
@@ -63,7 +65,6 @@ class AtlasCore(QtCore.QObject):
 
         # Initialize forecast engine
         engine = ForecastEngine()
-        engine.forecast_complete.connect(self.on_forecast_complete)
         self.forecast_engine = engine
 
         # Initialize simulator
@@ -167,15 +168,6 @@ class AtlasCore(QtCore.QObject):
             info = RunInfo(t=t, h_events=h_events, s_events=s_events)
             self._scheduler.run_pending_tasks(t, info)
 
-    # Forecast engine handling
-
-    def on_forecast_complete(self, models):
-        rj = models[0]
-        rates = [SeismicRate(rate, prob, t, timedelta(hours=6))
-                 for t, rate, prob in rj.run_results]
-        self._logger.debug('Adding ' + str(len(rates)) + ' rates to project')
-        self.project.forecast_history.rates = rates
-
     # Repeating tasks
 
     def run_forecast(self, info):
@@ -185,7 +177,17 @@ class AtlasCore(QtCore.QObject):
                                        self.DEF_NUM_FC_BINS,
                                        int)
         fc_times = [info.t + i * dt for i in range(num_bins)]
-        self.forecast_engine.run(info.h_events, info.s_events, fc_times)
+
+        # Prepare model run input
+        run_input = RunInput(info.t)
+        run_input.seismic_events = info.s_events
+        run_input.hydraulic_events = info.h_events
+        run_input.forecast_times = fc_times
+        # FIXME: the range should probably not be hardcoded
+        run_input.forecast_mag_range = (0, 6)
+
+        # Kick off the engine
+        self.forecast_engine.run(run_input)
 
     def update_rates(self, info):
         data = [(e.date_time, e.magnitude) for e in info.s_events]

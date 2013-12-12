@@ -341,32 +341,6 @@
      <string>Hydraulics</string>
     </property>
    </widget>
-   <widget class="QFrame" name="frame">
-    <property name="geometry">
-     <rect>
-      <x>380</x>
-      <y>380</y>
-      <width>481</width>
-      <height>231</height>
-     </rect>
-    </property>
-    <property name="frameShape">
-     <enum>QFrame::StyledPanel</enum>
-    </property>
-    <property name="frameShadow">
-     <enum>QFrame::Raised</enum>
-    </property>
-    <widget class="RateForecastPlotWidget" name="rate_forecast_plot" native="true">
-     <property name="geometry">
-      <rect>
-       <x>-1</x>
-       <y>-1</y>
-       <width>481</width>
-       <height>231</height>
-      </rect>
-     </property>
-    </widget>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -402,6 +376,7 @@
      <string>Window</string>
     </property>
     <addaction name="actionShow_GR"/>
+    <addaction name="actionForecasts"/>
    </widget>
    <addaction name="menu_Project"/>
    <addaction name="menuSimulation"/>
@@ -433,6 +408,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionShow_GR"/>
+   <addaction name="actionForecasts"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionImport_Seismic_Data">
@@ -466,7 +442,7 @@
      <normaloff>:/toolbar-buttons/images/view-gr-toolbar-button.png</normaloff>:/toolbar-buttons/images/view-gr-toolbar-button.png</iconset>
    </property>
    <property name="text">
-    <string>GR Relation</string>
+    <string>Catalog Statistics</string>
    </property>
   </action>
   <action name="actionImport_Hydraulic_Data">
@@ -484,6 +460,15 @@
     <string>New Project...</string>
    </property>
   </action>
+  <action name="actionForecasts">
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/toolbar-buttons/images/forecast-window-toolbar-button.png</normaloff>:/toolbar-buttons/images/forecast-window-toolbar-button.png</iconset>
+   </property>
+   <property name="text">
+    <string>Forecasts</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -495,12 +480,6 @@
   </customwidget>
   <customwidget>
    <class>HydraulicsPlotWidget</class>
-   <extends>QWidget</extends>
-   <header>plots</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>RateForecastPlotWidget</class>
    <extends>QWidget</extends>
    <header>plots</header>
    <container>1</container>

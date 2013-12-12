@@ -37,7 +37,6 @@ class AtlasProject(project.Project):
         self.seismic_history = SeismicEventHistory(self._store)
         self.hydraulic_history = HydraulicEventHistory(self._store)
         self.rate_history = SeismicRateHistory()
-        self.forecast_history = SeismicRateHistory()
 
         # Set the project time to the time of the first event
         event = self.earliest_event()

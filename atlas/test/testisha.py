@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from model.seismicevent import SeismicEvent
 from model.location import Location
 from isha.control import ModelController
-from isha.common import RunData, Model
+from isha.common import RunInput, Model
 from isha.rj import Rj
 
 
@@ -53,7 +53,7 @@ class ModelControllerTest(unittest.TestCase):
         """ Check if the model starts and terminates as expected """
         finished_slot = MagicMock()
         self.mock_model.finished.connect(finished_slot)
-        dummy_run_data = RunData()
+        dummy_run_data = RunInput()
         self.model_controller.start_forecast(dummy_run_data)
         # Wait until the model thread emits its signals. This is a bit fragile
         # since event delivery from the model thread might take longer
@@ -85,7 +85,7 @@ class RjTest(unittest.TestCase):
             main_shock = SeismicEvent(t_event, mw, location)
             shocks.append(main_shock)
 
-        run_data = RunData()
+        run_data = RunInput()
         run_data.seismic_events = shocks
         run_data.forecast_mag_range = (5.0, 7.0)
         run_data.forecast_times = [now]

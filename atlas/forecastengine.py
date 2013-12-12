@@ -8,9 +8,8 @@ See ForecastEngine class documentation for details.
 
 from PyQt4 import QtCore
 import logging
-from datetime import datetime
-from isha.common import RunData
-from isha.rj import Rj
+from isha.common import RunInput
+import ishamodelcontrol as mc
 
 
 class ForecastEngineState:
@@ -20,19 +19,28 @@ class ForecastEngineState:
 
 class ForecastEngine(QtCore.QObject):
     """
-    The forecast engine is responsible for forecast model management.
+    The forecast engine runs ISHA models.
 
-    The engine manages a collection of forecast models and launches those on
-    request. It weights the results and initiates model recalibration when
-    necessary.
+    The engine manages a collection of forecast models and launches model runs
+    on request. Model run results are archived in the result_sets dictionary
+    which is structured as followed:
+
+    result_sets: { t_run : { model: run_results }
+                   t_run : { model: run_results }
+                   ...
+                 }
+
+    where *t_run* is the run identifier that was given in run_input, *model*
+    is the model object and run_results is the RunResults object that resulted
+    from the model run.
 
     .. pyqt4:signal:finished: emitted when all models have finished and results
-    are ready to be collected. The payload contains the list of models that
-    were run during the forecast.
+    are ready to be collected. The payload contains the specific result set for
+    the run.
 
     """
 
-    forecast_complete = QtCore.pyqtSignal(list)
+    forecast_complete = QtCore.pyqtSignal(dict)
 
     def __init__(self):
         super(ForecastEngine, self).__init__()
@@ -40,57 +48,56 @@ class ForecastEngine(QtCore.QObject):
         self.state = ForecastEngineState.IDLE
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
-        # initialize models
-        rj = Rj(a=-1.6, b=1.0, p=1.2, c=0.05)
-        rj.finished.connect(self._on_rj_finished)
-        self._models = [rj]
-        self._model_states = {rj: ForecastEngineState.IDLE}
 
-    def run(self, h_events, s_events, t):
+        # Load models
+        self._models = mc.load_models()
+
+        # Add state information for each model and subscribe to relevant signals
+        self._model_states = {}
+        for model in self._models:
+            self._model_states[model] = ForecastEngineState.IDLE
+            model.finished.connect(self._on_model_run_finished)
+
+        # Initialize result sets
+        self.result_sets = {}
+
+    @property
+    def models(self):
+        return self._models
+
+    def run(self, run_input):
         """
         Run a new forecast with the events given in the function parameters.
 
-        :param h_events: list of hydraulic events
-        :type h_events: list of HydraulicEvent objects
-        :param s_events: list of seismic events
-        :type s_events: list of SeismicEvent objects
-        :param t: forecast times
-        :type t: list of datetime objects
+        :param run_input: input for this run
+        :type run_input: RunInput
 
         """
         # Skip this forecast if the engine is not IDLE
         if self.state != ForecastEngineState.IDLE:
             self.logger.warning('Attempted to initiate forecast while the '
                                 'engine is not idle. Skipping forecast at '
-                                't=' + str(t))
+                                't=' + str(run_input.t_run))
             return
-        self.logger.info('Initiating forecast at t = ' + str(t))
-        # Prepare model input
-        run_data = RunData()
-        run_data.seismic_events = s_events
-        run_data.hydraulic_events = h_events
-        run_data.forecast_times = t
-        # FIXME: the range should probably not be hardcoded
-        run_data.forecast_mag_range = (0, 6)
+        self.logger.info('Initiating forecast at t = ' +
+                         str(run_input.t_run))
 
-        # The following cannot be done in one step, since some model run
+        # TODO: look at this again
+        # The following cannot be accomplished in one step, since some model run
         # asynchronously and might finish before _update_state gets called
 
         # Prepare models
         for model in self._models:
             self._model_states[model] = ForecastEngineState.FORECASTING
-            model.prepare_run(run_data)
+            model.prepare_run(run_input)
         self._update_global_state()
         # Run models
         for model in self._models:
             model.run()
 
-    def get_forecast_results(self):
-        pass
-
     # State handling
 
-    def _update_global_state(self):
+    def _update_global_state(self, t_run=None):
         """ Set the engine state according to the individual model states """
         if ForecastEngineState.FORECASTING in self._model_states.values():
             new_state = ForecastEngineState.FORECASTING
@@ -100,11 +107,21 @@ class ForecastEngine(QtCore.QObject):
             self.state = new_state
             if new_state == ForecastEngineState.IDLE:
                 self.logger.info('Forecast complete')
-                self.forecast_complete.emit(self._models)
+                self.forecast_complete.emit(self.result_sets.get(t_run))
 
     # Model completion handlers
 
-    def _on_rj_finished(self, model):
+    def _register_run_results(self, results):
+        run_id = results.t_run
+        result_set = self.result_sets.get(run_id)
+        if result_set is None:
+            result_set = {}
+            self.result_sets[run_id] = result_set
+        result_set[results.model] = results
+
+    def _on_model_run_finished(self, run_results):
+        model = run_results.model
         self._model_states[model] = ForecastEngineState.IDLE
-        self.logger.debug('RJ run results: ' + str(model.run_results))
-        self._update_global_state()
+        self._register_run_results(run_results)
+        self.logger.debug('Model run complete: ' + model.title)
+        self._update_global_state(run_results.t_run)

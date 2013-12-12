@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Thu Dec  5 11:48:01 2013
+# Created: Thu Dec 12 13:29:46 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -122,14 +122,6 @@ class Ui_MainWindow(object):
         self.hydraulicsTitleLabel = QtGui.QLabel(self.centralWidget)
         self.hydraulicsTitleLabel.setGeometry(QtCore.QRect(10, 190, 141, 20))
         self.hydraulicsTitleLabel.setObjectName(_fromUtf8("hydraulicsTitleLabel"))
-        self.frame = QtGui.QFrame(self.centralWidget)
-        self.frame.setGeometry(QtCore.QRect(380, 380, 481, 231))
-        self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtGui.QFrame.Raised)
-        self.frame.setObjectName(_fromUtf8("frame"))
-        self.rate_forecast_plot = RateForecastPlotWidget(self.frame)
-        self.rate_forecast_plot.setGeometry(QtCore.QRect(-1, -1, 481, 231))
-        self.rate_forecast_plot.setObjectName(_fromUtf8("rate_forecast_plot"))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
@@ -177,6 +169,11 @@ class Ui_MainWindow(object):
         self.actionOpen_Project.setObjectName(_fromUtf8("actionOpen_Project"))
         self.actionNew_Project = QtGui.QAction(MainWindow)
         self.actionNew_Project.setObjectName(_fromUtf8("actionNew_Project"))
+        self.actionForecasts = QtGui.QAction(MainWindow)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/toolbar-buttons/images/forecast-window-toolbar-button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionForecasts.setIcon(icon1)
+        self.actionForecasts.setObjectName(_fromUtf8("actionForecasts"))
         self.menu_Project.addAction(self.actionNew_Project)
         self.menu_Project.addAction(self.actionOpen_Project)
         self.menu_Project.addSeparator()
@@ -188,10 +185,12 @@ class Ui_MainWindow(object):
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
         self.menuWindow.addAction(self.actionShow_GR)
+        self.menuWindow.addAction(self.actionForecasts)
         self.menuBar.addAction(self.menu_Project.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
         self.menuBar.addAction(self.menuWindow.menuAction())
         self.mainToolBar.addAction(self.actionShow_GR)
+        self.mainToolBar.addAction(self.actionForecasts)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -223,10 +222,11 @@ class Ui_MainWindow(object):
         self.actionStart_Simulation.setText(_translate("MainWindow", "Start Simulation", None))
         self.actionPause_Simulation.setText(_translate("MainWindow", "Pause Simulation", None))
         self.actionStop_Simulation.setText(_translate("MainWindow", "Stop Simulation", None))
-        self.actionShow_GR.setText(_translate("MainWindow", "GR Relation", None))
+        self.actionShow_GR.setText(_translate("MainWindow", "Catalog Statistics", None))
         self.actionImport_Hydraulic_Data.setText(_translate("MainWindow", "Import Hydraulic Data...", None))
         self.actionOpen_Project.setText(_translate("MainWindow", "&Open Project...", None))
         self.actionNew_Project.setText(_translate("MainWindow", "New Project...", None))
+        self.actionForecasts.setText(_translate("MainWindow", "Forecasts", None))
 
-from plots import SeismicityPlotWidget, HydraulicsPlotWidget, RateForecastPlotWidget
+from plots import SeismicityPlotWidget, HydraulicsPlotWidget
 import images_rc

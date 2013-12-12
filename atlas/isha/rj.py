@@ -7,7 +7,7 @@ in California", Science 243, 1173-1176
     
 """
 
-from common import Model
+from common import Model, RunResults, RunInput
 import numpy as np
 import logging
 from math import log, exp
@@ -73,10 +73,10 @@ class Rj(Model):
         b = self.b
         c = self.c
         p = self.p
-        events = self._run_data.seismic_events
-        forecast_times = self._run_data.forecast_times
-        t_bin = self._run_data.t_bin
-        m_min, m_max = self._run_data.forecast_mag_range
+        events = self._run_input.seismic_events
+        forecast_times = self._run_input.forecast_times
+        t_bin = self._run_input.t_bin
+        m_min, m_max = self._run_input.forecast_mag_range
         num_t = len(forecast_times)
 
         # extract all main shock event magnitudes into a numpy array
@@ -113,8 +113,9 @@ class Rj(Model):
         probabilities = 1 - np.exp(-forecast_rates)
 
         # Finish up
-        self.run_results = zip(forecast_times,
-                               forecast_rates.tolist(),
-                               probabilities.tolist())
-        self._logger.info('Model run completed')
-        self.finished.emit(self)
+        run_results = RunResults(t_run=self._run_input.t_run, model=self)
+        run_results.t_results = forecast_times
+        run_results.rates = forecast_rates.tolist()
+        run_results.probabilities = probabilities.tolist()
+        self._logger.debug('Model run completed')
+        self.finished.emit(run_results)
