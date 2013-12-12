@@ -133,7 +133,7 @@ class TaskScheduler:
         """
         for task in self.scheduled_tasks:
             if task.is_pending(t):
-                self._logger.info('Running Task: ' + task.name)
+                self._logger.debug('Running Task: ' + task.name)
                 task.run(run_info)
 
         self._update_schedule(t)

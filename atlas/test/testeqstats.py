@@ -14,7 +14,7 @@ from eqstats import SeismicRateHistory, SeismicRate
 
 
 class RateComputationTest(unittest.TestCase):
-    """ Tests EQ rates computations """
+    """ Tests EQ _rates computations """
 
     def setUp(self):
         """

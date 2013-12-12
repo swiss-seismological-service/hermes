@@ -8,20 +8,25 @@ control facilities should be hooked up in the Atlas class instead.
 
 """
 
+import logging
+from datetime import timedelta
+from collections import namedtuple
+
 from PyQt4 import QtCore
 
+from forecastengine import ForecastEngine
+from isha.common import RunInput
 from model.store import Store
 from model.atlasproject import AtlasProject
 from model.datamodel import DataModel
-from forecastengine import ForecastEngine
 from model.simulator import Simulator
 from model.taskscheduler import TaskScheduler, ScheduledTask
-from datetime import timedelta
-from collections import namedtuple
-import logging
+from eqstats import SeismicRate
 
 
 # Used internally to pass information to repeating tasks
+# t is the time when the task i launched, h_events and s_events is a list
+# containing all seismic and hydraulic events that occurred before t
 RunInfo = namedtuple('RunInfo', 't, h_events, s_events')
 
 
@@ -47,8 +52,10 @@ class AtlasCore(QtCore.QObject):
     state_changed = QtCore.pyqtSignal(int)
     project_loaded = QtCore.pyqtSignal(object)
 
-    DEF_FC_INT = 6  # default forecast interval is 6 hours
-    DEF_RT_INT = 1  # default rate computation interval is 1 minute
+    # Defaults
+    DEF_FC_INT = 6       # default forecast interval is 6 hours
+    DEF_NUM_FC_BINS = 6  # number of forecast bins to compute
+    DEF_RT_INT = 1       # default rate computation interval is 1 minute
 
     def __init__(self):
         """ Bootstraps the Atlas core logic """
@@ -56,8 +63,11 @@ class AtlasCore(QtCore.QObject):
         self.settings = QtCore.QSettings()
         self.project = None
 
-        # Initialize core components
-        self.forecast_engine = ForecastEngine()
+        # Initialize forecast engine
+        engine = ForecastEngine()
+        self.forecast_engine = engine
+
+        # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)
 
         # Time, state and other internals
@@ -161,7 +171,23 @@ class AtlasCore(QtCore.QObject):
     # Repeating tasks
 
     def run_forecast(self, info):
-        self.forecast_engine.run(info.h_events, info.s_events, info.t)
+        dt_h = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        dt = timedelta(hours=dt_h)
+        num_bins = self.settings.value('engine/num_fc_bins',
+                                       self.DEF_NUM_FC_BINS,
+                                       int)
+        fc_times = [info.t + i * dt for i in range(num_bins)]
+
+        # Prepare model run input
+        run_input = RunInput(info.t)
+        run_input.seismic_events = info.s_events
+        run_input.hydraulic_events = info.h_events
+        run_input.forecast_times = fc_times
+        # FIXME: the range should probably not be hardcoded
+        run_input.forecast_mag_range = (0, 6)
+
+        # Kick off the engine
+        self.forecast_engine.run(run_input)
 
     def update_rates(self, info):
         data = [(e.date_time, e.magnitude) for e in info.s_events]

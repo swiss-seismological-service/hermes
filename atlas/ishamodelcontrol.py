@@ -1,19 +1,42 @@
 # -*- encoding: utf-8 -*-
 """
-Provides a controller to run ISHA models
-    
+Provides Atlas specific control functions for ISHA models. The load_models()
+function is the central place where models are loaded to be used in ATLAS. I.e.
+this is also the place where you add new models to the system.
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from common import Model
 from PyQt4 import QtCore
 
+from isha.common import Model
+from isha.rj import Rj
 
-class ModelController(QtCore.QObject):
+
+def load_models():
     """
-    The controller handles communication between a specific ISHA model and the
-    forecast framework. It launches models in detached threads and communicates
+    Load ISHA models to use in Atlas. Register new models here.
+
+    The function returns a list of ModelInfo objects
+
+    To add a new model, simply instantiate it, give it a display title
+    and add it to the list of modules.
+
+    """
+    models = []
+
+    # Reasenberg Jones
+    rj_model = Rj(a=-1.6, b=1.0, p=1.2, c=0.05)
+    rj_model.title = 'Reasenberg-Jones'
+    models.append(rj_model)
+
+    return models
+
+
+class DetachedRunner(QtCore.QObject):
+    """
+    The controller launches models in detached threads and communicates
     status updates back to the framework.
 
     """
@@ -28,7 +51,7 @@ class ModelController(QtCore.QObject):
         :type model: Model
 
         """
-        super(ModelController, self).__init__()
+        super(DetachedRunner, self).__init__()
         self.model = model
         self._qthread = QtCore.QThread()
         self.model.moveToThread(self._qthread)
@@ -39,12 +62,12 @@ class ModelController(QtCore.QObject):
         # Make sure the thread ends before we destroy it
         self._qthread.wait()
 
-    def start_forecast(self, run_data):
+    def run(self, run_data):
         """
         Starts a new forecast with the information given in run_data
 
         :param run_data: model inputs and parameters for this forecast
-        :type run_data: RunData
+        :type run_data: RunInput
 
         """
         self.model.prepare_run(run_data)

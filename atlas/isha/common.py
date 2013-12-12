@@ -8,10 +8,10 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from PyQt4 import QtCore
+from collections import namedtuple
 from datetime import datetime, timedelta
 
-
-class RunData:
+class RunInput:
     """
     Holds ISHA model inputs and parameters for the next run. Not all models may
     require all of the inputs.
@@ -27,11 +27,30 @@ class RunData:
 
     """
 
-    def __init__(self):
+    def __init__(self, t_run):
+        """
+        Create input for a model run. The parameter t_run serves as an
+        identifier for the run.
+
+        """
+        self.t_run = t_run
         self.forecast_mag_range = None
         self.seismic_events = None
         self.forecast_times = None
         self.t_bin = 6
+
+
+class RunResults:
+    """
+    Models store their run results into this simple container structure
+
+    """
+    def __init__(self, t_run, model):
+        self.t_run = t_run
+        self.model = model
+        self.t_results = None
+        self.rates = None
+        self.probabilities = None
 
 
 class Model(QtCore.QObject):
@@ -40,9 +59,10 @@ class Model(QtCore.QObject):
     forecast models
 
     .. pyqt4:signal:finished: emitted when the model has finished its run.
-    Carries the model object as payload.
+    Carries the run results as payload.
 
     :ivar run_results: results of the last run
+    :ivar title: display title of the model
 
     """
 
@@ -51,19 +71,24 @@ class Model(QtCore.QObject):
     def __init__(self):
         """ Initializes the model """
         super(Model, self).__init__()
-        self._run_data = None
+        self._run_input = None
         self.run_results = None
+        self.title = 'Model'
 
-    def prepare_run(self, run_data):
+    @property
+    def run_input(self):
+        return self._run_input
+
+    def prepare_run(self, run_input):
         """
         Prepares the model for the next run. The data that is required for the
         run is supplied in *run_data*
 
-        :param run_data: data for the next run
-        :type run_data: RunData
+        :param run_input: data for the next run
+        :type run_data: RunInput
 
         """
-        self._run_data = run_data
+        self._run_input = run_input
 
     def run(self):
         """
@@ -74,4 +99,4 @@ class Model(QtCore.QObject):
         :pyqt4:signal:finished signal at the end of your implementation.
 
         """
-        assert(self._run_data is not None)
+        assert(self._run_input is not None)
