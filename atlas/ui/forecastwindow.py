@@ -77,7 +77,7 @@ class ForecastWindow(QtGui.QDialog):
             x = [(t - epoch).total_seconds() for t in results.t_results]
             y = results.rates
 
-            self.logger.info('replotting forecasts (' + str(len(x))) + ')'
+            self.logger.debug('Replotting forecasts (' + str(len(x)) + ')')
             self.ui.rate_forecast_plot.set_forecast_data(x, y)
 
     # Plot helpers
