@@ -4,7 +4,7 @@ Controller module for the main window
 
 """
 
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 from views.ui_mainwindow import Ui_MainWindow
 from forecastwindow import ForecastWindow
 from model.eventimporter import EventImporter
@@ -84,6 +84,7 @@ class MainWindow(QtGui.QMainWindow):
     # Qt Signal Slots
 
     def on_app_launch(self):
+        self._refresh_recent_files_menu()
         self.update_status()
         self.update_controls()
 
@@ -150,7 +151,46 @@ class MainWindow(QtGui.QMainWindow):
     # Menu Actions
 
     def open_project(self):
-        pass
+        home = os.path.expanduser("~")
+        path = QtGui.QFileDialog.getOpenFileName(None,
+                                                 'Open Project',
+                                                 home,
+                                                 'Atlas Project Files (*.atl)')
+        self._open_specific_project(path)
+
+    def _open_specific_project(self, path):
+        if path is None:
+            return
+        if self.atlas_core.project is not None:
+            self.atlas_core.close_project()
+        self.atlas_core.open_project(str(path))
+        # Update the list of recent files
+        settings = QtCore.QSettings()
+        recent_files = settings.value('general/recent_files', None)
+        if path in recent_files:
+            recent_files.insert(0, recent_files.pop(recent_files.index(path)))
+        else:
+            recent_files.insert(0, path)
+        del recent_files[4:]
+        settings.setValue('general/recent_files', recent_files)
+        self._refresh_recent_files_menu()
+
+    def _refresh_recent_files_menu(self):
+        settings = QtCore.QSettings()
+        files = settings.value('general/recent_files', [], type=str)
+        self.ui.menuOpen_Recent.clear()
+        for path in files:
+            path = str(path)
+            file_name = os.path.basename(path)
+            file_action = QtGui.QAction(file_name, self)
+            file_action.setData(path)
+            file_action.triggered.connect(self.open_recent_project)
+            self.ui.menuOpen_Recent.addAction(file_action)
+
+    def open_recent_project(self, path):
+        sender_action = self.sender()
+        path = str(sender_action.data().toString())
+        self._open_specific_project(path)
 
     def create_new_project(self):
         pass
@@ -190,6 +230,8 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
+
+
 
     def show_forecasts(self):
         if self.forecast_window is None:
@@ -368,6 +410,5 @@ class MainWindow(QtGui.QMainWindow):
 
         data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
                 for e in events if e.date_time < max_time]
-
         x, y = map(list, zip(*data))
         self.ui.hydraulic_data_plot.plot.setData(x, y)

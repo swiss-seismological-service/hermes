@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Thu Dec 12 13:29:46 2013
+# Created: Mon Dec 16 13:53:58 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -126,8 +126,10 @@ class Ui_MainWindow(object):
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
         self.menuBar.setObjectName(_fromUtf8("menuBar"))
-        self.menu_Project = QtGui.QMenu(self.menuBar)
-        self.menu_Project.setObjectName(_fromUtf8("menu_Project"))
+        self.menu_File = QtGui.QMenu(self.menuBar)
+        self.menu_File.setObjectName(_fromUtf8("menu_File"))
+        self.menuOpen_Recent = QtGui.QMenu(self.menu_File)
+        self.menuOpen_Recent.setObjectName(_fromUtf8("menuOpen_Recent"))
         self.menuSimulation = QtGui.QMenu(self.menuBar)
         self.menuSimulation.setObjectName(_fromUtf8("menuSimulation"))
         self.menuWindow = QtGui.QMenu(self.menuBar)
@@ -174,19 +176,20 @@ class Ui_MainWindow(object):
         icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/toolbar-buttons/images/forecast-window-toolbar-button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionForecasts.setIcon(icon1)
         self.actionForecasts.setObjectName(_fromUtf8("actionForecasts"))
-        self.menu_Project.addAction(self.actionNew_Project)
-        self.menu_Project.addAction(self.actionOpen_Project)
-        self.menu_Project.addSeparator()
-        self.menu_Project.addAction(self.actionImport_Seismic_Data)
-        self.menu_Project.addAction(self.actionImport_Hydraulic_Data)
-        self.menu_Project.addSeparator()
-        self.menu_Project.addAction(self.actionView_Data)
+        self.menu_File.addAction(self.actionNew_Project)
+        self.menu_File.addAction(self.actionOpen_Project)
+        self.menu_File.addAction(self.menuOpen_Recent.menuAction())
+        self.menu_File.addSeparator()
+        self.menu_File.addAction(self.actionImport_Seismic_Data)
+        self.menu_File.addAction(self.actionImport_Hydraulic_Data)
+        self.menu_File.addSeparator()
+        self.menu_File.addAction(self.actionView_Data)
         self.menuSimulation.addAction(self.actionStart_Simulation)
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
         self.menuWindow.addAction(self.actionShow_GR)
         self.menuWindow.addAction(self.actionForecasts)
-        self.menuBar.addAction(self.menu_Project.menuAction())
+        self.menuBar.addAction(self.menu_File.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
         self.menuBar.addAction(self.menuWindow.menuAction())
         self.mainToolBar.addAction(self.actionShow_GR)
@@ -214,7 +217,8 @@ class Ui_MainWindow(object):
         self.lastEventLabel.setText(_translate("MainWindow", "-", None))
         self.nextForecastLabel.setText(_translate("MainWindow", "-", None))
         self.hydraulicsTitleLabel.setText(_translate("MainWindow", "Hydraulics", None))
-        self.menu_Project.setTitle(_translate("MainWindow", "&Project", None))
+        self.menu_File.setTitle(_translate("MainWindow", "&File", None))
+        self.menuOpen_Recent.setTitle(_translate("MainWindow", "Open Recent", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
         self.menuWindow.setTitle(_translate("MainWindow", "Window", None))
         self.actionImport_Seismic_Data.setText(_translate("MainWindow", "&Import Seismic Data...", None))
