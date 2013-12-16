@@ -98,7 +98,16 @@ class AtlasCore(QtCore.QObject):
     # Project handling
 
     def open_project(self, path):
-        store_path = 'sqlite://' + path
+        """
+        Open ATLAS project file located at path
+
+        :param path: path to the atlas project file
+        :type path: str
+
+        """
+        # We add an additional / in front of the url. So now we have 3 slashes
+        # in total, because host and db-name section are both empty for sqlite
+        store_path = 'sqlite:///' + path
         store = Store(store_path, DataModel)
         self.project = AtlasProject(store)
         self.project.project_time_changed.connect(self._on_project_time_change)

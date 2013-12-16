@@ -69,8 +69,7 @@ class Atlas(QtCore.QObject):
         sys.exit(self.qt_app.exec_())
 
     def on_app_launched(self):
-        """ Load the default project """
-        self.atlas_core.open_project('/data.sqlite')
+        pass
 
     def _emit_app_launched(self):
         self.app_launched.emit()
