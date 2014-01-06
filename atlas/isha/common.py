@@ -8,8 +8,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from PyQt4 import QtCore
-from collections import namedtuple
-from datetime import datetime, timedelta
 
 class RunInput:
     """
