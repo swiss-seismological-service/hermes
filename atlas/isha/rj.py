@@ -26,8 +26,8 @@ class Rj(Model):
     :ivar b: Gutenberg-Richter b value
     :ivar p: Sequence specific empirical parameter for the Omori-Utsu (1961) law
     :ivar c: Sequence specific empirical parameter for the Omori-Utsu (1961) law
-    :ivar m_max: Maximum magnitude, default 3.5
-    :ivar m_c: Magnitude of completeness, default 0.9
+    :ivar m_max: Maximum magnitude
+    :ivar m_c: Magnitude of completeness
 
     """
 
