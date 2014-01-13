@@ -83,8 +83,8 @@ class ForecastEngine(QtCore.QObject):
                          str(run_input.t_run))
 
         # TODO: look at this again
-        # The following cannot be accomplished in one step, since some model run
-        # asynchronously and might finish before _update_state gets called
+        # The following cannot be accomplished in one step, since some models
+        # run asynchronously and might finish before _update_state gets called
 
         # Prepare models
         for model in self._models:
