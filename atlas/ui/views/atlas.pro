@@ -17,7 +17,8 @@ SOURCES +=
 HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui \
-    forecastwindow.ui
+    forecastwindow.ui \
+    simulationcontrolwindow.ui
 
 OTHER_FILES +=
 

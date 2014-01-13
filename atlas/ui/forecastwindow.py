@@ -32,7 +32,7 @@ class ForecastWindow(QtGui.QDialog):
         self.ui.rate_forecast_plot.zoom(display_range=2*DisplayRange.DAY)
         # Populate the models chooser combo box
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
-            self.on_model_selection_changed)
+            self.action_model_selection_changed)
         for model in self.atlas_core.forecast_engine.models:
             self.ui.modelSelectorComboBox.addItem(model.title)
 
@@ -43,9 +43,9 @@ class ForecastWindow(QtGui.QDialog):
             connect(self.on_forecast_complete)
 
         if self.atlas_core.project is not None:
-            self.connect_project(self.atlas_core.project)
+            self.observe_project_changes(self.atlas_core.project)
 
-    def connect_project(self, project):
+    def observe_project_changes(self, project):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
@@ -93,10 +93,12 @@ class ForecastWindow(QtGui.QDialog):
         self.clear_forecasts()
         self.clear_rates()
 
-    # Signal slots
+    # Button Actions
 
-    def on_model_selection_changed(self, index):
+    def action_model_selection_changed(self, index):
         self.replot_forecasts()
+
+    # Signals from the core
 
     def on_project_will_close(self, project):
         self.clear_plots()
@@ -121,7 +123,7 @@ class ForecastWindow(QtGui.QDialog):
         pass
 
     def on_project_load(self, project):
-        self.connect_project(project)
+        self.observe_project_changes(project)
         self.clear_forecasts()
         self.replot_seismic_rates()
 

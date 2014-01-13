@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Mon Dec 16 13:53:58 2013
+# Created: Mon Jan 13 09:52:25 2014
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(877, 721)
+        MainWindow.resize(877, 605)
         MainWindow.setUnifiedTitleAndToolBarOnMac(True)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName(_fromUtf8("centralWidget"))
@@ -46,36 +46,8 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.seismic_data_plot.sizePolicy().hasHeightForWidth())
         self.seismic_data_plot.setSizePolicy(sizePolicy)
         self.seismic_data_plot.setObjectName(_fromUtf8("seismic_data_plot"))
-        self.controlsBox = QtGui.QGroupBox(self.centralWidget)
-        self.controlsBox.setEnabled(True)
-        self.controlsBox.setGeometry(QtCore.QRect(10, 370, 351, 111))
-        self.controlsBox.setObjectName(_fromUtf8("controlsBox"))
-        self.simulationCheckBox = QtGui.QCheckBox(self.controlsBox)
-        self.simulationCheckBox.setGeometry(QtCore.QRect(100, 80, 90, 20))
-        self.simulationCheckBox.setChecked(True)
-        self.simulationCheckBox.setObjectName(_fromUtf8("simulationCheckBox"))
-        self.startButton = QtGui.QPushButton(self.controlsBox)
-        self.startButton.setGeometry(QtCore.QRect(10, 30, 111, 32))
-        self.startButton.setObjectName(_fromUtf8("startButton"))
-        self.pauseButton = QtGui.QPushButton(self.controlsBox)
-        self.pauseButton.setGeometry(QtCore.QRect(120, 30, 111, 32))
-        self.pauseButton.setObjectName(_fromUtf8("pauseButton"))
-        self.stopButton = QtGui.QPushButton(self.controlsBox)
-        self.stopButton.setGeometry(QtCore.QRect(230, 30, 111, 32))
-        self.stopButton.setObjectName(_fromUtf8("stopButton"))
-        self.speedBox = QtGui.QSpinBox(self.controlsBox)
-        self.speedBox.setGeometry(QtCore.QRect(260, 77, 71, 25))
-        self.speedBox.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-        self.speedBox.setMinimum(1)
-        self.speedBox.setMaximum(10000)
-        self.speedBox.setProperty("value", 1000)
-        self.speedBox.setObjectName(_fromUtf8("speedBox"))
-        self.speedLabel = QtGui.QLabel(self.controlsBox)
-        self.speedLabel.setGeometry(QtCore.QRect(204, 80, 51, 20))
-        self.speedLabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-        self.speedLabel.setObjectName(_fromUtf8("speedLabel"))
         self.statusBox = QtGui.QGroupBox(self.centralWidget)
-        self.statusBox.setGeometry(QtCore.QRect(10, 490, 351, 121))
+        self.statusBox.setGeometry(QtCore.QRect(10, 370, 351, 121))
         self.statusBox.setObjectName(_fromUtf8("statusBox"))
         self.coreStatusLabel = QtGui.QLabel(self.statusBox)
         self.coreStatusLabel.setGeometry(QtCore.QRect(10, 30, 271, 16))
@@ -176,6 +148,8 @@ class Ui_MainWindow(object):
         icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/toolbar-buttons/images/forecast-window-toolbar-button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionForecasts.setIcon(icon1)
         self.actionForecasts.setObjectName(_fromUtf8("actionForecasts"))
+        self.actionSimulation = QtGui.QAction(MainWindow)
+        self.actionSimulation.setObjectName(_fromUtf8("actionSimulation"))
         self.menu_File.addAction(self.actionNew_Project)
         self.menu_File.addAction(self.actionOpen_Project)
         self.menu_File.addAction(self.menuOpen_Recent.menuAction())
@@ -189,6 +163,7 @@ class Ui_MainWindow(object):
         self.menuSimulation.addAction(self.actionStop_Simulation)
         self.menuWindow.addAction(self.actionShow_GR)
         self.menuWindow.addAction(self.actionForecasts)
+        self.menuWindow.addAction(self.actionSimulation)
         self.menuBar.addAction(self.menu_File.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
         self.menuBar.addAction(self.menuWindow.menuAction())
@@ -201,13 +176,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "ATLAS i.s.", None))
         self.seismicityTitleLabel.setText(_translate("MainWindow", "Seismicity", None))
-        self.controlsBox.setTitle(_translate("MainWindow", "Controls", None))
-        self.simulationCheckBox.setText(_translate("MainWindow", "Simulation", None))
-        self.startButton.setText(_translate("MainWindow", "Start", None))
-        self.pauseButton.setText(_translate("MainWindow", "Pause", None))
-        self.stopButton.setText(_translate("MainWindow", "Stop", None))
-        self.speedBox.setSuffix(_translate("MainWindow", "x", None))
-        self.speedLabel.setText(_translate("MainWindow", "Speed", None))
         self.statusBox.setTitle(_translate("MainWindow", "Status", None))
         self.coreStatusLabel.setText(_translate("MainWindow", "Idle", None))
         self.projectTimeTitleLabel.setText(_translate("MainWindow", "Project Time:", None))
@@ -231,6 +199,7 @@ class Ui_MainWindow(object):
         self.actionOpen_Project.setText(_translate("MainWindow", "&Open Project...", None))
         self.actionNew_Project.setText(_translate("MainWindow", "New Project...", None))
         self.actionForecasts.setText(_translate("MainWindow", "Forecasts", None))
+        self.actionSimulation.setText(_translate("MainWindow", "Simulation", None))
 
 from plots import SeismicityPlotWidget, HydraulicsPlotWidget
 import images_rc

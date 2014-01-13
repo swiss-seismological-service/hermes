@@ -7,6 +7,7 @@ Controller module for the main window
 from PyQt4 import QtGui, QtCore
 from views.ui_mainwindow import Ui_MainWindow
 from forecastwindow import ForecastWindow
+from simulationcontrolwindow import SimulationControlWindow
 from model.eventimporter import EventImporter
 import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
@@ -33,6 +34,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # Other windows which are lazy-loaded
         self.forecast_window = None
+        self.simulation_control_window = None
 
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
@@ -48,27 +50,23 @@ class MainWindow(QtGui.QMainWindow):
 
         # Hook up the menu
         # ...Project
-        self.ui.actionNew_Project.triggered.connect(self.create_new_project)
-        self.ui.actionOpen_Project.triggered.connect(self.open_project)
+        self.ui.actionNew_Project.triggered.connect(self.action_new_project)
+        self.ui.actionOpen_Project.triggered.connect(self.action_open_project)
         self.ui.actionImport_Seismic_Data.triggered.connect(
-            self.import_seismic_data)
+            self.action_import_seismic_data)
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
-            self.import_hydraulic_data)
-        self.ui.actionView_Data.triggered.connect(self.view_seismic_data)
+            self.action_import_hydraulic_data)
+        self.ui.actionView_Data.triggered.connect(self.action_view_seismic_data)
         # ...Simulation
-        self.ui.actionStart_Simulation.triggered.connect(self.start_simulation)
-        self.ui.actionPause_Simulation.triggered.connect(self.pause_simulation)
-        self.ui.actionStop_Simulation.triggered.connect(self.stop_simulation)
+        self.ui.actionStart_Simulation.triggered.\
+            connect(self.action_start_simulation)
+        self.ui.actionPause_Simulation.triggered.\
+            connect(self.action_pause_simulation)
+        self.ui.actionStop_Simulation.triggered.\
+            connect(self.action_stop_simulation)
         # ...Window
-        self.ui.actionForecasts.triggered.connect(self.show_forecasts)
-
-        # Connect buttons
-        self.ui.startButton.pressed.connect(self.start_forecast)
-        self.ui.pauseButton.pressed.connect(self.pause_forecast)
-        self.ui.stopButton.pressed.connect(self.stop_forecast)
-        # ... other controls
-        self.ui.simulationCheckBox.stateChanged.connect(self.sim_state_changed)
-        self.ui.speedBox.valueChanged.connect(self.sim_speed_changed)
+        self.ui.actionForecasts.triggered.connect(self.action_show_forecasts)
+        self.ui.actionSimulation.triggered.connect(self.show_sim_controls)
 
         # Hook up essential signals from the core and the forecast engine
         atlas.app_launched.connect(self.on_app_launch)
@@ -150,7 +148,7 @@ class MainWindow(QtGui.QMainWindow):
 
     # Menu Actions
 
-    def open_project(self):
+    def action_open_project(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open Project',
@@ -163,10 +161,10 @@ class MainWindow(QtGui.QMainWindow):
             return
         if self.atlas_core.project is not None:
             self.atlas_core.close_project()
-        self.atlas_core.open_project(str(path))
+        self.atlas_core.action_open_project(str(path))
         # Update the list of recent files
         settings = QtCore.QSettings()
-        recent_files = settings.value('general/recent_files', None)
+        recent_files = settings.value('general/recent_files', None, type=str)
         if path in recent_files:
             recent_files.insert(0, recent_files.pop(recent_files.index(path)))
         else:
@@ -184,18 +182,18 @@ class MainWindow(QtGui.QMainWindow):
             file_name = os.path.basename(path)
             file_action = QtGui.QAction(file_name, self)
             file_action.setData(path)
-            file_action.triggered.connect(self.open_recent_project)
+            file_action.triggered.connect(self.action_open_recent)
             self.ui.menuOpen_Recent.addAction(file_action)
 
-    def open_recent_project(self, path):
+    def action_open_recent(self, path):
         sender_action = self.sender()
         path = str(sender_action.data().toString())
         self._open_specific_project(path)
 
-    def create_new_project(self):
+    def action_new_project(self):
         pass
 
-    def import_seismic_data(self):
+    def action_import_seismic_data(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open seismic data file',
@@ -204,7 +202,7 @@ class MainWindow(QtGui.QMainWindow):
         if path:
             self._import_file_to_history(path, history)
 
-    def import_hydraulic_data(self):
+    def action_import_hydraulic_data(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open hydraulic data file',
@@ -231,15 +229,13 @@ class MainWindow(QtGui.QMainWindow):
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
 
-
-
-    def show_forecasts(self):
+    def action_show_forecasts(self):
         if self.forecast_window is None:
             self.forecast_window = ForecastWindow(atlas_core=self.atlas_core,
                                                   parent=self)
             self.forecast_window.show()
 
-    def view_seismic_data(self):
+    def action_view_seismic_data(self):
         self.table_view = QtGui.QTableView()
         model = SeismicDataModel(self.project.seismic_history)
         self.table_view.setModel(model)
@@ -247,78 +243,35 @@ class MainWindow(QtGui.QMainWindow):
 
     # ... Simulation
 
-    def start_simulation(self):
+    def action_start_simulation(self):
         speed = self.ui.speedBox.value()
         self.atlas_core.simulator.speed = speed
-        self.atlas_core.start_simulation()
+        self.atlas_core.action_start_simulation()
 
-    def pause_simulation(self):
-        self.atlas_core.pause_simulation()
+    def action_pause_simulation(self):
+        self.atlas_core.action_pause_simulation()
 
-    def stop_simulation(self):
-        self.atlas_core.stop_simulation()
-
-    # Button Actions
-
-    def start_forecast(self):
-        if self.ui.simulationCheckBox.isChecked():
-            self.start_simulation()
-        else:
-            pass
-
-    def pause_forecast(self):
-        if self.ui.simulationCheckBox.isChecked():
-            self.pause_simulation()
-        else:
-            pass
-
-    def stop_forecast(self):
-        if self.ui.simulationCheckBox.isChecked():
-            self.stop_simulation()
-        else:
-            pass
-
-    def sim_state_changed(self):
-        pass
-
-    def sim_speed_changed(self):
-        speed = self.ui.speedBox.value()
-        self.atlas_core.simulator.speed = speed
+    def action_stop_simulation(self):
+        self.atlas_core.action_stop_simulation()
 
     # Control Updates
 
     def update_controls(self):
         state = self.atlas_core.state
         if state == CoreState.SIMULATING:
-            self.ui.simulationCheckBox.setEnabled(False)
-            self.ui.startButton.setEnabled(False)
-            self.ui.pauseButton.setEnabled(True)
-            self.ui.stopButton.setEnabled(True)
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(True)
             self.ui.actionStop_Simulation.setEnabled(True)
         elif state == CoreState.PAUSED:
-            self.ui.simulationCheckBox.setEnabled(False)
-            self.ui.startButton.setEnabled(True)
-            self.ui.pauseButton.setEnabled(False)
-            self.ui.stopButton.setEnabled(True)
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(True)
         elif state == CoreState.FORECASTING:
-            self.ui.simulationCheckBox.setEnabled(False)
-            self.ui.startButton.setEnabled(False)
-            self.ui.pauseButton.setEnabled(True)
-            self.ui.stopButton.setEnabled(True)
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(True)
             self.ui.actionStop_Simulation.setEnabled(True)
         else:
             # IDLE
-            self.ui.simulationCheckBox.setEnabled(True)
-            self.ui.startButton.setEnabled(True)
-            self.ui.pauseButton.setEnabled(False)
-            self.ui.stopButton.setEnabled(False)
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
