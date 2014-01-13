@@ -172,7 +172,7 @@ class AtlasCore(QtCore.QObject):
             return
 
         if self._scheduler.has_pending_tasks(t):
-            h_events = self.project.hydraulic_history.events_before(t)
+            h_events = self.project.hydraulic_history.events_after(t)
             s_events = self.project.seismic_history.events_before(t)
             info = RunInfo(t=t, h_events=h_events, s_events=s_events)
             self._scheduler.run_pending_tasks(t, info)
