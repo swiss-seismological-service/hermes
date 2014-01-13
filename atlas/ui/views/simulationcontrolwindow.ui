@@ -28,7 +28,7 @@
    <property name="title">
     <string>Simulation</string>
    </property>
-   <widget class="QCheckBox" name="simulationCheckBox">
+   <widget class="QCheckBox" name="infiniteSpeedCheckBox">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -137,7 +137,7 @@
    <property name="title">
     <string>Run Output</string>
    </property>
-   <widget class="QCheckBox" name="simulationCheckBox_2">
+   <widget class="QCheckBox" name="writeResultsToFileCheckBox">
     <property name="geometry">
      <rect>
       <x>20</x>

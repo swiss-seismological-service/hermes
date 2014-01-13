@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'simulationcontrolwindow.ui'
 #
-# Created: Mon Jan 13 09:25:07 2014
+# Created: Mon Jan 13 11:33:11 2014
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -31,10 +31,10 @@ class Ui_SimulationControlWindow(object):
         self.controlsBox.setEnabled(True)
         self.controlsBox.setGeometry(QtCore.QRect(10, 0, 371, 121))
         self.controlsBox.setObjectName(_fromUtf8("controlsBox"))
-        self.simulationCheckBox = QtGui.QCheckBox(self.controlsBox)
-        self.simulationCheckBox.setGeometry(QtCore.QRect(20, 80, 131, 20))
-        self.simulationCheckBox.setChecked(True)
-        self.simulationCheckBox.setObjectName(_fromUtf8("simulationCheckBox"))
+        self.infiniteSpeedCheckBox = QtGui.QCheckBox(self.controlsBox)
+        self.infiniteSpeedCheckBox.setGeometry(QtCore.QRect(20, 80, 131, 20))
+        self.infiniteSpeedCheckBox.setChecked(True)
+        self.infiniteSpeedCheckBox.setObjectName(_fromUtf8("infiniteSpeedCheckBox"))
         self.startButton = QtGui.QPushButton(self.controlsBox)
         self.startButton.setGeometry(QtCore.QRect(10, 30, 111, 32))
         self.startButton.setObjectName(_fromUtf8("startButton"))
@@ -58,10 +58,10 @@ class Ui_SimulationControlWindow(object):
         self.groupBox = QtGui.QGroupBox(SimulationControlWindow)
         self.groupBox.setGeometry(QtCore.QRect(10, 130, 371, 101))
         self.groupBox.setObjectName(_fromUtf8("groupBox"))
-        self.simulationCheckBox_2 = QtGui.QCheckBox(self.groupBox)
-        self.simulationCheckBox_2.setGeometry(QtCore.QRect(20, 30, 221, 20))
-        self.simulationCheckBox_2.setChecked(True)
-        self.simulationCheckBox_2.setObjectName(_fromUtf8("simulationCheckBox_2"))
+        self.writeResultsToFileCheckBox = QtGui.QCheckBox(self.groupBox)
+        self.writeResultsToFileCheckBox.setGeometry(QtCore.QRect(20, 30, 221, 20))
+        self.writeResultsToFileCheckBox.setChecked(True)
+        self.writeResultsToFileCheckBox.setObjectName(_fromUtf8("writeResultsToFileCheckBox"))
         self.label = QtGui.QLabel(self.groupBox)
         self.label.setGeometry(QtCore.QRect(160, 65, 201, 20))
         font = QtGui.QFont()
@@ -78,14 +78,14 @@ class Ui_SimulationControlWindow(object):
     def retranslateUi(self, SimulationControlWindow):
         SimulationControlWindow.setWindowTitle(_translate("SimulationControlWindow", "Dialog", None))
         self.controlsBox.setTitle(_translate("SimulationControlWindow", "Simulation", None))
-        self.simulationCheckBox.setText(_translate("SimulationControlWindow", "As fast as possible", None))
+        self.infiniteSpeedCheckBox.setText(_translate("SimulationControlWindow", "As fast as possible", None))
         self.startButton.setText(_translate("SimulationControlWindow", "Start", None))
         self.pauseButton.setText(_translate("SimulationControlWindow", "Pause", None))
         self.stopButton.setText(_translate("SimulationControlWindow", "Stop", None))
         self.speedBox.setSuffix(_translate("SimulationControlWindow", "x", None))
         self.speedLabel.setText(_translate("SimulationControlWindow", "Speed", None))
         self.groupBox.setTitle(_translate("SimulationControlWindow", "Run Output", None))
-        self.simulationCheckBox_2.setText(_translate("SimulationControlWindow", "Write simulation results to file", None))
+        self.writeResultsToFileCheckBox.setText(_translate("SimulationControlWindow", "Write simulation results to file", None))
         self.label.setText(_translate("SimulationControlWindow", "~/Desktop/AtlasResults", None))
         self.pushButton.setText(_translate("SimulationControlWindow", "Output Directory...", None))
 
