@@ -16,6 +16,15 @@ from model.simulator import Simulator
 # timer events is delayed, this might have to be decreased
 TEST_SPEED = 10.0
 
+class SignalEmitter(QtCore.QObject):
+    """
+    The only purpose of this class is to provide the test signal (since this
+    is only possible from a class that inherits from QObject)
+
+    """
+    test_signal = QtCore.pyqtSignal()
+
+
 class BasicOperation(unittest.TestCase):
     """ Basic operation of the simulator """
 
@@ -70,6 +79,24 @@ class BasicOperation(unittest.TestCase):
                         ')')
         self.assertGreater(self.t_elapsed, min_t,
                            'Event delivery too fast')
+
+    def test_start_with_external_signal(self):
+        signal_emmiter = SignalEmitter()
+        self.configure_time_range(3600)
+        start_time = self.simulator.time_range[0]
+        dt = timedelta(seconds=1800)
+        self.simulator.start_on_external_signal(signal_emmiter.test_signal, dt)
+        self.assertEqual(self.simulation_time, start_time + dt,
+                         'First step was not executed immediately')
+        signal_emmiter.test_signal.emit()
+        self.app.processEvents()
+        self.assertEqual(self.simulation_time, start_time + 2 * dt,
+                         'Simulator did not step on external signal')
+        # The simulation should now be finished
+        signal_emmiter.test_signal.emit()
+        self.app.processEvents()
+        self.assertEqual(self.simulation_time, start_time + 2 * dt,
+                         'Simulator has not ended as expected')
 
     def test_pause(self):
         """ Tests pausing the simulator """

@@ -36,20 +36,21 @@ class Simulator(object):
         self._paused = False
         self._timer.timeout.connect(self._do_step)
 
+        # these are used when simulating on an external signal instead of the
+        # internal timer
+        self._external_signal = None
+        self._dt = None
+
     @property
     def simulation_time(self):
         return self._simulation_time
 
     def start(self):
-        """Starts the simulation at the time of the first event in the
-        catalog.
+        """
+        Starts the simulation at start of the simulation time range
 
         """
-        if self.time_range is None:
-            self._logger.warning('Attempted to start simulator without setting'
-                                 'a time range.')
-            return
-
+        assert self.time_range is not None, 'Set a time range before simulating'
         if not self._paused:
             self._simulation_time = self.time_range[0]
             self._stopped = False
@@ -59,13 +60,42 @@ class Simulator(object):
     def pause(self):
         """ Pauses the simulation. Unpause with start. """
         self._paused = True
-        self._timer.stop()
+        if self._external_signal is None:
+            self._timer.stop()
 
     def stop(self):
         """ Stops the simulation"""
         self._paused = False
         self._stopped = True
-        self._timer.stop()
+        if self._external_signal is None:
+            self._timer.stop()
+        else:
+            self._external_signal.disconnect(self._do_step)
+            self._external_signal = None
+            self._dt = None
+
+    def start_on_external_signal(self, step_signal, dt):
+        """
+        Runs the simulator on an external signal.
+
+        The simulator listens to the *step_signal* and increases the project
+        time by dt whenever the signal is received. The first step is executed
+        immediately
+
+        :param step_signal: signal on which to simulate a time step
+        :type step_signal: pyqt signal
+        :param dt: time step
+        :type dt: timedelta
+
+        """
+        assert self.time_range is not None, 'Set a time range before simulating'
+        self._dt = dt
+        self._external_signal = step_signal
+        self._external_signal.connect(self._do_step)
+        self._simulation_time = self.time_range[0] + dt
+        self._handler(self._simulation_time)
+
+
 
     def _do_step(self):
         # skip any spurious events on start stop
@@ -73,8 +103,11 @@ class Simulator(object):
             return
 
         simulation_ended = False
-        dt = self.step_time * self.speed / 1000
-        self._simulation_time += timedelta(seconds=dt)
+        if self._external_signal is None:
+            dt = timedelta(seconds=self.step_time * self.speed / 1000)
+        else:
+            dt = self._dt
+        self._simulation_time += dt
 
         if self._simulation_time >= self.time_range[1]:
             simulation_ended = True
