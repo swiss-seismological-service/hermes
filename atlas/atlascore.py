@@ -120,22 +120,32 @@ class AtlasCore(QtCore.QObject):
 
     # Simulation
 
-    def start_simulation(self):
+    def start_simulation(self, infinite_speed=False):
         """
         Starts the simulation.
 
-        Replays the events from the seismic history.
+        Replays the events from the seismic history. If run with infinite_speed,
+        the core will compute the next forecast whenever the previous has
+        finished.
 
         """
         if self.project is None:
             return
 
         self.simulator.time_range = self.project.event_time_range()
-        self.simulator.start()
+        if infinite_speed:
+            dt_h = self.settings.value('engine/fc_interval',
+                                       self.DEF_FC_INT, float)
+            dt = timedelta(hours=dt_h)
+            step_signal = self.forecast_engine.forecast_complete
+            self.simulator.start_on_external_signal(step_signal, dt)
+        else:
+            self.simulator.start()
         self._scheduler.reset_schedule(self.simulator.simulation_time)
         self.state = CoreState.SIMULATING
         self.state_changed.emit(self.state)
-        self._logger.info('Starting simulation')
+        self._logger.info('Starting simulation (infinite speed: '
+                          + str(infinite_speed))
 
     def pause_simulation(self):
         """ Pauses the simulation. """
