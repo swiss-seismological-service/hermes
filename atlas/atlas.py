@@ -8,10 +8,12 @@ the GUI and the Atlas core application).
 """
 
 import sys
+import sip
 import logging
 from PyQt4 import QtGui, QtCore
 from ui.mainwindow import MainWindow
 from atlascore import AtlasCore
+from atlassettings import AppSettings
 
 
 class Atlas(QtCore.QObject):
@@ -34,13 +36,19 @@ class Atlas(QtCore.QObject):
         """
         super(Atlas, self).__init__()
 
+        # We use QVariant API v2 since it automatically converts python objects
+        # to QVariants and vice versa
+        sip.setapi('QVariant', 2)
+
+        self.app_settings = AppSettings()
+
         self.qt_app = QtGui.QApplication(sys.argv)
         self.qt_app.setApplicationName('Atlas')
         self.qt_app.setOrganizationDomain('seismo.ethz.ch')
         self.qt_app.setApplicationVersion('0.1')
         self.qt_app.setOrganizationName('SED')
 
-        self.atlas_core = AtlasCore()
+        self.atlas_core = AtlasCore(settings=self.app_settings)
         self.main_window = MainWindow(self)
         self.app_launched.connect(self.on_app_launched)
 

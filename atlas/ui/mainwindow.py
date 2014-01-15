@@ -7,7 +7,7 @@ Controller module for the main window
 from PyQt4 import QtGui, QtCore
 from views.ui_mainwindow import Ui_MainWindow
 from forecastwindow import ForecastWindow
-from simulationcontrolwindow import SimulationControlWindow
+from settingswindow import SettingsWindow
 from model.eventimporter import EventImporter
 import atlasuihelpers as helpers
 from models.seismicdatamodel import SeismicDataModel
@@ -34,7 +34,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # Other windows which are lazy-loaded
         self.forecast_window = None
-        self.simulation_control_window = None
+        self.settings_window = None
 
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
@@ -42,6 +42,7 @@ class MainWindow(QtGui.QMainWindow):
         # Keep a reference to the engine (business logic) and the currently
         # loaded project
         self.atlas_core = atlas.atlas_core
+        self.settings = atlas.app_settings
         self.project = None
 
         # Setup the user interface
@@ -49,7 +50,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
 
         # Hook up the menu
-        # ...Project
+        # ...File
         self.ui.actionNew_Project.triggered.connect(self.action_new_project)
         self.ui.actionOpen_Project.triggered.connect(self.action_open_project)
         self.ui.actionImport_Seismic_Data.triggered.connect(
@@ -57,6 +58,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
             self.action_import_hydraulic_data)
         self.ui.actionView_Data.triggered.connect(self.action_view_seismic_data)
+        self.ui.actionSettings.triggered.connect(self.action_show_settings)
         # ...Simulation
         self.ui.actionStart_Simulation.triggered.\
             connect(self.action_start_simulation)
@@ -66,7 +68,8 @@ class MainWindow(QtGui.QMainWindow):
             connect(self.action_stop_simulation)
         # ...Window
         self.ui.actionForecasts.triggered.connect(self.action_show_forecasts)
-        self.ui.actionSimulation.triggered.connect(self.show_sim_controls)
+        self.ui.actionSimulation.triggered.\
+            connect(self.action_show_sim_controls)
 
         # Hook up essential signals from the core and the forecast engine
         atlas.app_launched.connect(self.on_app_launch)
@@ -83,6 +86,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def on_app_launch(self):
         self._refresh_recent_files_menu()
+        self.action_show_sim_controls()
         self.update_status()
         self.update_controls()
 
@@ -163,8 +167,7 @@ class MainWindow(QtGui.QMainWindow):
             self.atlas_core.close_project()
         self.atlas_core.action_open_project(str(path))
         # Update the list of recent files
-        settings = QtCore.QSettings()
-        recent_files = settings.value('general/recent_files', None, type=str)
+        recent_files = self.settings.value('general/recent_files')
         if path in recent_files:
             recent_files.insert(0, recent_files.pop(recent_files.index(path)))
         else:
@@ -174,8 +177,7 @@ class MainWindow(QtGui.QMainWindow):
         self._refresh_recent_files_menu()
 
     def _refresh_recent_files_menu(self):
-        settings = QtCore.QSettings()
-        files = settings.value('general/recent_files', [], type=str)
+        files = self.settings.value('general/recent_files')
         self.ui.menuOpen_Recent.clear()
         for path in files:
             path = str(path)
@@ -233,7 +235,13 @@ class MainWindow(QtGui.QMainWindow):
         if self.forecast_window is None:
             self.forecast_window = ForecastWindow(atlas_core=self.atlas_core,
                                                   parent=self)
-            self.forecast_window.show()
+        self.forecast_window.show()
+
+    def action_show_settings(self):
+        if self.settings_window is None:
+            self.settings_window = SettingsWindow(atlas_core=self.atlas_core,
+                                                  parent=self)
+        self.simulation_control_window.show()
 
     def action_view_seismic_data(self):
         self.table_view = QtGui.QTableView()
@@ -262,19 +270,31 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(True)
             self.ui.actionStop_Simulation.setEnabled(True)
+            self.ui.startButton.setEnabled(False)
+            self.ui.pauseButton.setEnabled(True)
+            self.ui.stopButton.setEnabled(True)
         elif state == CoreState.PAUSED:
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(True)
+            self.ui.startButton.setEnabled(True)
+            self.ui.pauseButton.setEnabled(False)
+            self.ui.stopButton.setEnabled(True)
         elif state == CoreState.FORECASTING:
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(True)
             self.ui.actionStop_Simulation.setEnabled(True)
+            self.ui.startButton.setEnabled(False)
+            self.ui.pauseButton.setEnabled(True)
+            self.ui.stopButton.setEnabled(True)
         else:
             # IDLE
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
+            self.ui.startButton.setEnabled(True)
+            self.ui.pauseButton.setEnabled(False)
+            self.ui.stopButton.setEnabled(False)
 
     # Status Updates
 
@@ -298,7 +318,8 @@ class MainWindow(QtGui.QMainWindow):
         if core.state == CoreState.SIMULATING:
             event = self.project.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
-            self.ui.projectTimeLabel.setText(self.displayed_project_time.ctime())
+            self.ui.projectTimeLabel.\
+                setText(self.displayed_project_time.ctime())
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         elif core.state == CoreState.FORECASTING:

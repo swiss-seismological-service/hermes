@@ -8,7 +8,7 @@ RESOURCE_DIR = .
 COMPILED_DIR = .
 
 #UI files to compile
-UI_FILES = mainwindow.ui forecastwindow.ui simulationcontrolwindow.ui
+UI_FILES = mainwindow.ui forecastwindow.ui settingswindow.ui
 
 #Qt resource files to compile
 RESOURCES = images.qrc 

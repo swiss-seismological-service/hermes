@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'simulationcontrolwindow.ui'
 #
-# Created: Mon Jan 13 11:33:11 2014
+# Created: Mon Jan 13 13:56:26 2014
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -45,6 +45,7 @@ class Ui_SimulationControlWindow(object):
         self.stopButton.setGeometry(QtCore.QRect(230, 30, 111, 32))
         self.stopButton.setObjectName(_fromUtf8("stopButton"))
         self.speedBox = QtGui.QSpinBox(self.controlsBox)
+        self.speedBox.setEnabled(False)
         self.speedBox.setGeometry(QtCore.QRect(260, 77, 71, 25))
         self.speedBox.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.speedBox.setMinimum(1)

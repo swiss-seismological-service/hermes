@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Mon Jan 13 09:52:25 2014
+# Created: Mon Jan 13 16:12:11 2014
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -47,7 +47,7 @@ class Ui_MainWindow(object):
         self.seismic_data_plot.setSizePolicy(sizePolicy)
         self.seismic_data_plot.setObjectName(_fromUtf8("seismic_data_plot"))
         self.statusBox = QtGui.QGroupBox(self.centralWidget)
-        self.statusBox.setGeometry(QtCore.QRect(10, 370, 351, 121))
+        self.statusBox.setGeometry(QtCore.QRect(510, 370, 351, 121))
         self.statusBox.setObjectName(_fromUtf8("statusBox"))
         self.coreStatusLabel = QtGui.QLabel(self.statusBox)
         self.coreStatusLabel.setGeometry(QtCore.QRect(10, 30, 271, 16))
@@ -94,6 +94,15 @@ class Ui_MainWindow(object):
         self.hydraulicsTitleLabel = QtGui.QLabel(self.centralWidget)
         self.hydraulicsTitleLabel.setGeometry(QtCore.QRect(10, 190, 141, 20))
         self.hydraulicsTitleLabel.setObjectName(_fromUtf8("hydraulicsTitleLabel"))
+        self.stopButton = QtGui.QPushButton(self.centralWidget)
+        self.stopButton.setGeometry(QtCore.QRect(20, 450, 111, 32))
+        self.stopButton.setObjectName(_fromUtf8("stopButton"))
+        self.startButton = QtGui.QPushButton(self.centralWidget)
+        self.startButton.setGeometry(QtCore.QRect(20, 390, 111, 32))
+        self.startButton.setObjectName(_fromUtf8("startButton"))
+        self.pauseButton = QtGui.QPushButton(self.centralWidget)
+        self.pauseButton.setGeometry(QtCore.QRect(20, 420, 111, 32))
+        self.pauseButton.setObjectName(_fromUtf8("pauseButton"))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
@@ -150,6 +159,8 @@ class Ui_MainWindow(object):
         self.actionForecasts.setObjectName(_fromUtf8("actionForecasts"))
         self.actionSimulation = QtGui.QAction(MainWindow)
         self.actionSimulation.setObjectName(_fromUtf8("actionSimulation"))
+        self.actionSettings = QtGui.QAction(MainWindow)
+        self.actionSettings.setObjectName(_fromUtf8("actionSettings"))
         self.menu_File.addAction(self.actionNew_Project)
         self.menu_File.addAction(self.actionOpen_Project)
         self.menu_File.addAction(self.menuOpen_Recent.menuAction())
@@ -158,6 +169,8 @@ class Ui_MainWindow(object):
         self.menu_File.addAction(self.actionImport_Hydraulic_Data)
         self.menu_File.addSeparator()
         self.menu_File.addAction(self.actionView_Data)
+        self.menu_File.addSeparator()
+        self.menu_File.addAction(self.actionSettings)
         self.menuSimulation.addAction(self.actionStart_Simulation)
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
@@ -185,6 +198,9 @@ class Ui_MainWindow(object):
         self.lastEventLabel.setText(_translate("MainWindow", "-", None))
         self.nextForecastLabel.setText(_translate("MainWindow", "-", None))
         self.hydraulicsTitleLabel.setText(_translate("MainWindow", "Hydraulics", None))
+        self.stopButton.setText(_translate("MainWindow", "Stop", None))
+        self.startButton.setText(_translate("MainWindow", "Start", None))
+        self.pauseButton.setText(_translate("MainWindow", "Pause", None))
         self.menu_File.setTitle(_translate("MainWindow", "&File", None))
         self.menuOpen_Recent.setTitle(_translate("MainWindow", "Open Recent", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
@@ -200,6 +216,7 @@ class Ui_MainWindow(object):
         self.actionNew_Project.setText(_translate("MainWindow", "New Project...", None))
         self.actionForecasts.setText(_translate("MainWindow", "Forecasts", None))
         self.actionSimulation.setText(_translate("MainWindow", "Simulation", None))
+        self.actionSettings.setText(_translate("MainWindow", "Settings...", None))
 
 from plots import SeismicityPlotWidget, HydraulicsPlotWidget
 import images_rc

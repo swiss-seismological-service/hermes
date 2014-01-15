@@ -95,8 +95,6 @@ class Simulator(object):
         self._simulation_time = self.time_range[0] + dt
         self._handler(self._simulation_time)
 
-
-
     def _do_step(self):
         # skip any spurious events on start stop
         if self._paused or self._stopped:

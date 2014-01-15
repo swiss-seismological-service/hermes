@@ -65,7 +65,7 @@
    <widget class="QGroupBox" name="statusBox">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>510</x>
       <y>370</y>
       <width>351</width>
       <height>121</height>
@@ -229,6 +229,45 @@
      <string>Hydraulics</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="stopButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>450</y>
+      <width>111</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="startButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>390</y>
+      <width>111</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Start</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pauseButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>420</y>
+      <width>111</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Pause</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -256,6 +295,8 @@
     <addaction name="actionImport_Hydraulic_Data"/>
     <addaction name="separator"/>
     <addaction name="actionView_Data"/>
+    <addaction name="separator"/>
+    <addaction name="actionSettings"/>
    </widget>
    <widget class="QMenu" name="menuSimulation">
     <property name="title">
@@ -367,6 +408,11 @@
   <action name="actionSimulation">
    <property name="text">
     <string>Simulation</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings...</string>
    </property>
   </action>
  </widget>

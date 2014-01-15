@@ -21,7 +21,6 @@ from model.atlasproject import AtlasProject
 from model.datamodel import DataModel
 from model.simulator import Simulator
 from model.taskscheduler import TaskScheduler, ScheduledTask
-from eqstats import SeismicRate
 
 
 # Used internally to pass information to repeating tasks
@@ -52,15 +51,16 @@ class AtlasCore(QtCore.QObject):
     state_changed = QtCore.pyqtSignal(int)
     project_loaded = QtCore.pyqtSignal(object)
 
-    # Defaults
-    DEF_FC_INT = 6       # default forecast interval is 6 hours
-    DEF_NUM_FC_BINS = 6  # number of forecast bins to compute
-    DEF_RT_INT = 1       # default rate computation interval is 1 minute
+    def __init__(self, settings):
+        """
+        Bootstraps the Atlas core logic
 
-    def __init__(self):
-        """ Bootstraps the Atlas core logic """
+        :param settings: object that holds the app settings
+        :type settings: AppSettings
+
+        """
         super(AtlasCore, self).__init__()
-        self.settings = QtCore.QSettings()
+        self.settings = settings
         self.project = None
 
         # Initialize forecast engine
@@ -78,14 +78,14 @@ class AtlasCore(QtCore.QObject):
         # Initialize scheduled tasks
         self._scheduler = TaskScheduler()
         # ...forecasting
-        dt = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        dt = self.settings.value('engine/fc_interval')
         forecast_task = ScheduledTask(self.run_forecast,
                                       timedelta(hours=dt),
                                       'Forecast')
         self._scheduler.add_task(forecast_task)
         self._forecast_task = forecast_task  # keep a reference for later
         # ...rate computations
-        dt = self.settings.value('engine/rt_interval', self.DEF_RT_INT, float)
+        dt = self.settings.value('engine/rt_interval')
         rate_update_task = ScheduledTask(self.update_rates,
                                          timedelta(minutes=dt),
                                          'Rate update')
@@ -118,28 +118,44 @@ class AtlasCore(QtCore.QObject):
         self.project.close()
         self.project = None
 
+    # Running
+
+    def start(self):
+        if self.settings.value('general/lab_mode'):
+            self.start_simulation()
+        else:
+            self._logger.notice('ATLAS only works in lab mode at the moment')
+
+    def pause(self):
+        if self.settings.value('general/lab_mode'):
+            self.pause_simulation()
+
+    def stop(self):
+        if self.settings.value('general/lab_mode'):
+            self.stop_simulation()
+
     # Simulation
 
-    def start_simulation(self, infinite_speed=False):
+    def start_simulation(self):
         """
         Starts the simulation.
 
-        Replays the events from the seismic history. If run with infinite_speed,
-        the core will compute the next forecast whenever the previous has
-        finished.
+        Replays the events from the seismic history.
 
         """
         if self.project is None:
             return
 
+        infinite_speed = self.settings.value('lab_mode/infinite_speed')
+
         self.simulator.time_range = self.project.event_time_range()
         if infinite_speed:
-            dt_h = self.settings.value('engine/fc_interval',
-                                       self.DEF_FC_INT, float)
+            dt_h = self.settings.value('engine/fc_interval')
             dt = timedelta(hours=dt_h)
             step_signal = self.forecast_engine.forecast_complete
             self.simulator.start_on_external_signal(step_signal, dt)
         else:
+            self.simulator.speed = self.settings.value('lab_mode/speed')
             self.simulator.start()
         self._scheduler.reset_schedule(self.simulator.simulation_time)
         self.state = CoreState.SIMULATING
@@ -190,11 +206,9 @@ class AtlasCore(QtCore.QObject):
     # Repeating tasks
 
     def run_forecast(self, info):
-        dt_h = self.settings.value('engine/fc_interval', self.DEF_FC_INT, float)
+        dt_h = self.settings.value('engine/fc_bin_size')
         dt = timedelta(hours=dt_h)
-        num_bins = self.settings.value('engine/num_fc_bins',
-                                       self.DEF_NUM_FC_BINS,
-                                       int)
+        num_bins = self.settings.value('engine/num_fc_bins')
         fc_times = [info.t + i * dt for i in range(num_bins)]
 
         # Prepare model run input
