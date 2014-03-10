@@ -291,12 +291,12 @@
     <addaction name="actionOpen_Project"/>
     <addaction name="menuOpen_Recent"/>
     <addaction name="separator"/>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
     <addaction name="actionImport_Seismic_Data"/>
     <addaction name="actionImport_Hydraulic_Data"/>
     <addaction name="separator"/>
     <addaction name="actionView_Data"/>
-    <addaction name="separator"/>
-    <addaction name="actionSettings"/>
    </widget>
    <widget class="QMenu" name="menuSimulation">
     <property name="title">
@@ -312,7 +312,6 @@
     </property>
     <addaction name="actionShow_GR"/>
     <addaction name="actionForecasts"/>
-    <addaction name="actionSimulation"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menuSimulation"/>
@@ -411,6 +410,9 @@
    </property>
   </action>
   <action name="actionSettings">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Settings...</string>
    </property>

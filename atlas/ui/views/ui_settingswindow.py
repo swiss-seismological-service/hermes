@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'settingswindow.ui'
 #
-# Created: Tue Jan 14 15:23:45 2014
+# Created: Wed Jan 15 09:59:47 2014
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -33,10 +33,10 @@ class Ui_SettingsWindow(object):
         self.settingsTabs.setObjectName(_fromUtf8("settingsTabs"))
         self.tabGeneral = QtGui.QWidget()
         self.tabGeneral.setObjectName(_fromUtf8("tabGeneral"))
-        self.simulationModeCheckBox = QtGui.QCheckBox(self.tabGeneral)
-        self.simulationModeCheckBox.setGeometry(QtCore.QRect(20, 50, 211, 18))
-        self.simulationModeCheckBox.setChecked(True)
-        self.simulationModeCheckBox.setObjectName(_fromUtf8("simulationModeCheckBox"))
+        self.enableLabModeCheckBox = QtGui.QCheckBox(self.tabGeneral)
+        self.enableLabModeCheckBox.setGeometry(QtCore.QRect(20, 50, 211, 18))
+        self.enableLabModeCheckBox.setChecked(True)
+        self.enableLabModeCheckBox.setObjectName(_fromUtf8("enableLabModeCheckBox"))
         self.openLastProjectOnStartup = QtGui.QCheckBox(self.tabGeneral)
         self.openLastProjectOnStartup.setGeometry(QtCore.QRect(20, 80, 191, 18))
         self.openLastProjectOnStartup.setChecked(True)
@@ -152,16 +152,21 @@ class Ui_SettingsWindow(object):
         self.modelsBox.setGeometry(QtCore.QRect(20, 130, 691, 121))
         self.modelsBox.setObjectName(_fromUtf8("modelsBox"))
         self.enableRjCheckBox = QtGui.QCheckBox(self.modelsBox)
+        self.enableRjCheckBox.setEnabled(False)
         self.enableRjCheckBox.setGeometry(QtCore.QRect(10, 30, 141, 18))
         self.enableRjCheckBox.setChecked(True)
         self.enableRjCheckBox.setObjectName(_fromUtf8("enableRjCheckBox"))
         self.entableEtasCheckBox = QtGui.QCheckBox(self.modelsBox)
+        self.entableEtasCheckBox.setEnabled(False)
         self.entableEtasCheckBox.setGeometry(QtCore.QRect(10, 60, 141, 18))
+        self.entableEtasCheckBox.setChecked(True)
         self.entableEtasCheckBox.setObjectName(_fromUtf8("entableEtasCheckBox"))
         self.rjConfigButton = QtGui.QPushButton(self.modelsBox)
+        self.rjConfigButton.setEnabled(False)
         self.rjConfigButton.setGeometry(QtCore.QRect(180, 25, 110, 32))
         self.rjConfigButton.setObjectName(_fromUtf8("rjConfigButton"))
         self.etasConfigButton = QtGui.QPushButton(self.modelsBox)
+        self.etasConfigButton.setEnabled(False)
         self.etasConfigButton.setGeometry(QtCore.QRect(180, 55, 110, 32))
         self.etasConfigButton.setObjectName(_fromUtf8("etasConfigButton"))
         self.settingsTabs.addTab(self.tabForecasting, _fromUtf8(""))
@@ -173,13 +178,13 @@ class Ui_SettingsWindow(object):
         self.resetToDefaultButton.setObjectName(_fromUtf8("resetToDefaultButton"))
 
         self.retranslateUi(SettingsWindow)
-        self.settingsTabs.setCurrentIndex(0)
+        self.settingsTabs.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(SettingsWindow)
 
     def retranslateUi(self, SettingsWindow):
         SettingsWindow.setWindowTitle(_translate("SettingsWindow", "ATLAS Configuration", None))
-        self.simulationModeCheckBox.setToolTip(_translate("SettingsWindow", "In Simulation Mode seismic and hydraulic events are played back from an existing catalog.", None))
-        self.simulationModeCheckBox.setText(_translate("SettingsWindow", "Run ATLAS in Lab Mode", None))
+        self.enableLabModeCheckBox.setToolTip(_translate("SettingsWindow", "In Simulation Mode seismic and hydraulic events are played back from an existing catalog.", None))
+        self.enableLabModeCheckBox.setText(_translate("SettingsWindow", "Run ATLAS in Lab Mode", None))
         self.openLastProjectOnStartup.setText(_translate("SettingsWindow", "Open last project on startup", None))
         self.settingsTabs.setTabText(self.settingsTabs.indexOf(self.tabGeneral), _translate("SettingsWindow", "General", None))
         self.groupBox.setTitle(_translate("SettingsWindow", "Simulation Speed", None))

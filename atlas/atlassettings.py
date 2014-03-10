@@ -75,7 +75,7 @@ class AppSettings:
         if not key in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         default = known_settings[key]
-        return self._settings.value(key, default)
+        return self._settings.value(key, defaultValue=default)
 
     def set_value(self, key, value):
         """

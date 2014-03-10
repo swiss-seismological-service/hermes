@@ -68,8 +68,6 @@ class MainWindow(QtGui.QMainWindow):
             connect(self.action_stop_simulation)
         # ...Window
         self.ui.actionForecasts.triggered.connect(self.action_show_forecasts)
-        self.ui.actionSimulation.triggered.\
-            connect(self.action_show_sim_controls)
 
         # Hook up essential signals from the core and the forecast engine
         atlas.app_launched.connect(self.on_app_launch)
@@ -86,7 +84,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def on_app_launch(self):
         self._refresh_recent_files_menu()
-        self.action_show_sim_controls()
         self.update_status()
         self.update_controls()
 
@@ -173,12 +170,14 @@ class MainWindow(QtGui.QMainWindow):
         else:
             recent_files.insert(0, path)
         del recent_files[4:]
-        settings.setValue('general/recent_files', recent_files)
+        self.settings.setValue('general/recent_files', recent_files)
         self._refresh_recent_files_menu()
 
     def _refresh_recent_files_menu(self):
         files = self.settings.value('general/recent_files')
         self.ui.menuOpen_Recent.clear()
+        if files is None:
+            return
         for path in files:
             path = str(path)
             file_name = os.path.basename(path)

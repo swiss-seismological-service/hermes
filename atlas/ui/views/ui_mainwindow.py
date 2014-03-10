@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Mon Jan 13 16:12:11 2014
+# Created: Wed Jan 15 10:05:53 2014
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -160,23 +160,23 @@ class Ui_MainWindow(object):
         self.actionSimulation = QtGui.QAction(MainWindow)
         self.actionSimulation.setObjectName(_fromUtf8("actionSimulation"))
         self.actionSettings = QtGui.QAction(MainWindow)
+        self.actionSettings.setEnabled(True)
         self.actionSettings.setObjectName(_fromUtf8("actionSettings"))
         self.menu_File.addAction(self.actionNew_Project)
         self.menu_File.addAction(self.actionOpen_Project)
         self.menu_File.addAction(self.menuOpen_Recent.menuAction())
         self.menu_File.addSeparator()
+        self.menu_File.addAction(self.actionSettings)
+        self.menu_File.addSeparator()
         self.menu_File.addAction(self.actionImport_Seismic_Data)
         self.menu_File.addAction(self.actionImport_Hydraulic_Data)
         self.menu_File.addSeparator()
         self.menu_File.addAction(self.actionView_Data)
-        self.menu_File.addSeparator()
-        self.menu_File.addAction(self.actionSettings)
         self.menuSimulation.addAction(self.actionStart_Simulation)
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
         self.menuWindow.addAction(self.actionShow_GR)
         self.menuWindow.addAction(self.actionForecasts)
-        self.menuWindow.addAction(self.actionSimulation)
         self.menuBar.addAction(self.menu_File.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
         self.menuBar.addAction(self.menuWindow.menuAction())
