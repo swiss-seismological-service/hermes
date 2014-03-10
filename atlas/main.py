@@ -6,6 +6,18 @@ The Main file sets up the user interface and bootstraps the application
 
 """
 
+# We use API v2 for Qt objects, since they make working with variants easier
+# and are more future proof (v2 is default in python 3).
+# This needs to be done before we import PyQt4
+import sip
+sip.setapi(u'QDate', 2)
+sip.setapi(u'QDateTime', 2)
+sip.setapi(u'QString', 2)
+sip.setapi(u'QTextStream', 2)
+sip.setapi(u'QTime', 2)
+sip.setapi(u'QUrl', 2)
+sip.setapi(u'QVariant', 2)
+
 from atlas import Atlas
 
 
