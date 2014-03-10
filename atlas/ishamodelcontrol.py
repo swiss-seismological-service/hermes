@@ -12,6 +12,7 @@ from PyQt4 import QtCore
 
 from isha.common import Model
 from isha.rj import Rj
+from isha.etas import Etas
 
 
 def load_models():
@@ -30,6 +31,11 @@ def load_models():
     rj_model = Rj(a=-1.6, b=1.0, p=1.2, c=0.05)
     rj_model.title = 'Reasenberg-Jones'
     models.append(rj_model)
+
+    # ETAS
+    etas_model = Etas(alpha=0.8, k=8.66, p=1.2, c=0.01, mu=12.7, cf=1.98)
+    etas_model.title = 'ETAS'
+    models.append(etas_model)
 
     return models
 

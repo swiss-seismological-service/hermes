@@ -20,7 +20,7 @@ class RunInput:
     :type seismic_events: List of SeismicEvent objects
     :ivar forecast_times: List of times (datetime) at which to forecast
     :type forecast_times: List of datetime objects
-    :ivar t_bin: Forecast bin size in hours. The default is 6h)
+    :ivar t_bin: Forecast bin size in hours. The default is 6h.
     :type t_bin: float
 
     """
@@ -34,6 +34,7 @@ class RunInput:
         self.t_run = t_run
         self.forecast_mag_range = None
         self.seismic_events = None
+        self.hydraulic_events = None
         self.forecast_times = None
         self.t_bin = 6
 
@@ -98,3 +99,31 @@ class Model(QtCore.QObject):
 
         """
         assert(self._run_input is not None)
+
+    # Some helper functions
+
+    def flow_rate_in_interval(self, t_min, t_max):
+        """
+        Returns the flow rate from run input that is representative for the
+        interval t_min, t_max.
+
+        The function returns the maximum flow rate in the time interval
+        [t_min, t_max]. If no flow rate data is available in this interval, it
+        returns the last flow rate it finds.
+
+        If no flow rates are present at all the function returns 0
+
+        """
+        if self._run_input.hydraulic_events is None:
+            return 0
+
+        rates = [h.flow_dh for h in self._run_input.hydraulic_events
+                 if t_min <= h.date_time < t_max]
+
+        if len(rates) == 0:
+            last_flow = self._run_input.hydraulic_events[-1]
+            flow = last_flow.flow_dh
+        else:
+            flow = max(rates)
+
+        return flow
