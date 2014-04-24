@@ -155,22 +155,24 @@ class MainWindow(QtGui.QMainWindow):
                                                  'Open Project',
                                                  home,
                                                  'Atlas Project Files (*.atl)')
-        self._open_specific_project(path)
+        self._open_project_at_path(path)
 
-    def _open_specific_project(self, path):
+    def _open_project_at_path(self, path):
         if path is None:
             return
         if self.atlas_core.project is not None:
             self.atlas_core.close_project()
-        self.atlas_core.action_open_project(str(path))
+        self.atlas_core.open_project(str(path))
         # Update the list of recent files
         recent_files = self.settings.value('general/recent_files')
+        if recent_files is None:
+            recent_files = []
         if path in recent_files:
             recent_files.insert(0, recent_files.pop(recent_files.index(path)))
         else:
             recent_files.insert(0, path)
         del recent_files[4:]
-        self.settings.setValue('general/recent_files', recent_files)
+        self.settings.set_value('general/recent_files', recent_files)
         self._refresh_recent_files_menu()
 
     def _refresh_recent_files_menu(self):
@@ -188,8 +190,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_open_recent(self, path):
         sender_action = self.sender()
-        path = str(sender_action.data().toString())
-        self._open_specific_project(path)
+        path = str(sender_action.data())
+        self._open_project_at_path(path)
 
     def action_new_project(self):
         pass

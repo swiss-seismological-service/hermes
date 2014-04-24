@@ -86,7 +86,7 @@ class AppSettings:
         """
         if not key in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
-        return self._settings.set_value(key, value)
+        return self._settings.setValue(key, value)
 
     def register_default_settings(self):
         """
