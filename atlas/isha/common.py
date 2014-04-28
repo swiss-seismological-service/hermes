@@ -9,7 +9,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from PyQt4 import QtCore
 
-class RunInput:
+
+class RunInput(object):
     """
     Holds ISHA model inputs and parameters for the next run. Not all models may
     require all of the inputs.
@@ -84,7 +85,7 @@ class Model(QtCore.QObject):
         run is supplied in *run_data*
 
         :param run_input: data for the next run
-        :type run_data: RunInput
+        :type run_input: RunInput
 
         """
         self._run_input = run_input

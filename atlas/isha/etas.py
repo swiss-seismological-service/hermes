@@ -121,7 +121,7 @@ class Etas(Model):
             # and subtract the upper magnitude limit from the lower limit to
             # get the appropriate range
             rate = ((t2+c)**(1-p) - (t1+c)**(1-p)) / (1-p) * \
-                   k * ((10 ** a*(m-m_min)) - (10 ** a*(m-m_max)))
+                k * ((10 ** a*(m-m_min)) - (10 ** a*(m-m_max)))
 
             # Sum up the contributions from each main shock event
             forecast_rates[i] = rate.sum()

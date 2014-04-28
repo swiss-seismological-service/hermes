@@ -7,10 +7,9 @@ in California", Science 243, 1173-1176
     
 """
 
-from common import Model, RunResults, RunInput
+from common import Model, RunResults
 import numpy as np
 import logging
-from math import log, exp
 
 
 class Rj(Model):

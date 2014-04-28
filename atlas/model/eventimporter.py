@@ -47,9 +47,6 @@ class EventImporter:
 
         Side effect: rewinds the file when called for the first time
 
-        :param path: path to the csv file
-        :type path: string
-
         """
 
         if self._dates_are_relative is None:
