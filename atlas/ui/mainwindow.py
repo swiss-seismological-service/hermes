@@ -69,6 +69,9 @@ class MainWindow(QtGui.QMainWindow):
         # ...Window
         self.ui.actionForecasts.triggered.connect(self.action_show_forecasts)
 
+        # Hook up buttons
+        self.ui.startButton.clicked.connect(self.action_start_simulation)
+
         # Hook up essential signals from the core and the forecast engine
         atlas.app_launched.connect(self.on_app_launch)
         self.atlas_core.state_changed.connect(self.on_core_state_change)
@@ -240,9 +243,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_show_settings(self):
         if self.settings_window is None:
-            self.settings_window = SettingsWindow(atlas_core=self.atlas_core,
-                                                  parent=self)
-        self.simulation_control_window.show()
+            self.settings_window = SettingsWindow(settings=self.settings)
+        self.settings_window.show()
 
     def action_view_seismic_data(self):
         self.table_view = QtGui.QTableView()
@@ -253,15 +255,15 @@ class MainWindow(QtGui.QMainWindow):
     # ... Simulation
 
     def action_start_simulation(self):
-        speed = self.ui.speedBox.value()
-        self.atlas_core.simulator.speed = speed
-        self.atlas_core.action_start_simulation()
+        #speed = self.ui.speedBox.value()
+        #self.atlas_core.simulator.speed = speed
+        self.atlas_core.start()
 
     def action_pause_simulation(self):
-        self.atlas_core.action_pause_simulation()
+        self.atlas_core.pause()
 
     def action_stop_simulation(self):
-        self.atlas_core.action_stop_simulation()
+        self.atlas_core.stop()
 
     # Control Updates
 

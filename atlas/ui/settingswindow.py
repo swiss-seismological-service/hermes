@@ -41,7 +41,7 @@ class SettingsWindow(QtGui.QDialog):
             'lab_mode/speed':               self.ui.speedBox,
         }
         # Invert the mapping for reverse lookups when values change
-        self.key_map = {v: k for k, v in self.widget_map}
+        self.key_map = dict((v, k) for k, v in self.widget_map.items())
 
         # Hook up buttons
         self.ui.okButton.clicked.connect(self.action_ok)
@@ -50,7 +50,7 @@ class SettingsWindow(QtGui.QDialog):
         self.ui.resetToDefaultButton.clicked.connect(self.action_load_defaults)
 
         self.start_observing_changes()
-        self.load_current_settings()
+        self.load_settings(self.settings)
 
     def start_observing_changes(self):
         """ Observe changes on all settings widgets """
@@ -95,13 +95,13 @@ class SettingsWindow(QtGui.QDialog):
     # Private Helper Methods
 
     def _change_signal_for_widget(self, widget):
-        if widget.isInstance(QtGui.QCheckBox):
+        if widget.inherits('QCheckBox'):
             return widget.stateChanged
-        elif widget.isInstance(QtGui.QRadioButton):
+        elif widget.inherits('QRadioButton'):
             return widget.toggled
-        elif widget.isInstance(QtGui.QSpinBox):
+        elif widget.inherits('QSpinBox'):
             return widget.valueChanged
-        elif widget.isInstance(QtGui.QDoubleSpinBox):
+        elif widget.inherits('QDoubleSpinBox'):
             return widget.valueChanged
         else:
             self.logger.error('Setting value for' + str(widget) +
@@ -110,11 +110,11 @@ class SettingsWindow(QtGui.QDialog):
         return None
 
     def _set_value_in_widget(self, value, widget):
-        if widget.isInstance(QtGui.QAbstractButton):
+        if widget.inherits('QAbstractButton'):
             widget.setChecked(value)
-        elif widget.isInstance(QtGui.QSpinBox):
+        elif widget.inherits('QSpinBox'):
             widget.setValue(value)
-        elif widget.isInstance(QtGui.QDoubleSpinBox):
+        elif widget.inherits('QDoubleSpinBox'):
             widget.setValue(value)
         else:
             self.logger.error('Setting value for' + str(widget) +
@@ -122,11 +122,11 @@ class SettingsWindow(QtGui.QDialog):
                               'widget type is not yet supported.')
 
     def _value_for_widget(self, widget):
-        if widget.isInstance(QtGui.QAbstractButton):
+        if widget.inherits('QAbstractButton'):
             return widget.isChecked()
-        elif widget.isInstance(QtGui.QSpinBox):
+        elif widget.inherits('QSpinBox'):
             return widget.value()
-        elif widget.isInstance(QtGui.QDoubleSpinBox):
+        elif widget.inherits('QDoubleSpinBox'):
             return widget.value()
         else:
             self.logger.error('Getting value from' + str(widget) +
