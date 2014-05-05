@@ -1,65 +1,20 @@
 # -*- encoding: utf-8 -*-
 """
-Unit test for the ISHA model package
+Short Description
 
+Long Description
+    
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
 import unittest
 from PyQt4 import QtCore
-from mock import MagicMock, Mock
+from mock import Mock
 from datetime import datetime, timedelta
 from model.seismicevent import SeismicEvent
 from model.location import Location
-from isha.control import ModelController
-from isha.common import RunInput, Model
 from isha.rj import Rj
-
-
-from time import sleep
-
-class MockIshaModel(Model):
-    """
-    Mock ISHA Model that the model_controller under test controls. Does
-    nothing except emitting the finished signal.
-
-    """
-
-    def run(self):
-        super(MockIshaModel, self).run()
-        self.finished.emit(self)
-
-
-class ModelControllerTest(unittest.TestCase):
-
-    def setUp(self):
-        """
-        We need to setup a QCoreApplication because the QThread stuff expects
-        an event loop to be present. Since we never start the event loop we
-        need to process events manually.
-
-        """
-        self.app = QtCore.QCoreApplication([])
-        self.mock_model = MockIshaModel()
-        self.model_controller = ModelController(self.mock_model)
-
-    def test_initialization(self):
-        """ Make sure the model is not associated with the main thread """
-        this_thread = QtCore.QThread.currentThread()
-        self.assertNotEqual(this_thread, self.mock_model.thread())
-
-    def test_start_finish(self):
-        """ Check if the model starts and terminates as expected """
-        finished_slot = MagicMock()
-        self.mock_model.finished.connect(finished_slot)
-        dummy_run_data = RunInput()
-        self.model_controller.start_forecast(dummy_run_data)
-        # Wait until the model thread emits its signals. This is a bit fragile
-        # since event delivery from the model thread might take longer
-        sleep(0.2)
-        self.app.processEvents()
-        finished_slot.assert_called_once_with(self.mock_model)
 
 
 class RjTest(unittest.TestCase):
@@ -158,7 +113,6 @@ class RjTest(unittest.TestCase):
         rate, prob = self.model.run_results[0]
         self.assertAlmostEqual(rate, 0.442, delta=0.001)
         self.assertAlmostEqual(prob, 0.357, delta=0.001)
-
 
 
 if __name__ == '__main__':

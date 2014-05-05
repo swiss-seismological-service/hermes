@@ -43,6 +43,7 @@ class BasicOperation(unittest.TestCase):
         self.time_step = 1/TEST_SPEED
         self.simulator = Simulator(self.callback)
         self.simulator.speed = TEST_SPEED
+        self.simulator.step_on_internal_timer()
         # state variables
         self.simulation_time = None
         self.t_elapsed = 0
@@ -62,7 +63,9 @@ class BasicOperation(unittest.TestCase):
 
     def test_delivery(self):
         """ Tests signal delivery by the simulator """
+        # Simulate a time range of 2 seconds
         duration = 2
+        # Allow a bit of leeway for the expected simulation end time
         max_t = (duration + 1.5) / TEST_SPEED
         min_t = (duration - 0.2) / TEST_SPEED
         self.configure_time_range(duration)
@@ -85,7 +88,9 @@ class BasicOperation(unittest.TestCase):
         self.configure_time_range(3600)
         start_time = self.simulator.time_range[0]
         dt = timedelta(seconds=1800)
-        self.simulator.start_on_external_signal(signal_emitter.test_signal, dt)
+        self.simulator.step_on_external_signal(signal_emitter.test_signal, dt)
+        self.simulator.start()
+        self.app.processEvents()
         self.assertEqual(self.simulation_time, start_time + dt,
                          'First step was not executed immediately')
         signal_emitter.test_signal.emit()
