@@ -35,7 +35,9 @@ class AtlasProject(project.Project):
         """ Create a project based on the data that is contained in *store* """
         super(AtlasProject, self).__init__(store)
         self.seismic_history = SeismicEventHistory(self._store)
+        self.seismic_history.reload_from_store()
         self.hydraulic_history = HydraulicEventHistory(self._store)
+        self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
 
         # Set the project time to the time of the first event

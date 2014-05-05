@@ -26,6 +26,10 @@ class Event():
         self.date_time = date_time
         self.value = value
 
+    def __cmp__(self, other):
+        return ((self.date_time == other.date_time) and
+                (self.value == other.value))
+
 
 class MockStore(MagicMock):
     """ A mock store class to inject into the history for testing """
@@ -81,43 +85,33 @@ class BasicOperation(unittest.TestCase):
         self.mock_store = MockStore(test_content)
         self.history = EventHistory(self.mock_store, Event)
 
-    def test_read_cache_creation(self):
-        """ Check if sequential read cache is created on initialisation """
-        self.mock_store.init_sequential_read_cache.\
-            assert_called_once_with(Event, 'date_time')
-
-    def test_counting(self):
-        """ Counting elements in history """
+    def test_loading_and_counting(self):
+        self.assertEqual(len(self.history), 0)
+        self.history.reload_from_store()
         self.assertEqual(len(self.history), NUM_TEST_EVENTS)
 
     def test_indexed_reading(self):
         """ Reading through __getitem__ """
+        self.history.reload_from_store()
         event = self.history[3]
         self.assertEqual(event.value, 3)
 
     def test_reading_latest(self):
         """ Reading the latest event """
+        self.history.reload_from_store()
         event = self.history.latest_event()
         self.assertEqual(event.value, NUM_TEST_EVENTS - 1)
         max_time = self.date + timedelta(seconds=4.5)
         event = self.history.latest_event(max_time)
-        entity, predicate = self.mock_store.read_last.call_args
-        # It's difficult to test the content of the predicate since there
-        # might be different ways the history could do this. So we just check
-        # if there is a predicate at all.
-        self.assertIsNotNone(predicate)
+        self.assertEqual(event, self.test_content[-1])
 
     def test_read_specific_time_interval(self):
         """ Read events in specific time interval """
+        self.history.reload_from_store()
         earliest = self.date + timedelta(seconds=2.1)
         latest = self.date + timedelta(seconds=5.9)
         events = self.history.events_between(earliest, latest)
-        args, kwargs = self.mock_store.read_all.call_args
-        entity, predicate = args
-        # It's difficult to test the content of the predicate since there
-        # might be different ways the history could do this. So we just check
-        # if there is a predicate at all.
-        self.assertIsNotNone(predicate)
+        self.assertListEqual(events, self.test_content[2:5])
 
 
 if __name__ == '__main__':

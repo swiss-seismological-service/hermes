@@ -13,7 +13,7 @@ from mock import MagicMock, call
 from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from model.store import Store, SequentialReadCache
+from model.store import Store
 
 DB_FILE = 'test.sqlite'
 
@@ -123,8 +123,8 @@ class ReadingAndWriting(unittest.TestCase):
         predicate = (2 == EventB.value)
         b2 = self.store.read_last(EventB, predicate, order='date_time')
         self.assertEqual(b2.value, 2)
-        b3 = self.store.read(EventB, 1, predicate, order='date_time')
-        self.assertEqual(b2.value, 3)
+        b3 = self.store.read(EventB, 0, predicate, order='date_time')
+        self.assertEqual(b3.value, 2)
 
     def test_counting(self):
         """ Test object counting """
@@ -135,16 +135,6 @@ class ReadingAndWriting(unittest.TestCase):
         predicate = (3 == EventB.value)
         count_b = self.store.count(EventB, predicate)
         self.assertEqual(count_b, 1)
-
-    def test_predicate_reading(self):
-        """
-        Test if the store successfully determines the order attribute
-        from the read cache
-
-        """
-        self.store.init_sequential_read_cache(EventB, 'date_time', 5)
-        b = self.store.read_last(EventB)
-        self.assertEqual(b.value, 3)
 
 
 class Purging(unittest.TestCase):
@@ -181,11 +171,6 @@ class Purging(unittest.TestCase):
         count_b = self.store.count(EventB)
         self.assertEqual(count_b, 1)
 
-    def test_purge_with_cache(self):
-        """ Test deletion when a read cache is present """
-        self.store.init_sequential_read_cache(EventB, order='date_time')
-        self.test_purge_specific()
-
     def test_purge_all(self):
         """ Test deletion of all data """
         self.store.purge()
@@ -199,54 +184,6 @@ class Purging(unittest.TestCase):
         self.store.add(b_list)
         count_b = self.store.count(EventB)
         self.assertEqual(count_b, 1)
-
-
-
-class ReadCached(unittest.TestCase):
-    """ Test sequential read cache (standalone) """
-
-    def setUp(self):
-        """
-        We replace the __getitem__ method of the query object since this is
-        what the cache calls when it needs to fetch a new slice of data from
-        the store
-
-        """
-        def getitem(a_slice):
-            events = []
-            indices = a_slice.indices(1000)
-            for idx in range(indices[0], indices[1]):
-                events.append(EventA(datetime.now(), idx))
-            return events
-
-        session_mock = MagicMock()
-        query = MagicMock()
-        query.__getitem__.side_effect = getitem
-        query.order_by.return_value = query
-        session_mock.query.return_value = query
-        self.cache = SequentialReadCache(session_mock, EventA, 'date_time', 5)
-
-    def test_cache_access(self):
-        """ Test that the store is accessed hit when needed """
-
-        for i in range(12):
-            event = self.cache[i]
-            self.assertEqual(event.value, i)
-
-        expected = [call(slice(0, 5, None)), call(slice(5, 10, None)),
-                    call(slice(10, 15, None))]
-        self.assertListEqual(self.cache.query.__getitem__.mock_calls, expected)
-
-    def test_cache_reset(self):
-        """ Test that the cache re-accesses the store after a reset """
-        event = self.cache[3]
-        self.assertEqual(event.value, 3)
-        self.cache.invalidate()
-        event = self.cache[3]
-        self.assertEqual(event.value, 3)
-
-        expected = [call(slice(0, 5, None)), call(slice(0, 5, None))]
-        self.assertListEqual(self.cache.query.__getitem__.mock_calls, expected)
 
 
 if __name__ == '__main__':

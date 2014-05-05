@@ -41,4 +41,5 @@ class SeismicEventHistory(EventHistory):
             event = SeismicEvent(date, float(fields['mag']), location)
             events.append(event)
         self.store.add(events)
+        self.reload_from_store()
         self._emit_change_signal({})

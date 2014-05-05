@@ -13,7 +13,7 @@ DATE_TIME_ATTR_NAME = 'date_time'
 
 class EventHistory(QtCore.QObject):
     """
-    Provides a history of  events and functions to read and write them
+    Provides a history of events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
 
     :ivar store: event store (interface to persistent store / db)
@@ -43,34 +43,34 @@ class EventHistory(QtCore.QObject):
 
         """
         super(EventHistory, self).__init__()
-        store.init_sequential_read_cache(entity, DATE_TIME_ATTR_NAME)
         self.store = store
         self.entity = entity
+        self._events = []
+
+    def reload_from_store(self):
+        """
+        Reloads all events from the persistent store.
+
+        """
+        self._events = self.store.read_all(self.entity, order='date_time')
 
     def all_events(self):
-        return self.store.read_all(self.entity)
+        return self._events
 
     def events_between(self, start_date, end_date):
         """
         Returns all events between and including *start_date* and *end_date*.
 
         """
-        predicate = (self.entity.date_time >= start_date,
-                     self.entity.date_time <= end_date)
-        events = self.store.read_all(self.entity, predicate)
-        return events
+        return [e for e in self._events if start_date < e.date_time < end_date]
 
     def events_before(self, end_date):
         """ Returns all events before and including *end_date* """
-        predicate = (self.entity.date_time <= end_date)
-        events = self.store.read_all(self.entity, predicate)
-        return events
+        return [e for e in self._events if e.date_time < end_date]
 
     def events_after(self, start_date):
         """ Returns all events after and including *start_date* """
-        predicate = (self.entity.date_time >= start_date)
-        events = self.store.read_all(self.entity, predicate)
-        return events
+        return [e for e in self._events if start_date < e.date_time]
 
     def latest_event(self, time=None):
         """
@@ -84,18 +84,15 @@ class EventHistory(QtCore.QObject):
 
         """
         if time is None:
-            event = self.store.read_last(self.entity)
+            return self._events[-1]
         else:
-            predicate = (self.entity.date_time < time)
-            event = self.store.read_last(self.entity, predicate)
-        return event
+            return self.events_before(time)[-1]
 
     def __getitem__(self, item):
-        event = self.store.read(self.entity, item)
-        return event
+        return self._events[item]
 
     def __len__(self):
-        return self.store.count(self.entity)
+        return len(self._events)
 
     def _emit_change_signal(self, change_dict):
         default_dict = {'history': self}
