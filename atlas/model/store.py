@@ -10,6 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 
+
 class SequentialReadCache:
     """
     Provides a read cache for improved performance during sequential access.
@@ -96,9 +97,9 @@ class Store:
         self.engine = create_engine(store_url, echo=False)
         self.model = model
         self.model.metadata.create_all(self.engine, checkfirst=True)
-        Session = sessionmaker(bind=self.engine)
+        session = sessionmaker(bind=self.engine)
         self._read_caches = {}
-        self.session = Session()
+        self.session = session()
 
     def purge(self, entity=None):
         """
@@ -136,7 +137,7 @@ class Store:
         objects must be of the same type (class).
 
         :param objects: A list of objects
-        :type event: List of model derived objects
+        :type objects: List of model derived objects
 
         """
         self.session.add_all(objects)
@@ -322,4 +323,3 @@ class Store:
         """
         cache = self._read_caches.get(entity)
         cache.refresh()
-

@@ -10,14 +10,7 @@ from PyQt4 import QtCore
 
 
 class SeismicDataModel(QtCore.QAbstractTableModel):
-    """ Represents the seismic catalog in Qt
-
-        :ivar _headers: column headers
-        :type _headers: list
-        :ivar seismic_history: seismic event history
-        :type seismic_history: SeismicEventHistory
-
-    """
+    """ Represents the seismic catalog in Qt """
 
     def __init__(self, event_history, parent=None):
         """Provides the seismic data catalog to the Qt user interface
@@ -39,7 +32,8 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
         return 5
 
     def flags(self, index):
-        return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return (QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled |
+                QtCore.Qt.ItemIsSelectable)
 
     def data(self, index, role):
 
@@ -63,7 +57,8 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
             row = index.row()
             column = index.column()
             event = self._event_history[row]
-            print 'loading data for row ' + str(row) + ', column: ' + str(column)
+            print 'loading data for row ' + str(row) + ', column: ' + \
+                  str(column)
 
             if column == 0:
                 return str(event.date_time)
@@ -75,7 +70,6 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
                 return str(event.longitude)
             else:
                 return str(event.depth)
-
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
@@ -93,9 +87,6 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
         return False
         """
         pass
-
-
-
 
     def headerData(self, section, orientation, role):
 

@@ -6,10 +6,6 @@ History of hydraulic events, i.e changes in flow or pressure
 
 from eventhistory import EventHistory
 from eventimporter import EventImporter
-from datetime import datetime, timedelta
-from time import strptime, mktime
-import csv
-
 from hydraulicevent import HydraulicEvent
 
 

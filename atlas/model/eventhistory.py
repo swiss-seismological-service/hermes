@@ -4,12 +4,12 @@ History of  events
 
 """
 
-from datetime import datetime, timedelta
-import csv
+from datetime import datetime
 
 from PyQt4 import QtCore
 
 DATE_TIME_ATTR_NAME = 'date_time'
+
 
 class EventHistory(QtCore.QObject):
     """

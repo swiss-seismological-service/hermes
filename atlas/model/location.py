@@ -4,6 +4,7 @@ Provides Locaiton, a class to store geographic locations
 
 """
 
+
 class Location(object):
     """ Represents a location in terms of longitude, latitude, and altitude
 

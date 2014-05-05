@@ -123,4 +123,3 @@ class SeismicRateHistory(QtCore.QObject):
         self.times.append(t_rates)
         self.history_changed.emit(self)
         return computed
-

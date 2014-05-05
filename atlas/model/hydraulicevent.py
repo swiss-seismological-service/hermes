@@ -12,15 +12,15 @@ class HydraulicEvent(DataModel):
     """Represents a hydraulic event (change in fluxrate or pressure)
 
     :ivar date_time: Date and time when the event occurred
-    :type date_time: datetime
+    :type date_time: datetime.datetime
     :ivar flow_dh: flow downhole [l/min]
     :type flow_dh: float
     :ivar flow_xt: flow @ x-mas tree (top hole) [l/min]
     :type flow_xt: float
-    :ivar pressure_dh: pressure downhole [bar]
-    :type pressure_dh: float
-    :ivar pressure_xt: pressure @ x-mas tree (top hole) [bar]
-    :type pressure_xt: float
+    :ivar pr_dh: pressure downhole [bar]
+    :type pr_dh: float
+    :ivar pr_xt: pressure @ x-mas tree (top hole) [bar]
+    :type pr_xt: float
 
     """
 

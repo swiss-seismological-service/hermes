@@ -13,16 +13,15 @@ from PyQt4 import QtCore
 from isha.common import Model
 from isha.rj import Rj
 from isha.etas import Etas
+import logging
 
 
 def load_models():
     """
-    Load ISHA models to use in Atlas. Register new models here.
-
-    The function returns a list of ModelInfo objects
+    Load ISHA models. Register new models here.
 
     To add a new model, simply instantiate it, give it a display title
-    and add it to the list of modules.
+    and add it to the list of models.
 
     """
     models = []
@@ -63,12 +62,13 @@ class DetachedRunner(QtCore.QObject):
         self.model.moveToThread(self._qthread)
         self._qthread.started.connect(self.model.run)
         self.model.finished.connect(self._on_model_finished)
+        self._logger = logging.getLogger(__name__)
 
     def __del__(self):
         # Make sure the thread ends before we destroy it
         self._qthread.wait()
 
-    def run(self, run_data):
+    def run_model(self, run_data):
         """
         Starts a new forecast with the information given in run_data
 
@@ -76,7 +76,9 @@ class DetachedRunner(QtCore.QObject):
         :type run_data: RunInput
 
         """
+        self._logger.debug('preparing %s', self.model.title)
         self.model.prepare_run(run_data)
+        self._logger.debug('detaching %s to worker thread', self.model.title)
         self._qthread.start()
 
     def _on_model_finished(self):

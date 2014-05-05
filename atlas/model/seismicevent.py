@@ -13,8 +13,6 @@ class SeismicEvent(DataModel):
 
     :ivar date_time: Date and time when the event occurred
     :type date_time: datetime
-    :ivar decay_time: The date and time at which the influence of the event on future forecasts becomes insignificant
-    :type decay_time: datetime
     :ivar magnitude: Event magnitude
     :type magnitude: float
     :ivar latitude: Event latitude
@@ -31,7 +29,6 @@ class SeismicEvent(DataModel):
     id = Column(Integer, primary_key=True)
     magnitude = Column(Float)
     date_time = Column(DateTime)
-    decay_time = Column(DateTime)
     latitude = Column(Float)
     longitude = Column(Float)
     depth = Column(Float)
@@ -39,7 +36,7 @@ class SeismicEvent(DataModel):
     def __init__(self, date_time, magnitude, location):
         """
         :param date_time: Date and time when the event occurred
-        :type date_time: datetime
+        :type date_time: datetime.datetime
         :param magnitude: Event magnitude
         :type magnitude: float
         :param location: Event location

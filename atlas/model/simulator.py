@@ -6,7 +6,7 @@ Simulates incoming seismic events and triggers updates on the forecast
     
 """
 
-from PyQt4.QtCore import QTimer
+from PyQt4.QtCore import QTimer, Qt
 from datetime import timedelta
 import logging
 
@@ -14,6 +14,12 @@ import logging
 class Simulator(object):
     """
     Simulates the advancement of time over a specified time range
+
+    The simulator works with an internal timer to simulate a time step after
+    the number of milliseconds set in *step_time* has passed. Alternatively,
+    an external pyqt signal can be used to trigger time steps which must be
+    set by calling step_on_external_signal.
+
 
     """
 
@@ -25,7 +31,6 @@ class Simulator(object):
         """
         self.step_time = 200            # simulation step in ms
         self.speed = 1000
-        self.time_range = None          # start and end time of the simulation
 
         self._handler = handler
         self._simulation_time = 0
@@ -34,7 +39,7 @@ class Simulator(object):
         self._timer = QTimer()
         self._stopped = False
         self._paused = False
-        self._timer.timeout.connect(self._do_step)
+        self._timer.timeout.connect(self._step_time)
 
         # these are used when simulating on an external signal instead of the
         # internal timer
@@ -45,17 +50,56 @@ class Simulator(object):
     def simulation_time(self):
         return self._simulation_time
 
+    def step_on_internal_timer(self):
+        """
+        Configures the simulator to run on the internal timer.
+
+        This is the default.
+
+        """
+        self._dt = None
+        if self._external_signal:
+            self._external_signal.disconnect(self._step_time)
+        self._external_signal = None
+
+    def step_on_external_signal(self, step_signal, dt):
+        """
+        Configures the simulator to run on an external signal.
+
+        The simulator listens to the *step_signal* and increases the project
+        time by dt whenever the signal is received. The simulator connects to
+        the signal via a queue to make sure the run loop can return before the
+        next iteration executes.
+        The first step is executed immediately upon start()
+
+        :param step_signal: signal on which to simulate a time step
+        :type step_signal: pyqt signal
+        :param dt: time step
+        :type dt: timedelta
+
+        """
+        self._dt = dt
+        self._external_signal = step_signal
+        self._external_signal.connect(self._step_time, type=Qt.QueuedConnection)
+
     def start(self):
         """
         Starts the simulation at start of the simulation time range
+
+        If invoked after *pause*, the simulation is continued from where it
+        stopped. The first time step is scheduled to execute immediately.
 
         """
         assert self.time_range is not None, 'Set a time range before simulating'
         if not self._paused:
             self._simulation_time = self.time_range[0]
-            self._stopped = False
+        self._stopped = False
         self._paused = False
-        self._timer.start(self.step_time)
+        if self._external_signal:
+            # Execute first step immediately after run loop returns
+            QTimer.singleShot(0, self._step_time)
+        else:
+            self._timer.start(self._step_time)
 
     def pause(self):
         """ Pauses the simulation. Unpause with start. """
@@ -74,28 +118,7 @@ class Simulator(object):
             self._external_signal = None
             self._dt = None
 
-    def start_on_external_signal(self, step_signal, dt):
-        """
-        Runs the simulator on an external signal.
-
-        The simulator listens to the *step_signal* and increases the project
-        time by dt whenever the signal is received. The first step is executed
-        immediately
-
-        :param step_signal: signal on which to simulate a time step
-        :type step_signal: pyqt signal
-        :param dt: time step
-        :type dt: timedelta
-
-        """
-        assert self.time_range is not None, 'Set a time range before simulating'
-        self._dt = dt
-        self._external_signal = step_signal
-        self._external_signal.connect(self._do_step)
-        self._simulation_time = self.time_range[0] + dt
-        self._handler(self._simulation_time)
-
-    def _do_step(self):
+    def _step_time(self):
         # skip any spurious events on start stop
         if self._paused or self._stopped:
             return
@@ -114,4 +137,3 @@ class Simulator(object):
 
         if simulation_ended:
             self.stop()
-

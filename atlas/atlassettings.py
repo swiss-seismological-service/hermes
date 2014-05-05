@@ -96,4 +96,3 @@ class AppSettings:
         for key, value in known_settings:
             self._settings.setValue(key, value)
         self._settings.sync()
-

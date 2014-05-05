@@ -7,7 +7,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import logging
-import inspect
+
 
 class ScheduledTask:
     """
@@ -52,7 +52,7 @@ class ScheduledTask:
         """
         Schedule the next execution at t_run.
 
-        For a repeating task, t_run does not have to provided (except on the
+        For a repeating task, t_run does not have to be provided (except on the
         first call). In that case the tasks next execution will be scheduled on
         the previous execution time + dt.
 
@@ -84,9 +84,7 @@ class TaskScheduler:
 
     def __init__(self):
         """
-        Initialize a scheduler with a list of tasks.
-
-        :param task_list: list of *ScheduledCoreTask* tasks
+        Initialize a scheduler with a list of tasks
 
         """
         # Maintain a list of scheduled tasks

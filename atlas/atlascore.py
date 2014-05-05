@@ -121,17 +121,17 @@ class AtlasCore(QtCore.QObject):
     # Running
 
     def start(self):
-        if self.settings.value('general/lab_mode'):
+        if self.settings.value('general/enable_lab_mode'):
             self.start_simulation()
         else:
             self._logger.notice('ATLAS only works in lab mode at the moment')
 
     def pause(self):
-        if self.settings.value('general/lab_mode'):
+        if self.settings.value('general/enable_lab_mode'):
             self.pause_simulation()
 
     def stop(self):
-        if self.settings.value('general/lab_mode'):
+        if self.settings.value('general/enable_lab_mode'):
             self.stop_simulation()
 
     # Simulation
@@ -145,23 +145,26 @@ class AtlasCore(QtCore.QObject):
         """
         if self.project is None:
             return
-
+        self._logger.info('Starting simulation')
+        # Reset task scheduler based on the first simulation step time
+        time_range = self.project.event_time_range()
+        self._scheduler.reset_schedule(time_range[0])
+        # Configure simulator
+        self.simulator.time_range = time_range
         infinite_speed = self.settings.value('lab_mode/infinite_speed')
-
-        self.simulator.time_range = self.project.event_time_range()
         if infinite_speed:
             dt_h = self.settings.value('engine/fc_interval')
             dt = timedelta(hours=dt_h)
             step_signal = self.forecast_engine.forecast_complete
-            self.simulator.start_on_external_signal(step_signal, dt)
+            self.simulator.step_on_external_signal(step_signal, dt)
         else:
             self.simulator.speed = self.settings.value('lab_mode/speed')
-            self.simulator.start()
-        self._scheduler.reset_schedule(self.simulator.simulation_time)
+            self.simulator.step_on_internal_timer()
+        # Start simulator
+        self.simulator.start()
+        # Set Core State to SIMULATING
         self.state = CoreState.SIMULATING
         self.state_changed.emit(self.state)
-        self._logger.info('Starting simulation (infinite speed: '
-                          + str(infinite_speed))
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -198,9 +201,15 @@ class AtlasCore(QtCore.QObject):
             return
 
         if self._scheduler.has_pending_tasks(t):
+            # TODO: this is way too slow and doesn't belong here anyway
+            # we should probably have 'Task' objects that get initialized
+            # with a reference to the project (or whatever they need) and
+            # which have a callback/signal
+            self._logger.info('Scheduler has pending tasks. Gathering data.')
             h_events = self.project.hydraulic_history.events_after(t)
             s_events = self.project.seismic_history.events_before(t)
             info = RunInfo(t=t, h_events=h_events, s_events=s_events)
+            self._logger.info('Run pending tasks')
             self._scheduler.run_pending_tasks(t, info)
 
     # Repeating tasks

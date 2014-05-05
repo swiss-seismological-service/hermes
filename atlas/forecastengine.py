@@ -49,14 +49,18 @@ class ForecastEngine(QtCore.QObject):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        # Load models
+        # Load models and prepare runners
         self._models = mc.load_models()
+        self._detached_runners = [mc.DetachedRunner(m) for m in self._models]
 
         # Add state information for each model and subscribe to relevant signals
         self._model_states = {}
         for model in self._models:
             self._model_states[model] = ForecastEngineState.IDLE
-            model.finished.connect(self._on_model_run_finished)
+            # The QueuedConnection makes sure the callback runs on our thread
+            # and not on the models.
+            model.finished.connect(self._on_model_run_finished,
+                                   type=QtCore.Qt.QueuedConnection)
 
         # Initialize result sets
         self.result_sets = {}
@@ -89,11 +93,10 @@ class ForecastEngine(QtCore.QObject):
         # Prepare models
         for model in self._models:
             self._model_states[model] = ForecastEngineState.FORECASTING
-            model.prepare_run(run_input)
         self._update_global_state()
-        # Run models
-        for model in self._models:
-            model.run()
+        # Run models in detached threads
+        for runner in self._detached_runners:
+            runner.run_model(run_input)
 
     # State handling
 

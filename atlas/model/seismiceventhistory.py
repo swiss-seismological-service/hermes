@@ -6,13 +6,8 @@ History of seismic events
 
 from eventhistory import EventHistory
 from eventimporter import EventImporter
-from datetime import datetime, timedelta
-from time import mktime, strptime
-import csv
-
 from seismicevent import SeismicEvent
 from location import Location
-from PyQt4 import QtCore
 
 
 class SeismicEventHistory(EventHistory):
