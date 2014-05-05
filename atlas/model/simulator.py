@@ -29,7 +29,7 @@ class Simulator(object):
             with the current simulation time.
 
         """
-        self.step_time = 200            # simulation step in ms
+        self.simulation_interval = 200  # simulate a time step every X ms
         self.speed = 1000
 
         self._handler = handler
@@ -39,7 +39,7 @@ class Simulator(object):
         self._timer = QTimer()
         self._stopped = False
         self._paused = False
-        self._timer.timeout.connect(self._step_time)
+        self._timer.timeout.connect(self._simulate_time_step)
 
         # these are used when simulating on an external signal instead of the
         # internal timer
@@ -59,7 +59,7 @@ class Simulator(object):
         """
         self._dt = None
         if self._external_signal:
-            self._external_signal.disconnect(self._step_time)
+            self._external_signal.disconnect(self._simulate_time_step)
         self._external_signal = None
 
     def step_on_external_signal(self, step_signal, dt):
@@ -80,7 +80,8 @@ class Simulator(object):
         """
         self._dt = dt
         self._external_signal = step_signal
-        self._external_signal.connect(self._step_time, type=Qt.QueuedConnection)
+        self._external_signal.connect(self._simulate_time_step,
+                                      type=Qt.QueuedConnection)
 
     def start(self):
         """
@@ -97,9 +98,9 @@ class Simulator(object):
         self._paused = False
         if self._external_signal:
             # Execute first step immediately after run loop returns
-            QTimer.singleShot(0, self._step_time)
+            QTimer.singleShot(0, self._simulate_time_step)
         else:
-            self._timer.start(self._step_time)
+            self._timer.start(self.simulation_interval)
 
     def pause(self):
         """ Pauses the simulation. Unpause with start. """
@@ -114,18 +115,19 @@ class Simulator(object):
         if self._external_signal is None:
             self._timer.stop()
         else:
-            self._external_signal.disconnect(self._do_step)
+            self._external_signal.disconnect(self._simulate_time_step)
             self._external_signal = None
             self._dt = None
 
-    def _step_time(self):
+    def _simulate_time_step(self):
         # skip any spurious events on start stop
         if self._paused or self._stopped:
             return
 
         simulation_ended = False
         if self._external_signal is None:
-            dt = timedelta(seconds=self.step_time * self.speed / 1000)
+            dt = timedelta(seconds=self.simulation_interval / 1000.0
+                                   * self.speed)
         else:
             dt = self._dt
         self._simulation_time += dt
