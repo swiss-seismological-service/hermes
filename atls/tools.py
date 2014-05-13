@@ -7,9 +7,10 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import functools
-from cProfile import Profile
+import cProfile
 import pstats
 import StringIO
+import logging
 
 
 # note that this decorator ignores **kwargs
@@ -33,9 +34,16 @@ def memoize(obj):
 
 
 class Profiler:
+    """
+    App performance profiler
 
+    Usage: simple: initialize, start and stop at appropriate locations in the
+    code. Cumulative times will be written to the filename given in the
+    constructor.
+
+    """
     def __init__(self, file_name=None):
-        self.profile = Profile()
+        self.profile = cProfile.Profile()
         self.file_name = file_name
 
     def start(self):
@@ -52,3 +60,19 @@ class Profiler:
         else:
             ps.print_stats()
             print s.getvalue()
+
+
+class AtlsLogger (logging.Logger):
+    """
+    Custom logger that provides an additional log level 'NOTICE' for stuff that
+
+    """
+    def __init__(self, name, level=logging.NOTSET):
+        super(AtlsLogger, self).__init__(name, level)
+        try:
+            notice_level = logging.NOTICE
+        except:
+            raise AttributeError('AtlsLogger expects a NOTICE level to be'
+                                 'present in logging.')
+        setattr(self, 'notice', lambda message, *args:
+                self.log(logging.NOTICE, message, args))

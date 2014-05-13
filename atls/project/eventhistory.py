@@ -84,9 +84,11 @@ class EventHistory(QtCore.QObject):
 
         """
         if time is None:
-            return self._events[-1]
+            events = self._events
         else:
-            return self.events_before(time)[-1]
+            events = self.events_before(time)
+        return events[-1] if len(events) > 0 else None
+
 
     def __getitem__(self, item):
         return self._events[item]

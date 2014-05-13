@@ -1,5 +1,7 @@
 # MATLAB generated files #
-.asv
+*.asv
+*.m~
+*.mex
 
 # Python Files
 *.py[cod]
@@ -22,5 +24,7 @@ doc/_build/*
 Icon?
 ehthumbs.db
 Thumbs.db
+
+# Input / test data
 data/basel_hydr_1min.dat
 data/basel_hydr_1sec.dat.txt

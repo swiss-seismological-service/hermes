@@ -268,6 +268,19 @@
      <string>Pause</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="dummyButton">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>420</y>
+      <width>114</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Dummy</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

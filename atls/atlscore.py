@@ -22,6 +22,7 @@ from domainmodel.datamodel import DataModel
 from simulator import Simulator
 from taskscheduler import TaskScheduler, ScheduledTask
 
+from tools import Profiler
 
 
 
@@ -146,6 +147,9 @@ class AtlsCore(QtCore.QObject):
         Replays the events from the seismic history.
 
         """
+        self._profiler = Profiler()
+        self._profiler.start()
+        self._num_runs = 0
         if self.project is None:
             return
         self._logger.info('Starting simulation')
@@ -196,13 +200,16 @@ class AtlsCore(QtCore.QObject):
         intervals.
 
         """
+        self._num_runs += 1
+        if self._num_runs == 10:
+            self._profiler.stop()
+            print 'profile dumped'
 
         # Project time changes can also occur on startup or due to manual user
         # interaction. In those cases we don't trigger any computations.
         forecast_states = [CoreState.SIMULATING, CoreState.FORECASTING]
         if self.state not in forecast_states:
             return
-
         if self._scheduler.has_pending_tasks(t):
             # TODO: this is way too slow and doesn't belong here anyway
             # we should probably have 'Task' objects that get initialized

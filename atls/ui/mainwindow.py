@@ -72,6 +72,8 @@ class MainWindow(QtGui.QMainWindow):
 
         # Hook up buttons
         self.ui.startButton.clicked.connect(self.action_start_simulation)
+        self.ui.stopButton.clicked.connect(self.action_stop_simulation)
+        self.ui.pauseButton.clicked.connect(self.action_pause_simulation)
 
         # Hook up essential signals from the core and the forecast engine
         atls.app_launched.connect(self.on_app_launch)
@@ -138,7 +140,6 @@ class MainWindow(QtGui.QMainWindow):
     def on_project_time_change(self, time):
         dt = (time - self.displayed_project_time).total_seconds()
         self.displayed_project_time = time
-
         # we do a more efficient relative change if the change is not too big
         if abs(dt) > self.ui.seismic_data_plot.display_range:
             epoch = datetime(1970, 1, 1)

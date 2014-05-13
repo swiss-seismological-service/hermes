@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Wed Jan 15 10:05:53 2014
-#      by: PyQt4 UI code generator 4.10.2
+# Created: Tue May  6 10:00:46 2014
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -103,6 +103,9 @@ class Ui_MainWindow(object):
         self.pauseButton = QtGui.QPushButton(self.centralWidget)
         self.pauseButton.setGeometry(QtCore.QRect(20, 420, 111, 32))
         self.pauseButton.setObjectName(_fromUtf8("pauseButton"))
+        self.dummyButton = QtGui.QPushButton(self.centralWidget)
+        self.dummyButton.setGeometry(QtCore.QRect(240, 420, 114, 32))
+        self.dummyButton.setObjectName(_fromUtf8("dummyButton"))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
@@ -187,7 +190,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "ATLS i.s.", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "ATLAS i.s.", None))
         self.seismicityTitleLabel.setText(_translate("MainWindow", "Seismicity", None))
         self.statusBox.setTitle(_translate("MainWindow", "Status", None))
         self.coreStatusLabel.setText(_translate("MainWindow", "Idle", None))
@@ -201,6 +204,7 @@ class Ui_MainWindow(object):
         self.stopButton.setText(_translate("MainWindow", "Stop", None))
         self.startButton.setText(_translate("MainWindow", "Start", None))
         self.pauseButton.setText(_translate("MainWindow", "Pause", None))
+        self.dummyButton.setText(_translate("MainWindow", "Dummy", None))
         self.menu_File.setTitle(_translate("MainWindow", "&File", None))
         self.menuOpen_Recent.setTitle(_translate("MainWindow", "Open Recent", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
