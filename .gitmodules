@@ -1,0 +1,3 @@
+[submodule "atls/external/shapiro_spatial"]
+	path = atls/external/shapiro_spatial
+	url = git@gitlab.seismo.ethz.ch:lheiniger/shapiro_spatial.git
