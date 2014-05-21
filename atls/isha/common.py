@@ -8,7 +8,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from PyQt4 import QtCore
-
+from datetime import datetime
 
 class RunInput(object):
     """
@@ -25,6 +25,8 @@ class RunInput(object):
     :type t_bin: float
 
     """
+    _data_attrs = ['t_run', 'forecast_mag_range', 'seismic_events',
+                   'hydraulic_events', 'forecast_times', 't_bin']
 
     def __init__(self, t_run):
         """
@@ -38,6 +40,31 @@ class RunInput(object):
         self.hydraulic_events = None
         self.forecast_times = None
         self.t_bin = 6
+
+    def primitive_rep(self):
+        """
+        Generator that unpacks input data into simple lists of primitive types.
+
+        We do this since we can't pass python objects to external code such as
+        Matlab. Lists are yielded as tuples (list_name, list) where list_name is
+        the name of the corresponding member variable. Members of members will
+        be returned with a combined name, E.g. all self.seismic_event.magnitude
+        will be returned as a list named *seismic_event_magnitude*. datetime
+        objects translated into unix time stamps
+
+        """
+        for base_name in RunInput._data_attrs:
+            attr = getattr(self, base_name)
+            try:
+                # If attr is a list of DataModel objects (which all provide
+                # data_attrs), we extract each data_attr into a separate list
+                for attr_name in attr[0].data_attrs:
+                    combined_name = base_name + '_' + attr_name
+                    data = [getattr(obj, attr_name) for obj in attr]
+                    yield combined_name, _primitive(data)
+            except (TypeError, IndexError, AttributeError):
+                # Otherwise we yield the attr as is
+                yield base_name, _primitive(attr)
 
 
 class RunResults:
@@ -128,3 +155,15 @@ class Model(QtCore.QObject):
             flow = max(rates)
 
         return flow
+
+
+def _primitive(attr):
+        """ Converts any datetime object to unix time stamp """
+        epoch = datetime(1970, 1, 1)
+        if isinstance(attr, list) and len(attr) > 0 \
+                and isinstance(attr[0], datetime):
+            return [(dt - epoch).total_seconds() for dt in attr]
+        elif isinstance(attr, datetime):
+            return (attr - epoch).total_seconds()
+        else:
+            return attr

@@ -33,6 +33,9 @@ class SeismicEvent(DataModel):
     longitude = Column(Float)
     depth = Column(Float)
 
+    # Data attributes (required for flattening)
+    data_attrs = ['magnitude', 'date_time', 'latitude', 'longitude', 'depth']
+
     def __init__(self, date_time, magnitude, location):
         """
         :param date_time: Date and time when the event occurred

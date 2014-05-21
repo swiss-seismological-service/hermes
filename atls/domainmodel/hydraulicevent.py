@@ -33,6 +33,9 @@ class HydraulicEvent(DataModel):
     pr_dh = Column(Float)
     pr_xt = Column(Float)
 
+    # Data attributes (required for flattening)
+    data_attrs = ['date_time', 'flow_dh', 'flow_xt', 'pr_dh', 'pr_xt']
+
     def __init__(self, date_time, flow_dh, flow_xt, pr_dh, pr_xt):
         """
         The initialisation parameters are the same as the member variables.
