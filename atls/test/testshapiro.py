@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from domainmodel.seismicevent import SeismicEvent
 from domainmodel.location import Location
 from isha.shapiro import Shapiro
-from isha.common import RunInput
+from isha.common import ModelInput
 
 from ctypes import *
 from os.path import join
@@ -48,7 +48,7 @@ class ShapiroTest(unittest.TestCase):
             main_shock = SeismicEvent(t_event, mw, location)
             shocks.append(main_shock)
 
-        run_data = RunInput(now)
+        run_data = ModelInput(now)
         run_data.seismic_events = shocks
         run_data.forecast_mag_range = (5.0, 7.0)
         run_data.forecast_times = [now]

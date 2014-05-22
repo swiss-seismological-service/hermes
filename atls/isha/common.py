@@ -10,7 +10,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from PyQt4 import QtCore
 from datetime import datetime
 
-class RunInput(object):
+
+class ModelInput(object):
     """
     Holds ISHA model inputs and parameters for the next run. Not all models may
     require all of the inputs.
@@ -53,7 +54,7 @@ class RunInput(object):
         objects translated into unix time stamps
 
         """
-        for base_name in RunInput._data_attrs:
+        for base_name in ModelInput._data_attrs:
             attr = getattr(self, base_name)
             try:
                 # If attr is a list of DataModel objects (which all provide
@@ -112,7 +113,7 @@ class Model(QtCore.QObject):
         run is supplied in *run_data*
 
         :param run_input: data for the next run
-        :type run_input: RunInput
+        :type run_input: ModelInput
 
         """
         self._run_input = run_input

@@ -13,7 +13,7 @@ from datetime import datetime
 from PyQt4 import QtCore
 from mock import MagicMock
 from ishamodelcontrol import DetachedRunner
-from isha.common import RunInput, Model
+from isha.common import ModelInput, Model
 
 
 from time import sleep
@@ -52,7 +52,7 @@ class DetachedRunnerTest(unittest.TestCase):
         """ Check if the model starts and terminates as expected """
         finished_slot = MagicMock()
         self.mock_model.finished.connect(finished_slot)
-        dummy_run_data = RunInput(datetime.now())
+        dummy_run_data = ModelInput(datetime.now())
         self.detached_runner.run_model(dummy_run_data)
         # Wait until the model thread emits its signals. This is a bit fragile
         # since event delivery from the model thread might take longer

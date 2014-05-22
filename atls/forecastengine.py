@@ -8,7 +8,7 @@ See ForecastEngine class documentation for details.
 
 from PyQt4 import QtCore
 import logging
-from isha.common import RunInput
+from isha.common import ModelInput
 import ishamodelcontrol as mc
 
 
@@ -74,7 +74,7 @@ class ForecastEngine(QtCore.QObject):
         Run a new forecast with the events given in the function parameters.
 
         :param run_input: input for this run
-        :type run_input: RunInput
+        :type run_input: ModelInput
 
         """
         # Skip this forecast if the engine is not IDLE

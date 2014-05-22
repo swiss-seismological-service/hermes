@@ -73,7 +73,7 @@ class DetachedRunner(QtCore.QObject):
         Starts a new forecast with the information given in run_data
 
         :param run_data: model inputs and parameters for this forecast
-        :type run_data: RunInput
+        :type run_data: ModelInput
 
         """
         self._logger.debug('preparing %s', self.model.title)
