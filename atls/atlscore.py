@@ -247,6 +247,7 @@ class AtlsCore(QtCore.QObject):
         model_input.hydraulic_events = input_hydraulics
         model_input.seismic_events = input_seismics
         model_input.forecast_times = fc_times
+        model_input.injection_well = self.project.injection_well
         # FIXME: the range should probably not be hardcoded
         model_input.forecast_mag_range = (0, 6)
 

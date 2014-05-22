@@ -11,6 +11,7 @@ from PyQt4 import QtCore
 from datetime import datetime
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
+from domainmodel.injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
 
@@ -39,6 +40,9 @@ class AtlsProject(project.Project):
         self.hydraulic_history = HydraulicEventHistory(self._store)
         self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
+
+        # FIXME: hardcoded for testing purposes
+        self.injection_well = InjectionWell(4740.3, 270645, 611631)
 
         # Set the project time to the time of the first event
         event = self.earliest_event()

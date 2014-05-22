@@ -27,7 +27,8 @@ class ModelInput(object):
 
     """
     _data_attrs = ['t_run', 'forecast_mag_range', 'seismic_events',
-                   'hydraulic_events', 'forecast_times', 't_bin']
+                   'hydraulic_events', 'forecast_times', 't_bin',
+                   'injection_well']
 
     def __init__(self, t_run):
         """
@@ -40,6 +41,7 @@ class ModelInput(object):
         self.seismic_events = None
         self.hydraulic_events = None
         self.forecast_times = None
+        self.injection_well = None
         self.t_bin = 6
 
     def primitive_rep(self):
