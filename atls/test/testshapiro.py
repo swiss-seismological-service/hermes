@@ -12,6 +12,8 @@ import unittest
 from PyQt4 import QtCore
 from datetime import datetime, timedelta
 from domainmodel.seismicevent import SeismicEvent
+from domainmodel.hydraulicevent import HydraulicEvent
+from domainmodel.injectionwell import InjectionWell
 from domainmodel.location import Location
 from isha.shapiro import Shapiro
 from isha.common import ModelInput
@@ -22,18 +24,15 @@ from os.path import join
 class ShapiroTest(unittest.TestCase):
 
     def setUp(self):
-        '''
         self.app = QtCore.QCoreApplication([])
         self.model = Shapiro()
         self.model.finished.connect(self.on_finished)
         self.run_results = None
-        '''
-        pass
 
     def on_finished(self, run_results):
         self.run_results = run_results
 
-    def create_run_data(self, num_events):
+    def create_model_input(self, num_events):
         """
         Creates and returns a run_data structure for *num_events* events. The
         events are spaced by 1 hour, everything else is fixed (see code).
@@ -48,19 +47,23 @@ class ShapiroTest(unittest.TestCase):
             main_shock = SeismicEvent(t_event, mw, location)
             shocks.append(main_shock)
 
-        run_data = ModelInput(now)
-        run_data.seismic_events = shocks
-        run_data.forecast_mag_range = (5.0, 7.0)
-        run_data.forecast_times = [now]
-        run_data.t_bin = 6.0
-        return run_data
+        hydraulic_event = HydraulicEvent(t_event, 100, 100, 10, 10)
 
-    def test_dummy(self):
-        """ Test the forecast based on a single event """
-        run_data = self.create_run_data(num_events=1)
+        model_input = ModelInput(now)
+        model_input.seismic_events = shocks
+        model_input.hydraulic_events = [hydraulic_event]
+        model_input.forecast_mag_range = (5.0, 7.0)
+        model_input.forecast_times = [now]
+        model_input.injection_well = InjectionWell(4000, 47.5, 7.5)
+        model_input.t_bin = 6.0
+        model_input.mc = 0.9
+        return model_input
 
+    def test_two_events(self):
+        """ Test the basic forecast based on two events """
+        model_input = self.create_model_input(num_events=2)
         # Run the model
-        self.model.prepare_run(run_data)
+        self.model.prepare_run(model_input)
         self.model.run()
 
         # Deliver signals manually and check if the 'finished' signal has been
@@ -70,20 +73,6 @@ class ShapiroTest(unittest.TestCase):
 
         # Compare the result with a precomputed known result for this case
         print 'shapiro returns ' + str(self.run_results)
-
-    def test_x(self):
-        matlab_root = '/Applications/MATLAB_R2013a.app'
-        engine = CDLL(join(matlab_root, 'bin', 'maci64', 'libeng.dylib'))
-        mx = CDLL(join(matlab_root, 'bin', 'maci64', 'libmx.dylib'))
-
-        engine.engOpen.restype = c_void_p
-        ep = engine.engOpen(c_char_p('matlab -nodisplay'))
-
-        print 'engine pointer: {:#x}'.format(ep)
-        print str(ep)
-
-        engine.engEvalString.argtypes = [c_void_p, c_char_p]
-        engine.engEvalString(ep, "D = 3 - 2;")
 
 if __name__ == '__main__':
     unittest.main()

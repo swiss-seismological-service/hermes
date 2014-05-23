@@ -18,7 +18,7 @@ class MockSeismicEvent:
         self.magnitude = 3
 
 
-class RunInputTest(unittest.TestCase):
+class ModelInputTest(unittest.TestCase):
 
     def test_primitive_rep(self):
         """
@@ -32,17 +32,19 @@ class RunInputTest(unittest.TestCase):
         test_input.forecast_mag_range = (3, 4)
         test_input.forecast_times = [t0]
         test_input.injection_well = None
+        test_input.mc = 0.9
         test_input.t_bin = 6.0
         primitive_inputs = {n: a for (n, a) in test_input.primitive_rep()}
         expected = {
-            't_run': 3600.0,
+            't_run': [3600.0],
             'forecast_mag_range': (3, 4),
             'seismic_events_magnitude': [3, 3],
             'seismic_events_date_time': [3600.0, 3600.0],
             'hydraulic_events': [],
-            'injection_well': None,
+            'injection_well': [],
             'forecast_times': [3600.0],
-            't_bin': 6.0
+            't_bin': [6.0],
+            'mc': [0.9]
         }
         self.assertEqual(primitive_inputs, expected)
 
