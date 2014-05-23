@@ -58,15 +58,17 @@ class ModelInput(object):
         """
         for base_name in ModelInput._data_attrs:
             attr = getattr(self, base_name)
-            try:
-                # If attr is a list of DataModel objects (which all provide
-                # data_attrs), we extract each data_attr into a separate list
+            # make everything into a sequence type first
+            if attr is None:
+                attr = []
+            elif not hasattr(attr, '__iter__'):
+                attr = [attr]
+            if len(attr) > 0 and hasattr(attr[0], 'data_attrs'):
                 for attr_name in attr[0].data_attrs:
                     combined_name = base_name + '_' + attr_name
                     data = [getattr(obj, attr_name) for obj in attr]
                     yield combined_name, _primitive(data)
-            except (TypeError, IndexError, AttributeError):
-                # Otherwise we yield the attr as is
+            else:
                 yield base_name, _primitive(attr)
 
 
@@ -147,26 +149,20 @@ class Model(QtCore.QObject):
         """
         if self._run_input.hydraulic_events is None:
             return 0
-
         rates = [h.flow_dh for h in self._run_input.hydraulic_events
                  if t_min <= h.date_time < t_max]
-
         if len(rates) == 0:
             last_flow = self._run_input.hydraulic_events[-1]
             flow = last_flow.flow_dh
         else:
             flow = max(rates)
-
         return flow
 
 
 def _primitive(attr):
         """ Converts any datetime object to unix time stamp """
         epoch = datetime(1970, 1, 1)
-        if isinstance(attr, list) and len(attr) > 0 \
-                and isinstance(attr[0], datetime):
+        if len(attr) > 0 and isinstance(attr[0], datetime):
             return [(dt - epoch).total_seconds() for dt in attr]
-        elif isinstance(attr, datetime):
-            return (attr - epoch).total_seconds()
         else:
             return attr
