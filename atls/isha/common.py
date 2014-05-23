@@ -24,11 +24,13 @@ class ModelInput(object):
     :type forecast_times: List of datetime objects
     :ivar t_bin: Forecast bin size in hours. The default is 6h.
     :type t_bin: float
+    :ivar mc: Magnitude of completeness
+    :type mc: float
 
     """
     _data_attrs = ['t_run', 'forecast_mag_range', 'seismic_events',
                    'hydraulic_events', 'forecast_times', 't_bin',
-                   'injection_well']
+                   'injection_well', 'mc']
 
     def __init__(self, t_run):
         """
@@ -42,6 +44,7 @@ class ModelInput(object):
         self.hydraulic_events = None
         self.forecast_times = None
         self.injection_well = None
+        self.mc = None
         self.t_bin = 6
 
     def primitive_rep(self):
