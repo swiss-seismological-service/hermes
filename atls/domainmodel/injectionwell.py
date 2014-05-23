@@ -33,7 +33,7 @@ class InjectionWell(DataModel):
     well_tip_depth = Column(Float)
 
     # Data attributes (required for flattening)
-    data_attrs = ['well_tip_depth', 'well_tip_latitude', 'well_tip_longitude']
+    data_attrs = ['well_tip_depth', 'well_tip_lat', 'well_tip_lon']
 
     def __init__(self, well_tip_depth, well_tip_lat, well_tip_lon):
         """
