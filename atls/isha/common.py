@@ -20,17 +20,21 @@ class ModelInput(object):
     :type forecast_mag_range: Tuple with two floats
     :ivar seismic_events: List of recorded seismic events
     :type seismic_events: List of SeismicEvent objects
+    :ivar hydraulic_events: List of recorded hydraulic events
+    :type hydraulic_events: List of HydraulicEvent objects
     :ivar forecast_times: List of times (datetime) at which to forecast
     :type forecast_times: List of datetime objects
     :ivar t_bin: Forecast bin size in hours. The default is 6h.
     :type t_bin: float
+    :ivar expected_flow: Expected flow rate during forecast [l/min]
+    :type expected_flow: float
     :ivar mc: Magnitude of completeness
     :type mc: float
 
     """
     _data_attrs = ['t_run', 'forecast_mag_range', 'seismic_events',
                    'hydraulic_events', 'forecast_times', 't_bin',
-                   'injection_well', 'mc']
+                   'injection_well', 'expected_flow', 'mc']
 
     def __init__(self, t_run):
         """
