@@ -41,20 +41,25 @@ class ShapiroTest(unittest.TestCase):
         now = datetime.now()
         shocks = []
         for i in range(num_events):
-            location = Location(7.5, 47.5, 0)
+            location = Location(7.5, 47.5, 0.0)
             mw = 5.5
             t_event = now - timedelta(hours=i)
             main_shock = SeismicEvent(t_event, mw, location)
             shocks.append(main_shock)
 
-        hydraulic_event = HydraulicEvent(t_event, 100, 100, 10, 10)
+        hydraulic_events = []
+        for i in range(3):
+            t_event = now - timedelta(hours=i, minutes=10)
+            hydraulic_event = HydraulicEvent(t_event, 100.0, 100.0, 10.0, 10.0)
+            hydraulic_events.append(hydraulic_event)
 
         model_input = ModelInput(now)
-        model_input.seismic_events = shocks
-        model_input.hydraulic_events = [hydraulic_event]
+        model_input.seismic_events = shocks[::-1]  # reverse (newest last)
+        model_input.hydraulic_events = hydraulic_events[::-1]  # reverse
         model_input.forecast_mag_range = (5.0, 7.0)
         model_input.forecast_times = [now]
-        model_input.injection_well = InjectionWell(4000, 47.5, 7.5)
+        model_input.injection_well = InjectionWell(4000.0, 47.5, 7.5)
+        model_input.expected_flow = 100.0
         model_input.t_bin = 6.0
         model_input.mc = 0.9
         return model_input

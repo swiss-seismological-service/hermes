@@ -50,6 +50,7 @@ class Shapiro(Model):
         # Invoke wrapper script
         script_path = os.path.dirname(os.path.realpath(__file__))
         self._session.run('cd ' + script_path)
+        self._session.run("save('model_inputs')")  # Useful for debugging
         self._session.run('who')
         self._session.run("run('shapiro_wrapper.m')")
         print 'shapiro says ' + self._session.buf.value

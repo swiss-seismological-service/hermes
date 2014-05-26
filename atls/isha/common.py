@@ -48,6 +48,7 @@ class ModelInput(object):
         self.hydraulic_events = None
         self.forecast_times = None
         self.injection_well = None
+        self.expected_flow = None
         self.mc = None
         self.t_bin = 6
 
