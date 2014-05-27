@@ -9,7 +9,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-import time
 
 
 class Store:
@@ -151,10 +150,7 @@ class Store:
         if order is not None:
             query = query.order_by(None)
             query = query.order_by(order)
-        t0 = time.clock()
         results = query.all()
-        tr = time.clock() - t0
-        print 'read all finished with after {} seconds'.format(tr)
         return results
 
     def read(self, entity, index, predicate=None, order=None):
