@@ -169,7 +169,7 @@ class MainWindow(QtGui.QMainWindow):
             self.atls_core.close_project()
         self.atls_core.open_project(str(path))
         # Update the list of recent files
-        recent_files = self.settings.value('general/recent_files')
+        recent_files = self.settings.value('recent_files')
         if recent_files is None:
             recent_files = []
         if path in recent_files:
@@ -177,11 +177,11 @@ class MainWindow(QtGui.QMainWindow):
         else:
             recent_files.insert(0, path)
         del recent_files[4:]
-        self.settings.set_value('general/recent_files', recent_files)
+        self.settings.set_value('recent_files', recent_files)
         self._refresh_recent_files_menu()
 
     def _refresh_recent_files_menu(self):
-        files = self.settings.value('general/recent_files')
+        files = self.settings.value('recent_files')
         self.ui.menuOpen_Recent.clear()
         if files is None:
             return

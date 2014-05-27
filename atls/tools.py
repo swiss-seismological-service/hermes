@@ -62,17 +62,3 @@ class Profiler:
             print s.getvalue()
 
 
-class AtlsLogger (logging.Logger):
-    """
-    Custom logger that provides an additional log level 'NOTICE' for stuff that
-
-    """
-    def __init__(self, name, level=logging.NOTSET):
-        super(AtlsLogger, self).__init__(name, level)
-        try:
-            notice_level = logging.NOTICE
-        except:
-            raise AttributeError('AtlsLogger expects a NOTICE level to be'
-                                 'present in logging.')
-        setattr(self, 'notice', lambda message, *args:
-                self.log(logging.NOTICE, message, args))

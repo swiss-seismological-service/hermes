@@ -22,6 +22,7 @@ from domainmodel.datamodel import DataModel
 from simulator import Simulator
 from taskscheduler import TaskScheduler, ScheduledTask
 
+import os
 from tools import Profiler
 
 
@@ -82,13 +83,13 @@ class AtlsCore(QtCore.QObject):
         self.state = CoreState.IDLE             # core state
 
         # Initialize scheduled tasks
-        self._scheduler = self._init_task_scheduler()
+        self._scheduler = self._create_task_scheduler()
 
     @property
     def t_next_forecast(self):
         return self._forecast_task.run_time
 
-    def _init_task_scheduler(self):
+    def _create_task_scheduler(self):
         """
         Creates the task scheduler and schedules recurring tasks
 
@@ -96,19 +97,19 @@ class AtlsCore(QtCore.QObject):
         scheduler = TaskScheduler()
 
         # Forecasting Task
-        dt = self.settings.value('engine/fc_interval')
+        dt = self.settings.value('engine/fc_interval', type=float)
         forecast_task = ScheduledTask(task_function=self.run_forecast,
                                       dt=timedelta(hours=dt),
                                       name='Forecast')
-        self._scheduler.add_task(forecast_task)
+        scheduler.add_task(forecast_task)
         self._forecast_task = forecast_task  # keep a reference for later
 
         # Rate computations
-        dt = self.settings.value('engine/rt_interval')
+        dt = self.settings.value('engine/rt_interval', type=float)
         rate_update_task = ScheduledTask(task_function=self.update_rates,
                                          dt=timedelta(minutes=dt),
                                          name='Rate update')
-        self._scheduler.add_task(rate_update_task)
+        scheduler.add_task(rate_update_task)
 
         return scheduler
 
@@ -122,14 +123,19 @@ class AtlsCore(QtCore.QObject):
         :type path: str
 
         """
+        if not os.path.exists(path):
+            self._logger.error('Could not find project: ' + path)
+            return
         # We add an additional / in front of the url. So now we have 3 slashes
         # in total, because host and db-name section are both empty for sqlite
         store_path = 'sqlite:///' + path
+        self._logger.info('Loading project at ' + path +
+                          ' - This might take a while...')
         store = Store(store_path, DataModel)
         self.project = AtlsProject(store)
         self.project.project_time_changed.connect(self._on_project_time_change)
         self.project_loaded.emit(self.project)
-        self._logger.info('Opened project at ' + path)
+        self._logger.info('...done')
 
     def close_project(self):
         self.project.close()
@@ -138,17 +144,17 @@ class AtlsCore(QtCore.QObject):
     # Running
 
     def start(self):
-        if self.settings.value('general/enable_lab_mode'):
+        if self.settings.value('enable_lab_mode'):
             self.start_simulation()
         else:
             self._logger.notice('ATLS only works in lab mode at the moment')
 
     def pause(self):
-        if self.settings.value('general/enable_lab_mode'):
+        if self.settings.value('/enable_lab_mode'):
             self.pause_simulation()
 
     def stop(self):
-        if self.settings.value('general/enable_lab_mode'):
+        if self.settings.value('enable_lab_mode'):
             self.stop_simulation()
 
     # Simulation

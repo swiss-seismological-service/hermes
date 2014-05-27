@@ -13,14 +13,17 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from PyQt4 import QtCore
+from PyQt4.QtCore import QSettings
+
+import logging
 
 # known settings and their default values
 known_settings = {
-    # General Settings
-    'general/recent_files':         None,    # List of recently opened projects (paths)
-    'general/open_last_project':    True,    # Open the last project when the app starts
-    'general/enable_lab_mode':      True,    # Enable lab mode to simulate through existing data
+    # General Settings (Qt automatically looks for top level keys in the general section)
+    'recent_files':                 None,    # List of recently opened projects (paths)
+    'project':                      None,    # Project to load on startup (overrides open_last_project)
+    'open_last_project':            False,   # Open the last project when the app starts
+    'enable_lab_mode':              True,    # Enable lab mode to simulate through existing data
     # Forecast Engine
     'engine/write_results_to_disk': True,    # Write forecasting results to disk
     'engine/output_directory':      None,    # Output directory for results, if none it writes to the app directory
@@ -50,10 +53,12 @@ class AppSettings:
 
         """
         self._settings_file = settings_file
+        self._logger = logging.getLogger(__name__)
         if settings_file is None:
-            self._settings = QtCore.QSettings()
+            self._settings = QSettings()
         else:
-            self._settings = QtCore.QSettings(settings_file)
+            self._logger.info('Loading settings from ' + settings_file)
+            self._settings = QSettings(settings_file, QSettings.IniFormat)
 
     @property
     def settings(self):
@@ -64,7 +69,7 @@ class AppSettings:
         """
         return self._settings
 
-    def value(self, key):
+    def value(self, key, **kwargs):
         """
         Returns the value that is stored for key or the default value if
         no value is stored.
@@ -75,7 +80,7 @@ class AppSettings:
         if not key in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         default = known_settings[key]
-        return self._settings.value(key, defaultValue=default)
+        return self._settings.value(key, defaultValue=default, **kwargs)
 
     def set_value(self, key, value):
         """
@@ -93,6 +98,7 @@ class AppSettings:
         Writes the default value for each setting to the settings file
 
         """
-        for key, value in known_settings:
+        self._logger.info('Loading default settings')
+        for key, value in known_settings.iteritems():
             self._settings.setValue(key, value)
         self._settings.sync()

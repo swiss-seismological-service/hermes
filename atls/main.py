@@ -7,6 +7,7 @@ The Main file sets up the user interface and bootstraps the application
 """
 
 import argparse
+import logging
 
 # We use API v2 for Qt objects, since they make working with variants easier
 # and are more future proof (v2 is default in python 3).
@@ -33,19 +34,48 @@ def main():
 
     parser = argparse.ArgumentParser(description='Adaptive Traffic Light '
                                                  'System')
-    parser.add_argument('-n', '--nogui', action='store_true',
-                        help='runs ATLS without a GUI and starts simulation '
-                             'immediately')
-    parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2, 3],
-                        default=1, help="output verbosity (0-3, default 1)")
-    parser.add_argument('-c', '--config', meta='CONFIG_FILE',
-                        help='config file to read')
+    parser.add_argument('-n', '--no-gui', action='store_true',
+                        help='runs ATLS without a GUI')
+    parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2],
+                        default=1, help="output verbosity (0-2, default 0)")
+    parser.add_argument('-c', '--config', metavar='CONFIG_FILE',
+                        help='config file to read when launched with --no-gui '
+                             '(default: atls.ini)')
 
     args = parser.parse_args()
 
+    # Additional sanity checks
+    if args.no_gui is True and args.config is None:
+        parser.error("--no-gui requires --config")
 
-    atls = Atls()
+    configure_logging(args.verbosity)
+    atls = Atls(args)
     atls.run()
+
+
+
+def configure_logging(verbosity):
+    """
+    Configures and the root logger.
+
+    All loggers in submodules will automatically become children of the root
+    logger and inherit some of the properties.
+
+    """
+    lvl_lookup = {
+        0: logging.WARN,
+        1: logging.INFO,
+        2: logging.DEBUG
+    }
+    root_logger = logging.getLogger()
+    root_logger.setLevel(lvl_lookup[verbosity])
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: '
+                                  '[%(name)s] %(message)s')
+    # ...setup console logging
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
 
 if __name__ == "__main__":
     main()

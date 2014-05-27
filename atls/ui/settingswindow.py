@@ -28,8 +28,8 @@ class SettingsWindow(QtGui.QDialog):
         # it's corresponding widget in the settings window
         self.widget_map = {
             # General settings
-            'general/open_last_project':    self.ui.openLastProjectOnStartup,
-            'general/enable_lab_mode':      self.ui.enableLabModeCheckBox,
+            'open_last_project':            self.ui.openLastProjectOnStartup,
+            'enable_lab_mode':              self.ui.enableLabModeCheckBox,
             # Forecast engine settings
             'engine/write_results_to_disk': self.ui.writeResultsToFileCheckBox,
             'engine/fc_interval':           self.ui.forecastIntervalBox,

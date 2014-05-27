@@ -8,13 +8,16 @@ the GUI and the Atls core application).
 """
 
 import sys
+import os
 import logging
+import signal
 from PyQt4 import QtGui, QtCore
 from ui.mainwindow import MainWindow
 from atlscore import AtlsCore
 from atlssettings import AppSettings
-import tools
 
+
+VERSION = '0.1 "Bug Infested Alpha"'
 
 class Atls(QtCore.QObject):
     """
@@ -28,7 +31,7 @@ class Atls(QtCore.QObject):
     # Signals
     app_launched = QtCore.pyqtSignal()
 
-    def __init__(self, args, logger):
+    def __init__(self, args):
         """
         Instantiates the Atls core and the Qt app (run loop) and
         wires the GUI.
@@ -38,18 +41,31 @@ class Atls(QtCore.QObject):
 
         """
         super(Atls, self).__init__()
-        self.app_settings = AppSettings()
-        # Register basic app info
-        self.qt_app = QtGui.QApplication(sys.argv, GUIenabled=(not args.nogui))
+        # Setup the logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.info('Launching ATLS v' + VERSION)
+        # Instantiate the appropriate Qt app object
+        self.has_gui = not args.no_gui
+        if self.has_gui:
+            self.qt_app = QtGui.QApplication(sys.argv)
+        else:
+            self.qt_app = QtCore.QCoreApplication(sys.argv)
+        # Register some general app information
         self.qt_app.setApplicationName('Atls')
         self.qt_app.setOrganizationDomain('seismo.ethz.ch')
-        self.qt_app.setApplicationVersion('0.1')
+        self.qt_app.setApplicationVersion(VERSION)
         self.qt_app.setOrganizationName('SED')
-        # Setup the root logger
-        self.logger = self._create_root_logger(args.verbosity)
+        # We expect a settings file when launching without GUI
+        if self.has_gui:
+            self.app_settings = AppSettings()
+        else:
+            settings_file = os.path.abspath(args.config)
+            self.app_settings = AppSettings(settings_file)
+            # reenable Ctrl-C
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
         # Launch core
         self.atls_core = AtlsCore(settings=self.app_settings)
-        if not args.nogui:
+        if self.has_gui:
             self.main_window = MainWindow(self)
         self.app_launched.connect(self.on_app_launched)
 
@@ -62,42 +78,25 @@ class Atls(QtCore.QObject):
         the app exits.
 
         """
-        self.logger.info('Atls is starting')
+        self.logger.info('Starting operation')
 
-        self.main_window.show()
+        if self.has_gui:
+            self.main_window.show()
         QtCore.QTimer.singleShot(0, self._emit_app_launched)
         sys.exit(self.qt_app.exec_())
 
     def on_app_launched(self):
-        pass
+        # Check if we should load a project on launch
+        project = self.app_settings.value('project')
+        open_last = self.app_settings.value('open_last_project', type=bool)
+        if not project and open_last:
+            self.logger.warn('open_last_project is not currently implemented')
+            pass  # TODO: implement loading the last project
+        if project:
+            path = os.path.abspath(project)
+            self.atls_core.open_project(path)
+
+
 
     def _emit_app_launched(self):
         self.app_launched.emit()
-
-    def _create_root_logger(self, verbosity):
-        """
-        Configures and returns the root logger.
-
-        All loggers in submodules will automatically become children of the root
-        logger and inherit some of the properties.
-
-        """
-        lvl_lookup = {
-            0: logging.ERROR,
-            1: logging.NOTICE,
-            2: logging.INFO,
-            3: logging.DEBUG
-        }
-        # Create a logger that can handle 'NOTICE' levels
-        logging.setLoggerClass(tools.AtlsLogger)
-        logging.NOTICE = 25
-        logging.addLevelName(logging.NOTICE, 'NOTICE')
-        logger = logging.getLogger('ATLS')
-        logger.setLevel(lvl_lookup[verbosity])
-        formatter = logging.Formatter('%(asctime)s %(levelname)s: '
-                                      '[%(name)s] %(message)s')
-        # ...setup console logging
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-        return logger
