@@ -4,18 +4,43 @@
 % Input variables are received from ATLS as simple arrays. 
 % The wrapper collects the input variables in structs that can
 % be passed to the model code.
+%
+% All input variables from ATLS are prefixed with atls_
+% All variables which are read back are prefixed with forecast_
 
 % Add the path to the model code
 addpath(fullfile('..', 'external', 'shapiro_spatial'))
 
+% Initialize
+forecast_success = false;
+forecast_no_result_reason = 'An error occured while running matlab code';
+% min inflow [l/min] - should correspond to the value defined in the model
+% TODO: it would be more robust if we passed this to the model
+STIMULATION_THRESHOLD = 1.0;
+
+% TODO: for some reason the basel project has all flow data in xt
+% (dh would probably make more sense).
+flow_rate = atls_hydraulic_events_flow_xt;
 
 %% Compile input data sets
+
+% The shapiro model does not produce meaningful results before the injection
+% starts
+if (sum(flow_rate)) < STIMULATION_THRESHOLD
+    forecast_no_result_reason = 'Cumulative flow is zero';
+    return
+end
     
 % Seismic event data
-% - convert unix time stamps to datenums
+% - convert WGS84 to CH-1903
 % - convert event location to relative locations (rel. to well tip)
-catalogLP.x = atls_seismic_events_longitude - atls_injection_well_well_tip_lon;
-catalogLP.y = atls_seismic_events_latitude - atls_injection_well_well_tip_lat;
+% - convert unix time stamps to datenums
+[x, y] = deg2ch1903plus(atls_seismic_events_latitude, ...
+                        atls_seismic_events_longitude);
+[wx, wy] = deg2ch1903plus(atls_injection_well_well_tip_lat, ...
+                          atls_injection_well_well_tip_lon);
+catalogLP.x = x - wx;
+catalogLP.y = y - wy;
 catalogLP.z = atls_seismic_events_depth - atls_injection_well_well_tip_depth;
 catalogLP.time = atls_seismic_events_date_time/86400 + datenum(1970,1,1);
 catalogLP.mag = atls_seismic_events_magnitude;
@@ -25,8 +50,9 @@ catalogLP.mc = atls_mc;
 % - Convert flow rates to cumulative flow
 % - Convert liters -> m3
 hydroLP.time = atls_hydraulic_events_date_time/86400 + datenum(1970,1,1);
-hydroLP.cumflow = cumtrapz(hydroLP.time, atls_hydraulic_events_flow_dh * 60 * 24) / 1000;
+hydroLP.cumflow = cumtrapz(hydroLP.time, flow_rate * 60 * 24) / 1000;
 hydroLP.startPump = hydroLP.time(find(hydroLP.cumflow > 0, 1));
+
 
 % Other forecasting parameters
 fcParams.endLP = atls_forecast_times(1)/86400 + datenum(1970,1,1);
@@ -47,3 +73,7 @@ grid.voxelLen = 100.0;
 
 %% Run the model
 forecast = forecastShapiroSpatial(catalogLP, hydroLP, fcParams, grid)
+
+%% Unpack the results for reding back in ATLS
+forecast_success = true;
+forecast_numev = forecast.NUMEV;
