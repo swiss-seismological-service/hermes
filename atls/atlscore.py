@@ -23,7 +23,7 @@ from simulator import Simulator
 from taskscheduler import TaskScheduler, ScheduledTask
 
 import os
-from tools import Profiler
+#from tools import Profiler
 
 
 
@@ -166,8 +166,8 @@ class AtlsCore(QtCore.QObject):
         Replays the events from the seismic history.
 
         """
-        self._profiler = Profiler()
-        self._profiler.start()
+        #self._profiler = Profiler()
+        #self._profiler.start()
         self._num_runs = 0
         if self.project is None:
             return
@@ -221,11 +221,6 @@ class AtlsCore(QtCore.QObject):
         :type t_project: datetime
 
         """
-        self._num_runs += 1
-        if self._num_runs == 10:
-            self._profiler.stop()
-            print 'profile dumped'
-
         # Project time changes can also occur on startup or due to manual user
         # interaction. In those cases we don't trigger any computations.
         forecast_states = [CoreState.SIMULATING, CoreState.FORECASTING]
