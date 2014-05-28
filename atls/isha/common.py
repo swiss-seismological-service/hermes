@@ -9,6 +9,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from PyQt4 import QtCore
 from datetime import datetime
+from datetime import timedelta
+from project import atlsproject
 
 
 class ModelInput(object):
@@ -36,21 +38,43 @@ class ModelInput(object):
                    'hydraulic_events', 'forecast_times', 't_bin',
                    'injection_well', 'expected_flow', 'mc']
 
-    def __init__(self, t_run):
+    def __init__(self, t_run, project=None, bin_size=6.0, num_bins=1,
+                 mc=None, mag_range=None):
         """
-        Create input for a model run. The parameter t_run serves as an
-        identifier for the run.
+        Create input for a model run.
+
+        :param t_run: time of the run (serves as an identifier)
+        :type t_run: datetime
+        :param project: atls project containing the data
+        :type project: AtlsProject
+        :param bin_size: size of the forecast bin [hours]
+        :type bin_size: float
+        :param num_bins: number of forecasts to make (usually 1)
+        :type num_bins: int
+        :param mc: magnitude of completeness
+        :type mc: float
+        :param mag_range: tuple of two specifying the forecast magnitude range
+        :type num_bins: tuple
+
 
         """
+        dt = timedelta(hours=bin_size)
         self.t_run = t_run
-        self.forecast_mag_range = None
+        # FIXME: the range should not be hardcoded
+        self.forecast_mag_range = mag_range
+        self.mc = mc
         self.seismic_events = None
         self.hydraulic_events = None
-        self.forecast_times = None
+        self.forecast_times = [t_run + i * dt for i in range(num_bins)]
         self.injection_well = None
         self.expected_flow = None
-        self.mc = None
-        self.t_bin = 6
+        self.t_bin = bin_size
+        if project:
+            self.hydraulic_events = \
+                project.hydraulic_history.events_before(t_run)
+            self.seismic_events = \
+                project.seismic_history.events_before(t_run)
+            self.injection_well = project.injection_well
 
     def primitive_rep(self):
         """

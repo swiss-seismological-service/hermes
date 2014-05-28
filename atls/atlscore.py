@@ -236,24 +236,11 @@ class AtlsCore(QtCore.QObject):
 
     def run_forecast(self, task_run_info):
         t_run = task_run_info.t_project
-        dt_h = self.settings.value('engine/fc_bin_size')
-        dt = timedelta(hours=dt_h)
-        num_bins = self.settings.value('engine/num_fc_bins')
-        fc_times = [t_run + i * dt for i in range(num_bins)]
-
-        # Prepare model run input
-        model_input = ModelInput(t_run)
-        input_seismics = self.project.seismic_history.events_before(t_run)
-        input_hydraulics = self.project.hydraulic_history.events_before(t_run)
-        model_input.hydraulic_events = input_hydraulics
-        model_input.seismic_events = input_seismics
-        model_input.forecast_times = fc_times
-        model_input.injection_well = self.project.injection_well
-        # FIXME: the range should not be hardcoded
-        model_input.forecast_mag_range = (0, 6)
-        model_input.mc = 0.9
-
-        # Kick off the engine
+        dt_h = self.settings.value('engine/fc_bin_size', type=float)
+        num_bins = self.settings.value('engine/num_fc_bins', type=int)
+        # FIXME: do not hardcode  mc, mag_range
+        model_input = ModelInput(t_run, self.project, bin_size=dt_h,
+                                 num_bins=num_bins, mc=0.9, mag_range=(0, 6))
         self.forecast_engine.run(model_input)
 
     def update_rates(self, info):
