@@ -177,14 +177,16 @@ class AtlsCore(QtCore.QObject):
         self._scheduler.reset_schedule(time_range[0])
         # Configure simulator
         self.simulator.time_range = time_range
-        infinite_speed = self.settings.value('lab_mode/infinite_speed')
+        infinite_speed = self.settings.value('lab_mode/infinite_speed',
+                                             type=bool)
         if infinite_speed:
-            dt_h = self.settings.value('engine/fc_interval')
+            dt_h = self.settings.value('engine/fc_interval', type=float)
             dt = timedelta(hours=dt_h)
             step_signal = self.forecast_engine.forecast_complete
             self.simulator.step_on_external_signal(step_signal, dt)
         else:
-            self.simulator.speed = self.settings.value('lab_mode/speed')
+            self.simulator.speed = self.settings.value('lab_mode/speed',
+                                                       type=float)
             self.simulator.step_on_internal_timer()
         # Start simulator
         self.simulator.start()
@@ -244,11 +246,13 @@ class AtlsCore(QtCore.QObject):
         self.forecast_engine.run(model_input)
 
     def update_rates(self, info):
-        data = [(e.date_time, e.magnitude) for e in info.s_events]
+        t_run = info.t_project
+        seismic_events = self.project.seismic_history.events_before(t_run)
+        data = [(e.date_time, e.magnitude) for e in seismic_events]
         if len(data) == 0:
             return
         t, m = zip(*data)
         t = list(t)
         m = list(m)
-        rates = self.project.rate_history.compute_and_add(m, t, [info.t])
+        rates = self.project.rate_history.compute_and_add(m, t, [t_run])
         self._logger.debug('New rate computed: ' + str(rates[0].rate))
