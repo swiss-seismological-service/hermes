@@ -21,10 +21,9 @@ class Shapiro(Model):
     def __init__(self):
         """Initializes the model parameters"""
         super(Shapiro, self).__init__()
-        self._logger = logging.getLogger(__name__)
         self._session = pymatlab.session_factory('-nodisplay -nojvm')
 
-    def run(self):
+    def _do_run(self):
         """
         Forecast aftershocks at the times given in run data (see prepare_run)
         The model takes the injection flow rate at each forecast time into
@@ -38,7 +37,6 @@ class Shapiro(Model):
         are ignored for the respective forecast.
 
         """
-        self._logger.info('Model run initiated')
 
         # Copy input to matlab workspace
         # We can only pass simple arrays, so we need to decompose our input
@@ -50,12 +48,32 @@ class Shapiro(Model):
         # Invoke wrapper script
         script_path = os.path.dirname(os.path.realpath(__file__))
         self._session.run('cd ' + script_path)
-        self._session.run("save('model_inputs')")  # Useful for debugging
-        self._session.run('who')
-        self._session.run("run('shapiro_wrapper.m')")
-        print 'shapiro says ' + self._session.buf.value
+        try:
+            self._session.run("run('shapiro_wrapper.m')")
+        except RuntimeError:
+            self._session.run("save('model_inputs')")
+            self._logger.error('The Shapiro model encountered an error in the '
+                               'Matlab code. The model inputs that led to the '
+                               'error have been saved to isha/model_inputs.mat. '
+                               'To debug the model load model_inputs.mat file '
+                               'in matlab and execute shapiro_wrapper.m '
+                               'directly.')
+            if (Model.RAISE_ON_ERRORS):
+                raise
+            else:
+                success = False;
+        else:
+            success = self._session.getvalue('forecast_success')
+
         # Finish up
         run_results = RunResults(t_run=self._run_input.t_run, model=self)
-        run_results.t_results = self._run_input.forecast_times
-        self._logger.debug('Model run completed')
-        self.finished.emit(run_results)
+        if success:
+            self._logger.info('number of events: ' + str(num_events))
+            run_results.t_results = self._run_input.forecast_times
+            run_results.rates = self._session.getvalue('forecast_numev')
+        else:
+            reason = self._session.getvalue('forecast_no_result_reason')
+            run_results.no_result_reason = reason
+            run_results.has_results = False
+            self._logger.info('did not get any results')
+        return run_results

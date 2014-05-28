@@ -11,9 +11,9 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from datetime import datetime
 from PyQt4 import QtCore
-from mock import MagicMock
+from mock import MagicMock, call
 from ishamodelcontrol import DetachedRunner
-from isha.common import ModelInput, Model
+from isha.common import ModelInput, Model, ModelState
 
 
 from time import sleep
@@ -25,9 +25,8 @@ class MockIshaModel(Model):
 
     """
 
-    def run(self):
-        super(MockIshaModel, self).run()
-        self.finished.emit(self)
+    def _do_run(self):
+        return self
 
 
 class DetachedRunnerTest(unittest.TestCase):
@@ -50,15 +49,19 @@ class DetachedRunnerTest(unittest.TestCase):
 
     def test_start_finish(self):
         """ Check if the model starts and terminates as expected """
-        finished_slot = MagicMock()
-        self.mock_model.finished.connect(finished_slot)
+        on_finished = MagicMock()
+        on_state_changed = MagicMock()
+        self.mock_model.state_changed.connect(on_state_changed)
+        self.mock_model.finished.connect(on_finished)
         dummy_run_data = ModelInput(datetime.now())
         self.detached_runner.run_model(dummy_run_data)
         # Wait until the model thread emits its signals. This is a bit fragile
         # since event delivery from the model thread might take longer
         sleep(0.2)
         self.app.processEvents()
-        finished_slot.assert_called_once_with(self.mock_model)
+        on_finished.assert_called_once_with(self.mock_model)
+        expected_calls = [call(ModelState.RUNNING), call(ModelState.IDLE)]
+        on_state_changed.assert_has_calls(expected_calls)
 
 
 if __name__ == '__main__':

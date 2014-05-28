@@ -37,9 +37,8 @@ class Rj(Model):
         self.b = b
         self.p = p
         self.c = c
-        self._logger = logging.getLogger(__name__)
 
-    def run(self):
+    def _do_run(self):
         """
         Forecast aftershocks at the times given in run data
 
@@ -65,7 +64,6 @@ class Rj(Model):
         are ignored for the respective forecast.
 
         """
-        self._logger.info('Model run initiated')
 
         # copy everything into local variables for better readability
         a = self.a
@@ -116,5 +114,4 @@ class Rj(Model):
         run_results.t_results = forecast_times
         run_results.rates = forecast_rates.tolist()
         run_results.probabilities = probabilities.tolist()
-        self._logger.debug('Model run completed')
-        self.finished.emit(run_results)
+        return run_results

@@ -71,7 +71,7 @@ class AtlsCore(QtCore.QObject):
         self._forecast_task = None
 
         # Initialize forecast engine
-        engine = ForecastEngine()
+        engine = ForecastEngine(settings.value('ISHA/models'))
         self.forecast_engine = engine
 
         # Initialize simulator

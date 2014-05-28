@@ -8,7 +8,7 @@ See ForecastEngine class documentation for details.
 
 from PyQt4 import QtCore
 import logging
-from isha.common import ModelInput
+from isha.common import ModelInput, ModelState, RunResults
 import ishamodelcontrol as mc
 
 
@@ -21,9 +21,8 @@ class ForecastEngine(QtCore.QObject):
     """
     The forecast engine runs ISHA models.
 
-    The engine manages a collection of forecast models and launches model runs
-    on request. Model run results are archived in the result_sets dictionary
-    which is structured as followed:
+    The engine launches model runs on request. Model run results are archived
+    in the result_sets dictionary which is structured as followed:
 
     result_sets: { t_run : { model: run_results }
                    t_run : { model: run_results }
@@ -38,36 +37,37 @@ class ForecastEngine(QtCore.QObject):
     are ready to be collected. The payload contains the specific result set for
     the run.
 
+    :param model_ids: model_ids of models to load
+    :type model_ids: str
+
     """
 
     forecast_complete = QtCore.pyqtSignal(dict)
 
-    def __init__(self):
+    def __init__(self, model_ids='all'):
         super(ForecastEngine, self).__init__()
         self.last_forecast_time = None
         self.state = ForecastEngineState.IDLE
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
+        self.current_run = None
 
         # Load models and prepare runners
-        self._models = mc.load_models()
-        self._detached_runners = [mc.DetachedRunner(m) for m in self._models]
+        mc.load_models(model_ids)
+        self._detached_runners = [mc.DetachedRunner(m)
+                                  for m in mc.active_models]
 
         # Add state information for each model and subscribe to relevant signals
-        self._model_states = {}
-        for model in self._models:
-            self._model_states[model] = ForecastEngineState.IDLE
+        for model in mc.active_models:
             # The QueuedConnection makes sure the callback runs on our thread
             # and not on the models.
+            model.state_changed.connect(self._on_model_state_changed,
+                                        type=QtCore.Qt.QueuedConnection)
             model.finished.connect(self._on_model_run_finished,
                                    type=QtCore.Qt.QueuedConnection)
 
         # Initialize result sets
         self.result_sets = {}
-
-    @property
-    def models(self):
-        return self._models
 
     def run(self, run_input):
         """
@@ -85,46 +85,48 @@ class ForecastEngine(QtCore.QObject):
             return
         self.logger.info('Initiating forecast at t = ' +
                          str(run_input.t_run))
-
-        # TODO: look at this again
-        # The following cannot be accomplished in one step, since some models
-        # run asynchronously and might finish before _update_state gets called
-
-        # Prepare models
-        for model in self._models:
-            self._model_states[model] = ForecastEngineState.FORECASTING
-        self._update_global_state()
-        # Run models in detached threads
+        self.current_run = run_input.t_run
         for runner in self._detached_runners:
             runner.run_model(run_input)
 
     # State handling
 
-    def _update_global_state(self, t_run=None):
-        """ Set the engine state according to the individual model states """
-        if ForecastEngineState.FORECASTING in self._model_states.values():
-            new_state = ForecastEngineState.FORECASTING
+    def _on_model_state_changed(self):
+        if ModelState.RUNNING in [m.state for m in mc.active_models]:
+            new_global_state = ForecastEngineState.FORECASTING
         else:
-            new_state = ForecastEngineState.IDLE
-        if self.state != new_state:
-            self.state = new_state
-            if new_state == ForecastEngineState.IDLE:
-                self.logger.info('Forecast complete')
+            new_global_state = ForecastEngineState.IDLE
+        if self.state != new_global_state:
+            self.state = new_global_state
+            if new_global_state == ForecastEngineState.IDLE:
+                t_run = self.current_run;
+                self.logger.info('Forecast complete for t = ' + str(t_run))
+                self.current_run = None;
                 self.forecast_complete.emit(self.result_sets.get(t_run))
+
 
     # Model completion handlers
 
-    def _register_run_results(self, results):
-        run_id = results.t_run
+    def _on_model_run_finished(self, run_results):
+        """
+        Adds the run_results to the result set for the current run
+
+        :param run_results: Run results for the previous run
+        :type run_results: RunResults
+
+        """
+        model = run_results.model
+        run_id = run_results.t_run
         result_set = self.result_sets.get(run_id)
         if result_set is None:
             result_set = {}
             self.result_sets[run_id] = result_set
-        result_set[results.model] = results
+        result_set[run_results.model] = run_results
+        if not run_results.has_results:
+            self.logger.warn(model.title + ' did not produce any results for'
+                             ' t = ' + str(run_id) + '. Reason: ' +
+                             run_results.no_result_reason)
 
-    def _on_model_run_finished(self, run_results):
-        model = run_results.model
-        self._model_states[model] = ForecastEngineState.IDLE
-        self._register_run_results(run_results)
-        self.logger.debug('Model run complete: ' + model.title)
-        self._update_global_state(run_results.t_run)
+        else:
+            self.logger.debug('Stored results for ' + model.title)
+

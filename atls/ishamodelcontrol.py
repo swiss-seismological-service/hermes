@@ -13,10 +13,12 @@ from PyQt4 import QtCore
 from isha.common import Model
 from isha.rj import Rj
 from isha.etas import Etas
+from isha.shapiro import Shapiro
 import logging
 
+active_models = []
 
-def load_models():
+def load_models(model_ids):
     """
     Load ISHA models. Register new models here.
 
@@ -24,19 +26,27 @@ def load_models():
     and add it to the list of models.
 
     """
-    models = []
+    load_all = 'all' in model_ids
+
+    logging.getLogger(__name__).info('Active models: ' + ', '.join(model_ids))
 
     # Reasenberg Jones
-    rj_model = Rj(a=-1.6, b=1.0, p=1.2, c=0.05)
-    rj_model.title = 'Reasenberg-Jones'
-    models.append(rj_model)
+    if load_all or 'rj' in model_ids:
+        rj_model = Rj(a=-1.6, b=1.0, p=1.2, c=0.05)
+        rj_model.title = 'Reasenberg-Jones'
+        active_models.append(rj_model)
 
     # ETAS
-    etas_model = Etas(alpha=0.8, k=8.66, p=1.2, c=0.01, mu=12.7, cf=1.98)
-    etas_model.title = 'ETAS'
-    models.append(etas_model)
+    if load_all or 'etas' in model_ids:
+        etas_model = Etas(alpha=0.8, k=8.66, p=1.2, c=0.01, mu=12.7, cf=1.98)
+        etas_model.title = 'ETAS'
+        active_models.append(etas_model)
 
-    return models
+    # Shapiro
+    if load_all or 'shapiro' in model_ids:
+        shapiro_model = Shapiro()
+        shapiro_model.title = 'Shapiro (Spatial)'
+        active_models.append(shapiro_model)
 
 
 class DetachedRunner(QtCore.QObject):

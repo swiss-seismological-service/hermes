@@ -34,6 +34,8 @@ known_settings = {
     # Lab mode settings
     'lab_mode/infinite_speed':      True,    # Simulate through catalog as fast as possible
     'lab_mode/speed':               1000,    # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
+    # ISHA model settings
+    'ISHA/models':                  'all',   # ISHA models to load
 }
 
 

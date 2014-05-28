@@ -67,9 +67,8 @@ class Etas(Model):
         self.c = c
         self.mu = mu
         self.cf = cf
-        self._logger = logging.getLogger(__name__)
 
-    def run(self):
+    def _do_run(self):
         """
         Forecast aftershocks at the times given in run data (see prepare_run)
         The model takes the injection flow rate at each forecast time into
@@ -79,13 +78,10 @@ class Etas(Model):
         The model forecasts the number of seismic events expected between times
         t given in the run data (see prepare_forecast) and *t + bin_size*.
 
-
-
         Note that any events occurring after the start of each forecast window
         are ignored for the respective forecast.
 
         """
-        self._logger.info('Model run initiated')
 
         # copy everything into local variables for better readability
         a = self.alpha
@@ -139,5 +135,4 @@ class Etas(Model):
         run_results.t_results = forecast_times
         run_results.rates = forecast_rates.tolist()
         run_results.probabilities = probabilities.tolist()
-        self._logger.debug('Model run completed')
-        self.finished.emit(run_results)
+        return run_results

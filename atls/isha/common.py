@@ -10,8 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from PyQt4 import QtCore
 from datetime import datetime
 from datetime import timedelta
-from project import atlsproject
-
+import logging
 
 class ModelInput(object):
     """
@@ -106,10 +105,12 @@ class ModelInput(object):
 
 class RunResults:
     """
-    Models store their run results into this simple container structure
+    Models store their run results into this simple container structure.
 
     """
     def __init__(self, t_run, model):
+        self.has_results = True
+        self.no_result_reason = 'Unknown'
         self.t_run = t_run
         self.model = model
         self.t_results = None
@@ -117,20 +118,31 @@ class RunResults:
         self.probabilities = None
 
 
+class ModelState:
+    IDLE = 0
+    RUNNING = 1
+
+
 class Model(QtCore.QObject):
     """
     Abstract model class that provides the common functionality for ISHA
     forecast models
 
-    .. pyqt4:signal:finished: emitted when the model has finished its run.
-    Carries the run results as payload.
+    .. pyqt4:signal:finished: emitted when the model has finished its run
+    successfully and has new run results. Carries the run results as payload.
+    .. pyqt4:signal:state_changed: emitted when the model changes its state
+    from running to idle or vice ver
 
     :ivar run_results: results of the last run
     :ivar title: display title of the model
 
     """
 
+    # If set to true, any model errors will raise an exception
+    RAISE_ON_ERRORS = True
+
     finished = QtCore.pyqtSignal(object)
+    state_changed = QtCore.pyqtSignal(object)
 
     def __init__(self):
         """ Initializes the model """
@@ -138,6 +150,8 @@ class Model(QtCore.QObject):
         self._run_input = None
         self.run_results = None
         self.title = 'Model'
+        self._state = ModelState.IDLE
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
     def run_input(self):
@@ -156,14 +170,43 @@ class Model(QtCore.QObject):
 
     def run(self):
         """
-        Invoked when the model should perform a run. The default implementation
-        just checks if the run data has been provided.
+        Invoked when the model should perform a run. This method takes care of
+        state changes and emitting signals as required. The actual model code
+        is run from _do_run.
 
-        You should Override this function in a subclass. Make sure you emit the
-        :pyqt4:signal:finished signal at the end of your implementation.
+        """
+        self._logger.info(self.title + ' model run initiated')
+        self.state = ModelState.RUNNING
+        results = self._do_run()
+        if results:
+            self.run_results = results
+        else:
+            # Store an empty result if the model code doesn't return anything
+            self.run_results = RunResults(self.run_input.t_run, self)
+        self.finished.emit(self.run_results)
+        self._logger.info(self.title + ' model run completed')
+        self.state = ModelState.IDLE
+
+    def _do_run(self):
+        """
+        Contains the actual model code.
+
+        You should Override this function in a subclass and return the results
+        for the run if successful. The default implementation just checks if the
+        run data has been provided.
 
         """
         assert(self._run_input is not None)
+        return None
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        self._state = state
+        self.state_changed.emit(state)
 
     # Some helper functions
 
