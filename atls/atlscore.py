@@ -260,7 +260,6 @@ class AtlsCore(QtCore.QObject):
         data = [(e.date_time, e.magnitude) for e in info.s_events]
         if len(data) == 0:
             return
-
         t, m = zip(*data)
         t = list(t)
         m = list(m)

@@ -121,7 +121,7 @@ class TaskScheduler:
     def run_pending_tasks(self, t, run_info):
         """
         Run all tasks that are pending at time t. After running, repeating tasks
-        will are scheduled for the next execution and non-repeating tasks are
+        are scheduled for the next execution and non-repeating tasks are
         removed from the task queue.
 
         :param t: time t against which the schedule is checked
