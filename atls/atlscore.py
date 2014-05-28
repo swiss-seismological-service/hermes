@@ -227,9 +227,9 @@ class AtlsCore(QtCore.QObject):
         if self.state not in forecast_states:
             return
         if self._scheduler.has_pending_tasks(t_project):
-            self._logger.info('Scheduler has pending tasks. Executing')
+            self._logger.debug('Scheduler has pending tasks. Executing')
             info = TaskRunInfo(t_project=t_project)
-            self._logger.info('Run pending tasks')
+            self._logger.debug('Run pending tasks')
             self._scheduler.run_pending_tasks(t_project, info)
 
     # Scheduled tasks
