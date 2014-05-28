@@ -95,6 +95,8 @@ class Atls(QtCore.QObject):
         if project:
             path = os.path.abspath(project)
             self.atls_core.open_project(path)
+        if not self.has_gui:
+            self.atls_core.start_simulation()
 
 
 
