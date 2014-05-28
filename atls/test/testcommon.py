@@ -41,6 +41,7 @@ class ModelInputTest(unittest.TestCase):
             'seismic_events_magnitude': [3, 3],
             'seismic_events_date_time': [3600.0, 3600.0],
             'hydraulic_events': [],
+            'expected_flow': [],
             'injection_well': [],
             'forecast_times': [3600.0],
             't_bin': [6.0],
