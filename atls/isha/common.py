@@ -98,7 +98,7 @@ class ModelInput(object):
             # TODO: we might have to estimate this from flow_dh. Also, the
             # current implementation does not handle irregularly spaced samples
             # correctly.
-            self.expected_flow = sum([e.flow_xt for e in events]) / t_fc
+            self.expected_flow = sum([e.flow_xt for e in events]) / len(events)
 
 
     def primitive_rep(self):
