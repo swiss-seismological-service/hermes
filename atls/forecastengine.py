@@ -69,25 +69,27 @@ class ForecastEngine(QtCore.QObject):
         # Initialize result sets
         self.result_sets = {}
 
-    def run(self, run_input):
+    def run(self, model_input):
         """
         Run a new forecast with the events given in the function parameters.
 
-        :param run_input: input for this run
-        :type run_input: ModelInput
+        :param model_input: input for this run
+        :type model_input: ModelInput
 
         """
         # Skip this forecast if the engine is not IDLE
         if self.state != ForecastEngineState.IDLE:
             self.logger.warning('Attempted to initiate forecast while the '
                                 'engine is not idle. Skipping forecast at '
-                                't=' + str(run_input.t_run))
+                                't=' + str(model_input.t_run))
             return
         self.logger.info('Initiating forecast at t = ' +
-                         str(run_input.t_run))
-        self.current_run = run_input.t_run
+                         str(model_input.t_run))
+        self.logger.debug('Expected flow during forecast: {:.1f} l/min.' \
+            .format(model_input.expected_flow))
+        self.current_run = model_input.t_run
         for runner in self._detached_runners:
-            runner.run_model(run_input)
+            runner.run_model(model_input)
 
     # State handling
 

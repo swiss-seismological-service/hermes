@@ -55,15 +55,12 @@ class ModelInput(object):
         :param mag_range: tuple of two specifying the forecast magnitude range
         :type num_bins: tuple
 
-
         """
         dt = timedelta(hours=bin_size)
         self.t_run = t_run
         # FIXME: the range should not be hardcoded
         self.forecast_mag_range = mag_range
         self.mc = mc
-        self.seismic_events = None
-        self.hydraulic_events = None
         self.forecast_times = [t_run + i * dt for i in range(num_bins)]
         self.injection_well = None
         self.expected_flow = None
@@ -74,6 +71,35 @@ class ModelInput(object):
             self.seismic_events = \
                 project.seismic_history.events_before(t_run)
             self.injection_well = project.injection_well
+        else:
+            self.seismic_events = None
+            self.hydraulic_events = None
+
+    def estimate_expected_flow(self, t_run, project, bin_size=6.0, num_bins=1):
+        """
+        Compute expected flow from (future) data.
+
+        The expected flow during the forecast period is computed as the average
+        from the flow samples for that period. If no data is available, zero
+        flow is assumed.
+
+        :param project: atls project containing the data
+        :param t_run: time of the run
+        :param bin_size: size of the forecast bin(s) [hours]
+        :param num_bins: number of forecast bins
+
+        """
+        t_fc = num_bins * bin_size * 60
+        t_end = t_run + timedelta(minutes=t_fc)
+        events = project.hydraulic_history.events_between(t_run, t_end)
+        if len(events) == 0:
+            self.expected_flow = 0
+        else:
+            # TODO: we might have to estimate this from flow_dh. Also, the
+            # current implementation does not handle irregularly spaced samples
+            # correctly.
+            self.expected_flow = sum([e.flow_xt for e in events]) / t_fc
+
 
     def primitive_rep(self):
         """

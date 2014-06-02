@@ -243,6 +243,12 @@ class AtlsCore(QtCore.QObject):
         # FIXME: do not hardcode  mc, mag_range
         model_input = ModelInput(t_run, self.project, bin_size=dt_h,
                                  num_bins=num_bins, mc=0.9, mag_range=(0, 6))
+        if self.state == CoreState.SIMULATING:
+            model_input.estimate_expected_flow(t_run, self.project,
+                                               bin_size=dt_h, num_bins=num_bins)
+        else:
+            raise NotImplementedError('During "real" forecasting the estimated'
+                                      ' flow should be a user input')
         self.forecast_engine.run(model_input)
 
     def update_rates(self, info):
