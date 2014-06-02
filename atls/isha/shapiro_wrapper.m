@@ -8,6 +8,7 @@
 % All input variables from ATLS are prefixed with atls_
 % All variables which are read back are prefixed with forecast_
 
+
 % Add the path to the model code
 addpath(fullfile('..', 'external', 'shapiro_spatial'))
 
@@ -55,8 +56,9 @@ hydroLP.startPump = hydroLP.time(find(hydroLP.cumflow > 0, 1));
 
 
 % Other forecasting parameters
+% - Convert lenFP from hours to days
 fcParams.endLP = atls_forecast_times(1)/86400 + datenum(1970,1,1);
-fcParams.lenFP = atls_t_bin;
+fcParams.lenFP = atls_t_bin / 24.0;
 % FIXME: compute from the forecast_mag_range tuple
 fcParams.fBinning = 0.1;
 fcParams.expectedFlow = atls_expected_flow;
