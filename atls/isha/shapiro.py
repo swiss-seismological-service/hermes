@@ -61,16 +61,16 @@ class Shapiro(Model):
             if (Model.RAISE_ON_ERRORS):
                 raise
             else:
-                success = False;
+                success = False
         else:
             success = self._session.getvalue('forecast_success')
 
         # Finish up
         run_results = RunResults(t_run=self._run_input.t_run, model=self)
         if success:
-            self._logger.info('number of events: ' + str(num_events))
             run_results.t_results = self._run_input.forecast_times
             run_results.rates = self._session.getvalue('forecast_numev')
+            self._logger.info('number of events: ' + str(run_results.rates))
         else:
             reason = self._session.getvalue('forecast_no_result_reason')
             run_results.no_result_reason = reason
