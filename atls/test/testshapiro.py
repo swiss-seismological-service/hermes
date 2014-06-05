@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from domainmodel.seismicevent import SeismicEvent
 from domainmodel.hydraulicevent import HydraulicEvent
 from domainmodel.injectionwell import InjectionWell
-from domainmodel.location import Location
+from geometry import Point
 from isha.shapiro import Shapiro
 from isha.common import ModelInput
 
@@ -41,7 +41,7 @@ class ShapiroTest(unittest.TestCase):
         now = datetime.now()
         shocks = []
         for i in range(num_events):
-            location = Location(7.5, 47.5, 0.0)
+            location = Point(10, 100, 2000)
             mw = 5.5
             t_event = now - timedelta(hours=i)
             main_shock = SeismicEvent(t_event, mw, location)

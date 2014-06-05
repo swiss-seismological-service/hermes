@@ -7,7 +7,7 @@ History of seismic events
 from eventhistory import EventHistory
 from eventimporter import EventImporter
 from domainmodel.seismicevent import SeismicEvent
-from domainmodel.location import Location
+from geometry import Point
 import logging
 import traceback
 
@@ -29,8 +29,8 @@ class SeismicEventHistory(EventHistory):
 
         The EventReporter must return the following fields (which must thus
         be present in the csv file)
-            lat: latitude
-            lon: longitude
+            x: x coordinate [m]
+            y: y coordinate [m]
             depth: depth [m], positive downwards
             mag: magnitude
         :param importer: an EventImporter object
@@ -40,13 +40,14 @@ class SeismicEventHistory(EventHistory):
         events = []
         try:
             for date, fields in importer:
-                location = Location(float(fields['lon']), float(fields['lat']),
-                                    -float(fields['depth']))
+                location = Point(float(fields['x']),
+                                 float(fields['y']),
+                                 float(fields['depth']))
                 event = SeismicEvent(date, float(fields['mag']), location)
                 events.append(event)
         except:
             self._logger.error('Failed to import events. Make sure the .csv '
-                               'file contains lon, lat, depth, and mag fields '
+                               'file contains x, y, depth, and mag fields '
                                'and that the date field has the format '
                                'dd.mm.yyyyTHH:MM:SS. The original error was '
                                + traceback.format_exc())

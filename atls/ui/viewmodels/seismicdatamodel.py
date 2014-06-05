@@ -21,7 +21,7 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
         """
         QtCore.QAbstractTableModel.__init__(self, parent)
         self._event_history = event_history
-        self._headers = ('date', 'magnitude', 'lat', 'lon', 'depth')
+        self._headers = ('date', 'magnitude', 'x', 'y', 'z')
 
     def rowCount(self, parent):
         num_rows = len(self._event_history)
@@ -65,11 +65,11 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
             elif column == 1:
                 return str(event.magnitude)
             elif column == 2:
-                return str(event.latitude)
+                return str(event.x)
             elif column == 3:
-                return str(event.longitude)
+                return str(event.y)
             else:
-                return str(event.depth)
+                return str(event.z)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """

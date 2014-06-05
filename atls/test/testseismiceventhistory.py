@@ -16,7 +16,7 @@ from mock import MagicMock
 from domainmodel.seismicevent import SeismicEvent
 from project.seismiceventhistory import SeismicEventHistory
 from testeventhistory import MockStore
-from domainmodel.location import Location
+from geometry import Point
 
 
 class BasicOperation(unittest.TestCase):
@@ -29,17 +29,18 @@ class BasicOperation(unittest.TestCase):
 
         base_date = datetime(2013, 3, 15)
         e1 = SeismicEvent(base_date + timedelta(days=0.17), 0.4,
-                          Location(7.5, 47.5, 0))
+                          Point(0, 0, 0))
         e2 = SeismicEvent(base_date + timedelta(days=0.23), 0.8,
-                          Location(7.6, 47.6, 0))
+                          Point(0, 0, 0))
         e3 = SeismicEvent(base_date + timedelta(days=0.26), 0.45,
-                          Location(7.7, 47.7, 0))
+                          Point(0, 0, 0))
         self.expected = [e1, e2, e3]
 
         def mock_iter():
             for e in self.expected:
-                row = {'lat': e.latitude,
-                       'lon': e.longitude,
+                row = {'x': e.x,
+                       'y': e.y,
+                       'depth': e.z,
                        'mag': e.magnitude}
                 yield e.date_time, row
 

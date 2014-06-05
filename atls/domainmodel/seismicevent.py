@@ -6,6 +6,7 @@ Provides SeismicEvent, a class to represent a seismic event
 
 from sqlalchemy import Column, Integer, Float, DateTime
 from datamodel import DataModel
+from geometry import Point
 
 
 class SeismicEvent(DataModel):
@@ -15,12 +16,12 @@ class SeismicEvent(DataModel):
     :type date_time: datetime
     :ivar magnitude: Event magnitude
     :type magnitude: float
-    :ivar latitude: Event latitude
-    :type latitude: float
-    :ivar longitude: Event longitude
-    :type longitude: float
-    :ivar depth: Event depth (0 at surface, positive downwards)
-    :type depth: float
+    :ivar x: Event x coordinate
+    :type x: float
+    :ivar y: Event y coordinate [m]
+    :type y: float
+    :ivar z: Event depth [m] (0 at surface, positive downwards)
+    :type z: float
 
     """
 
@@ -29,12 +30,12 @@ class SeismicEvent(DataModel):
     id = Column(Integer, primary_key=True)
     magnitude = Column(Float)
     date_time = Column(DateTime)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    depth = Column(Float)
+    x = Column(Float)
+    y = Column(Float)
+    z = Column(Float)
 
     # Data attributes (required for flattening)
-    data_attrs = ['magnitude', 'date_time', 'latitude', 'longitude', 'depth']
+    data_attrs = ['magnitude', 'date_time', 'x', 'y', 'z']
 
     def __init__(self, date_time, magnitude, location):
         """
@@ -42,15 +43,15 @@ class SeismicEvent(DataModel):
         :type date_time: datetime.datetime
         :param magnitude: Event magnitude
         :type magnitude: float
-        :param location: Event location
-        :type location: Location
+        :param location: Event coordinates
+        :type location: Point
 
         """
         self.date_time = date_time
         self.magnitude = magnitude
-        self.latitude = location.latitude
-        self.longitude = location.longitude
-        self.depth = -location.altitude
+        self.x = location.x
+        self.y = location.y
+        self.z = location.z
 
     def __str__(self):
         return "M%.1f @ %s" % (self.magnitude, self.date_time.ctime())
@@ -62,9 +63,9 @@ class SeismicEvent(DataModel):
         if isinstance(other, SeismicEvent):
             return (self.date_time == other.date_time and
                     self.magnitude == other.magnitude and
-                    self.latitude == other.latitude and
-                    self.longitude == other.longitude and
-                    self.depth == other.depth)
+                    self.x == other.x and
+                    self.y == other.y and
+                    self.z == other.z)
         return NotImplemented
 
     def __ne__(self, other):

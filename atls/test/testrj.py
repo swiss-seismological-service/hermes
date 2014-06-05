@@ -12,7 +12,7 @@ import unittest
 from PyQt4 import QtCore
 from datetime import datetime, timedelta
 from domainmodel.seismicevent import SeismicEvent
-from domainmodel.location import Location
+from geometry import Point
 from isha.rj import Rj
 from isha.common import ModelInput
 
@@ -37,7 +37,7 @@ class TestRj(unittest.TestCase):
         now = datetime.now()
         shocks = []
         for i in range(num_events):
-            location = Location(7.5, 47.5, 0)
+            location = Point(10, 100, 2000)
             mw = 5.5
             t_event = now - timedelta(hours=i)
             main_shock = SeismicEvent(t_event, mw, location)

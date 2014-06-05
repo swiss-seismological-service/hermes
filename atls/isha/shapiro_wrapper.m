@@ -33,16 +33,16 @@ if (sum(flow_rate)) < STIMULATION_THRESHOLD
 end
     
 % Seismic event data
-% - convert WGS84 to CH-1903
 % - convert event location to relative locations (rel. to well tip)
 % - convert unix time stamps to datenums
-[x, y] = deg2ch1903plus(atls_seismic_events_latitude, ...
-                        atls_seismic_events_longitude);
-[wx, wy] = deg2ch1903plus(atls_injection_well_well_tip_lat, ...
-                          atls_injection_well_well_tip_lon);
+x = atls_seismic_events_x;
+y = atls_seismic_events_y;
+wx = atls_injection_well_well_tip_x;
+wy = atls_injection_well_well_tip_y;
+                          
 catalogLP.x = x - wx;
 catalogLP.y = y - wy;
-catalogLP.z = atls_seismic_events_depth - atls_injection_well_well_tip_depth;
+catalogLP.z = atls_seismic_events_z - atls_injection_well_well_tip_z;
 catalogLP.time = atls_seismic_events_date_time/86400 + datenum(1970,1,1);
 catalogLP.mag = atls_seismic_events_magnitude;
 catalogLP.mc = atls_mc;

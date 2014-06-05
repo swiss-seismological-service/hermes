@@ -16,12 +16,12 @@ class InjectionWell(DataModel):
     """
     Injection well information
 
-    :ivar well_tip_lat: Well tip latitude
-    :type well_tip_latitude: float
-    :ivar well_tip_longitude: well tip longitude
-    :type well_tip_longitude: float
-    :ivar well_tip_depth: well tip depth [m] (positive downwards)
-    :type well_tip_depth: float
+    :ivar well_tip_x: Well tip x coordinate [m]
+    :type well_tip_x: float
+    :ivar well_tip_y: well tip y coordinate [m]
+    :type well_tip_y: float
+    :ivar well_tip_z: well tip depth [m] (positive downwards)
+    :type well_tip_z: float
 
     """
 
@@ -33,14 +33,14 @@ class InjectionWell(DataModel):
     well_tip_depth = Column(Float)
 
     # Data attributes (required for flattening)
-    data_attrs = ['well_tip_depth', 'well_tip_lat', 'well_tip_lon']
+    data_attrs = ['well_tip_z', 'well_tip_x', 'well_tip_y']
 
-    def __init__(self, well_tip_depth, well_tip_lat, well_tip_lon):
+    def __init__(self, well_tip_z, well_tip_x, well_tip_y):
         """
         The initialisation parameters are the same as the member variables.
         See class description for details.
 
         """
-        self.well_tip_lat = well_tip_lat
-        self.well_tip_lon = well_tip_lon
-        self.well_tip_depth = well_tip_depth
+        self.well_tip_x = well_tip_x
+        self.well_tip_y = well_tip_y
+        self.well_tip_z = well_tip_z
