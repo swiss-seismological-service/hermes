@@ -6,17 +6,23 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from common import Model, RunResults
+from common import Model, ModelOutput, ForecastResult
 import pymatlab
 import logging
 import os
-
 
 class Shapiro(Model):
     """
     Modified Shapiro aftershock forecast model.
 
     """
+
+    _MATLAB_ERROR_MSG = 'The Shapiro model encountered an error in the ' \
+                        'Matlab code. The model inputs that led to the error ' \
+                        'have been saved to isha/model_inputs.mat. To debug ' \
+                        'the model load model_inputs.mat file in matlab and '  \
+                        'execute shapiro_wrapper.m'
+    'directly.'
 
     def __init__(self):
         """Initializes the model parameters"""
@@ -43,7 +49,7 @@ class Shapiro(Model):
         # object here and recompose it in matlab. Prefix all variables with
         # atls_ to reduce conflicts
         self._session.run('clear;')
-        for name, value in self.run_input.primitive_rep():
+        for name, value in self.model_input.primitive_rep():
             self._session.putvalue('atls_' + name, value)
         # Invoke wrapper script
         script_path = os.path.dirname(os.path.realpath(__file__))
@@ -52,12 +58,7 @@ class Shapiro(Model):
             self._session.run("run('shapiro_wrapper.m')")
         except RuntimeError:
             self._session.run("save('model_inputs')")
-            self._logger.error('The Shapiro model encountered an error in the '
-                               'Matlab code. The model inputs that led to the '
-                               'error have been saved to isha/model_inputs.mat. '
-                               'To debug the model load model_inputs.mat file '
-                               'in matlab and execute shapiro_wrapper.m '
-                               'directly.')
+            self._logger.error(Shapiro._MATLAB_ERROR_MSG)
             if (Model.RAISE_ON_ERRORS):
                 raise
             else:
@@ -66,14 +67,17 @@ class Shapiro(Model):
             success = self._session.getvalue('forecast_success')
 
         # Finish up
-        run_results = RunResults(t_run=self._run_input.t_run, model=self)
+        t_run = self._model_input.t_run
+        dt = self._model_input.t_bin
+        output = ModelOutput(t_run=t_run, dt=dt, model=self)
         if success:
-            run_results.t_results = self._run_input.forecast_times
-            run_results.rates = self._session.getvalue('forecast_numev')
-            self._logger.info('number of events: ' + str(run_results.rates))
+            rate = self._session.getvalue('forecast_numev')
+            forecast = ForecastResult(rate=rate, prob=0)  # FIXME set prob
+            output.result = forecast
+            self._logger.info('number of events: ' + str(rate))
         else:
             reason = self._session.getvalue('forecast_no_result_reason')
-            run_results.no_result_reason = reason
-            run_results.has_results = False
+            output.no_result_reason = reason
+            output.has_results = False
             self._logger.info('did not get any results')
-        return run_results
+        return output

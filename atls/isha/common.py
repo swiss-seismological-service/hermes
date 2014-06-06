@@ -10,6 +10,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from PyQt4 import QtCore
 from datetime import datetime
 from datetime import timedelta
+from collections import namedtuple
+from modelvalidation import log_likelihood
 import logging
 
 class ModelInput(object):
@@ -37,8 +39,8 @@ class ModelInput(object):
                    'hydraulic_events', 'forecast_times', 't_bin',
                    'injection_well', 'expected_flow', 'mc']
 
-    def __init__(self, t_run, project=None, bin_size=6.0, num_bins=1,
-                 mc=None, mag_range=None):
+    def __init__(self, t_run, project=None, bin_size=6.0, mc=None,
+                 mag_range=None):
         """
         Create input for a model run.
 
@@ -58,10 +60,10 @@ class ModelInput(object):
         """
         dt = timedelta(hours=bin_size)
         self.t_run = t_run
-        # FIXME: the range should not be hardcoded
         self.forecast_mag_range = mag_range
         self.mc = mc
-        self.forecast_times = [t_run + i * dt for i in range(num_bins)]
+        # TODO: list is legacy (no more support for multiple fc times)
+        self.forecast_times = [t_run]
         self.injection_well = None
         self.expected_flow = None
         self.t_bin = bin_size
@@ -129,20 +131,95 @@ class ModelInput(object):
                 yield base_name, _primitive(attr)
 
 
-class RunResults:
+class Rating(object):
+    """ Forecast validation (Model performance score) """
+    def __init__(self, LL):
+        """
+        :param LL: log likelihood
+
+        """
+        self.LL = LL
+
+
+class ForecastResult(object):
+    """ Result container for a single forecast """
+    def __init__(self, rate, prob, region=None):
+        """
+        :param rate: forecast rate
+        :param prob: forecast probability of one or more events occurring
+        :param region: region for which the forecast is valid (a Cube)
+        :param score: Score for the forecast result
+
+        """
+        self.rate = rate
+        self.prob = prob
+        self.region = region
+        self.score = None
+
+
+class ModelOutput:
     """
-    Models store their run results into this simple container structure.
+    Models store their output into this container structure.
+
+    :ivar spatial_results: an (optional) list containing the forecast results
+        for each forecast region in a spatial model.
+    :ivar result: cumulative result for the entire forecast region
+    :type result: ForecastResult
+    :ivar model: a reference to the model that created the forecast
+    :ivar t_run: time of the forecast
+    :type t_run: datetime
+    :ivar dt: forecast period duration [hours]
+    :type dt: timedelta
+    :ivar has_results: false if the model did not produce any results
+    :ivar no_results_reason: a reason given by the model for not producing any
+        results.
 
     """
-    def __init__(self, t_run, model):
+    def __init__(self, t_run, dt, model):
         self.has_results = True
         self.no_result_reason = 'Unknown'
         self.t_run = t_run
+        self.dt = dt
         self.model = model
-        self.t_results = None
-        self.rates = None
-        self.probabilities = None
+        self.spatial_results = None
+        self.result = None
+        self._reviewed = False
 
+    @property
+    def reviewed(self):
+        return self._reviewed
+
+    def compute_cumulative(self):
+        """
+        Computes the cumulative result from the individual spatial results.
+
+        """
+        rate = reduce(lambda x, y: x+y, [r.review for r in self.spatial_results])
+        prob = reduce(lambda x, y: x+y, [r.prob for r in self.spatial_results])
+        self.result = ForecastResult(rate=rate, prob=prob)
+
+    def review(self, observations):
+        """
+        Reviews results based on the 'truth' data in event **observations** for
+        the forecast period and assigns a score to the model.
+
+        :param observations: the observed events for the forecast period
+        :type observations: list of SeismicEvent objects
+
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        if self.spatial_results is not None:
+            for result in self.spatial_results:
+                region = result.region
+                obs = len([e for e in observations if e.in_region(region)])
+                result.rating = Rating(LL=log_likelihood(result.review, obs))
+        LL = log_likelihood(self.result.rate, len(observations))
+        self.result.score = Rating(LL=LL)
+        self._reviewed = True
+        logger.debug('{} at {}: LL = {}'.format(self.model.title,
+                                                self.t_run,
+                                                self.result.score.LL))
 
 class ModelState:
     IDLE = 0
@@ -155,11 +232,11 @@ class Model(QtCore.QObject):
     forecast models
 
     .. pyqt4:signal:finished: emitted when the model has finished its run
-    successfully and has new run results. Carries the run results as payload.
+    successfully and has new run results. Carries the output as payload.
     .. pyqt4:signal:state_changed: emitted when the model changes its state
-    from running to idle or vice ver
+    from running to idle or vice versa
 
-    :ivar run_results: results of the last run
+    :ivar output: output of the last run
     :ivar title: display title of the model
 
     """
@@ -173,26 +250,26 @@ class Model(QtCore.QObject):
     def __init__(self):
         """ Initializes the model """
         super(Model, self).__init__()
-        self._run_input = None
-        self.run_results = None
+        self._model_input = None
+        self.output = None
         self.title = 'Model'
         self._state = ModelState.IDLE
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
-    def run_input(self):
-        return self._run_input
+    def model_input(self):
+        return self._model_input
 
-    def prepare_run(self, run_input):
+    def prepare_run(self, model_input):
         """
         Prepares the model for the next run. The data that is required for the
-        run is supplied in *run_data*
+        run is supplied in *model_input*
 
-        :param run_input: data for the next run
-        :type run_input: ModelInput
+        :param model_input: data for the next run
+        :type model_input: ModelInput
 
         """
-        self._run_input = run_input
+        self._model_input = model_input
 
     def run(self):
         """
@@ -203,27 +280,21 @@ class Model(QtCore.QObject):
         """
         self._logger.info(self.title + ' model run initiated')
         self.state = ModelState.RUNNING
-        results = self._do_run()
-        if results:
-            self.run_results = results
-        else:
-            # Store an empty result if the model code doesn't return anything
-            self.run_results = RunResults(self.run_input.t_run, self)
-        self.finished.emit(self.run_results)
+        self.output = self._do_run()
+        self.finished.emit(self.output)
         self._logger.info(self.title + ' model run completed')
         self.state = ModelState.IDLE
 
     def _do_run(self):
         """
-        Contains the actual model code.
+        Abstract method to run the actual model code.
 
         You should Override this function in a subclass and return the results
-        for the run if successful. The default implementation just checks if the
-        run data has been provided.
+        for the run in model output if successful. If the model produces no
+        results for a particular run, return a resultless output.
 
         """
-        assert(self._run_input is not None)
-        return None
+        pass
 
     @property
     def state(self):
@@ -248,12 +319,12 @@ class Model(QtCore.QObject):
         If no flow rates are present at all the function returns 0
 
         """
-        if self._run_input.hydraulic_events is None:
+        if self._model_input.hydraulic_events is None:
             return 0
-        rates = [h.flow_dh for h in self._run_input.hydraulic_events
+        rates = [h.flow_dh for h in self._model_input.hydraulic_events
                  if t_min <= h.date_time < t_max]
         if len(rates) == 0:
-            last_flow = self._run_input.hydraulic_events[-1]
+            last_flow = self._model_input.hydraulic_events[-1]
             flow = last_flow.flow_dh
         else:
             flow = max(rates)

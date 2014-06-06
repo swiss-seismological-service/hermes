@@ -242,7 +242,7 @@ class AtlsCore(QtCore.QObject):
         num_bins = self.settings.value('engine/num_fc_bins', type=int)
         # FIXME: do not hardcode  mc, mag_range
         model_input = ModelInput(t_run, self.project, bin_size=dt_h,
-                                 num_bins=num_bins, mc=0.9, mag_range=(0, 6))
+                                 mc=0.9, mag_range=(0, 6))
         if self.state == CoreState.SIMULATING:
             model_input.estimate_expected_flow(t_run, self.project,
                                                bin_size=dt_h, num_bins=num_bins)

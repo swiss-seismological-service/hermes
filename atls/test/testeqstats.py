@@ -36,7 +36,7 @@ class RateComputationTest(unittest.TestCase):
         rates = rate_history.compute_and_add(self.magnitudes,
                                              self.times,
                                              [t_max])
-        self.assertEqual(rates[0].rate, 1.25)
+        self.assertEqual(rates[0].review, 1.25)
 
     def test_one_range(self):
         """ Test rate computation for a larger t_range """
@@ -48,7 +48,7 @@ class RateComputationTest(unittest.TestCase):
         rates = rate_history.compute_and_add(self.magnitudes,
                                              self.times,
                                              [t_max])
-        self.assertEqual(rates[0].rate, 1)
+        self.assertEqual(rates[0].review, 1)
 
     def test_multiple_bins(self):
         """ Test multiple t bins """
@@ -62,9 +62,9 @@ class RateComputationTest(unittest.TestCase):
                                              t_range)
 
         # The first time bin has 1 event
-        self.assertEqual(rates[0].rate, 1)
+        self.assertEqual(rates[0].review, 1)
         # The second time bin has 2 events
-        self.assertEqual(rates[1].rate, 2.0/3)
+        self.assertEqual(rates[1].review, 2.0/3)
 
 
 

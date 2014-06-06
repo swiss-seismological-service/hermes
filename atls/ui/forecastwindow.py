@@ -58,7 +58,7 @@ class ForecastWindow(QtGui.QDialog):
 
         """
         epoch = datetime(1970, 1, 1)
-        data = [((r.t - epoch).total_seconds(), r.rate) for r in history.rates]
+        data = [((r.t - epoch).total_seconds(), r.review) for r in history.rates]
         if len(data) == 0:
             return
 

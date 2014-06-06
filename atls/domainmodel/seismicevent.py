@@ -37,6 +37,17 @@ class SeismicEvent(DataModel):
     # Data attributes (required for flattening)
     data_attrs = ['magnitude', 'date_time', 'x', 'y', 'z']
 
+    def in_region(self, region):
+        """
+        Tests if the event is located inside **region**
+
+        :param region: Region to test (cube)
+        :type region: Cube
+        :return: True if the event is inside the region, false otherwise
+
+        """
+        return Point(self.x, self.y, self.z).in_cube(region)
+
     def __init__(self, date_time, magnitude, location):
         """
         :param date_time: Date and time when the event occurred
