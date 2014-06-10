@@ -77,7 +77,7 @@ class ModelInput(object):
             self.seismic_events = None
             self.hydraulic_events = None
 
-    def estimate_expected_flow(self, t_run, project, bin_size=6.0, num_bins=1):
+    def estimate_expected_flow(self, t_run, project, bin_size=6.0):
         """
         Compute expected flow from (future) data.
 
@@ -88,10 +88,9 @@ class ModelInput(object):
         :param project: atls project containing the data
         :param t_run: time of the run
         :param bin_size: size of the forecast bin(s) [hours]
-        :param num_bins: number of forecast bins
 
         """
-        t_fc = num_bins * bin_size * 60
+        t_fc = bin_size * 60
         t_end = t_run + timedelta(minutes=t_fc)
         events = project.hydraulic_history.events_between(t_run, t_end)
         if len(events) == 0:

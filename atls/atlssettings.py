@@ -30,12 +30,11 @@ known_settings = {
     'engine/fc_interval':           6.0,     # Forecasting interval [hours]
     'engine/fc_bin_size':           6.0,     # Length of each forecast bin [hours]
     'engine/rt_interval':           1.0,     # Rate computation interval [minutes]
-    'engine/num_fc_bins':           6,       # Number of forecast bins
     # Lab mode settings
     'lab_mode/infinite_speed':      True,    # Simulate through catalog as fast as possible
     'lab_mode/speed':               1000,    # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
     # ISHA model settings
-    'ISHA/models':                  'all',   # ISHA models to load
+    'ISHA/models':                  ['all'],   # List of ISHA models to load (or 'all')
 }
 
 

@@ -78,7 +78,7 @@ class Atls(QtCore.QObject):
         the app exits.
 
         """
-        self.logger.info('Starting operation')
+        self.logger.info('ATLS is ready')
 
         if self.has_gui:
             self.main_window.show()

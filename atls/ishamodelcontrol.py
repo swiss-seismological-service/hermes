@@ -26,9 +26,7 @@ def load_models(model_ids):
     and add it to the list of models.
 
     """
-    load_all = 'all' in model_ids
-
-    logging.getLogger(__name__).info('Active models: ' + ', '.join(model_ids))
+    load_all = True if 'all' in model_ids else False
 
     # Reasenberg Jones
     if load_all or 'rj' in model_ids:
@@ -47,6 +45,9 @@ def load_models(model_ids):
         shapiro_model = Shapiro()
         shapiro_model.title = 'Shapiro (Spatial)'
         active_models.append(shapiro_model)
+
+    titles = [m.title for m in active_models]
+    logging.getLogger(__name__).info('Loaded models: ' + ', '.join(titles))
 
 
 class DetachedRunner(QtCore.QObject):

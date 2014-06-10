@@ -239,13 +239,11 @@ class AtlsCore(QtCore.QObject):
     def run_forecast(self, task_run_info):
         t_run = task_run_info.t_project
         dt_h = self.settings.value('engine/fc_bin_size', type=float)
-        num_bins = self.settings.value('engine/num_fc_bins', type=int)
         # FIXME: do not hardcode  mc, mag_range
         model_input = ModelInput(t_run, self.project, bin_size=dt_h,
                                  mc=0.9, mag_range=(0, 6))
         if self.state == CoreState.SIMULATING:
-            model_input.estimate_expected_flow(t_run, self.project,
-                                               bin_size=dt_h, num_bins=num_bins)
+            model_input.estimate_expected_flow(t_run, self.project, dt_h)
         else:
             raise NotImplementedError('During "real" forecasting the estimated'
                                       ' flow should be a user input')

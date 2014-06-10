@@ -8,7 +8,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 from datetime import datetime
-
+import ishamodelcontrol as mc
 from PyQt4 import QtGui
 from views.ui_forecastwindow import Ui_ForecastWindow
 
@@ -24,7 +24,6 @@ class ForecastWindow(QtGui.QDialog):
 
         # Some state variables
         self.displayed_project_time = datetime.now()
-        self.current_result_set = {}
 
         # Setup the user interface
         self.ui = Ui_ForecastWindow()
@@ -33,7 +32,7 @@ class ForecastWindow(QtGui.QDialog):
         # Populate the models chooser combo box
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
-        for model in self.atls_core.forecast_engine.models:
+        for model in mc.active_models:
             self.ui.modelSelectorComboBox.addItem(model.title)
 
         # Connect essential signals
@@ -54,11 +53,13 @@ class ForecastWindow(QtGui.QDialog):
 
     def replot_seismic_rates(self, history):
         """
-        Replots the forecasted and actual seismic _rates
+        Replots the forecasted and actual seismic rates
+
+        :param history:
 
         """
         epoch = datetime(1970, 1, 1)
-        data = [((r.t - epoch).total_seconds(), r.review) for r in history.rates]
+        data = [((r.t - epoch).total_seconds(), r.rate) for r in history.rates]
         if len(data) == 0:
             return
 
@@ -67,15 +68,19 @@ class ForecastWindow(QtGui.QDialog):
 
     def replot_forecasts(self):
         idx = self.ui.modelSelectorComboBox.currentIndex()
-        model = self.atls_core.forecast_engine.models[idx]
-        results = self.current_result_set.get(model)
+        model = mc.active_models[idx]
+        output_sets = self.atls_core.forecast_engine.output_sets
 
-        if results is None or len(results.t_results) == 0:
+        if output_sets is None or len(output_sets) == 0:
             self.clear_forecasts()
         else:
             epoch = datetime(1970, 1, 1)
-            x = [(t - epoch).total_seconds() for t in results.t_results]
-            y = results.rates
+            model_outputs = [o.model_outputs.get(model)
+                             for o in output_sets.itervalues()
+                             if o.model_outputs.get(model) is not None]
+
+            x = [(o.t_run - epoch).total_seconds() for o in model_outputs]
+            y = [o.result.rate if o.has_results else 0 for o in model_outputs]
 
             self.logger.debug('Replotting forecasts (' + str(len(x)) + ')')
             self.ui.rate_forecast_plot.set_forecast_data(x, y)
@@ -83,7 +88,6 @@ class ForecastWindow(QtGui.QDialog):
     # Plot helpers
 
     def clear_forecasts(self):
-        self.current_result_set = {}
         self.ui.rate_forecast_plot.set_forecast_data(x=None, y=None)
 
     def clear_rates(self):
@@ -125,8 +129,7 @@ class ForecastWindow(QtGui.QDialog):
     def on_project_load(self, project):
         self.observe_project_changes(project)
         self.clear_forecasts()
-        self.replot_seismic_rates()
+        self.replot_seismic_rates(project.rate_history)
 
     def on_forecast_complete(self, result_set):
-        self.current_result_set = result_set
         self.replot_forecasts()

@@ -10,6 +10,12 @@ import pyqtgraph as pg
 from datetime import datetime, timedelta
 
 
+CUR_FC_BRUSH = (205, 72, 66, 100)
+CUR_FC_PEN = (205, 72, 66, 150)
+PAST_FC_BRUSH = (200, 200, 200, 100)
+PAST_FC_PEN = (80, 80, 80, 255)
+
+
 class DisplayRange(object):
     DAY = 24*3600
     WEEK = 7*24*3600
@@ -157,16 +163,21 @@ class RateForecastPlotWidget(TimePlotWidget):
         super(RateForecastPlotWidget, self).__init__(parent, **kargs)
         self.rate_plot = pg.PlotCurveItem()
         self.addItem(self.rate_plot)
-        self.forecast_plot = None
+        self.forecast_bars = []
 
     def set_forecast_data(self, x, y):
         # FIXME: this looks like a bug in bargraphitem (the fact that it doesn't
         # allow initialization without data
-        if self.forecast_plot is not None:
-            self.removeItem(self.forecast_plot)
+        for bar in self.forecast_bars:
+            self.removeItem(bar)
+        self.forecast_bars = []
         if x is None or y is None:
             return
-        self.forecast_plot = pg.BarGraphItem(x0=x, height=y, width=3600*6,
-                                             brush=(205, 72, 66, 100),
-                                             pen=(205, 72, 66, 150))
-        self.addItem(self.forecast_plot)
+        xy = sorted(zip(x, y))
+        for (bx, by) in xy:
+            brush = CUR_FC_BRUSH if bx == xy[-1][0] else PAST_FC_BRUSH
+            pen = CUR_FC_PEN if bx == xy[-1][0] else PAST_FC_PEN
+            bar = pg.BarGraphItem(x0=[bx], height=[by], width=3600*6,
+                                  brush=brush, pen=pen)
+            self.forecast_bars.append(bar)
+            self.addItem(bar)

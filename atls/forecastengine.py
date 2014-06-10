@@ -61,14 +61,11 @@ class ForecastEngine(QtCore.QObject):
     and results are ready to be collected. The payload contains the specific
     output set for the run.
 
-    :param model_ids: model_ids of models to load
-    :type model_ids: str
-
     """
 
     forecast_complete = QtCore.pyqtSignal(object)
 
-    def __init__(self, model_ids='all'):
+    def __init__(self, model_ids=['all']):
         super(ForecastEngine, self).__init__()
         self.last_forecast_time = None
         self.state = ForecastEngineState.IDLE

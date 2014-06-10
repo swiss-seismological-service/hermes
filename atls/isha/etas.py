@@ -125,6 +125,7 @@ class Etas(Model):
             # Add the modified background activity which is controlled by the
             # fluid injection rate
             flow = self.flow_rate_in_interval(t, t + timedelta(hours=t_bin))
+            # FIXME: get the flow units right
             forecast_rates[i] += mu + cf * flow * t_bin
 
         # Compute the resulting probabilities of one or more events occurring
