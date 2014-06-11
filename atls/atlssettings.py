@@ -14,6 +14,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from PyQt4.QtCore import QSettings
+from datetime import datetime
 
 import logging
 
@@ -33,6 +34,8 @@ known_settings = {
     # Lab mode settings
     'lab_mode/infinite_speed':      True,    # Simulate through catalog as fast as possible
     'lab_mode/speed':               1000,    # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
+    # FIXME: fc start is project specific but also something the user might want to specify on a per run basis. find better solution.
+    'lab_mode/forecast_start':      '2006-12-04 00:00:00',    # Time of the first forecast in iso format '2014-06-12 18:30:00'
     # ISHA model settings
     'ISHA/models':                  ['all'],   # List of ISHA models to load (or 'all')
 }
@@ -69,6 +72,24 @@ class AppSettings:
 
         """
         return self._settings
+
+    def date_value(self, key):
+        """
+        Reads the string value in *key* and tries to decode it into a
+        datetime object. The string value is expected to have the format
+        '2014-12-24 18:00:00'
+
+        """
+        date_str = self.value(key, type=str)
+        if date_str is None:
+            return None
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            self._logger.error(date_str + ' could not be decoded. Ignoring.')
+            return None
+        else:
+            return date
 
     def value(self, key, **kwargs):
         """

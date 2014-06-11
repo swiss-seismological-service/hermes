@@ -9,7 +9,7 @@ control facilities should be hooked up in the Atls class instead.
 """
 
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 from collections import namedtuple
 
 from PyQt4 import QtCore
@@ -173,7 +173,7 @@ class AtlsCore(QtCore.QObject):
             return
         self._logger.info('Starting simulation')
         # Reset task scheduler based on the first simulation step time
-        time_range = self.project.event_time_range()
+        time_range = self._simulation_time_range()
         self._scheduler.reset_schedule(time_range[0])
         # Configure simulator
         self.simulator.time_range = time_range
@@ -206,6 +206,13 @@ class AtlsCore(QtCore.QObject):
         self.state = CoreState.IDLE
         self.state_changed.emit(self.state)
         self._logger.info('Stopping simulation')
+
+    def _simulation_time_range(self):
+        event_time_range = self.project.event_time_range()
+        start_date = self.settings.date_value('lab_mode/forecast_start')
+        start_date = start_date if start_date else event_time_range[0]
+        end_date = event_time_range[1]
+        return start_date, end_date
 
     # Simulation handling
 
