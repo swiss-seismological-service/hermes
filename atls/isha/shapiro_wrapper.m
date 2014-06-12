@@ -57,11 +57,12 @@ hydroLP.startPump = hydroLP.time(find(hydroLP.cumflow > 0, 1));
 
 % Other forecasting parameters
 % - Convert lenFP from hours to days
+% - Convert expected_flow from l/min to m3/d
 fcParams.endLP = atls_forecast_times(1)/86400 + datenum(1970,1,1);
 fcParams.lenFP = atls_t_bin / 24.0;
 % FIXME: compute from the forecast_mag_range tuple
 fcParams.fBinning = 0.1;
-fcParams.expectedFlow = atls_expected_flow;
+fcParams.expectedFlow = atls_expected_flow / 1000 * 60*24 ;
 % FIXME: justify this assumption (or don't make it)
 fcParams.mMax = 5.0;
 
