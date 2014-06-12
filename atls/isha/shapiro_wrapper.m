@@ -80,3 +80,17 @@ forecast = forecastShapiroSpatial(catalogLP, hydroLP, fcParams, grid)
 %% Unpack the results for reding back in ATLS
 forecast_success = true;
 forecast_numev = forecast.NUMEV;
+
+%% Output a summary for this run (for testing only)
+% run_data = {datestr(fcParams.endLP), fcParams.lenFP, fcParams.expectedFlow, hydroLP.cumflow(end), datestr(hydroLP.startPump), numel(catalogLP.mag), forecast.post, forecast.NUMEV};
+% first = true;
+% if exist('run_summary.csv')
+%   first = false;
+% end
+% fid = fopen('run_summary.csv','a');
+% if first
+%     headers = {'endLP', 'lenFP', 'expFlow', 'cumFlow', 'startPump', 'numEvents', 'fcPost', 'fcNumEvents'};
+%     fprintf(fid,'%20s, %10s, %12s, %12s, %20s, %10s, %10s, %12s\n',headers{:});
+% end
+% fprintf(fid,'%20s, %10f, %12f, %12f, %20s, %10d, %10d, %12f\n', run_data{:});
+% fclose(fid)
