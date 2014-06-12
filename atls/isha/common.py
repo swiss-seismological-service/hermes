@@ -90,8 +90,7 @@ class ModelInput(object):
         :param bin_size: size of the forecast bin(s) [hours]
 
         """
-        t_fc = bin_size * 60
-        t_end = t_run + timedelta(minutes=t_fc)
+        t_end = t_run + timedelta(hours=bin_size)
         events = project.hydraulic_history.events_between(t_run, t_end)
         if len(events) == 0:
             self.expected_flow = 0
