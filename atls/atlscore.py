@@ -258,6 +258,7 @@ class AtlsCore(QtCore.QObject):
 
     def update_rates(self, info):
         t_run = info.t_project
+        # FIXME: do not hardcode  mc
         seismic_events = self.project.seismic_history.events_before(t_run)
         data = [(e.date_time, e.magnitude) for e in seismic_events]
         if len(data) == 0:

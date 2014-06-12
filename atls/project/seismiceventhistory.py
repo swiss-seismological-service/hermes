@@ -57,3 +57,8 @@ class SeismicEventHistory(EventHistory):
             self._logger.info('Imported {} events.'.format(len(events)))
             self.reload_from_store()
             self._emit_change_signal({})
+
+    def events_before(self, end_date, mc=0):
+        """ Returns all events >mc before and including *end_date* """
+        return [e for e in self._events
+                if e.date_time < end_date and e.magnitude > mc]

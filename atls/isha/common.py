@@ -71,7 +71,7 @@ class ModelInput(object):
             self.hydraulic_events = \
                 project.hydraulic_history.events_before(t_run)
             self.seismic_events = \
-                project.seismic_history.events_before(t_run)
+                project.seismic_history.events_before(t_run, mc=mc)
             self.injection_well = project.injection_well
         else:
             self.seismic_events = None
