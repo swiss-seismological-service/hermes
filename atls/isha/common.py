@@ -141,15 +141,17 @@ class Rating(object):
 
 class ForecastResult(object):
     """ Result container for a single forecast """
-    def __init__(self, rate, prob, region=None):
+    def __init__(self, rate, prob, vol_rates=None, region=None):
         """
         :param rate: forecast rate
+        :param vol_rates: volumetric rates (per voxel)
         :param prob: forecast probability of one or more events occurring
         :param region: region for which the forecast is valid (a Cube)
         :param score: Score for the forecast result
 
         """
         self.rate = rate
+        self.vol_rates = vol_rates
         self.prob = prob
         self.region = region
         self.score = None

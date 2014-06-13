@@ -10,6 +10,7 @@ from common import Model, ModelOutput, ForecastResult
 import pymatlab
 import logging
 import os
+import numpy as np
 
 class Shapiro(Model):
     """
@@ -71,10 +72,14 @@ class Shapiro(Model):
         dt = self._model_input.t_bin
         output = ModelOutput(t_run=t_run, dt=dt, model=self)
         if success:
-            rate = self._session.getvalue('forecast_numev')
-            forecast = ForecastResult(rate=rate, prob=0)  # FIXME set prob
+            rate = float(self._session.getvalue('forecast_numev'))
+            vol_rates = self._session.getvalue('forecast_vol_rates')
+            forecast = ForecastResult(rate=rate,
+                                      vol_rates=vol_rates,
+                                      prob=0)  # FIXME set prob
             output.result = forecast
-            self._logger.info('number of events: ' + str(rate))
+            self._logger.info('number of events: ' + str(rate) +
+                              ' voxel max: ' +  str(np.amax(vol_rates)))
         else:
             reason = self._session.getvalue('forecast_no_result_reason')
             output.no_result_reason = reason

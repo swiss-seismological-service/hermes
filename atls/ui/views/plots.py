@@ -7,6 +7,7 @@ Atls specific classes used in various places of the user interface
 """
 
 import pyqtgraph as pg
+import pyqtgraph.opengl as gl
 import numpy as np
 import logging
 from collections import namedtuple
@@ -320,3 +321,57 @@ class RateForecastPlotWidget(TimePlotWidget):
                                   brush=brush, pen=pen)
             self.forecast_bars.append(bar)
             self.addItem(bar)
+
+
+class VoxelViewWidget(gl.GLViewWidget):
+    def __init__(self, parent=None, **kargs):
+        super(VoxelViewWidget, self).__init__(parent, **kargs)
+        self._grid_items = None
+        self._voxel_item = None
+        self._add_grid()
+        self.set_voxel_data(np.array([0,1,2,3,4,5,6,7]))
+
+    def _add_grid(self):
+        ## create three grids, add each to the view
+        x_grid = gl.GLGridItem()
+        y_grid = gl.GLGridItem()
+        z_grid = gl.GLGridItem()
+        self.addItem(x_grid)
+        self.addItem(y_grid)
+        self.addItem(z_grid)
+        self._grid_items = [x_grid, y_grid, z_grid]
+
+        ## rotate x and y grids to face the correct direction
+        x_grid.rotate(90, 0, 1, 0)
+        y_grid.rotate(90, 1, 0, 0)
+
+        ## scale each grid differently
+        x_grid.scale(0.4, 0.2, 0.2)
+        y_grid.scale(0.4, 0.2, 0.2)
+        z_grid.scale(0.2, 0.4, 0.2)
+
+    def set_voxel_data(self, data):
+        """
+
+        :param data: voxel data or None
+        :type data: numpy.ndarray
+
+        """
+        if self._voxel_item is not None:
+            self.removeItem(self._voxel_item)
+            self._voxel_item = None
+        if data is None:
+            return
+
+        pos = np.array([0, 1.0])
+        color = np.array([[  0,   0,   0,   0],
+                          [  0, 255,   0, 255]], dtype=np.ubyte)
+        map = pg.ColorMap(pos, color)
+        voxels = map.map(data/np.amax(data).astype(np.float32))
+
+        l = round(len(data)**(1/3.0))
+        voxels = voxels.reshape((l,l,l,4))
+
+        self._voxel_item = gl.GLVolumeItem(voxels, smooth=True, sliceDensity=10)
+        self._voxel_item.translate(-l/2,-l/2,-l/2)
+        self.addItem(self._voxel_item)

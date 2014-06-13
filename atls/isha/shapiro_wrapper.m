@@ -80,6 +80,9 @@ forecast = forecastShapiroSpatial(catalogLP, hydroLP, fcParams, grid)
 %% Unpack the results for reding back in ATLS
 forecast_success = true;
 forecast_numev = forecast.NUMEV;
+forecast_vol_rates = forecast.SumVolPdfWtExpNorm
+%forecast_vol_rates = forecast.SumVolPdfWtSSNorm
+%forecast_vol_rates = forecast.SumVolPdfWtH1Norm
 
 %% Output a summary for this run (for testing only)
 % run_data = {datestr(fcParams.endLP), fcParams.lenFP, fcParams.expectedFlow, hydroLP.cumflow(end), datestr(hydroLP.startPump), numel(catalogLP.mag), forecast.post, forecast.NUMEV};
