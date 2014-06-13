@@ -71,6 +71,9 @@ def configure_logging(verbosity):
     root_logger.setLevel(lvl_lookup[verbosity])
     formatter = logging.Formatter('%(asctime)s %(levelname)s: '
                                   '[%(name)s] %(message)s')
+    # ...handlers from 3rd party modules - we don't like your kind here
+    for h in list(root_logger.handlers):
+        root_logger.removeHandler(h)
     # ...setup console logging
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
