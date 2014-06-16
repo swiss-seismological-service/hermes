@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created: Tue May  6 10:00:46 2014
+# Created: Mon Jun 16 13:12:57 2014
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -103,9 +103,6 @@ class Ui_MainWindow(object):
         self.pauseButton = QtGui.QPushButton(self.centralWidget)
         self.pauseButton.setGeometry(QtCore.QRect(20, 420, 111, 32))
         self.pauseButton.setObjectName(_fromUtf8("pauseButton"))
-        self.dummyButton = QtGui.QPushButton(self.centralWidget)
-        self.dummyButton.setGeometry(QtCore.QRect(240, 420, 114, 32))
-        self.dummyButton.setObjectName(_fromUtf8("dummyButton"))
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 877, 22))
@@ -144,11 +141,11 @@ class Ui_MainWindow(object):
         self.actionPause_Simulation.setObjectName(_fromUtf8("actionPause_Simulation"))
         self.actionStop_Simulation = QtGui.QAction(MainWindow)
         self.actionStop_Simulation.setObjectName(_fromUtf8("actionStop_Simulation"))
-        self.actionShow_GR = QtGui.QAction(MainWindow)
+        self.actionShow_3D = QtGui.QAction(MainWindow)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/toolbar-buttons/images/view-gr-toolbar-button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.actionShow_GR.setIcon(icon)
-        self.actionShow_GR.setObjectName(_fromUtf8("actionShow_GR"))
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/toolbar-buttons/images/view-3d-toolbar-button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionShow_3D.setIcon(icon)
+        self.actionShow_3D.setObjectName(_fromUtf8("actionShow_3D"))
         self.actionImport_Hydraulic_Data = QtGui.QAction(MainWindow)
         self.actionImport_Hydraulic_Data.setObjectName(_fromUtf8("actionImport_Hydraulic_Data"))
         self.actionOpen_Project = QtGui.QAction(MainWindow)
@@ -178,12 +175,12 @@ class Ui_MainWindow(object):
         self.menuSimulation.addAction(self.actionStart_Simulation)
         self.menuSimulation.addAction(self.actionPause_Simulation)
         self.menuSimulation.addAction(self.actionStop_Simulation)
-        self.menuWindow.addAction(self.actionShow_GR)
+        self.menuWindow.addAction(self.actionShow_3D)
         self.menuWindow.addAction(self.actionForecasts)
         self.menuBar.addAction(self.menu_File.menuAction())
         self.menuBar.addAction(self.menuSimulation.menuAction())
         self.menuBar.addAction(self.menuWindow.menuAction())
-        self.mainToolBar.addAction(self.actionShow_GR)
+        self.mainToolBar.addAction(self.actionShow_3D)
         self.mainToolBar.addAction(self.actionForecasts)
 
         self.retranslateUi(MainWindow)
@@ -204,7 +201,6 @@ class Ui_MainWindow(object):
         self.stopButton.setText(_translate("MainWindow", "Stop", None))
         self.startButton.setText(_translate("MainWindow", "Start", None))
         self.pauseButton.setText(_translate("MainWindow", "Pause", None))
-        self.dummyButton.setText(_translate("MainWindow", "Dummy", None))
         self.menu_File.setTitle(_translate("MainWindow", "&File", None))
         self.menuOpen_Recent.setTitle(_translate("MainWindow", "Open Recent", None))
         self.menuSimulation.setTitle(_translate("MainWindow", "Simulation", None))
@@ -214,7 +210,7 @@ class Ui_MainWindow(object):
         self.actionStart_Simulation.setText(_translate("MainWindow", "Start Simulation", None))
         self.actionPause_Simulation.setText(_translate("MainWindow", "Pause Simulation", None))
         self.actionStop_Simulation.setText(_translate("MainWindow", "Stop Simulation", None))
-        self.actionShow_GR.setText(_translate("MainWindow", "Catalog Statistics", None))
+        self.actionShow_3D.setText(_translate("MainWindow", "3D View", None))
         self.actionImport_Hydraulic_Data.setText(_translate("MainWindow", "Import Hydraulic Data...", None))
         self.actionOpen_Project.setText(_translate("MainWindow", "&Open Project...", None))
         self.actionNew_Project.setText(_translate("MainWindow", "New Project...", None))

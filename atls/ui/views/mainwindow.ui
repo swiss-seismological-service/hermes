@@ -268,19 +268,6 @@
      <string>Pause</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="dummyButton">
-    <property name="geometry">
-     <rect>
-      <x>240</x>
-      <y>420</y>
-      <width>114</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Dummy</string>
-    </property>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -323,7 +310,7 @@
     <property name="title">
      <string>Window</string>
     </property>
-    <addaction name="actionShow_GR"/>
+    <addaction name="actionShow_3D"/>
     <addaction name="actionForecasts"/>
    </widget>
    <addaction name="menu_File"/>
@@ -355,7 +342,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionShow_GR"/>
+   <addaction name="actionShow_3D"/>
    <addaction name="actionForecasts"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -384,13 +371,13 @@
     <string>Stop Simulation</string>
    </property>
   </action>
-  <action name="actionShow_GR">
+  <action name="actionShow_3D">
    <property name="icon">
     <iconset resource="images.qrc">
-     <normaloff>:/toolbar-buttons/images/view-gr-toolbar-button.png</normaloff>:/toolbar-buttons/images/view-gr-toolbar-button.png</iconset>
+     <normaloff>:/toolbar-buttons/images/view-3d-toolbar-button.png</normaloff>:/toolbar-buttons/images/view-3d-toolbar-button.png</iconset>
    </property>
    <property name="text">
-    <string>Catalog Statistics</string>
+    <string>3D View</string>
    </property>
   </action>
   <action name="actionImport_Hydraulic_Data">

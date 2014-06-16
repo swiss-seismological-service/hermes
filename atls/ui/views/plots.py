@@ -329,7 +329,11 @@ class VoxelViewWidget(gl.GLViewWidget):
         self._grid_items = None
         self._voxel_item = None
         self._add_grid()
-        self.set_voxel_data(np.array([0,1,2,3,4,5,6,7]))
+        self.setCameraPosition(distance=1000)
+        pos = np.array([0, 1.0])
+        color = np.array([[  0,   0,   0,   0],
+                          [  0, 255,   0, 150]], dtype=np.ubyte)
+        self.color_map = pg.ColorMap(pos, color)
 
     def _add_grid(self):
         ## create three grids, add each to the view
@@ -346,9 +350,9 @@ class VoxelViewWidget(gl.GLViewWidget):
         y_grid.rotate(90, 1, 0, 0)
 
         ## scale each grid differently
-        x_grid.scale(0.4, 0.2, 0.2)
-        y_grid.scale(0.4, 0.2, 0.2)
-        z_grid.scale(0.2, 0.4, 0.2)
+        x_grid.scale(40, 20, 20)
+        y_grid.scale(40, 20, 20)
+        z_grid.scale(20, 40, 20)
 
     def set_voxel_data(self, data):
         """
@@ -363,15 +367,61 @@ class VoxelViewWidget(gl.GLViewWidget):
         if data is None:
             return
 
-        pos = np.array([0, 1.0])
-        color = np.array([[  0,   0,   0,   0],
-                          [  0, 255,   0, 255]], dtype=np.ubyte)
-        map = pg.ColorMap(pos, color)
-        voxels = map.map(data/np.amax(data).astype(np.float32))
+        # FIXME: this depends on the voxel length defined in MATLAB
+        scale = 100.0
+        voxels = self.color_map.map(data/np.amax(data).astype(np.float32))
 
         l = round(len(data)**(1/3.0))
-        voxels = voxels.reshape((l,l,l,4))
+        voxels = voxels.reshape((l,l,l,4), order='F')
 
         self._voxel_item = gl.GLVolumeItem(voxels, smooth=True, sliceDensity=10)
-        self._voxel_item.translate(-l/2,-l/2,-l/2)
+        t = -l / 2 * scale
+        self._voxel_item.translate(t, t, t)
+        self._voxel_item.scale(scale,scale,scale)
         self.addItem(self._voxel_item)
+
+
+class Event3DViewWidget(gl.GLViewWidget):
+    def __init__(self, parent=None, **kargs):
+        super(Event3DViewWidget, self).__init__(parent, **kargs)
+        self._grid_items = None
+        self._events_item = None
+        self.setWindowTitle('3D Event View')
+        self._add_grid()
+        self.setCameraPosition(distance=2000)
+
+
+    def _add_grid(self):
+        ## create three grids, add each to the view
+        x_grid = gl.GLGridItem()
+        y_grid = gl.GLGridItem()
+        z_grid = gl.GLGridItem()
+        self.addItem(x_grid)
+        self.addItem(y_grid)
+        self.addItem(z_grid)
+        self._grid_items = [x_grid, y_grid, z_grid]
+
+        ## rotate x and y grids to face the correct direction
+        x_grid.rotate(90, 0, 1, 0)
+        y_grid.rotate(90, 1, 0, 0)
+
+        ## scale each grid differently
+        x_grid.scale(40, 20, 20)
+        y_grid.scale(40, 20, 20)
+        z_grid.scale(20, 40, 20)
+
+    def show_events(self, pos, size):
+        """
+        Show events
+
+        :param pos: 3d array of event positions
+        :param size: 1d array of event magnitudes
+
+        """
+        if self._events_item is not None:
+            self.removeItem(self._events_item)
+            self._events_item = None
+
+        self._events_item = gl.GLScatterPlotItem()
+        self._events_item.setData(pos=pos, size=10*size)
+        self.addItem(self._events_item)

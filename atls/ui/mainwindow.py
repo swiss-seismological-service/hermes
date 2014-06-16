@@ -17,8 +17,8 @@ from eventimporter import EventImporter
 import atlsuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
 from atlscore import CoreState
-from ui.views.plots import DisplayRange
-
+from ui.views.plots import DisplayRange, Event3DViewWidget
+import numpy as np
 
 
 
@@ -36,6 +36,7 @@ class MainWindow(QtGui.QMainWindow):
         # Other windows which are lazy-loaded
         self.forecast_window = None
         self.settings_window = None
+        self.event_3d_window = None
 
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
@@ -69,6 +70,7 @@ class MainWindow(QtGui.QMainWindow):
             connect(self.action_stop_simulation)
         # ...Window
         self.ui.actionForecasts.triggered.connect(self.action_show_forecasts)
+        self.ui.actionShow_3D.triggered.connect(self.action_show_3d)
 
         # Hook up buttons
         self.ui.startButton.clicked.connect(self.action_start_simulation)
@@ -151,6 +153,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.seismic_data_plot.advance_time(dt)
             self.ui.hydraulic_data_plot.advance_time(dt)
         self.update_status()
+        self._replot_3d_event_data(time)
 
     # Menu Actions
 
@@ -242,6 +245,10 @@ class MainWindow(QtGui.QMainWindow):
             self.forecast_window = ForecastWindow(atls_core=self.atls_core,
                                                   parent=self)
         self.forecast_window.show()
+
+    def action_show_3d(self):
+        self.event_3d_window = Event3DViewWidget()
+        self.event_3d_window.show()
 
     def action_show_settings(self):
         if self.settings_window is None:
@@ -372,6 +379,17 @@ class MainWindow(QtGui.QMainWindow):
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events]
         self.ui.seismic_data_plot.plot.setData(pos=data)
+
+    def _replot_3d_event_data(self, t):
+        events = self.project.seismic_history.events_before(t)
+        if self.event_3d_window is None or len(events) == 0:
+            return
+        loc = np.array([(e.x, e.y, e.z) for e in events])
+        well = self.project.injection_well
+        center = np.array((well.well_tip_x, well.well_tip_y, well.well_tip_z))
+        loc -= center
+        size = np.array([e.magnitude for e in events])
+        self.event_3d_window.show_events(loc, size)
 
     def _replot_hydraulic_data(self, update=False, max_time=None):
         """
