@@ -150,7 +150,7 @@ class AtlsCore(QtCore.QObject):
             self._logger.notice('ATLS only works in lab mode at the moment')
 
     def pause(self):
-        if self.settings.value('/enable_lab_mode'):
+        if self.settings.value('enable_lab_mode'):
             self.pause_simulation()
 
     def stop(self):
@@ -161,17 +161,29 @@ class AtlsCore(QtCore.QObject):
 
     def start_simulation(self):
         """
-        Starts the simulation.
+        (Re)starts the simulation.
 
         Replays the events from the seismic history.
 
         """
         #self._profiler = Profiler()
         #self._profiler.start()
-        self._num_runs = 0
         if self.project is None:
             return
         self._logger.info('Starting simulation')
+        if self.state != CoreState.PAUSED:
+            self._init_simulation()
+        # Start simulator
+        self.simulator.start()
+        # Set Core State to SIMULATING
+        self.state = CoreState.SIMULATING
+        self.state_changed.emit(self.state)
+
+    def _init_simulation(self):
+        """
+        (Re)initialize simulator and scheduler for a new simulation
+
+        """
         # Reset task scheduler based on the first simulation step time
         time_range = self._simulation_time_range()
         self._scheduler.reset_schedule(time_range[0])
@@ -188,14 +200,10 @@ class AtlsCore(QtCore.QObject):
             self.simulator.speed = self.settings.value('lab_mode/speed',
                                                        type=float)
             self.simulator.step_on_internal_timer()
-        # Start simulator
-        self.simulator.start()
-        # Set Core State to SIMULATING
-        self.state = CoreState.SIMULATING
-        self.state_changed.emit(self.state)
 
     def pause_simulation(self):
         """ Pauses the simulation. """
+        self._logger.info('Pausing simulation')
         self.simulator.pause()
         self.state = CoreState.PAUSED
         self.state_changed.emit(self.state)
