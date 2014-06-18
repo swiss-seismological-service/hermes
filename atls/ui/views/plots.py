@@ -80,36 +80,42 @@ class DateTickFormat(object):
         by minVal, maxVal
 
         """
+        def _next_year(date):
+            date -= timedelta(seconds=offset)
+            date = datetime(date.year + 1, 1, 1)
+            date += timedelta(seconds=offset)
+            return date
+
         epoch = datetime(1970, 1, 1)
         ticks = []
         min_date = datetime.fromtimestamp(minVal)
-        date = datetime(min_date.year + 1, 1, 1) + timedelta(seconds=offset)
+        date = _next_year(min_date)
         while date < datetime.fromtimestamp(maxVal):
             ticks.append((date - epoch).total_seconds())
-            date = datetime(date.year + 1, 1, 1) + timedelta(seconds=offset)
+            date = _next_year(date)
         return ticks
 
     def _month_ticks(self, minVal, maxVal, offset):
-            """
-            Returns the time stamp of the 1st of each month within the range
-            given by minVal, maxVal
+        """
+        Returns the time stamp of the 1st of each month within the range
+        given by minVal, maxVal
 
-            """
-            def _next_month(date):
-                dy = date.month / 12
-                date -= timedelta(seconds=offset)
-                date = datetime(date.year + dy, (date.month) % 12 + 1, 1)
-                date += timedelta(seconds=offset)
-                return date
+        """
+        def _next_month(date):
+            dy = date.month / 12
+            date -= timedelta(seconds=offset)
+            date = datetime(date.year + dy, (date.month) % 12 + 1, 1)
+            date += timedelta(seconds=offset)
+            return date
 
-            epoch = datetime(1970, 1, 1)
-            ticks = []
-            min_date = datetime.fromtimestamp(minVal)
-            date = _next_month(min_date)
-            while date < datetime.fromtimestamp(maxVal):
-                ticks.append((date - epoch).total_seconds())
-                date = _next_month(date)
-            return ticks
+        epoch = datetime(1970, 1, 1)
+        ticks = []
+        min_date = datetime.fromtimestamp(minVal)
+        date = _next_month(min_date)
+        while date < datetime.fromtimestamp(maxVal):
+            ticks.append((date - epoch).total_seconds())
+            date = _next_month(date)
+        return ticks
 
     def __repr__(self):
         return '<Spacings: {}>'.format([s.spacing for s in self.tick_specs])
