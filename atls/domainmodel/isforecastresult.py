@@ -81,10 +81,16 @@ class ISModelResult(DataModel):
     failure_reason = Column(String)
     t_run = Column(DateTime)
     dt = Column(Interval)
-    vol_results = relationship('ISResult', backref='ismodelresult',
-                               cascade="all, delete-orphan")
-    cum_result = relationship('ISResult', backref='ismodelresult',
-                              uselist=False, cascade="all, delete-orphan")
+
+    # Configures the one-to-one relationship for the cumulative result
+    # use_alter=True along with name='' adds this foreign key after ISResult
+    # has been created to avoid circular dependency
+    cum_result_id = Column(Integer, ForeignKey('isresult.id', use_alter=True,
+                                               name='fk_cum_result_id'))
+    # set post_update=True to avoid circular dependency during
+    cum_result = relationship('ISResult', foreign_keys=cum_result_id,
+                              post_update=True)
+
     forecast_id = Column(Integer, ForeignKey('isforecastresults.id'))
     _reviewed = Column('reviewed', Boolean)
 
@@ -163,7 +169,12 @@ class ISResult(DataModel):
     rate = Column(Float)
     prob = Column(Float)
     score = Column(Float)
-    model_id = Column(Integer, ForeignKey('ismodelresults.id'))
+
+    # Configures the one-to-many relationship between ISModelResult's
+    # vol_results and this entity
+    model_result_id = Column(Integer, ForeignKey(ISModelResult.id))
+    model_result = relationship(ISModelResult, foreign_keys=model_result_id,
+                                backref='vol_results')
 
     def __init__(self, rate, prob):
         self.prob = prob
