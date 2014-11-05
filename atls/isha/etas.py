@@ -34,9 +34,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from common import Model, ModelOutput, ForecastResult
+from common import Model, ModelOutput, ModelResult
 import numpy as np
-import logging
 from datetime import timedelta
 
 
@@ -45,14 +44,15 @@ class Etas(Model):
     Modified ETAS aftershock forecast model. The model predicts aftershocks
     using a modified background rate that depends on the fluid injection rate.
 
-    The result of the model run is a list of tuples containing for each forecast
-    time interval the rate of events in the magnitude range *forecast_mag_range*
-    and the probability of one or more events occurring as (rate, probability)
+    The result of the model run is a list of tuples containing for each
+    forecast time interval the rate of events in the magnitude range
+    *forecast_mag_range* and the probability of one or more events occurring as
+    (rate, probability)
 
     :ivar alpha: ETAS parameter alpha (productivity)
     :ivar k: Empirical parameter K
-    :ivar p: Sequence specific empirical parameter for the Omori-Utsu (1961) law
-    :ivar c: Sequence specific empirical parameter for the Omori-Utsu (1961) law
+    :ivar p: Sequence specific empirical param for the Omori-Utsu (1961) law
+    :ivar c: Sequence specific empirical param for the Omori-Utsu (1961) law
     :ivar m_max: Maximum magnitude
     :ivar m_c: Magnitude of completeness
 
@@ -91,7 +91,6 @@ class Etas(Model):
         mu = self.mu
         cf = self.cf
         events = self._model_input.seismic_events
-        hydraulic_events = self._model_input.hydraulic_events
         forecast_times = self._model_input.forecast_times
         t_bin = self._model_input.t_bin
         m_min, m_max = self._model_input.forecast_mag_range
@@ -133,7 +132,8 @@ class Etas(Model):
 
         # Finish up
         # FIXME: we're only supporting a single forecast now, remove list stuff
-        forecast = ForecastResult(rate=forecast_rates[0], prob=probabilities[0])
-        output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin, model=self)
-        output.result = forecast
+        forecast = ModelResult(rate=forecast_rates[0], prob=probabilities[0])
+        output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin,
+                             model=self)
+        output.cum_result = forecast
         return output

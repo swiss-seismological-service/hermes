@@ -89,6 +89,20 @@ class EventHistory(QtCore.QObject):
             events = self.events_before(time)
         return events[-1] if len(events) > 0 else None
 
+    def add(self, ev):
+        """
+        Add one or more events to the history (and store)
+
+        :param ev: event or list of events
+
+        """
+        try:
+            ev_list = [e for e in ev]
+        except TypeError:
+            ev_list = [ev]
+        self._events += ev_list
+        self.store.add(ev_list)
+        self._emit_change_signal({})
 
     def __getitem__(self, item):
         return self._events[item]

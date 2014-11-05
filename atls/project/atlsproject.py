@@ -11,6 +11,7 @@ from PyQt4 import QtCore
 from datetime import datetime
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
+from isforecasthistory import ISForecastHistory
 from domainmodel.injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
@@ -40,6 +41,9 @@ class AtlsProject(project.Project):
         self.hydraulic_history = HydraulicEventHistory(self._store)
         self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
+        self.is_forecast_history = ISForecastHistory(self._store)
+
+        # These inform us when new IS forecasts become available
 
         # FIXME: hardcoded for testing purposes
         # These are the basel well tip coordinates (in CH-1903)

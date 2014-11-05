@@ -16,7 +16,8 @@ from settingswindow import SettingsWindow
 from eventimporter import EventImporter
 import atlsuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
-from atlscore import CoreState
+from engine import EngineState
+from simulator import SimulatorState
 from ui.views.plots import DisplayRange, Event3DViewWidget
 import numpy as np
 
@@ -79,7 +80,8 @@ class MainWindow(QtGui.QMainWindow):
 
         # Hook up essential signals from the core and the forecast engine
         atls.app_launched.connect(self.on_app_launch)
-        self.atls_core.state_changed.connect(self.on_core_state_change)
+        self.atls_core.engine.state_changed.connect(self.on_engine_state_change)
+        self.atls_core.simulator.state_changed.connect(self.on_sim_state_change)
         self.atls_core.project_loaded.connect(self.on_project_load)
 
         # Link the x axis of the seismicity view with the x axis of the
@@ -111,10 +113,12 @@ class MainWindow(QtGui.QMainWindow):
             self._replot_hydraulic_data(update=True, max_time=time)
         self.update_status()
 
-    def on_core_state_change(self, state):
+    def on_engine_state_change(self, state):
         self.update_controls()
-        if self.atls_core.state == CoreState.SIMULATING:
-            self.displayed_project_time = self.project.project_time
+        self.update_status()
+
+    def on_sim_state_change(self, state):
+        self.update_controls()
         self.update_status()
 
     def on_project_load(self, project):
@@ -202,7 +206,12 @@ class MainWindow(QtGui.QMainWindow):
         self._open_project_at_path(path)
 
     def action_new_project(self):
-        pass
+        home = os.path.expanduser("~")
+        path = QtGui.QFileDialog.getSaveFileName(None,
+                                                 'New Project',
+                                                 home,
+                                                 'Atls Project Files (*.atl)')
+        self.atls_core.create_project(path)
 
     def action_import_seismic_data(self):
         home = os.path.expanduser("~")
@@ -277,30 +286,32 @@ class MainWindow(QtGui.QMainWindow):
     # Control Updates
 
     def update_controls(self):
-        state = self.atls_core.state
-        if state == CoreState.SIMULATING:
+        engine_state = self.atls_core.engine.state
+        if engine_state == EngineState.INACTIVE:
+            self.ui.actionStart_Simulation.setEnabled(False)
+            self.ui.actionPause_Simulation.setEnabled(False)
+            self.ui.actionStop_Simulation.setEnabled(False)
+            self.ui.startButton.setEnabled(False)
+            self.ui.pauseButton.setEnabled(False)
+            self.ui.stopButton.setEnabled(False)
+            return
+        sim_state = self.atls_core.simulator.state
+        if sim_state == SimulatorState.RUNNING:
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(True)
             self.ui.actionStop_Simulation.setEnabled(True)
             self.ui.startButton.setEnabled(False)
             self.ui.pauseButton.setEnabled(True)
             self.ui.stopButton.setEnabled(True)
-        elif state == CoreState.PAUSED:
+        elif sim_state == SimulatorState.PAUSED:
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(True)
             self.ui.startButton.setEnabled(True)
             self.ui.pauseButton.setEnabled(False)
             self.ui.stopButton.setEnabled(True)
-        elif state == CoreState.FORECASTING:
-            self.ui.actionStart_Simulation.setEnabled(False)
-            self.ui.actionPause_Simulation.setEnabled(True)
-            self.ui.actionStop_Simulation.setEnabled(True)
-            self.ui.startButton.setEnabled(False)
-            self.ui.pauseButton.setEnabled(True)
-            self.ui.stopButton.setEnabled(True)
         else:
-            # IDLE
+            # STOPPED
             self.ui.actionStart_Simulation.setEnabled(True)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
@@ -327,20 +338,17 @@ class MainWindow(QtGui.QMainWindow):
         time = self.project.project_time
         t_forecast = core.t_next_forecast
         speed = self.atls_core.simulator.speed
-        if core.state == CoreState.SIMULATING:
+        if core.simulator.state == SimulatorState.RUNNING:
             event = self.project.seismic_history.latest_event(time)
-            self.ui.coreStatusLabel.setText('Simulating at ' + str(speed) + 'x')
+            status = 'Simulating at ' + str(speed) + 'x'
+            if core.engine.state == EngineState.BUSY:
+                status += ' - Computing Forecast'
+            self.ui.coreStatusLabel.setText(status)
             self.ui.projectTimeLabel.\
                 setText(self.displayed_project_time.ctime())
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
-        elif core.state == CoreState.FORECASTING:
-            event = self.project.seismic_history.latest_event()
-            self.ui.coreStatusLabel.setText('Forecasting')
-            self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
-            self.ui.lastEventLabel.setText(str(event))
-            self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
-        elif core.state == CoreState.PAUSED:
+        elif core.simulator.state == SimulatorState.PAUSED:
             event = self.project.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Paused')
             self.ui.projectTimeLabel.setText(str(self.displayed_project_time))

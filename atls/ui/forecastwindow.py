@@ -12,7 +12,7 @@ import time
 import ishamodelcontrol as mc
 from PyQt4 import QtGui
 from views.ui_forecastwindow import Ui_ForecastWindow
-from isha.common import ModelOutput
+from domainmodel.isforecastresult import ISModelResult
 from eqstats import SeismicRateHistory
 import numpy as np
 
@@ -54,31 +54,32 @@ class ForecastWindow(QtGui.QDialog):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
+        project.is_forecast_history.history_changed.connect(
+            self.on_forecast_history_change)
         project.rate_history.history_changed.connect(
             self.on_rate_history_change)
 
-    def _outputs_for_selected_model(self):
+    def _results_for_selected_model(self):
         """
-        Gets the model outputs for the currently selected model from the core
-        and sorts them by t_run.
+        Gets the model results for the currently selected model from the
+        project and sorts them by t_run.
 
-        :return: List with one or more ModelOutput objects for selected model
+        :return: List with one or more ISModelResult objects for selected model
                  or None
-        :rtype: list[ModelOutput] or None
+        :rtype: list[ISModelResult] or None
 
         """
         idx = self.ui.modelSelectorComboBox.currentIndex()
-        model = mc.active_models[idx]
-        output_sets = self.atls_core.forecast_engine.output_sets
-        if output_sets is None or len(output_sets) == 0:
-            mo = None
+        model_name = mc.active_models[idx].title
+        forecast_history = self.atls_core.project.is_forecast_history
+        if len(forecast_history) == 0:
+            mr = None
         else:
-            mo = [o.model_outputs.get(model) for o in output_sets.itervalues() \
-                  if o.model_outputs.get(model) is not None]
-            mo.sort(key=lambda o: o.t_run)
-            if len(mo) == 0:
-                mo = None
-        return mo
+            mr = [r.model_results.get(model_name) for r in forecast_history]
+            mr.sort(key=lambda x: x.t_run)
+            if len(mr) == 0:
+                mr = None
+        return mr
 
     # Rate display update methods for individual window components with
     # increasing granularity (i.e. top level methods at the top)
@@ -106,17 +107,17 @@ class ForecastWindow(QtGui.QDialog):
     # Forecast result display update methods for individual window components
     # with increasing granularity (i.e. top level methods at the top)
 
-    def _show_model_outputs(self, model_outputs):
+    def _show_model_results(self, model_results):
         """
-        Update the forecast results shown in the window with the ModelOutputs
+        Update the forecast results shown in the window with the ISModelResults
         passed in to the function.
 
-        :param model_outputs: List with one or more ModelOutput objects to plot
-                              data from or None to clear the display
-        :type model_outputs: list[ModelOutput] or None
+        :param model_results: List with one or more ISModelResult objects to
+                              plot data from or None to clear the display
+        :type model_results: list[ISModelResult] or None
 
         """
-        if model_outputs is None:
+        if model_results is None:
             self._show_forecast_result_history(None)
             self._show_spatial_results(None)
             self._show_latest_model_output(None)
@@ -124,88 +125,87 @@ class ForecastWindow(QtGui.QDialog):
             return
 
         # Extract latest output
-        latest = model_outputs[-1]
+        latest = model_results[-1]
         # Extract latest reviewed output
-        latest_reviewed = next((o for o in reversed(model_outputs)
+        latest_reviewed = next((o for o in reversed(model_results)
                                 if o.reviewed), None)
 
-        self._show_forecast_result_history(model_outputs)
+        self._show_forecast_result_history(model_results)
         self._show_spatial_results(latest)
         self._show_latest_model_output(latest)
         self._show_latest_model_score(latest_reviewed)
 
-
-    def _show_latest_model_output(self, model_output):
+    def _show_latest_model_output(self, model_results):
         """
         Update the forecast result labels
 
-        :param model_output: latest model output
-        :type model_output: ModelOutput or None
+        :param model_results: latest model result
+        :type model_results: ISModelResult or None
 
         """
-        if model_output is None:
+        if model_results is None:
             self.ui.fc_time_label.setText('-')
             self.ui.pred_rate_label.setText('-')
             self.ui.log_likelihood_label.setText('-')
         else:
-            self.ui.fc_time_label.setText(model_output.t_run.ctime())
-            rate = '{:.1f}'.format(model_output.result.rate) \
-                if model_output.has_results else 'No Results'
+            self.ui.fc_time_label.setText(model_results.t_run.ctime())
+            rate = '{:.1f}'.format(model_results.cum_result.rate) \
+                if not model_results.failed else 'No Results'
             self.ui.pred_rate_label.setText(rate)
 
-    def _show_latest_model_score(self, model_output):
+    def _show_latest_model_score(self, model_result):
         """
         Update the model score labels (time and LL of latest rating)
 
-        :param model_output: model output containing the latest score or None
-        :type model_output: ModelOutput or None
+        :param model_result: model result containing the latest score or None
+        :type model_result: ISModelResult or None
 
         """
-        if model_output is None:
+        if model_result is None:
             ll = 'No score available'
-            time = ''
+            t = ''
         else:
-            ll = '{:.1f}'.format(model_output.result.score.LL)
-            time = '@ {}'.format(model_output.t_run.ctime())
+            ll = '{:.1f}'.format(model_result.cum_result.score.LL)
+            t = '@ {}'.format(model_result.t_run.ctime())
         self.ui.log_likelihood_label.setText(ll)
-        self.ui.rating_time_label.setText(time)
+        self.ui.rating_time_label.setText(t)
 
-    def _show_forecast_result_history(self, model_outputs):
+    def _show_forecast_result_history(self, model_results):
         """
-        Plot the history of forecast result from model_ouputs. If a specific
+        Plot the history of forecast result from model_results. If a specific
         model output has no results, a forecast rate of 0 is plotted. If None
         is passed it the plot gets cleared.
 
-        :param model_outputs: list of model outputs or None
-        :type model_outputs: list[ModelOutput] or None
+        :param model_results: list of model outputs or None
+        :type model_results: list[ISModelResult] or None
 
         """
-        if model_outputs is None:
+        if model_results is None:
             self.ui.rate_forecast_plot.set_forecast_data(x=None, y=None)
             return
         epoch = datetime(1970, 1, 1)
         tz = timedelta(seconds=time.timezone)
-        x = [(o.t_run - epoch + tz).total_seconds() for o in model_outputs]
-        y = [o.result.rate if o.has_results else 0 for o in model_outputs]
+        x = [(r.t_run - epoch + tz).total_seconds() for r in model_results]
+        y = [r.result.rate if not r.failed else 0 for r in model_results]
         self.logger.debug('Replotting forecasts (' + str(len(x)) + ')')
         self.ui.rate_forecast_plot.set_forecast_data(x, y)
 
-    def _show_spatial_results(self, model_output):
+    def _show_spatial_results(self, model_result):
         """
-        Show the spatial results (if available) for the model output passed into
-        the method.
+        Show the latest spatial results (if available) for the model output
+        passed into the method.
 
-        :param model_output: model output or None
-        :type model_output: ModelOutput or None
+        :param model_result: model result or None
+        :type model_result: ISModelResult or None
 
         """
-        o = model_output
-        if o is None or o.has_results is False or o.result.vol_rates is None:
+        mr = model_result
+        if mr is None or mr.failed or mr.vol_results is None:
             self.ui.voxel_plot.set_voxel_data(None)
             self.logger.debug('No spatial results available to plot')
         else:
-            vol_rates = model_output.result.vol_rates
-            self.logger.debug('Max voxel rate is {:.1f}'.\
+            vol_rates = [r.rate for r in mr.vol_results]
+            self.logger.debug('Max voxel rate is {:.1f}'.
                               format(np.amax(vol_rates)))
             self.ui.voxel_plot.set_voxel_data(vol_rates)
 
@@ -215,13 +215,13 @@ class ForecastWindow(QtGui.QDialog):
 
     # Button Actions
 
-    def action_model_selection_changed(self, index):
+    def action_model_selection_changed(self, _):
         mo = self._outputs_for_selected_model()
         self._show_model_outputs(mo)
 
     # Handlers for signals from the core
 
-    def on_project_will_close(self, project):
+    def on_project_will_close(self, _):
         self._clear_all()
 
     def on_project_time_change(self, t):
@@ -248,7 +248,6 @@ class ForecastWindow(QtGui.QDialog):
         self._show_model_outputs(None)
         self._show_rates(project.rate_history)
 
-    def on_forecast_complete(self, result_set):
-        mo = self._outputs_for_selected_model()
-        self._show_model_outputs(mo)
-
+    def on_forecast_history_change(self, _):
+        mo = self._results_for_selected_model()
+        self._show_model_results(mo)

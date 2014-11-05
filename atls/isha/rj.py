@@ -7,7 +7,7 @@ in California", Science 243, 1173-1176
     
 """
 
-from common import Model, ModelOutput, ForecastResult
+from common import Model, ModelOutput, ModelResult
 import numpy as np
 import logging
 
@@ -111,7 +111,8 @@ class Rj(Model):
 
         # Finish up
         # FIXME: we're only supporting a single forecast now, remove list stuff
-        forecast = ForecastResult(rate=forecast_rates[0], prob=probabilities[0])
-        output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin, model=self)
-        output.result = forecast
+        forecast = ModelResult(rate=forecast_rates[0], prob=probabilities[0])
+        output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin,
+                             model=self)
+        output.cum_result = forecast
         return output

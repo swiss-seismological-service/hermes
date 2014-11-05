@@ -10,9 +10,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from PyQt4 import QtCore
 from datetime import datetime
 from datetime import timedelta
-from collections import namedtuple
-from modelvalidation import log_likelihood
 import logging
+
 
 class ModelInput(object):
     """
@@ -50,15 +49,12 @@ class ModelInput(object):
         :type project: AtlsProject
         :param bin_size: size of the forecast bin [hours]
         :type bin_size: float
-        :param num_bins: number of forecasts to make (usually 1)
-        :type num_bins: int
         :param mc: magnitude of completeness
         :type mc: float
         :param mag_range: tuple of two specifying the forecast magnitude range
-        :type num_bins: tuple
+        :type mag_range: tuple
 
         """
-        dt = timedelta(hours=bin_size)
         self.t_run = t_run
         self.forecast_mag_range = mag_range
         self.mc = mc
@@ -100,17 +96,17 @@ class ModelInput(object):
             # correctly.
             self.expected_flow = sum([e.flow_xt for e in events]) / len(events)
 
-
     def primitive_rep(self):
         """
         Generator that unpacks input data into simple lists of primitive types.
 
         We do this since we can't pass python objects to external code such as
-        Matlab. Lists are yielded as tuples (list_name, list) where list_name is
-        the name of the corresponding member variable. Members of members will
-        be returned with a combined name, E.g. all self.seismic_event.magnitude
-        will be returned as a list named *seismic_event_magnitude*. datetime
-        objects translated into unix time stamps
+        Matlab. Lists are yielded as tuples (list_name, list) where list_name
+        is the name of the corresponding member variable. Members of members
+        will be returned with a combined name, E.g. all
+        self.seismic_event.magnitude will be returned as a list named
+        *seismic_event_magnitude*. datetime objects translated into unix time
+        stamps.
 
         """
         for base_name in ModelInput._data_attrs:
@@ -129,97 +125,53 @@ class ModelInput(object):
                 yield base_name, _primitive(attr)
 
 
-class Rating(object):
-    """ Forecast validation (Model performance score) """
-    def __init__(self, LL):
-        """
-        :param LL: log likelihood
-
-        """
-        self.LL = LL
-
-
-class ForecastResult(object):
+class ModelResult(object):
     """ Result container for a single forecast """
-    def __init__(self, rate, prob, vol_rates=None, region=None):
+    def __init__(self, rate, prob):
         """
         :param rate: forecast rate
-        :param vol_rates: volumetric rates (per voxel)
         :param prob: forecast probability of one or more events occurring
-        :param region: region for which the forecast is valid (a Cube)
-        :param score: Score for the forecast result
 
         """
+        # TODO: add region (voxel boundaries) (#15)
         self.rate = rate
-        self.vol_rates = vol_rates
         self.prob = prob
-        self.region = region
-        self.score = None
 
 
 class ModelOutput:
     """
     Models store their output into this container structure.
 
-    :ivar spatial_results: an (optional) list containing the forecast results
-        for each forecast region in a spatial model.
-    :ivar result: cumulative result for the entire forecast region
-    :type result: ForecastResult
+    This is just a dumb container. The models can fill whichever variables are
+    applicable to them. That is, a model can have volumetric results,
+    cumulative results, both or none of them (if it failed).
+
+    :ivar vol_results: a list containing the forecast results
+        for each voxel in a spatial model.
+    :type vol_results: list[ModelResult]
+    :ivar cum_result: cumulative result for the entire forecast region
+    :type cum_result: ModelResult
     :ivar model: a reference to the model that created the forecast
     :ivar t_run: time of the forecast
     :type t_run: datetime
     :ivar dt: forecast period duration [hours]
     :type dt: timedelta
-    :ivar has_results: false if the model did not produce any results
-    :ivar no_results_reason: a reason given by the model for not producing any
+    :ivar failed: true if the model did not produce any results
+    :ivar failure_reason: a reason given by the model for not producing any
         results.
 
     """
     def __init__(self, t_run, dt, model):
-        self.has_results = True
-        self.no_result_reason = 'Unknown'
+        self.failed = False
+        self.failure_reason = 'Unknown'
         self.t_run = t_run
         self.dt = dt
         self.model = model
-        self.spatial_results = None
-        self.result = None
-        self._reviewed = False
+        self.cum_result = None
+        self.vol_results = None
+    
 
-    @property
-    def reviewed(self):
-        return self._reviewed
 
-    def compute_cumulative(self):
-        """
-        Computes the cumulative result from the individual spatial results.
-
-        """
-        rate = reduce(lambda x, y: x+y, [r.review for r in self.spatial_results])
-        prob = reduce(lambda x, y: x+y, [r.prob for r in self.spatial_results])
-        self.result = ForecastResult(rate=rate, prob=prob)
-
-    def review(self, observations):
-        """
-        Reviews results based on the 'truth' data in event **observations** for
-        the forecast period and assigns a score to the model.
-
-        :param observations: the observed events for the forecast period
-        :type observations: list of SeismicEvent objects
-
-        """
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-        if self.spatial_results is not None:
-            for result in self.spatial_results:
-                region = result.region
-                obs = len([e for e in observations if e.in_region(region)])
-                result.rating = Rating(LL=log_likelihood(result.review, obs))
-        LL = log_likelihood(self.result.rate, len(observations))
-        self.result.score = Rating(LL=LL)
-        self._reviewed = True
-        logger.debug('{} at {}: LL = {}'.format(self.model.title,
-                                                self.t_run,
-                                                self.result.score.LL))
 
 class ModelState:
     IDLE = 0

@@ -6,11 +6,11 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from common import Model, ModelOutput, ForecastResult
+from common import Model, ModelOutput, ModelResult
 import pymatlab
-import logging
 import os
 import numpy as np
+
 
 class Shapiro(Model):
     """
@@ -19,9 +19,9 @@ class Shapiro(Model):
     """
 
     _MATLAB_ERROR_MSG = 'The Shapiro model encountered an error in the ' \
-                        'Matlab code. The model inputs that led to the error ' \
+                        'Matlab code. The model inputs that led to the error '\
                         'have been saved to isha/model_inputs.mat. To debug ' \
-                        'the model load model_inputs.mat file in matlab and '  \
+                        'the model load model_inputs.mat file in matlab and ' \
                         'execute shapiro_wrapper.m'
     'directly.'
 
@@ -60,7 +60,7 @@ class Shapiro(Model):
         except RuntimeError:
             self._session.run("save('model_inputs')")
             self._logger.error(Shapiro._MATLAB_ERROR_MSG)
-            if (Model.RAISE_ON_ERRORS):
+            if Model.RAISE_ON_ERRORS:
                 raise
             else:
                 success = False
@@ -74,15 +74,14 @@ class Shapiro(Model):
         if success:
             rate = float(self._session.getvalue('forecast_numev'))
             vol_rates = self._session.getvalue('forecast_vol_rates')
-            forecast = ForecastResult(rate=rate,
-                                      vol_rates=vol_rates,
-                                      prob=0)  # FIXME set prob
-            output.result = forecast
+             # TODO: set prob correctly
+            output.cum_result = ModelResult(rate=rate, prob=0)
+            output.vol_results = [ModelResult(r, 0) for r in vol_rates]
             self._logger.info('number of events: ' + str(rate) +
-                              ' voxel max: ' +  str(np.amax(vol_rates)))
+                              ' voxel max: ' + str(np.amax(vol_rates)))
         else:
             reason = self._session.getvalue('forecast_no_result_reason')
-            output.no_result_reason = reason
-            output.has_results = False
+            output.failure_reason = reason
+            output.failed = True
             self._logger.info('did not get any results')
         return output
