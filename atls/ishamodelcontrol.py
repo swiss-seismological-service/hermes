@@ -17,6 +17,8 @@ from isha.shapiro import Shapiro
 import logging
 
 active_models = []
+_detached_runners = []
+
 
 def load_models(model_ids):
     """
@@ -26,6 +28,7 @@ def load_models(model_ids):
     and add it to the list of models.
 
     """
+    global _detached_runners
     load_all = True if 'all' in model_ids else False
 
     # Reasenberg Jones
@@ -46,16 +49,30 @@ def load_models(model_ids):
         shapiro_model.title = 'Shapiro (Spatial)'
         active_models.append(shapiro_model)
 
+    # This moves the models to their own thread. Do not access model
+    # members directly after this line
+    _detached_runners = [DetachedRunner(m) for m in active_models]
+
     titles = [m.title for m in active_models]
     logging.getLogger(__name__).info('Loaded models: ' + ', '.join(titles))
 
 
+def run_active_models(model_input):
+    for runner in _detached_runners:
+        runner.run_model(model_input)
+
+
 class DetachedRunner(QtCore.QObject):
     """
-    The controller launches models in detached threads and communicates
-    status updates back to the framework.
+    The ISModelRunner manages the actual IS models which live on a separate
+    thread each. It communicates data back and forth in a thread safe manner
+    and replicates some of the models basic properties (name etc.) to make
+    it available on the main thread.
 
     """
+
+    # This is for debugging since breakpoints don't work with threads
+    DEBUG = False
 
     def __init__(self, model):
         """
@@ -68,16 +85,26 @@ class DetachedRunner(QtCore.QObject):
 
         """
         super(DetachedRunner, self).__init__()
+        # the reference to the actual model is private since it must not be
+        # accessed from the main thread directly.
+        self._logger = logging.getLogger(__name__)
         self.model = model
-        self._qthread = QtCore.QThread()
-        self.model.moveToThread(self._qthread)
-        self._qthread.started.connect(self.model.run)
+        if not DetachedRunner.DEBUG:
+            self._qthread = QtCore.QThread()
+            self._qthread.setObjectName(model.title)
+            self.model.moveToThread(self._qthread)
+            self._qthread.started.connect(self.model.run)
+        else:
+            self._logger.warning('DEBUG mode, {} will run in main thread'
+                .format(model.title))
+
         self.model.finished.connect(self._on_model_finished)
         self._logger = logging.getLogger(__name__)
 
     def __del__(self):
         # Make sure the thread ends before we destroy it
-        self._qthread.wait()
+        if not DetachedRunner.DEBUG:
+            self._qthread.wait()
 
     def run_model(self, run_data):
         """
@@ -89,9 +116,16 @@ class DetachedRunner(QtCore.QObject):
         """
         self._logger.debug('preparing %s', self.model.title)
         self.model.prepare_run(run_data)
-        self._logger.debug('detaching %s to worker thread', self.model.title)
-        self._qthread.start()
+        self._logger.debug('starting worker thread for {}'
+                           .format(self.model.title))
+        if not DetachedRunner.DEBUG:
+            self._qthread.start()
+        else:
+            self.model.run()
 
     def _on_model_finished(self):
         """ The model is done so we can quit the thread """
+        if DetachedRunner.DEBUG:
+            return
         self._qthread.quit()
+        self._qthread.wait()

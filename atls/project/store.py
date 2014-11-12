@@ -9,6 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
+import logging
 
 
 class Store:
@@ -36,19 +37,21 @@ class Store:
         self.engine = create_engine(store_url, echo=False)
         self.model = model
         self.model.metadata.create_all(self.engine, checkfirst=True)
-        session = sessionmaker(bind=self.engine)
+        session = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.session = session()
 
     def purge(self, entity=None):
         """
         Deletes all data from the store
 
-        If entity is given, only data for this entity will be deleted
+        If entity is given, only data for this entity will be deleted. Cascades
+        deletes as configured in the model.
 
         """
         if entity is not None:
-            delete = entity.__table__.delete()
-            self.engine.execute(delete)
+            for obj in self.session.query(entity):
+                self.session.delete(obj)
+            self.session.commit()
         else:
             self.model.metadata.drop_all(bind=self.engine)
             self.model.metadata.create_all(self.engine)
@@ -75,7 +78,11 @@ class Store:
         :type objects: List of domainmodel derived objects
 
         """
-        self.session.add_all(objects)
+        for i, o in enumerate(objects):
+            self.session.add(o)
+            if i % 1000 == 0:
+                self.session.flush()
+        print('committing')
         self.commit()
 
     def _new_read_query(self, entity, predicate):

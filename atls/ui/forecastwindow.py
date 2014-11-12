@@ -40,10 +40,9 @@ class ForecastWindow(QtGui.QDialog):
             self.ui.modelSelectorComboBox.addItem(model.title)
 
         # Connect essential signals
-        self.atls_core.state_changed.connect(self.on_core_state_change)
+        self.atls_core.engine.state_changed.\
+            connect(self.on_engine_state_change)
         self.atls_core.project_loaded.connect(self.on_project_load)
-        self.atls_core.forecast_engine.forecast_complete.\
-            connect(self.on_forecast_complete)
 
         if self.atls_core.project is not None:
             self._observe_project_changes(self.atls_core.project)
@@ -69,6 +68,8 @@ class ForecastWindow(QtGui.QDialog):
         :rtype: list[ISModelResult] or None
 
         """
+        if self.atls_core.project is None:
+            return
         idx = self.ui.modelSelectorComboBox.currentIndex()
         model_name = mc.active_models[idx].title
         forecast_history = self.atls_core.project.is_forecast_history
@@ -117,10 +118,11 @@ class ForecastWindow(QtGui.QDialog):
         :type model_results: list[ISModelResult] or None
 
         """
+        print('showing model results: {}'.format(model_results))
         if model_results is None:
             self._show_forecast_result_history(None)
             self._show_spatial_results(None)
-            self._show_latest_model_output(None)
+            self._show_latest_model_result(None)
             self._show_latest_model_score(None)
             return
 
@@ -132,10 +134,10 @@ class ForecastWindow(QtGui.QDialog):
 
         self._show_forecast_result_history(model_results)
         self._show_spatial_results(latest)
-        self._show_latest_model_output(latest)
+        self._show_latest_model_result(latest)
         self._show_latest_model_score(latest_reviewed)
 
-    def _show_latest_model_output(self, model_results):
+    def _show_latest_model_result(self, model_results):
         """
         Update the forecast result labels
 
@@ -186,7 +188,7 @@ class ForecastWindow(QtGui.QDialog):
         epoch = datetime(1970, 1, 1)
         tz = timedelta(seconds=time.timezone)
         x = [(r.t_run - epoch + tz).total_seconds() for r in model_results]
-        y = [r.result.rate if not r.failed else 0 for r in model_results]
+        y = [r.cum_result.rate if not r.failed else 0 for r in model_results]
         self.logger.debug('Replotting forecasts (' + str(len(x)) + ')')
         self.ui.rate_forecast_plot.set_forecast_data(x, y)
 
@@ -200,7 +202,7 @@ class ForecastWindow(QtGui.QDialog):
 
         """
         mr = model_result
-        if mr is None or mr.failed or mr.vol_results is None:
+        if mr is None or mr.failed or not mr.vol_results:
             self.ui.voxel_plot.set_voxel_data(None)
             self.logger.debug('No spatial results available to plot')
         else:
@@ -216,8 +218,8 @@ class ForecastWindow(QtGui.QDialog):
     # Button Actions
 
     def action_model_selection_changed(self, _):
-        mo = self._outputs_for_selected_model()
-        self._show_model_outputs(mo)
+        r = self._results_for_selected_model()
+        self._show_model_results(r)
 
     # Handlers for signals from the core
 
@@ -240,14 +242,14 @@ class ForecastWindow(QtGui.QDialog):
     def on_rate_history_change(self, history):
         self._show_rates(history)
 
-    def on_core_state_change(self):
+    def on_engine_state_change(self):
         pass
 
     def on_project_load(self, project):
         self._observe_project_changes(project)
-        self._show_model_outputs(None)
+        self._show_model_results(None)
         self._show_rates(project.rate_history)
 
     def on_forecast_history_change(self, _):
-        mo = self._results_for_selected_model()
-        self._show_model_results(mo)
+        r = self._results_for_selected_model()
+        self._show_model_results(r)

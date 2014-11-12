@@ -169,13 +169,6 @@ class ModelOutput:
         self.model = model
         self.cum_result = None
         self.vol_results = None
-    
-
-
-
-class ModelState:
-    IDLE = 0
-    RUNNING = 1
 
 
 class Model(QtCore.QObject):
@@ -184,9 +177,7 @@ class Model(QtCore.QObject):
     forecast models
 
     .. pyqt4:signal:finished: emitted when the model has finished its run
-    successfully and has new run results. Carries the output as payload.
-    .. pyqt4:signal:state_changed: emitted when the model changes its state
-    from running to idle or vice versa
+    successfully and has new run results. Carries the model as payload.
 
     :ivar output: output of the last run
     :ivar title: display title of the model
@@ -197,7 +188,6 @@ class Model(QtCore.QObject):
     RAISE_ON_ERRORS = True
 
     finished = QtCore.pyqtSignal(object)
-    state_changed = QtCore.pyqtSignal(object)
 
     def __init__(self):
         """ Initializes the model """
@@ -205,7 +195,6 @@ class Model(QtCore.QObject):
         self._model_input = None
         self.output = None
         self.title = 'Model'
-        self._state = ModelState.IDLE
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
@@ -230,12 +219,12 @@ class Model(QtCore.QObject):
         is run from _do_run.
 
         """
-        self._logger.info(self.title + ' model run initiated')
-        self.state = ModelState.RUNNING
+        self._logger.info('<{}> {} model run initiated'
+                          .format(self.thread().objectName(), self.title))
         self.output = self._do_run()
-        self.finished.emit(self.output)
-        self._logger.info(self.title + ' model run completed')
-        self.state = ModelState.IDLE
+        self._logger.info('<{}> {} model run completed'
+                          .format(self.thread().objectName(), self.title))
+        self.finished.emit(self)
 
     def _do_run(self):
         """
@@ -247,15 +236,6 @@ class Model(QtCore.QObject):
 
         """
         pass
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, state):
-        self._state = state
-        self.state_changed.emit(state)
 
     # Some helper functions
 

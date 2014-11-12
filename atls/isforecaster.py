@@ -7,7 +7,7 @@ See ISForecaster class documentation for details.
 """
 
 import logging
-from isha.common import ModelInput, ModelState, ModelOutput
+from isha.common import ModelInput, ModelOutput
 from domainmodel.isforecastresult import ISForecastResult, ISModelResult
 import ishamodelcontrol as mc
 from PyQt4 import QtCore
@@ -28,7 +28,7 @@ class ISForecaster(QtCore.QObject):
 
     """
 
-    def __init__(self, completion_handler, model_ids=['all']):
+    def __init__(self, completion_handler):
         """
         :param completion_handler: callback to invoke on completion of fore-
             cast. Must take exactly one argument which is the forecast result.
@@ -42,23 +42,10 @@ class ISForecaster(QtCore.QObject):
         self.logger.setLevel(logging.DEBUG)
         self.current_run = None
         self.completion_handler = completion_handler
+        self._running_models = []
 
-        # Load models and prepare runners
-        mc.load_models(model_ids)
-        self._detached_runners = [mc.DetachedRunner(m)
-                                  for m in mc.active_models]
-
-        # Add state information for each model and subscribe to relevant
-        # signals
-        for model in mc.active_models:
-            # The QueuedConnection makes sure the callback runs on our thread
-            # and not on the models.
-            model.state_changed.connect(self._on_model_state_changed,
-                                        type=QtCore.Qt.QueuedConnection)
-            model.finished.connect(self._on_model_run_finished,
-                                   type=QtCore.Qt.QueuedConnection)
-
-        self.run_result = None
+        self._run_result = None
+        print('done creating')
 
     def run(self, model_input):
         """
@@ -69,12 +56,15 @@ class ISForecaster(QtCore.QObject):
 
         """
         t_run = model_input.t_run
+        for model in mc.active_models:
+            model.finished.connect(self._on_model_run_finished)
         # Skip this forecast if the forecaster is not IDLE
         if self.state != ISForecastState.IDLE:
             self.logger.warning('Attempted to initiate IS forecast while the '
                                 'forecaster is not idle. Skipping forecast at '
                                 't=' + str(t_run))
             return
+        self.state = ISForecastState.FORECASTING
         self.logger.info(6*'----------')
         self.logger.info('Initiating forecast at t = ' + str(t_run))
         # Perform any pending result validations before we run the next
@@ -84,46 +74,45 @@ class ISForecaster(QtCore.QObject):
         self.logger.debug('Expected flow during forecast: {:.1f} l/min.'
             .format(model_input.expected_flow))
         self.current_run = model_input.t_run
-        for runner in self._detached_runners:
-            runner.run_model(model_input)
+        self._running_models = list(mc.active_models)
+        mc.run_active_models(model_input)
 
     # State handling
 
-    def _on_model_state_changed(self):
-        if ModelState.RUNNING in [m.state for m in mc.active_models]:
-            new_global_state = ISForecastState.FORECASTING
-        else:
-            new_global_state = ISForecastState.IDLE
-        if self.state != new_global_state:
-            self.state = new_global_state
-            if new_global_state == ISForecastState.IDLE:
-                t_run = self.current_run
-                self.logger.info('Forecast complete for t = ' + str(t_run))
-                self.current_run = None
-                self.completion_handler(self.run_result)
+    def _update_state(self):
+        if not self._running_models:
+            t_run = self.current_run
+            self.logger.info('Forecast complete for t = ' + str(t_run))
+            self.current_run = None
+            self.completion_handler(self._run_result)
 
     # Model completion handlers
 
-    def _on_model_run_finished(self, model_output):
+    def _on_model_run_finished(self, model):
         """
         Adds the output to the result set for the current run
 
-        :param model_output: Model output for the previous run
-        :type model_output: ModelOutput
+        :param model: Model that has finished
+        :type model_output: Model
 
         """
-        is_model_result = ISModelResult(model_output)
-        model_name = is_model_result.model_name
+        print('Forecaster on <{}> received model results for {}'.
+              format(QtCore.QThread.currentThread().objectName(), model.title))
+        is_model_result = ISModelResult(model.output)
+        model_name = model.title
         t_run = is_model_result.t_run
-        if self.run_result is None:
-            self.run_result = ISForecastResult(t_run)
-        self.run_result.model_results[model_name] = is_model_result
-        if not is_model_result.failed:
+        if self._run_result is None:
+            self._run_result = ISForecastResult(t_run)
+        self._run_result.model_results[model_name] = is_model_result
+        if is_model_result.failed:
             self.logger.warn(model_name + ' did not produce any results for'
                              ' t = ' + str(t_run) + '. Reason: ' +
                              is_model_result.failure_reason)
         else:
             self.logger.debug('Received results for ' + model_name)
+        self._running_models.remove(model)
+        model.finished.disconnect(self._on_model_run_finished)
+        self._update_state()
 
     # FIXME: this should go somewhere else (#17)
     # def review_results(self, t, observed_events):

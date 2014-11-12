@@ -41,6 +41,7 @@ class Atls(QtCore.QObject):
 
         """
         super(Atls, self).__init__()
+        self.thread().setObjectName('Main')
         # Setup the logger
         self.logger = logging.getLogger(__name__)
         self.logger.info('Launching ATLS v' + VERSION)

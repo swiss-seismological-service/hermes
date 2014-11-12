@@ -51,7 +51,7 @@ class AtlsProject(project.Project):
 
         # Set the project time to the time of the first event
         event = self.earliest_event()
-        self._project_time = event.date_time if event else None
+        self._project_time = event.date_time if event else datetime.now()
 
     @property
     def project_time(self):
@@ -74,8 +74,11 @@ class AtlsProject(project.Project):
         Returns the earliest event in the project, either seismic or hydraulic.
 
         """
-        es = self.seismic_history[0]
-        eh = self.hydraulic_history[0]
+        try:
+            es = self.seismic_history[0]
+            eh = self.hydraulic_history[0]
+        except IndexError:
+            return None
         if es is None and eh is None:
             return None
         elif es is None:

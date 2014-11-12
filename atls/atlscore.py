@@ -16,8 +16,9 @@ from PyQt4 import QtCore
 from project.store import Store
 from project.atlsproject import AtlsProject
 from domainmodel.datamodel import DataModel
-from simulator import Simulator
+from simulator import Simulator, SimulatorState
 from engine import Engine
+import ishamodelcontrol as mc
 
 import os
 #from tools import Profiler
@@ -45,9 +46,12 @@ class AtlsCore(QtCore.QObject):
 
         """
         super(AtlsCore, self).__init__()
-        self.settings = settings
+        self._settings = settings
         self.project = None
-        self.engine = Engine()
+        self.engine = Engine(settings)
+
+        # Load active IS models
+        mc.load_models(self._settings.value('ISHA/models'))
 
         # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)
@@ -109,17 +113,17 @@ class AtlsCore(QtCore.QObject):
     # Running
 
     def start(self):
-        if self.settings.value('enable_lab_mode'):
+        if self._settings.value('enable_lab_mode'):
             self.start_simulation()
         else:
             self._logger.notice('ATLS only works in lab mode at the moment')
 
     def pause(self):
-        if self.settings.value('enable_lab_mode'):
+        if self._settings.value('enable_lab_mode'):
             self.pause_simulation()
 
     def stop(self):
-        if self.settings.value('enable_lab_mode'):
+        if self._settings.value('enable_lab_mode'):
             self.stop_simulation()
 
     # Simulation
@@ -136,7 +140,7 @@ class AtlsCore(QtCore.QObject):
         if self.project is None:
             return
         self._logger.info('Starting simulation')
-        if self.simulator.stopped:
+        if self.simulator.state == SimulatorState.STOPPED:
             self._init_simulation()
         # Start simulator
         self.simulator.start()
@@ -146,17 +150,20 @@ class AtlsCore(QtCore.QObject):
         (Re)initialize simulator and scheduler for a new simulation
 
         """
+        self._logger.info('Deleting any forecasting results from previous runs')
+        self.project.is_forecast_history.clear()
         # Reset task scheduler based on the first simulation step time
         time_range = self._simulation_time_range()
-        inf_speed = self.settings.value('lab_mode/infinite_speed', type=bool)
+        inf_speed = self._settings.value('lab_mode/infinite_speed', type=bool)
         if inf_speed:
-            dt_h = self.settings.value('engine/fc_interval', type=float)
+            dt_h = self._settings.value('engine/fc_interval', type=float)
             dt = timedelta(hours=dt_h)
             step_signal = self.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)
         else:
-            speed = self.settings.value('lab_mode/speed', type=float)
+            speed = self._settings.value('lab_mode/speed', type=float)
             self.simulator.configure(time_range, speed=speed)
+        self.engine.reset(time_range[0])
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -170,7 +177,7 @@ class AtlsCore(QtCore.QObject):
 
     def _simulation_time_range(self):
         event_time_range = self.project.event_time_range()
-        start_date = self.settings.date_value('lab_mode/forecast_start')
+        start_date = self._settings.date_value('lab_mode/forecast_start')
         start_date = start_date if start_date else event_time_range[0]
         end_date = event_time_range[1]
         return start_date, end_date

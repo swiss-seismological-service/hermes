@@ -54,6 +54,15 @@ class EventHistory(QtCore.QObject):
         """
         self._events = self.store.read_all(self.entity, order='date_time')
 
+    def clear(self):
+        """
+        Delete all data from the db
+
+        """
+        self.store.purge(self.entity)
+        self._events = []
+        self._emit_change_signal({})
+
     def all_events(self):
         return self._events
 

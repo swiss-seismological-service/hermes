@@ -12,7 +12,7 @@ import logging
 from sqlalchemy import Column, Integer, Float, DateTime, Boolean, String, \
     Interval, ForeignKey
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from isha.common import ModelOutput, ModelResult
 from datamodel import DataModel
 from modelvalidation import log_likelihood
@@ -25,7 +25,7 @@ class ISForecastResult(DataModel):
     """
 
     # ORM declarations
-    __tablename__ = 'isforecastresults'
+    __tablename__ = 'isforecastresult'
     id = Column(Integer, primary_key=True)
     t_run = Column(DateTime)
     _reviewed = Column('reviewed', Boolean)
@@ -62,7 +62,7 @@ class ISModelResult(DataModel):
     :ivar t_run: time of the forecast
     :type t_run: datetime
     :ivar dt: forecast period duration [hours]
-    :type dt: timedelta
+    :type dt: float
     :ivar failed: true if the model did not produce any results
     :ivar failure_reason: a reason given by the model for not producing any
         results.
@@ -74,13 +74,13 @@ class ISModelResult(DataModel):
     """
 
     # ORM declarations
-    __tablename__ = 'ismodelresults'
+    __tablename__ = 'ismodelresult'
     id = Column(Integer, primary_key=True)
     model_name = Column(String)
     failed = Column(Boolean)
     failure_reason = Column(String)
     t_run = Column(DateTime)
-    dt = Column(Interval)
+    dt = Column(Float)
 
     # Configures the one-to-one relationship for the cumulative result
     # use_alter=True along with name='' adds this foreign key after ISResult
@@ -89,9 +89,10 @@ class ISModelResult(DataModel):
                                                name='fk_cum_result_id'))
     # set post_update=True to avoid circular dependency during
     cum_result = relationship('ISResult', foreign_keys=cum_result_id,
-                              post_update=True)
+                              post_update=True, cascade="all, delete-orphan",
+                              single_parent=True)
 
-    forecast_id = Column(Integer, ForeignKey('isforecastresults.id'))
+    forecast_id = Column(Integer, ForeignKey('isforecastresult.id'))
     _reviewed = Column('reviewed', Boolean)
 
     def __init__(self, output):
@@ -115,7 +116,7 @@ class ISModelResult(DataModel):
             self.vol_results = [ISResult.from_model_result(r)
                                 for r in output.vol_results]
         else:
-            self.vol_results = None
+            self.vol_results = []
 
     @property
     def reviewed(self):
@@ -143,7 +144,7 @@ class ISModelResult(DataModel):
         """
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
-        if self.vol_results is not None:
+        if self.vol_results:
             # TODO: compute LL per voxel
             # at the moment we don't know the region for each volumetric
             # result.
@@ -164,7 +165,7 @@ class ISResult(DataModel):
     """ Result container for a single forecast """
 
     # ORM declarations
-    __tablename__ = 'isresults'
+    __tablename__ = 'isresult'
     id = Column(Integer, primary_key=True)
     rate = Column(Float)
     prob = Column(Float)
@@ -174,7 +175,8 @@ class ISResult(DataModel):
     # vol_results and this entity
     model_result_id = Column(Integer, ForeignKey(ISModelResult.id))
     model_result = relationship(ISModelResult, foreign_keys=model_result_id,
-                                backref='vol_results')
+                                backref=backref('vol_results',
+                                                cascade="all, delete-orphan"))
 
     def __init__(self, rate, prob):
         self.prob = prob

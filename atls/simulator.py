@@ -129,7 +129,7 @@ class Simulator(QtCore.QObject):
         stopped. The first time step is scheduled to execute immediately.
 
         """
-        assert self.time_range is not None, 'Set a time range before simulating'
+        assert self._time_range is not None, 'Set a time range before simulating'
         if self.state != SimulatorState.PAUSED:
             self._simulation_time = self._time_range[0]
         self._transition_to_state(SimulatorState.RUNNING)
@@ -168,7 +168,7 @@ class Simulator(QtCore.QObject):
             dt = self._dt
         self._simulation_time += dt
 
-        if self._simulation_time >= self.time_range[1]:
+        if self._simulation_time >= self._time_range[1]:
             simulation_ended = True
 
         self._handler(self._simulation_time)

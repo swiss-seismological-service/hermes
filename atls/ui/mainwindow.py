@@ -336,7 +336,7 @@ class MainWindow(QtGui.QMainWindow):
 
         core = self.atls_core
         time = self.project.project_time
-        t_forecast = core.t_next_forecast
+        t_forecast = core.engine.t_next_forecast
         speed = self.atls_core.simulator.speed
         if core.simulator.state == SimulatorState.RUNNING:
             event = self.project.seismic_history.latest_event(time)
@@ -415,5 +415,6 @@ class MainWindow(QtGui.QMainWindow):
 
         data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
                 for e in events if e.date_time < max_time]
-        x, y = map(list, zip(*data))
+
+        x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
         self.ui.hydraulic_data_plot.plot.setData(x, y)

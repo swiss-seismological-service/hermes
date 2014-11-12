@@ -14,6 +14,7 @@ from isforecaster import ISForecaster
 from PyQt4 import QtCore
 from datetime import timedelta
 from collections import namedtuple
+import logging
 
 
 # Used internally to pass information to repeating tasks
@@ -51,17 +52,20 @@ class Engine(QtCore.QObject):
     # project emitted change signals.
     forecast_complete = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, settings):
         """
         :param project: Project to observe on time changes
         :type project: AtlsProject
 
         """
         super(Engine, self).__init__()
+        self._settings = settings
         self._project = None
         self._forecast_task = None
         self._state = EngineState.INACTIVE
         self._is_forecaster = None  # Currently active forecaster -> job
+        self._scheduler = self._create_task_scheduler()
+        self._logger = logging.getLogger(__name__)
 
     @property
     def t_next_forecast(self):
@@ -75,6 +79,14 @@ class Engine(QtCore.QObject):
         project.project_time_changed.connect(self._on_project_time_change)
         project.will_close.connect(self._on_project_close)
         self._project = project
+        self._transition_to_state(EngineState.READY)
+
+    def reset(self, t0):
+        """
+        Reset engine and all schedulers to t0
+
+        """
+        self._scheduler.reset_schedule(t0)
 
     def _on_project_close(self, project):
         project.project_time_changed.disconnect(self._on_project_time_change)
@@ -116,7 +128,7 @@ class Engine(QtCore.QObject):
         scheduler = TaskScheduler()
 
         # Forecasting Task
-        dt = self.settings.value('engine/fc_interval', type=float)
+        dt = self._settings.value('engine/fc_interval', type=float)
         forecast_task = ScheduledTask(task_function=self.run_forecast,
                                       dt=timedelta(hours=dt),
                                       name='Forecast')
@@ -124,7 +136,7 @@ class Engine(QtCore.QObject):
         self._forecast_task = forecast_task  # keep a reference for later
 
         # Rate computations
-        dt = self.settings.value('engine/rt_interval', type=float)
+        dt = self._settings.value('engine/rt_interval', type=float)
         rate_update_task = ScheduledTask(task_function=self.update_rates,
                                          dt=timedelta(minutes=dt),
                                          name='Rate update')
@@ -136,27 +148,26 @@ class Engine(QtCore.QObject):
 
     def run_forecast(self, task_run_info):
         t_run = task_run_info.t_project
-        mode = task_run_info.mode
-        dt_h = self.settings.value('engine/fc_bin_size', type=float)
-        self._create_and_run_fc_job(t_run, mode, dt_h)
+        dt_h = self._settings.value('engine/fc_bin_size', type=float)
+        self._create_and_run_fc_job(t_run, dt_h)
 
     def update_rates(self, info):
         t_run = info.t_project
         # FIXME: do not hardcode  mc
-        seismic_events = self.project.seismic_history.events_before(t_run)
+        seismic_events = self._project.seismic_history.events_before(t_run)
         data = [(e.date_time, e.magnitude) for e in seismic_events]
         if len(data) == 0:
             return
         t, m = zip(*data)
         t = list(t)
         m = list(m)
-        rates = self.project.rate_history.compute_and_add(m, t, [t_run])
+        rates = self._project.rate_history.compute_and_add(m, t, [t_run])
         self._logger.debug('New rate computed: ' + str(rates[0].rate))
 
     # Temporary methods (to be factored out)
 
     # TODO: job will be its own class soon (#17)
-    def _create_and_run_fc_job(self, t_run, mode, dt_h):
+    def _create_and_run_fc_job(self, t_run, dt_h):
         """
         Run a new forecast job
 
@@ -165,28 +176,28 @@ class Engine(QtCore.QObject):
 
         # Skip this forecast if the engine is busy
         if self.state == EngineState.BUSY:
-            self.logger.warning('Attempted to initiate forecast while the '
+            self._logger.warning('Attempted to initiate forecast while the '
                                 'engine is still busy with a previously'
                                 'started forecast. Skipping at '
                                 't=' + str(t_run))
             return
 
-        self.logger.info(6*'----------')
-        self.logger.info('Initiating forecast at t = ' + str(t_run))
+        self._logger.info(6*'----------')
+        self._logger.info('Initiating forecast at t = ' + str(t_run))
 
         # FIXME: do not hard code mc, mag_range
-        model_input = ModelInput(t_run, self.project, bin_size=dt_h,
+        model_input = ModelInput(t_run, self._project, bin_size=dt_h,
                                  mc=0.9, mag_range=(0, 6))
-        model_input.estimate_expected_flow(t_run, self.project, dt_h)
+        model_input.estimate_expected_flow(t_run, self._project, dt_h)
         # TODO: Allow estimated flow to be user defined (#18)
-        self.is_forecaster = ISForecaster(self.fc_complete,
-                                          self.settings.value('ISHA/models'))
-        self.is_forecaster.run(model_input)
+        self.is_forecaster = ISForecaster(self.fc_complete)
         self._transition_to_state(EngineState.BUSY)
+        self.is_forecaster.run(model_input)
+
 
     # Task completion handlers
 
     def fc_complete(self, result):
-        self.project.is_forecast_history.add(result)
-        self.forecast_complete.emit()
+        self._project.is_forecast_history.add(result)
         self._transition_to_state(EngineState.READY)
+        self.forecast_complete.emit()
