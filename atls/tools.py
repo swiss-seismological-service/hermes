@@ -62,3 +62,15 @@ class Profiler:
             print s.getvalue()
 
 
+def profile_this(fn):
+    """
+    Decorator to profile a simple function quickly
+
+    """
+    def profiled_fn(*args, **kwargs):
+        fpath = fn.__name__ + '.profile'
+        prof = cProfile.Profile()
+        ret = prof.runcall(fn, *args, **kwargs)
+        prof.dump_stats(fpath)
+        return ret
+    return profiled_fn
