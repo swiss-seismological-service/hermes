@@ -118,7 +118,6 @@ class ForecastWindow(QtGui.QDialog):
         :type model_results: list[ISModelResult] or None
 
         """
-        print('showing model results: {}'.format(model_results))
         if model_results is None:
             self._show_forecast_result_history(None)
             self._show_spatial_results(None)

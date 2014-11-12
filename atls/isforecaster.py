@@ -45,7 +45,6 @@ class ISForecaster(QtCore.QObject):
         self._running_models = []
 
         self._run_result = None
-        print('done creating')
 
     def run(self, model_input):
         """
@@ -96,8 +95,6 @@ class ISForecaster(QtCore.QObject):
         :type model_output: Model
 
         """
-        print('Forecaster on <{}> received model results for {}'.
-              format(QtCore.QThread.currentThread().objectName(), model.title))
         is_model_result = ISModelResult(model.output)
         model_name = model.title
         t_run = is_model_result.t_run
