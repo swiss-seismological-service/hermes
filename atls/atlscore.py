@@ -9,7 +9,7 @@ control facilities should be hooked up in the Atls class instead.
 """
 
 import logging
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from PyQt4 import QtCore
 
@@ -59,10 +59,6 @@ class AtlsCore(QtCore.QObject):
         # Time, state and other internals
         self._logger = logging.getLogger(__name__)
         #self._logger.setLevel(logging.DEBUG)
-
-    @property
-    def t_next_forecast(self):
-        return self._forecast_task.run_time
 
     # Project handling
 
