@@ -9,8 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from project.atlsproject import AtlsProject
 from taskscheduler import TaskScheduler, ScheduledTask
-from isha.common import ModelInput
-from isforecaster import ISForecaster
+from atlsjob import ForecastJob
 from PyQt4 import QtCore
 from datetime import timedelta
 from collections import namedtuple
@@ -63,7 +62,7 @@ class Engine(QtCore.QObject):
         self._project = None
         self._forecast_task = None
         self._state = EngineState.INACTIVE
-        self._is_forecaster = None  # Currently active forecaster -> job
+        self._current_fc_job = None  # Currently active forecast job
         self._scheduler = self._create_task_scheduler()
         self._logger = logging.getLogger(__name__)
 
@@ -147,9 +146,30 @@ class Engine(QtCore.QObject):
     # Scheduled task functions
 
     def run_forecast(self, task_run_info):
+        assert(self.state != EngineState.INACTIVE)
         t_run = task_run_info.t_project
-        dt_h = self._settings.value('engine/fc_bin_size', type=float)
-        self._create_and_run_fc_job(t_run, dt_h)
+
+        # Skip this forecast if the engine is busy
+        if self.state == EngineState.BUSY:
+            self._logger.warning('Attempted to initiate forecast while the '
+                                 'engine is still busy with a previously'
+                                 'started forecast. Skipping at '
+                                 't=' + str(t_run))
+            return
+
+        self._logger.info(6*'----------')
+        self._logger.info('Initiating forecast')
+
+        job_input = {
+            't_run': t_run,
+            'dt_h': self._settings.value('engine/fc_bin_size', type=float),
+            'project': self._project
+        }
+        job = ForecastJob()
+        job.stage_completed.connect(self.fc_stage_complete)
+        self._current_fc_job = job
+        self._transition_to_state(EngineState.BUSY)
+        self._current_fc_job.run(job_input)
 
     def update_rates(self, info):
         t_run = info.t_project
@@ -164,40 +184,17 @@ class Engine(QtCore.QObject):
         rates = self._project.rate_history.compute_and_add(m, t, [t_run])
         self._logger.debug('New rate computed: ' + str(rates[0].rate))
 
-    # Temporary methods (to be factored out)
-
-    # TODO: job will be its own class soon (#17)
-    def _create_and_run_fc_job(self, t_run, dt_h):
-        """
-        Run a new forecast job
-
-        """
-        assert(self.state != EngineState.INACTIVE)
-
-        # Skip this forecast if the engine is busy
-        if self.state == EngineState.BUSY:
-            self._logger.warning('Attempted to initiate forecast while the '
-                                'engine is still busy with a previously'
-                                'started forecast. Skipping at '
-                                't=' + str(t_run))
-            return
-
-        self._logger.info(6*'----------')
-        self._logger.info('Initiating forecast at t = ' + str(t_run))
-
-        # FIXME: do not hard code mc, mag_range
-        model_input = ModelInput(t_run, self._project, bin_size=dt_h,
-                                 mc=0.9, mag_range=(0, 6))
-        model_input.estimate_expected_flow(t_run, self._project, dt_h)
-        # TODO: Allow estimated flow to be user defined (#18)
-        self.is_forecaster = ISForecaster(self.fc_complete)
-        self._transition_to_state(EngineState.BUSY)
-        self.is_forecaster.run(model_input)
-
-
     # Task completion handlers
 
-    def fc_complete(self, result):
-        self._project.is_forecast_history.add(result)
-        self._transition_to_state(EngineState.READY)
-        self.forecast_complete.emit()
+    def fc_stage_complete(self, stage):
+        if stage.stage_id == 'is_forecast_stage':
+            self._logger.info('IS forecast stage completed')
+            self._project.is_forecast_history.add(stage.results)
+        elif stage.stage_id == 'psha_stage':
+            self._logger.info('PSHA stage completed')
+        elif stage.stage_id == 'risk_poe_stage':
+            self._logger.info('Risk PoE stage completed')
+            self._transition_to_state(EngineState.READY)
+            self.forecast_complete.emit()
+        else:
+            raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
