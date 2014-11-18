@@ -10,21 +10,22 @@ control facilities should be hooked up in the Atls class instead.
 
 import logging
 from datetime import timedelta
+import os
 
 from PyQt4 import QtCore
 
-from project.store import Store
-from project.atlsproject import AtlsProject
-from domainmodel.datamodel import DataModel
+from data.project.store import Store
+from data.project.atlsproject import AtlsProject
+from data.ormbase import OrmBase
 from simulator import Simulator, SimulatorState
-from engine import Engine
-import ishamodelcontrol as mc
+from core.engine import Engine
+import core.ismodelcontrol as mc
 
-import os
+
 #from tools import Profiler
 
 
-class AtlsCore(QtCore.QObject):
+class Controller(QtCore.QObject):
     """
     Top level class for ATLS i.s.
 
@@ -45,7 +46,7 @@ class AtlsCore(QtCore.QObject):
         :type settings: AppSettings
 
         """
-        super(AtlsCore, self).__init__()
+        super(Controller, self).__init__()
         self._settings = settings
         self.project = None
         self.engine = Engine(settings)
@@ -78,7 +79,7 @@ class AtlsCore(QtCore.QObject):
         store_path = 'sqlite:///' + path
         self._logger.info('Loading project at ' + path +
                           ' - This might take a while...')
-        store = Store(store_path, DataModel)
+        store = Store(store_path, OrmBase)
         self.project = AtlsProject(store)
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
@@ -97,7 +98,7 @@ class AtlsCore(QtCore.QObject):
             os.remove(path)
         store_path = 'sqlite:///' + path
         self._logger.info('Creating project at ' + path)
-        store = Store(store_path, DataModel)
+        store = Store(store_path, OrmBase)
         store.commit()
         store.close()
         self.open_project(path)
@@ -152,7 +153,7 @@ class AtlsCore(QtCore.QObject):
         time_range = self._simulation_time_range()
         inf_speed = self._settings.value('lab_mode/infinite_speed', type=bool)
         if inf_speed:
-            dt_h = self._settings.value('engine/fc_interval', type=float)
+            dt_h = self._settings.value('core/fc_interval', type=float)
             dt = timedelta(hours=dt_h)
             step_signal = self.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)

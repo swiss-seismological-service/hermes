@@ -4,12 +4,13 @@ History of seismic events
 
 """
 
-from eventhistory import EventHistory
-from eventimporter import EventImporter
-from domainmodel.seismicevent import SeismicEvent
-from geometry import Point
 import logging
 import traceback
+
+from data.project.eventhistory import EventHistory
+from eventimporter import EventImporter
+from data.seismicevent import SeismicEvent
+from data.geometry import Point
 
 
 class SeismicEventHistory(EventHistory):

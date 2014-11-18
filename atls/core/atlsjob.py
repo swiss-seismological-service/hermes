@@ -10,7 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from job import Job, Stage
 
-from isha.common import ModelInput
+from ismodels.common import ModelInput
 from isforecaster import ISForecaster
 
 

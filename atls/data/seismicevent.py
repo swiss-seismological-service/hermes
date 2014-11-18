@@ -5,11 +5,12 @@ Provides SeismicEvent, a class to represent a seismic event
 """
 
 from sqlalchemy import Column, Integer, Float, DateTime
-from datamodel import DataModel
-from geometry import Point
+
+from ormbase import OrmBase
+from data.geometry import Point
 
 
-class SeismicEvent(DataModel):
+class SeismicEvent(OrmBase):
     """Represents a seismic event
 
     :ivar date_time: Date and time when the event occurred

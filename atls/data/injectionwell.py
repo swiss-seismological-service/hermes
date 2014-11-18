@@ -8,11 +8,10 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 
 from sqlalchemy import Column, Integer, Float, DateTime
-from datamodel import DataModel
+from ormbase import OrmBase
 
 
-
-class InjectionWell(DataModel):
+class InjectionWell(OrmBase):
     """
     Injection well information
 

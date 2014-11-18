@@ -5,10 +5,10 @@ Provides HydraulicEvent, a class to represent hydraulic events
 """
 
 from sqlalchemy import Column, Integer, Float, DateTime
-from datamodel import DataModel
+from ormbase import OrmBase
 
 
-class HydraulicEvent(DataModel):
+class HydraulicEvent(OrmBase):
     """Represents a hydraulic event (change in fluxrate or pressure)
 
     :ivar date_time: Date and time when the event occurred

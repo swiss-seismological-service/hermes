@@ -13,7 +13,7 @@ from datetime import datetime
 from mock import patch, MagicMock
 from PyQt4 import QtCore
 
-from project.atlsproject import AtlsProject
+from data.project.atlsproject import AtlsProject
 
 
 Event = namedtuple('Event', 'date_time')

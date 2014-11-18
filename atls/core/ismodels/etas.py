@@ -34,9 +34,11 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from common import Model, ModelOutput, ModelResult
-import numpy as np
 from datetime import timedelta
+
+import numpy as np
+
+from core.ismodels.common import Model, ModelOutput, ModelResult
 
 
 class Etas(Model):

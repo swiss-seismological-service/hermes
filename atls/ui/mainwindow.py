@@ -16,7 +16,7 @@ from settingswindow import SettingsWindow
 from eventimporter import EventImporter
 import atlsuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
-from engine import EngineState
+from core.engine import EngineState
 from simulator import SimulatorState
 from ui.views.plots import DisplayRange, Event3DViewWidget
 import numpy as np
@@ -42,7 +42,7 @@ class MainWindow(QtGui.QMainWindow):
         # Project time as displayed in status bar
         self.displayed_project_time = datetime.now()
 
-        # Keep a reference to the engine (business logic) and the currently
+        # Keep a reference to the core (business logic) and the currently
         # loaded project
         self.atls_core = atls.atls_core
         self.settings = atls.app_settings
@@ -78,7 +78,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.stopButton.clicked.connect(self.action_stop_simulation)
         self.ui.pauseButton.clicked.connect(self.action_pause_simulation)
 
-        # Hook up essential signals from the core and the forecast engine
+        # Hook up essential signals from the core and the forecast core
         atls.app_launched.connect(self.on_app_launch)
         self.atls_core.engine.state_changed.connect(self.on_engine_state_change)
         self.atls_core.simulator.state_changed.connect(self.on_sim_state_change)

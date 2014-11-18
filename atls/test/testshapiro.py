@@ -9,17 +9,17 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
-from PyQt4 import QtCore
 from datetime import datetime, timedelta
-from domainmodel.seismicevent import SeismicEvent
-from domainmodel.hydraulicevent import HydraulicEvent
-from domainmodel.injectionwell import InjectionWell
-from geometry import Point
-from isha.shapiro import Shapiro
-from isha.common import ModelInput
 
-from ctypes import *
-from os.path import join
+from PyQt4 import QtCore
+
+from data.seismicevent import SeismicEvent
+from data.hydraulicevent import HydraulicEvent
+from data.injectionwell import InjectionWell
+from data.geometry import Point
+from ismodels.shapiro import Shapiro
+from core.ismodels.common import ModelInput
+
 
 class ShapiroTest(unittest.TestCase):
 

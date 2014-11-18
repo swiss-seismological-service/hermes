@@ -6,10 +6,12 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from common import Model, ModelOutput, ModelResult
-import pymatlab
 import os
+
+import pymatlab
 import numpy as np
+
+from core.ismodels.common import Model, ModelOutput, ModelResult
 
 
 class Shapiro(Model):
@@ -20,7 +22,7 @@ class Shapiro(Model):
 
     _MATLAB_ERROR_MSG = 'The Shapiro model encountered an error in the ' \
                         'Matlab code. The model inputs that led to the error '\
-                        'have been saved to isha/model_inputs.mat. To debug ' \
+                        'have been saved to ismodels/model_inputs.mat. To debug ' \
                         'the model load model_inputs.mat file in matlab and ' \
                         'execute shapiro_wrapper.m'
     'directly.'

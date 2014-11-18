@@ -7,9 +7,11 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
-from datetime import datetime, timedelta
-from domainmodel.seismicevent import SeismicEvent
-from geometry import Point
+from datetime import datetime
+
+from data.seismicevent import SeismicEvent
+from data.geometry import Point
+
 
 class BasicOperation(unittest.TestCase):
     """ Test basic operation """

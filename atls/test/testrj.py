@@ -9,12 +9,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
-from PyQt4 import QtCore
 from datetime import datetime, timedelta
-from domainmodel.seismicevent import SeismicEvent
-from geometry import Point
-from isha.rj import Rj
-from isha.common import ModelInput
+
+from PyQt4 import QtCore
+
+from data.seismicevent import SeismicEvent
+from data.geometry import Point
+from ismodels.rj import Rj
+from core.ismodels.common import ModelInput
 
 
 class TestRj(unittest.TestCase):

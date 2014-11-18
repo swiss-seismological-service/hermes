@@ -11,9 +11,11 @@ import sys
 import os
 import logging
 import signal
+
 from PyQt4 import QtGui, QtCore
+
 from ui.mainwindow import MainWindow
-from atlscore import AtlsCore
+from core.controller import Controller
 from atlssettings import AppSettings
 
 
@@ -65,7 +67,7 @@ class Atls(QtCore.QObject):
             # reenable Ctrl-C
             signal.signal(signal.SIGINT, signal.SIG_DFL)
         # Launch core
-        self.atls_core = AtlsCore(settings=self.app_settings)
+        self.atls_core = Controller(settings=self.app_settings)
         if self.has_gui:
             self.main_window = MainWindow(self)
         self.app_launched.connect(self.on_app_launched)

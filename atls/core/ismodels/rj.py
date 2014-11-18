@@ -7,9 +7,9 @@ in California", Science 243, 1173-1176
     
 """
 
-from common import Model, ModelOutput, ModelResult
 import numpy as np
-import logging
+
+from core.ismodels.common import Model, ModelOutput, ModelResult
 
 
 class Rj(Model):

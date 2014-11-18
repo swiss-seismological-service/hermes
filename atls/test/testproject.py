@@ -11,7 +11,7 @@ import unittest
 from PyQt4 import QtCore
 from mock import MagicMock
 
-from project.project import Project
+from data.project.project import Project
 
 
 class ProjectTest(unittest.TestCase):

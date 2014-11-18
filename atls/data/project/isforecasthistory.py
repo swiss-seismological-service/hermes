@@ -9,8 +9,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 
-from eventhistory import EventHistory
-from domainmodel.isforecastresult import ISForecastResult
+from data.project.eventhistory import EventHistory
+from data.isforecastresult import ISForecastResult
 
 
 class ISForecastHistory(EventHistory):

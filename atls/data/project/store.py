@@ -24,14 +24,14 @@ class Store:
     be created explicitly by calling init_read_cache(entity) where
     entity is the class for which reading should be cached.
 
-    :ivar engine: sqlalchemy Engine that manages connections to the db
+    :ivar core: sqlalchemy Engine that manages connections to the db
 
     """
 
     def __init__(self, store_url, model):
         """
         :param store_url: Database url
-        :param model: sqlalchemy data domainmodel (declarative base)
+        :param model: sqlalchemy data data (declarative base)
 
         """
         self.engine = create_engine(store_url, echo=False)
@@ -75,7 +75,7 @@ class Store:
         objects must be of the same type (class).
 
         :param objects: A list of objects
-        :type objects: List of domainmodel derived objects
+        :type objects: List of data derived objects
 
         """
         for i, o in enumerate(objects):
@@ -144,7 +144,7 @@ class Store:
         provided by the caller
 
         :param entity: object entity (class) to read
-        :type entity: domainmodel derived class
+        :type entity: data derived class
         :param predicate: sqlalchemy filter predicate
         :type predicate: sqlalchemy filter predicate
         :param order: Attribute to order objects by
@@ -189,7 +189,7 @@ class Store:
         predicate provided by the caller
 
         :param entity: object entity (class) to read
-        :type entity: domainmodel derived class
+        :type entity: data derived class
         :param predicate: sqlalchemy filter predicate
         :type predicate: sqlalchemy filter predicate
         :rtype: integer

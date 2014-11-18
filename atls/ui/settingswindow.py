@@ -30,12 +30,12 @@ class SettingsWindow(QtGui.QDialog):
             # General settings
             'open_last_project':            self.ui.openLastProjectOnStartup,
             'enable_lab_mode':              self.ui.enableLabModeCheckBox,
-            # Forecast engine settings
-            'engine/write_results_to_disk': self.ui.writeResultsToFileCheckBox,
-            'engine/fc_interval':           self.ui.forecastIntervalBox,
-            'engine/fc_bin_size':           self.ui.forecastBinTimeBox,
-            'engine/rt_interval':           self.ui.rateIntervalBox,
-            'engine/num_fc_bins':           self.ui.forecastBinNoBox,
+            # Forecast core settings
+            'core/write_results_to_disk': self.ui.writeResultsToFileCheckBox,
+            'core/fc_interval':           self.ui.forecastIntervalBox,
+            'core/fc_bin_size':           self.ui.forecastBinTimeBox,
+            'core/rt_interval':           self.ui.rateIntervalBox,
+            'core/num_fc_bins':           self.ui.forecastBinNoBox,
             # Lab mode settings
             'lab_mode/infinite_speed':      self.ui.simulateAFAPRadioButton,
             'lab_mode/speed':               self.ui.speedBox,

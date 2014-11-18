@@ -6,13 +6,15 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-import project
-from PyQt4 import QtCore
 from datetime import datetime
+
+from PyQt4 import QtCore
+
+import project
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
-from isforecasthistory import ISForecastHistory
-from domainmodel.injectionwell import InjectionWell
+from data.project.isforecasthistory import ISForecastHistory
+from data.injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
 

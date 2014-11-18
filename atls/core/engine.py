@@ -1,19 +1,23 @@
 # -*- encoding: utf-8 -*-
 """
-The engine handles time dependent tasks on the project.
+The core handles time dependent tasks on the project.
 
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-
-from project.atlsproject import AtlsProject
-from taskscheduler import TaskScheduler, ScheduledTask
-from atlsjob import ForecastJob
-from PyQt4 import QtCore
 from datetime import timedelta
 from collections import namedtuple
 import logging
+
+from PyQt4 import QtCore
+
+from data.project.atlsproject import AtlsProject
+from scheduler.taskscheduler import TaskScheduler, ScheduledTask
+from atlsjob import ForecastJob
+
+
+
 
 
 # Used internally to pass information to repeating tasks
@@ -23,9 +27,9 @@ TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
 
 class EngineState:
     """
-    The engine state switches from inactive to ready as soon as project is
-    associated with the engine.
-    The busy states indicates that the engine is currently running a forecast
+    The core state switches from inactive to ready as soon as project is
+    associated with the core.
+    The busy states indicates that the core is currently running a forecast
     and is thus not ready for another one.
 
     """
@@ -36,7 +40,7 @@ class EngineState:
 
 class Engine(QtCore.QObject):
     """
-    An engine is closely linked to the project and handles all time dependent
+    An core is closely linked to the project and handles all time dependent
     tasks on the project such as forecast scheduling, regular rate computations
     etc. It owns a scheduler where it queues tasks and it reacts to the
     project_time_change signal from its associated project.
@@ -82,7 +86,7 @@ class Engine(QtCore.QObject):
 
     def reset(self, t0):
         """
-        Reset engine and all schedulers to t0
+        Reset core and all schedulers to t0
 
         """
         self._scheduler.reset_schedule(t0)
@@ -127,7 +131,7 @@ class Engine(QtCore.QObject):
         scheduler = TaskScheduler()
 
         # Forecasting Task
-        dt = self._settings.value('engine/fc_interval', type=float)
+        dt = self._settings.value('core/fc_interval', type=float)
         forecast_task = ScheduledTask(task_function=self.run_forecast,
                                       dt=timedelta(hours=dt),
                                       name='Forecast')
@@ -135,7 +139,7 @@ class Engine(QtCore.QObject):
         self._forecast_task = forecast_task  # keep a reference for later
 
         # Rate computations
-        dt = self._settings.value('engine/rt_interval', type=float)
+        dt = self._settings.value('core/rt_interval', type=float)
         rate_update_task = ScheduledTask(task_function=self.update_rates,
                                          dt=timedelta(minutes=dt),
                                          name='Rate update')
@@ -149,10 +153,10 @@ class Engine(QtCore.QObject):
         assert(self.state != EngineState.INACTIVE)
         t_run = task_run_info.t_project
 
-        # Skip this forecast if the engine is busy
+        # Skip this forecast if the core is busy
         if self.state == EngineState.BUSY:
             self._logger.warning('Attempted to initiate forecast while the '
-                                 'engine is still busy with a previously'
+                                 'core is still busy with a previously'
                                  'started forecast. Skipping at '
                                  't=' + str(t_run))
             return
@@ -162,7 +166,7 @@ class Engine(QtCore.QObject):
 
         job_input = {
             't_run': t_run,
-            'dt_h': self._settings.value('engine/fc_bin_size', type=float),
+            'dt_h': self._settings.value('core/fc_bin_size', type=float),
             'project': self._project
         }
         job = ForecastJob()

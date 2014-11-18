@@ -7,10 +7,12 @@ See ISForecaster class documentation for details.
 """
 
 import logging
-from isha.common import ModelInput, ModelOutput
-from domainmodel.isforecastresult import ISForecastResult, ISModelResult
-import ishamodelcontrol as mc
+
 from PyQt4 import QtCore
+
+import ismodelcontrol as mc
+from ismodels.common import ModelInput
+from data.isforecastresult import ISForecastResult, ISModelResult
 
 
 class ISForecastState:

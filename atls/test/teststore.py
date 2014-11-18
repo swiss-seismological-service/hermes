@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
-from project.store import Store
+from data.project.store import Store
 
 
 DB_FILE = 'test.sqlite'

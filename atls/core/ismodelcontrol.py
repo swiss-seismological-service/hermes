@@ -8,13 +8,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
+import logging
+
 from PyQt4 import QtCore
 
-from isha.common import Model
-from isha.rj import Rj
-from isha.etas import Etas
-from isha.shapiro import Shapiro
-import logging
+from ismodels.common import Model
+from ismodels.rj import Rj
+from ismodels.etas import Etas
+from ismodels.shapiro import Shapiro
 
 active_models = []
 _detached_runners = []

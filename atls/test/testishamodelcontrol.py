@@ -10,13 +10,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import unittest
 from datetime import datetime
+from time import sleep
+
 from PyQt4 import QtCore
 from mock import MagicMock, call
-from ishamodelcontrol import DetachedRunner
-from isha.common import ModelInput, Model, ModelState
 
+from core.ismodelcontrol import DetachedRunner
+from core.ismodels.common import ModelInput, Model, ModelState
 
-from time import sleep
 
 class MockIshaModel(Model):
     """

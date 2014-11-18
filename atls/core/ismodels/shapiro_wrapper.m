@@ -10,7 +10,7 @@
 
 
 % Add the path to the model code
-addpath(fullfile('..', 'external', 'shapiro_spatial'))
+addpath(fullfile('..', '..', 'external', 'shapiro_spatial'))
 
 % Initialize
 forecast_success = false;

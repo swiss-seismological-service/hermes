@@ -9,16 +9,34 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import logging
+
 from sqlalchemy import Column, Integer, Float, DateTime, Boolean, String, \
-    Interval, ForeignKey
+    ForeignKey
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm import relationship, backref
-from isha.common import ModelOutput, ModelResult
-from datamodel import DataModel
-from modelvalidation import log_likelihood
+
+from core.ismodels.common import ModelOutput, ModelResult
+from ormbase import OrmBase
 
 
-class ISForecastResult(DataModel):
+def log_likelihood(forecast, observation):
+    """
+    Compute the log likelihood of an observed rate given a forecast
+
+    The forecast value is interpreted as expected value of a poisson
+    distribution. The function expects scalars or numpy arrays as input. In the
+    latter case it computes the LL for each element.
+
+    :param forecast: forecast rate
+    :param observations: observed rate
+    :return: log likelihood for each element of the input
+
+    """
+    LL = -forecast + observation * log(forecast) - log(factorial(observation))
+    return LL
+
+
+class ISForecastResult(OrmBase):
     """
     Results of one IS forecast run
 
@@ -53,7 +71,7 @@ class ISForecastResult(DataModel):
         self._reviewed = True
 
 
-class ISModelResult(DataModel):
+class ISModelResult(OrmBase):
     """
     Output resulting from IS forecast run for one specific IS model. The output
     either contains a result or a reason why no result is available.
@@ -161,7 +179,7 @@ class ISModelResult(DataModel):
                                                 self.result.score.LL))
 
 
-class ISResult(DataModel):
+class ISResult(OrmBase):
     """ Result container for a single forecast """
 
     # ORM declarations

@@ -9,13 +9,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import logging
 from datetime import datetime, timedelta
 import time
-import ishamodelcontrol as mc
+
 from PyQt4 import QtGui
-from views.ui_forecastwindow import Ui_ForecastWindow
-from domainmodel.isforecastresult import ISModelResult
-from eqstats import SeismicRateHistory
 import numpy as np
 
+from core import ismodelcontrol as mc
+from views.ui_forecastwindow import Ui_ForecastWindow
+from data.isforecastresult import ISModelResult
+from eqstats import SeismicRateHistory
 from ui.views.plots import DisplayRange
 
 

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import Column, Float, DateTime
 from mock import Mock, MagicMock
 
-from project.eventhistory import EventHistory
+from data.project.eventhistory import EventHistory
 
 
 NUM_TEST_EVENTS = 10

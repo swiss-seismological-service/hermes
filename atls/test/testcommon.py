@@ -7,8 +7,10 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
-import isha.common as common
 from datetime import datetime
+
+import core.ismodels.common as common
+
 
 class MockSeismicEvent:
     data_attrs = ['magnitude', 'date_time']
