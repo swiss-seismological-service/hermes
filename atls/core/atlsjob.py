@@ -78,8 +78,8 @@ class PshaStage(Stage):
             source_params[model_name] = [a, b, w]
         oq.run_hazard(source_params, callback=self.psha_complete)
 
-    def psha_complete(self, job_id, success):
-        self.results = None
+    def psha_complete(self, results):
+        self.results = results
         self.stage_complete()
 
 
@@ -93,7 +93,12 @@ class RiskPoeStage(Stage):
 
     def stage_fun(self):
         self._logger.info('Invoking risk PoE stage.')
-        self.results = None
+
+        psha_job_id = self.inputs['job_id']
+        oq.run_risk_poe(psha_job_id, callback=self.risk_poe_complete)
+
+    def risk_poe_complete(self, results):
+        self.results = results
         self.stage_complete()
 
 
