@@ -9,6 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import logging
+from math import log, factorial
 
 from sqlalchemy import Column, Integer, Float, DateTime, Boolean, String, \
     ForeignKey
@@ -32,13 +33,22 @@ def log_likelihood(forecast, observation):
     :return: log likelihood for each element of the input
 
     """
-    LL = -forecast + observation * log(forecast) - log(factorial(observation))
-    return LL
+    ll = -forecast + observation * log(forecast) - log(factorial(observation))
+    return ll
 
 
 class ISForecastResult(OrmBase):
     """
     Results of one IS forecast run
+
+    ISForecastResult holds the results from individual IS forecast models in
+    *model_results*. The member *model_results* is a dict of the form
+
+    model_results = {
+        'etas': model_result,
+        'rj': model_result,
+        ...
+    }
 
     """
 
@@ -145,11 +155,11 @@ class ISModelResult(OrmBase):
         Computes the cumulative result from the individual spatial results.
 
         """
-        rate = reduce(lambda x, y: x+y,
-                      [r.review for r in self.vol_results])
-        prob = reduce(lambda x, y: x+y,
-                      [r.prob for r in self.vol_results])
-        self.cum_result = ISResult(rate, prob)
+        rate = sum(r.rate for r in self.vol_results)
+        # FIXME: averaging the b_val is most likely completely wrong
+        b_val = sum(r.b_val for r in self.vol_results) / len(self.vol_results)
+        prob = sum(r.prob for r in self.vol_results)
+        self.cum_result = ISResult(rate, b_val, prob)
 
     def review(self, observations):
         """
@@ -186,6 +196,7 @@ class ISResult(OrmBase):
     __tablename__ = 'isresult'
     id = Column(Integer, primary_key=True)
     rate = Column(Float)
+    b_val = Column(Float)
     prob = Column(Float)
     score = Column(Float)
 
@@ -196,9 +207,10 @@ class ISResult(OrmBase):
                                 backref=backref('vol_results',
                                                 cascade="all, delete-orphan"))
 
-    def __init__(self, rate, prob):
+    def __init__(self, rate, b_val, prob):
         self.prob = prob
         self.rate = rate
+        self.b_val = b_val
         self.score = None
 
     @classmethod
@@ -210,4 +222,4 @@ class ISResult(OrmBase):
         :type result: ModelResult
 
         """
-        return cls(result.rate, result.prob)
+        return cls(result.rate, result.b_val, result.prob)

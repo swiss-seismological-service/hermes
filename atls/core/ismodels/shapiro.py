@@ -75,10 +75,11 @@ class Shapiro(Model):
         output = ModelOutput(t_run=t_run, dt=dt, model=self)
         if success:
             rate = float(self._session.getvalue('forecast_numev'))
+            b_val = float(self._session.getvalue('forecast_bval'))
             vol_rates = self._session.getvalue('forecast_vol_rates')
-             # TODO: set prob correctly
-            output.cum_result = ModelResult(rate=rate, prob=0)
-            output.vol_results = [ModelResult(r, 0) for r in vol_rates]
+             # TODO: set prob correctly (and the b_vals on vol_results)
+            output.cum_result = ModelResult(rate=rate, b_val=b_val, prob=0)
+            output.vol_results = [ModelResult(r, 0, 0) for r in vol_rates]
             self._logger.info('number of events: ' + str(rate) +
                               ' voxel max: ' + str(np.amax(vol_rates)))
         else:

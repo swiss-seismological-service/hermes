@@ -10,6 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from PyQt4 import QtCore
 from datetime import datetime
 from datetime import timedelta
+from functools import wraps
 import logging
 
 
@@ -127,14 +128,16 @@ class ModelInput(object):
 
 class ModelResult(object):
     """ Result container for a single forecast """
-    def __init__(self, rate, prob):
+    def __init__(self, rate, b_val, prob):
         """
         :param rate: forecast rate
+        :param b_val: gutenberg-richter b value
         :param prob: forecast probability of one or more events occurring
 
         """
         # TODO: add region (voxel boundaries) (#15)
         self.rate = rate
+        self.b_val = b_val
         self.prob = prob
 
 
@@ -214,9 +217,10 @@ class Model(QtCore.QObject):
 
     def run(self):
         """
-        Invoked when the model should perform a run. This method takes care of
-        state changes and emitting signals as required. The actual model code
-        is run from _do_run.
+        Wraps _do_run which is implemented by concrete subclasses
+
+        The wrapper takes care of state changes and emitting signals as
+        required.
 
         """
         self._logger.info('<{}> {} model run initiated'
@@ -228,14 +232,10 @@ class Model(QtCore.QObject):
 
     def _do_run(self):
         """
-        Abstract method to run the actual model code.
-
-        You should Override this function in a subclass and return the results
-        for the run in model output if successful. If the model produces no
-        results for a particular run, return a resultless output.
+        Does the actual work. Must be implemented by children.
 
         """
-        pass
+        raise NotImplementedError('Children must provide _do_run')
 
     # Some helper functions
 

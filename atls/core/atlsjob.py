@@ -12,6 +12,8 @@ from job import Job, Stage
 
 from ismodels.common import ModelInput
 from isforecaster import ISForecaster
+from data.isforecastresult import ISResult
+from oq import controller as oq
 
 
 class ISForecastStage(Stage):
@@ -61,6 +63,22 @@ class PshaStage(Stage):
 
     def stage_fun(self):
         self._logger.info('Invoking PSHA stage.')
+        source_params = {}
+        model_results = self.inputs.model_results.items()
+        for i, (model_name, result) in enumerate(model_results, start=1):
+            a = result.cum_result.rate
+            b = result.cum_result.b_val
+            # FIXME: use the scores from the latest IS model assessment
+            # make sure the sum of all weights is exactly 1.0 (this is an
+            # openquake requirement)
+            if i < len(model_results):
+                w = round(1.0 / len(model_results), 2)
+            else:
+                w = 1.0 - sum(p[2] for p in source_params.values())
+            source_params[model_name] = [a, b, w]
+        oq.run_hazard(source_params, callback=self.psha_complete)
+
+    def psha_complete(self, job_id, success):
         self.results = None
         self.stage_complete()
 

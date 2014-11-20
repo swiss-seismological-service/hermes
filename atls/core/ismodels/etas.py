@@ -134,7 +134,10 @@ class Etas(Model):
 
         # Finish up
         # FIXME: we're only supporting a single forecast now, remove list stuff
-        forecast = ModelResult(rate=forecast_rates[0], prob=probabilities[0])
+        # FIXME: that b_val is just made up
+        # FIXME: the rates are off by a factor of ~10^3 too :)
+        forecast = ModelResult(rate=forecast_rates[0] / 1000.0, b_val=1.5,
+                               prob=probabilities[0])
         output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin,
                              model=self)
         output.cum_result = forecast

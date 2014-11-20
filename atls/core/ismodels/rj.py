@@ -80,6 +80,7 @@ class Rj(Model):
         m_all = np.array([e.magnitude for e in events])
 
         # Compute rate for each forecast time interval
+        # TODO: not sure if we have to compute m_bins individually
         forecast_rates = np.zeros(num_t)
         for t, i in zip(forecast_times, range(0, num_t)):
             # Convert event times to relative hours
@@ -111,7 +112,8 @@ class Rj(Model):
 
         # Finish up
         # FIXME: we're only supporting a single forecast now, remove list stuff
-        forecast = ModelResult(rate=forecast_rates[0], prob=probabilities[0])
+        forecast = ModelResult(rate=forecast_rates[0], b_val=b,
+                               prob=probabilities[0])
         output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin,
                              model=self)
         output.cum_result = forecast

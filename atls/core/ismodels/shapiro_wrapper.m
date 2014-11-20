@@ -80,6 +80,7 @@ forecast = forecastShapiroSpatial(catalogLP, hydroLP, fcParams, grid)
 %% Unpack the results for reding back in ATLS
 forecast_success = true;
 forecast_numev = forecast.NUMEV;
+forecast_bval = forecast.BVALUE;
 forecast_vol_rates = forecast.SumVolPdfWtExpNorm
 %forecast_vol_rates = forecast.SumVolPdfWtSSNorm
 %forecast_vol_rates = forecast.SumVolPdfWtH1Norm
