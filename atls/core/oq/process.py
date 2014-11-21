@@ -78,23 +78,21 @@ def run_job(queue, job_input):
         t0 = time.time()
         queue.put('Running job #{}.'.format(job.id))
         oe.run_calc(job, inputs['oq_log_level'], inputs['oq_log_file'],
-                    inputs['oq_exports'], 'hazard' if hazard else 'risk')
+                    inputs['oq_exports'])
         duration = time.time() - t0
         if hazard:
-            job_id = job.id
             job_type = 'hazard'
         else:
-            job_id = job.risk_calculation.id
             job_type = 'risk'
 
         if job.status == 'complete':
             queue.put('OQ {} calculation #{} completed in {}s.'
-                      .format(job_type, job_id, duration))
+                      .format(job_type, job.id, duration))
             result['success'] = True
         else:
-            queue.put('OQ {} calculation #{} failed.'.format(job_type, job_id))
+            queue.put('OQ {} calculation #{} failed.'.format(job_type, job.id))
             result['success'] = False
-        result['job_id'] = job_id
+        result['job_id'] = job.id
         queue.put(result)
 
 

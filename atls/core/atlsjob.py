@@ -13,7 +13,7 @@ from job import Job, Stage
 from ismodels.common import ModelInput
 from isforecaster import ISForecaster
 from data.isforecastresult import ISResult
-from oq import controller as oq
+from oq.controller import controller as oq
 
 
 class ISForecastStage(Stage):
