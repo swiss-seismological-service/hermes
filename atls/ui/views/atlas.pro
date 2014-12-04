@@ -18,7 +18,9 @@ HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui \
     forecastwindow.ui \
-    settingswindow.ui
+    settingswindow.ui \
+    ../forecastswindow.ui \
+    forecastswindow.ui
 
 OTHER_FILES +=
 

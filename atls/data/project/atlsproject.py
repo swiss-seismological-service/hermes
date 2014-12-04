@@ -13,7 +13,7 @@ from PyQt4 import QtCore
 import project
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
-from data.project.isforecasthistory import ISForecastHistory
+from data.project.forecasthistory import ForecastHistory
 from data.injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
@@ -43,7 +43,7 @@ class AtlsProject(project.Project):
         self.hydraulic_history = HydraulicEventHistory(self._store)
         self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
-        self.is_forecast_history = ISForecastHistory(self._store)
+        self.forecast_history = ForecastHistory(self._store)
 
         # These inform us when new IS forecasts become available
 

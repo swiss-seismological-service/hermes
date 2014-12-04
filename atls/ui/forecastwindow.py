@@ -54,7 +54,7 @@ class ForecastWindow(QtGui.QDialog):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
-        project.is_forecast_history.history_changed.connect(
+        project.forecast_history.history_changed.connect(
             self.on_forecast_history_change)
         project.rate_history.history_changed.connect(
             self.on_rate_history_change)
@@ -73,11 +73,13 @@ class ForecastWindow(QtGui.QDialog):
             return
         idx = self.ui.modelSelectorComboBox.currentIndex()
         model_name = mc.active_models[idx].title
-        forecast_history = self.atls_core.project.is_forecast_history
-        if len(forecast_history) == 0:
+        forecast_history = self.atls_core.project.forecast_history
+        is_forecasts = [fcr.is_forecast_result for fcr in forecast_history
+                        if fcr.is_forecast_result is not None]
+        if len(is_forecasts) == 0:
             mr = None
         else:
-            mr = [r.model_results.get(model_name) for r in forecast_history]
+            mr = [r.model_results.get(model_name) for r in is_forecasts]
             mr.sort(key=lambda x: x.t_run)
             if len(mr) == 0:
                 mr = None

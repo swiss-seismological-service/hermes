@@ -11,7 +11,7 @@ import logging
 from PyQt4 import QtGui
 
 from views.ui_mainwindow import Ui_MainWindow
-from forecastwindow import ForecastWindow
+from forecastswindow import ForecastsWindow
 from settingswindow import SettingsWindow
 from eventimporter import EventImporter
 import atlsuihelpers as helpers
@@ -251,8 +251,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_show_forecasts(self):
         if self.forecast_window is None:
-            self.forecast_window = ForecastWindow(atls_core=self.atls_core,
-                                                  parent=self)
+            self.forecast_window = ForecastsWindow(atls_core=self.atls_core,
+                                                   parent=self)
         self.forecast_window.show()
 
     def action_show_3d(self):

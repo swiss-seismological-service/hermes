@@ -13,11 +13,9 @@ import logging
 from PyQt4 import QtCore
 
 from data.project.atlsproject import AtlsProject
+from data.forecastresult import ForecastResult
 from scheduler.taskscheduler import TaskScheduler, ScheduledTask
 from atlsjob import ForecastJob
-
-
-
 
 
 # Used internally to pass information to repeating tasks
@@ -67,6 +65,7 @@ class Engine(QtCore.QObject):
         self._forecast_task = None
         self._state = EngineState.INACTIVE
         self._current_fc_job = None  # Currently active forecast job
+        self._current_fc_result = None
         self._scheduler = self._create_task_scheduler()
         self._logger = logging.getLogger(__name__)
 
@@ -172,6 +171,8 @@ class Engine(QtCore.QObject):
         job = ForecastJob()
         job.stage_completed.connect(self.fc_stage_complete)
         self._current_fc_job = job
+        self._current_fc_result = ForecastResult(t_run)
+        self._project.forecast_history.add(self._current_fc_result)
         self._transition_to_state(EngineState.BUSY)
         self._current_fc_job.run(job_input)
 
@@ -193,7 +194,7 @@ class Engine(QtCore.QObject):
     def fc_stage_complete(self, stage):
         if stage.stage_id == 'is_forecast_stage':
             self._logger.info('IS forecast stage completed')
-            self._project.is_forecast_history.add(stage.results)
+            self._current_fc_result.is_forecast_result = stage.results
         elif stage.stage_id == 'psha_stage':
             self._logger.info('PSHA stage completed')
         elif stage.stage_id == 'risk_poe_stage':
@@ -202,3 +203,4 @@ class Engine(QtCore.QObject):
             self.forecast_complete.emit()
         else:
             raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
+        self._current_fc_result.result_changed.emit(self._current_fc_result)

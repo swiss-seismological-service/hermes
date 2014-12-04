@@ -148,7 +148,7 @@ class Controller(QtCore.QObject):
 
         """
         self._logger.info('Deleting any forecasting results from previous runs')
-        self.project.is_forecast_history.clear()
+        self.project.forecast_history.clear()
         # Reset task scheduler based on the first simulation step time
         time_range = self._simulation_time_range()
         inf_speed = self._settings.value('lab_mode/infinite_speed', type=bool)
