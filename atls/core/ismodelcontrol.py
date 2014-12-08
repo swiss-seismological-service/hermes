@@ -34,7 +34,7 @@ def load_models(model_ids):
 
     # Reasenberg Jones
     if load_all or 'rj' in model_ids:
-        rj_model = Rj(a=-1.6, b=1.0, p=1.2, c=0.05)
+        rj_model = Rj(a=-1.6, b=1.58, p=1.2, c=0.05)
         rj_model.title = 'Reasenberg-Jones'
         active_models.append(rj_model)
 
