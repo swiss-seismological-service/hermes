@@ -8,7 +8,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, inspect, orm
 from sqlalchemy.orm import relationship, backref
 
 from ormbase import OrmBase
@@ -54,6 +54,21 @@ class ForecastResult(OrmBase):
         """
         self.t_run = t_run
         self._mediator = _Mediator()
+
+    @orm.reconstructor
+    def _init_on_load(self):
+        self._mediator = _Mediator()
+
+    def commit_changes(self):
+        """
+        Emit the changed signal and persist changes to the database if we
+        are within a session
+
+        """
+        session = inspect(self).session
+        if session:
+            session.commit()
+        self.result_changed.emit(self)
 
     @property
     def result_changed(self):

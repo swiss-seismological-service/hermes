@@ -12,8 +12,10 @@ from datetime import datetime, timedelta
 import time
 
 from PyQt4 import QtGui, uic
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QThread
 import numpy as np
+
+from openquake.engine.db import models as oq_models
 
 from core import ismodelcontrol as mc
 from data.isforecastresult import ISModelResult
@@ -24,9 +26,12 @@ ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'forecastswindow.ui')
 Ui_ForecastsWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
 
-class IsTabPresenter():
+
+class TabPresenter(object):
     """
-    Handles the Induced Seismicity tabs content
+    Handles a tabs content
+
+    This is an abstract class
 
     """
     def __init__(self, ui):
@@ -39,17 +44,12 @@ class IsTabPresenter():
         self.presented_forecast = None
         self.logger = logging.getLogger(__name__)
 
-        # Populate the models chooser combo box
-        self.ui.modelSelectorComboBox.currentIndexChanged.connect(
-            self.action_model_selection_changed)
-        for model in mc.active_models:
-            self.ui.modelSelectorComboBox.addItem(model.title)
-
     def present_forecast_result(self, result):
         """
         Set the forecast result that is to be displayed
 
-        Extracts the IS part of the forecast result and presents it.
+        We also listen to changes to the currently displayed result to update
+        the tabs content accordingly
 
         :param result: forecast result
         :type result: ForecastResult or None
@@ -63,15 +63,38 @@ class IsTabPresenter():
         self.refresh()
 
     def refresh(self):
+        raise NotImplementedError("Please Implement this method")
+
+    def _on_change(self):
+        self.refresh()
+
+
+class IsTabPresenter(TabPresenter):
+    """
+    Handles the Induced Seismicity tabs content
+
+    """
+    def __init__(self, ui):
+        """
+        :param ui: reference to the Qt UI
+        :type ui: Ui_ForecastsWindow
+
+        """
+        super(IsTabPresenter, self).__init__(ui)
+
+        # Populate the models chooser combo box
+        self.ui.modelSelectorComboBox.currentIndexChanged.connect(
+            self.action_model_selection_changed)
+        for model in mc.active_models:
+            self.ui.modelSelectorComboBox.addItem(model.title)
+
+    def refresh(self):
         """
         Refresh everything
 
         """
         model_result = self._get_selected_model_result(self.presented_forecast)
         self._present_model_result(model_result)
-
-    def _on_change(self, _):
-        self.refresh()
 
     def _present_model_result(self, model_result):
         """
@@ -163,6 +186,69 @@ class IsTabPresenter():
         self._present_model_result(model_result)
 
 
+class HazardTabPresenter(TabPresenter):
+    """
+    Handles the Hazard tabs content
+
+    """
+
+    def refresh(self):
+        self.logger.info('refreshing hazard on thread {}'
+                         .format(QThread.currentThread().objectName()))
+        if self.presented_forecast:
+            calc_id = self.presented_forecast.hazard_oq_calc_id
+        if calc_id is not None:
+            self.ui.hazCalcIdLabel.setText(str(calc_id))
+        else:
+            self.ui.hazCalcIdLabel.setText('N/A')
+
+        outputs = oq_models.Output.objects.filter(oq_job=calc_id)
+
+        hazard_curves = (o.hazard_curve for o in outputs
+                         if o.output_type == 'hazard_curve')
+
+        imls = None
+        for hc in hazard_curves:
+            if hc.imt != 'MMI':
+                # we only support mmi for now
+                # TODO: show selection box for all IMTs
+                continue
+
+            # extract IMLs once
+            if imls is None:
+                imls = hc.imls
+
+            # extract x, y, poes
+            x_y_poes = oq_models.HazardCurveData.objects.all_curves_simple(
+                filter_args=dict(hazard_curve=hc.id))
+
+            x, y, poes = next(x_y_poes)  # there should be only one
+
+            if hc.statistics == 'mean':
+                pen = QtGui.QPen(Qt.red)
+            elif hc.statistics == 'quantile':
+                pen = QtGui.QPen(Qt.green)
+            else:
+                pen = QtGui.QPen(Qt.white)
+
+            self.ui.hazPlot.plot(imls, poes, pen=pen)
+
+class RiskTabPresenter(TabPresenter):
+    """
+    Handles the Hazard tabs content
+
+    """
+
+    def refresh(self):
+        self.logger.info('refreshing risk')
+        if self.presented_forecast:
+            calc_id = self.presented_forecast.risk_oq_calc_id
+        if calc_id is not None:
+            self.ui.riskCalcIdLabel.setText(str(calc_id))
+        else:
+            self.ui.riskCalcIdLabel.setText('N/A')
+
+
 class ForecastsWindow(QtGui.QDialog):
 
     def __init__(self, atls_core, **kwargs):
@@ -178,7 +264,8 @@ class ForecastsWindow(QtGui.QDialog):
         self.ui.setupUi(self)
 
         # Presenters for the main window components (the tabs)
-        self.is_presenter = IsTabPresenter(self.ui)
+        tab_classes = [IsTabPresenter, HazardTabPresenter, RiskTabPresenter]
+        self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
 
         # Connect essential signals
         # ... from the core
@@ -221,7 +308,8 @@ class ForecastsWindow(QtGui.QDialog):
         self.fc_history_model.refresh()
 
     def _clear_all(self):
-        self.is_presenter.presented_forecast(None)
+        for tab_presenter in self.tab_presenters:
+            tab_presenter.present_forecast_result(None)
 
     # Handlers for signals from the core
 
@@ -254,5 +342,6 @@ class ForecastsWindow(QtGui.QDialog):
             fc = None
         else:
             fc = self.fc_history_model.event_history[idx[0].row()]
-        self.is_presenter.present_forecast_result(fc)
+        for tab_presenter in self.tab_presenters:
+            tab_presenter.present_forecast_result(fc)
 

@@ -130,7 +130,7 @@ class Engine(QtCore.QObject):
         scheduler = TaskScheduler()
 
         # Forecasting Task
-        dt = self._settings.value('core/fc_interval', type=float)
+        dt = self._settings.value('engine/fc_interval', type=float)
         forecast_task = ScheduledTask(task_function=self.run_forecast,
                                       dt=timedelta(hours=dt),
                                       name='Forecast')
@@ -138,7 +138,7 @@ class Engine(QtCore.QObject):
         self._forecast_task = forecast_task  # keep a reference for later
 
         # Rate computations
-        dt = self._settings.value('core/rt_interval', type=float)
+        dt = self._settings.value('engine/rt_interval', type=float)
         rate_update_task = ScheduledTask(task_function=self.update_rates,
                                          dt=timedelta(minutes=dt),
                                          name='Rate update')
@@ -165,14 +165,15 @@ class Engine(QtCore.QObject):
 
         job_input = {
             't_run': t_run,
-            'dt_h': self._settings.value('core/fc_bin_size', type=float),
+            'dt_h': self._settings.value('engine/fc_bin_size', type=float),
             'project': self._project
         }
         job = ForecastJob()
         job.stage_completed.connect(self.fc_stage_complete)
         self._current_fc_job = job
         self._current_fc_result = ForecastResult(t_run)
-        self._project.forecast_history.add(self._current_fc_result)
+        persist = self._settings.value('engine/persist_results', type=bool)
+        self._project.forecast_history.add(self._current_fc_result, persist)
         self._transition_to_state(EngineState.BUSY)
         self._current_fc_job.run(job_input)
 
@@ -197,10 +198,12 @@ class Engine(QtCore.QObject):
             self._current_fc_result.is_forecast_result = stage.results
         elif stage.stage_id == 'psha_stage':
             self._logger.info('PSHA stage completed')
+            self._current_fc_result.hazard_oq_calc_id = stage.results['job_id']
         elif stage.stage_id == 'risk_poe_stage':
             self._logger.info('Risk PoE stage completed')
+            self._current_fc_result.risk_oq_calc_id = stage.results['job_id']
             self._transition_to_state(EngineState.READY)
             self.forecast_complete.emit()
         else:
             raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
-        self._current_fc_result.result_changed.emit(self._current_fc_result)
+        self._current_fc_result.commit_changes()

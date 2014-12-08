@@ -28,12 +28,21 @@ class DisplayRange(object):
     DEFAULT = WEEK
 
 
+class CurvePlotWidget(pg.PlotWidget):
+
+    def __init__(self, parent=None, **kargs):
+        super(CurvePlotWidget, self).__init__(parent, **kargs)
+        self.getPlotItem().setLogMode(y=True)
+        self.setMouseEnabled(y=False)
+
+
 class TimePlotWidget(pg.PlotWidget):
     """ A plot widget where the x-Axis is a DateAxis """
 
     def __init__(self, parent=None, **kargs):
         axis = pg.DateAxisItem(orientation='bottom')
-        super(TimePlotWidget, self).__init__(parent, axisItems={'bottom': axis},
+        super(TimePlotWidget, self).__init__(parent,
+                                             axisItems={'bottom': axis},
                                              **kargs)
 
         self.setMouseEnabled(y=False)

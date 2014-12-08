@@ -5,10 +5,9 @@ History of  events
 """
 
 from datetime import datetime
+from operator import attrgetter
 
 from PyQt4 import QtCore
-
-DATE_TIME_ATTR_NAME = 'date_time'
 
 
 class EventHistory(QtCore.QObject):
@@ -31,20 +30,21 @@ class EventHistory(QtCore.QObject):
 
     """
 
-    def __init__(self, store, entity):
+    def __init__(self, store, entity, date_time_attr='date_time'):
         """
         Creates and initializes an event history
 
         :param store: the store the history can use to persist events
         :type store: EventStore
-        :param entity: the class that represents events in this history. An
-        event class must have a date_time attribute that stores the
-        datetime of the event.
+        :param entity: the class that represents events in this history.
+        :param date_time_attr: attribute that defines the event date and time
+        :type date_time_attr: str
 
         """
         super(EventHistory, self).__init__()
         self.store = store
         self.entity = entity
+        self.date_attr = date_time_attr
         self._events = []
 
     def reload_from_store(self):
@@ -52,7 +52,7 @@ class EventHistory(QtCore.QObject):
         Reloads all events from the persistent store.
 
         """
-        self._events = self.store.read_all(self.entity, order='date_time')
+        self._events = self.store.read_all(self.entity, order=self.date_attr)
 
     def clear(self):
         """
@@ -71,15 +71,18 @@ class EventHistory(QtCore.QObject):
         Returns all events between and including *start_date* and *end_date*.
 
         """
-        return [e for e in self._events if start_date < e.date_time < end_date]
+        t = attrgetter(self.date_attr)
+        return [e for e in self._events if start_date < t(e) < end_date]
 
     def events_before(self, end_date):
         """ Returns all events before and including *end_date* """
-        return [e for e in self._events if e.date_time < end_date]
+        t = attrgetter(self.date_attr)
+        return [e for e in self._events if t(e) < end_date]
 
     def events_after(self, start_date):
         """ Returns all events after and including *start_date* """
-        return [e for e in self._events if start_date < e.date_time]
+        t = attrgetter(self.date_attr)
+        return [e for e in self._events if start_date < t(e)]
 
     def latest_event(self, time=None):
         """

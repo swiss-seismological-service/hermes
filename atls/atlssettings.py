@@ -26,11 +26,12 @@ known_settings = {
     'open_last_project':            False,   # Open the last project when the app starts
     'enable_lab_mode':              True,    # Enable lab mode to simulate through existing data
     # Forecast Engine
-    'core/write_results_to_disk': True,    # Write forecasting results to disk
-    'core/output_directory':      None,    # Output directory for results, if none it writes to the app directory
-    'core/fc_interval':           6.0,     # Forecasting interval [hours]
-    'core/fc_bin_size':           6.0,     # Length of each forecast bin [hours]
-    'core/rt_interval':           1.0,     # Rate computation interval [minutes]
+    'engine/persist_results':       True,    # Store forecast results in database
+    'engine/export_results':        False,   # Export results to the file system
+    'engine/output_directory':      None,    # Output directory for results, if none it writes to the app directory
+    'engine/fc_interval':           6.0,     # Forecasting interval [hours]
+    'engine/fc_bin_size':           6.0,     # Length of each forecast bin [hours]
+    'engine/rt_interval':           1.0,     # Rate computation interval [minutes]
     # Lab mode settings
     'lab_mode/infinite_speed':      True,    # Simulate through catalog as fast as possible
     'lab_mode/speed':               1000,    # Simulation speed (factor), ignored if lab_mode/infinite_speed is True

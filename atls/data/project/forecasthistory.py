@@ -22,4 +22,6 @@ class ForecastHistory(EventHistory):
     """
 
     def __init__(self, store):
-        super(ForecastHistory, self).__init__(store, ForecastResult)
+        super(ForecastHistory, self).__init__(store,
+                                              ForecastResult,
+                                              date_time_attr='t_run')
