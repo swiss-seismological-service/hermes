@@ -80,7 +80,7 @@ class Controller(QtCore.QObject):
         self._logger.info('Loading project at ' + path +
                           ' - This might take a while...')
         store = Store(store_path, OrmBase)
-        self.project = AtlsProject(store)
+        self.project = AtlsProject(store, os.path.basename(path))
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
         self._logger.info('...done')

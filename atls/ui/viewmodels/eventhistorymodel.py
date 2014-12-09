@@ -22,7 +22,6 @@ class EventListModel(QAbstractListModel):
         event_history.history_changed.connect(self._on_history_changed)
         self.roles = roles
 
-        self.event_history.reload_from_store()
         self.refresh()
 
     def rowCount(self, parent):

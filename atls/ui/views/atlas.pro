@@ -20,7 +20,9 @@ FORMS    += mainwindow.ui \
     forecastwindow.ui \
     settingswindow.ui \
     ../forecastswindow.ui \
-    forecastswindow.ui
+    forecastswindow.ui \
+    simulationwindow.ui \
+    timelinewindow.ui
 
 OTHER_FILES +=
 

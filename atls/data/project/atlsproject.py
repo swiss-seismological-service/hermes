@@ -35,7 +35,7 @@ class AtlsProject(project.Project):
     # Signals
     project_time_changed = QtCore.pyqtSignal(datetime)
 
-    def __init__(self, store):
+    def __init__(self, store, title=''):
         """ Create a project based on the data that is contained in *store* """
         super(AtlsProject, self).__init__(store)
         self.seismic_history = SeismicEventHistory(self._store)
@@ -44,6 +44,8 @@ class AtlsProject(project.Project):
         self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
         self.forecast_history = ForecastHistory(self._store)
+        self.forecast_history.reload_from_store()
+        self.title = title
 
         # These inform us when new IS forecasts become available
 
