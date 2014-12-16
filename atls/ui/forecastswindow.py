@@ -8,23 +8,28 @@ Copyright (C) 2014, ETH Zurich - Swiss Seismological Service SED
 
 import os
 import logging
-from datetime import datetime, timedelta
-import time
 
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import Qt, QThread
 import numpy as np
+from qgis.core import QgsRasterLayer, QgsMapLayerRegistry
+from qgis.gui import QgsMapCanvasLayer
 
 from openquake.engine.db import models as oq_models
 
 from core import ismodelcontrol as mc
 from data.isforecastresult import ISModelResult
+from qgislayers import AtlsLossPoeLayer
 
 from viewmodels.eventhistorymodel import EventListModel
 
 ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'forecastswindow.ui')
 Ui_ForecastsWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
+
+# Map service that provides the background map
+MAP_SOURCE_URL = 'http://server.arcgisonline.com/ArcGIS/rest/services/'\
+                 'World_Street_Map/MapServer?f=json&pretty=true'
 
 
 class TabPresenter(object):
@@ -114,8 +119,8 @@ class IsTabPresenter(TabPresenter):
         """
         Update the forecast result labels
 
-        :param model_results: latest model result
-        :type model_results: ISModelResult or None
+        :param model_result: latest model result
+        :type model_result: ISModelResult or None
 
         """
         if model_result is None:
@@ -195,6 +200,7 @@ class HazardTabPresenter(TabPresenter):
     def refresh(self):
         self.logger.info('refreshing hazard on thread {}'
                          .format(QThread.currentThread().objectName()))
+        calc_id = None
         if self.presented_forecast:
             calc_id = self.presented_forecast.hazard_oq_calc_id
         if calc_id is not None:
@@ -233,20 +239,68 @@ class HazardTabPresenter(TabPresenter):
 
             self.ui.hazPlot.plot(imls, poes, pen=pen)
 
+
 class RiskTabPresenter(TabPresenter):
     """
     Handles the Hazard tabs content
 
     """
 
+    def __init__(self, ui):
+        super(RiskTabPresenter, self).__init__(ui)
+        self.ui.mapWidget.setCanvasColor(Qt.white)
+
+        layer = QgsRasterLayer(MAP_SOURCE_URL, "layer")
+        if not layer.isValid():
+            self.logger.error('Layer failed to load!')
+
+        # Work in the CRS of the map service for performance
+        # and reproject all other layers to the target CRS on the fly
+        self.ui.mapWidget.setDestinationCrs(layer.crs())
+        self.ui.mapWidget.setCrsTransformEnabled(True)
+
+        self.loss_layer = AtlsLossPoeLayer('Loss')
+
+        # add layer to the registry
+        QgsMapLayerRegistry.instance().addMapLayer(self.loss_layer)
+        QgsMapLayerRegistry.instance().addMapLayer(layer)
+
+        # set extent to the extent of our layer
+        self.ui.mapWidget.setExtent(layer.extent())
+        print('extents: {}'.format(self.ui.mapWidget.extent().asWktCoordinates()))
+
+        # set the map canvas layer set
+        self.ui.mapWidget.setLayerSet([QgsMapCanvasLayer(self.loss_layer),
+                                       QgsMapCanvasLayer(layer)])
+
+        ms = self.ui.mapWidget.mapSettings()
+        self.refresh()
+
     def refresh(self):
         self.logger.info('refreshing risk')
         if self.presented_forecast:
             calc_id = self.presented_forecast.risk_oq_calc_id
+        else:
+            calc_id = None
         if calc_id is not None:
             self.ui.riskCalcIdLabel.setText(str(calc_id))
         else:
             self.ui.riskCalcIdLabel.setText('N/A')
+
+        outputs = oq_models.Output.objects.filter(oq_job=83)
+        mean_loss_maps = [o.loss_map for o in outputs
+                          if o.output_type == 'loss_map'
+                          and o.loss_map.statistics == 'mean']
+
+        # Just display the first one for now (poE = 0.01)
+        # TODO: provide a dropdown selector to choose which poe level to show
+        loss_map = mean_loss_maps[0]
+
+        self.loss_layer.clear()
+        losses = [{'name': a.asset_ref, 'loss': a.value,
+                   'location': a.location} for a in loss_map]
+        print('losses: {}'.format(losses))
+        self.loss_layer.set_losses(losses)
 
 
 class ForecastsWindow(QtGui.QDialog):
@@ -282,7 +336,6 @@ class ForecastsWindow(QtGui.QDialog):
         self._observe_project_changes(project)
         # setup view model
         date_display = lambda x: x.t_run.ctime()
-        fc_history = project.forecast_history
         roles = {
             Qt.DisplayRole: date_display
         }
@@ -344,4 +397,3 @@ class ForecastsWindow(QtGui.QDialog):
             fc = self.fc_history_model.event_history[idx[0].row()]
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_forecast_result(fc)
-

@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="seismicity">
     <attribute name="title">
@@ -329,6 +329,16 @@
       <string>Summary</string>
      </property>
     </widget>
+    <widget class="QgsMapCanvas" name="mapWidget" native="true">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>100</y>
+       <width>541</width>
+       <height>401</height>
+      </rect>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QListView" name="forecastListView">
@@ -353,6 +363,12 @@
    <class>CurvePlotWidget</class>
    <extends>QWidget</extends>
    <header>ui.views.plots</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapCanvas</class>
+   <extends>QWidget</extends>
+   <header>qgis.gui</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

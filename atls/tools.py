@@ -6,12 +6,16 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
+import os
+import sys
 import functools
 import cProfile
 import pstats
 import StringIO
 import logging
 
+
+atls_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 # note that this decorator ignores **kwargs
 def memoize(obj):

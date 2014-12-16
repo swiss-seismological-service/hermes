@@ -14,12 +14,17 @@ import signal
 
 from PyQt4 import QtGui, QtCore
 
+from qgis.core import QgsApplication
+
 from ui.mainwindow import MainWindow
 from core.controller import Controller
 from atlssettings import AppSettings
 
 
 VERSION = '0.1 "Bug Infested Alpha"'
+
+# Initialize QGIS
+QgsApplication.setPrefixPath('/usr/local/Cellar/qgis-26/2.6.1/QGIS.app/Contents/MacOS', True)
 
 class Atls(QtCore.QObject):
     """
@@ -51,6 +56,7 @@ class Atls(QtCore.QObject):
         self.has_gui = not args.no_gui
         if self.has_gui:
             self.qt_app = QtGui.QApplication(sys.argv)
+            QgsApplication.initQgis()
         else:
             self.qt_app = QtCore.QCoreApplication(sys.argv)
         # Register some general app information
@@ -87,6 +93,8 @@ class Atls(QtCore.QObject):
             self.main_window.show()
         QtCore.QTimer.singleShot(0, self._emit_app_launched)
         sys.exit(self.qt_app.exec_())
+        if self.has_gui:
+            QgsApplication.exitQgis()
 
     def on_app_launched(self):
         # Check if we should load a project on launch
