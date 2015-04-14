@@ -1,1 +1,0 @@
-open "get_bs_basel.mat" or "get_bs_yverdon.mat" to see how the data is imported.
