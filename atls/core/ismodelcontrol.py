@@ -45,10 +45,11 @@ def load_models(model_ids):
         active_models.append(etas_model)
 
     # Shapiro
-    if load_all or 'shapiro' in model_ids:
-        shapiro_model = Shapiro()
-        shapiro_model.title = 'Shapiro (Spatial)'
-        active_models.append(shapiro_model)
+    # TODO: Re-enable. Temp. disabled bc matlab is not installed on vagrant
+    # if load_all or 'shapiro' in model_ids:
+    #     shapiro_model = Shapiro()
+    #     shapiro_model.title = 'Shapiro (Spatial)'
+    #     active_models.append(shapiro_model)
 
     # This moves the models to their own thread. Do not access model
     # members directly after this line
