@@ -24,7 +24,10 @@ pip install $PIP_PACKAGES
 git clone https://github.com/3rdcycle/pyqtgraph.git
 cd pyqtgraph
 git checkout date-axis-item
-sudo python setup.py install
+python setup.py install
+
+# install custom GSIMs
+cp /vagrant/atls/resources/oq/gmpe-gsim/* /usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
 
 # upgrade OpenQuake database
 oq-engine --upgrade-db -y
