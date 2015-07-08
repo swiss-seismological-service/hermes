@@ -13,16 +13,18 @@ add-apt-repository ppa:openquake/ppa
 apt-get update
 
 # dependencies for ATLS
-DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-sqlalchemy python-pip python-oq-engine"
+DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-sqlalchemy python-pip python-oq-engine git"
 PIP_PACKAGES="numpy pymatlab"
 
 # install deb and pip packages
 apt-get install -y --force-yes $DEB_PACKAGES
 pip install $PIP_PACKAGES
 
-# install pyqtgraph 0.9.10-1
-wget http://www.pyqtgraph.org/downloads/python-pyqtgraph_0.9.10-1_all.deb
-sudo dpkg -i python-pyqtgraph_0.9.10-1_all.deb
+# install pyqtgraph (custom version until this gets merged into the main repo)
+git clone https://github.com/3rdcycle/pyqtgraph.git
+cd pyqtgraph
+git checkout date-axis-item
+sudo python setup.py install
 
 # upgrade OpenQuake database
 oq-engine --upgrade-db -y
