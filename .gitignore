@@ -34,3 +34,6 @@ data/basel_hydr_1sec.dat.txt
 atls_run_data.csv
 model_inputs.mat
 atls/gdalwmscache
+
+# Vagrant
+.vagrant
