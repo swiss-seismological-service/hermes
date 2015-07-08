@@ -35,6 +35,15 @@ class EngineState:
     READY = 1
     BUSY = 2
 
+    @classmethod
+    def text(cls, state):
+        if state == cls.INACTIVE:
+            return 'inactive'
+        elif state == cls.READY:
+            return 'ready'
+        else:
+            return 'busy'
+
 
 class Engine(QtCore.QObject):
     """
@@ -117,6 +126,7 @@ class Engine(QtCore.QObject):
     # State transitions
 
     def _transition_to_state(self, state):
+        self._logger.info(EngineState.text(state))
         self._state = state
         self.state_changed.emit(state)
 
@@ -202,8 +212,11 @@ class Engine(QtCore.QObject):
         elif stage.stage_id == 'risk_poe_stage':
             self._logger.info('Risk PoE stage completed')
             self._current_fc_result.risk_oq_calc_id = stage.results['job_id']
-            self._transition_to_state(EngineState.READY)
-            self.forecast_complete.emit()
         else:
             raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
+
+        if stage == self._current_fc_job.stage_objects[-1]:
+            self._transition_to_state(EngineState.READY)
+            self.forecast_complete.emit()
+
         self._current_fc_result.commit_changes()

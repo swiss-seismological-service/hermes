@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'settingswindow.ui'
 #
-# Created: Wed Jan 15 09:59:47 2014
-#      by: PyQt4 UI code generator 4.10.2
+# Created: Wed Dec 17 10:17:02 2014
+#      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -53,7 +53,7 @@ class Ui_SettingsWindow(object):
         self.speedLabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.speedLabel.setObjectName(_fromUtf8("speedLabel"))
         self.speedBox = QtGui.QSpinBox(self.groupBox)
-        self.speedBox.setEnabled(False)
+        self.speedBox.setEnabled(True)
         self.speedBox.setGeometry(QtCore.QRect(215, 55, 71, 25))
         self.speedBox.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.speedBox.setMinimum(1)
@@ -178,13 +178,13 @@ class Ui_SettingsWindow(object):
         self.resetToDefaultButton.setObjectName(_fromUtf8("resetToDefaultButton"))
 
         self.retranslateUi(SettingsWindow)
-        self.settingsTabs.setCurrentIndex(2)
+        self.settingsTabs.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(SettingsWindow)
 
     def retranslateUi(self, SettingsWindow):
-        SettingsWindow.setWindowTitle(_translate("SettingsWindow", "ATLS Configuration", None))
+        SettingsWindow.setWindowTitle(_translate("SettingsWindow", "ATLAS Configuration", None))
         self.enableLabModeCheckBox.setToolTip(_translate("SettingsWindow", "In Simulation Mode seismic and hydraulic events are played back from an existing catalog.", None))
-        self.enableLabModeCheckBox.setText(_translate("SettingsWindow", "Run AAtlsin Lab Mode", None))
+        self.enableLabModeCheckBox.setText(_translate("SettingsWindow", "Run ATLAS in Lab Mode", None))
         self.openLastProjectOnStartup.setText(_translate("SettingsWindow", "Open last project on startup", None))
         self.settingsTabs.setTabText(self.settingsTabs.indexOf(self.tabGeneral), _translate("SettingsWindow", "General", None))
         self.groupBox.setTitle(_translate("SettingsWindow", "Simulation Speed", None))

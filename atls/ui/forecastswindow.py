@@ -8,11 +8,13 @@ Copyright (C) 2014, ETH Zurich - Swiss Seismological Service SED
 
 import os
 import logging
+import random
 
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import Qt, QThread
 import numpy as np
-from qgis.core import QgsRasterLayer, QgsMapLayerRegistry
+from qgis.core import QgsRasterLayer, QgsMapLayerRegistry, QgsRectangle, \
+                      QgsCoordinateReferenceSystem, QgsLabel
 from qgis.gui import QgsMapCanvasLayer
 
 from openquake.engine.db import models as oq_models
@@ -254,9 +256,10 @@ class RiskTabPresenter(TabPresenter):
         if not layer.isValid():
             self.logger.error('Layer failed to load!')
 
-        # Work in the CRS of the map service for performance
-        # and reproject all other layers to the target CRS on the fly
-        self.ui.mapWidget.setDestinationCrs(layer.crs())
+        # Work in the standard CRS (WGS-84) and reproject all other layers to
+        # the target CRS on the fly
+        crs = QgsCoordinateReferenceSystem(4326)
+        self.ui.mapWidget.setDestinationCrs(crs)
         self.ui.mapWidget.setCrsTransformEnabled(True)
 
         self.loss_layer = AtlsLossPoeLayer('Loss')
@@ -266,15 +269,11 @@ class RiskTabPresenter(TabPresenter):
         QgsMapLayerRegistry.instance().addMapLayer(layer)
 
         # set extent to the extent of our layer
-        self.ui.mapWidget.setExtent(layer.extent())
-        print('extents: {}'.format(self.ui.mapWidget.extent().asWktCoordinates()))
+        self.ui.mapWidget.setExtent(QgsRectangle(5.6, 45.6, 10.8, 47.5))
 
         # set the map canvas layer set
         self.ui.mapWidget.setLayerSet([QgsMapCanvasLayer(self.loss_layer),
                                        QgsMapCanvasLayer(layer)])
-
-        ms = self.ui.mapWidget.mapSettings()
-        self.refresh()
 
     def refresh(self):
         self.logger.info('refreshing risk')
@@ -296,12 +295,21 @@ class RiskTabPresenter(TabPresenter):
         # TODO: provide a dropdown selector to choose which poe level to show
         loss_map = mean_loss_maps[0]
 
-        self.loss_layer.clear()
-        losses = [{'name': a.asset_ref, 'loss': a.value,
-                   'location': a.location} for a in loss_map]
-        print('losses: {}'.format(losses))
-        self.loss_layer.set_losses(losses)
+        # order assets by location
+        locations = {}
+        for asset in loss_map:
+            # asset.location (of type GEOSGeometry) does not implement __cmp__
+            (x, y) = asset.location
+            locations.setdefault((x, y), []).append(asset)
 
+        # sum losses for all assets at a specific location
+        losses = [{'name': assets[0].asset_ref,
+                   'loss': sum(a.value for a in assets),
+                   'location': loc} for (loc, assets) in locations.items()]
+        self.loss_layer.set_losses(losses)
+        extent = self.loss_layer.extent()
+        extent.scale(1.1)
+        self.ui.mapWidget.setExtent(extent)
 
 class ForecastsWindow(QtGui.QDialog):
 

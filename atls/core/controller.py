@@ -153,12 +153,14 @@ class Controller(QtCore.QObject):
         time_range = self._simulation_time_range()
         inf_speed = self._settings.value('lab_mode/infinite_speed', type=bool)
         if inf_speed:
+            self._logger.info('Simulating at maximum speed')
             dt_h = self._settings.value('engine/fc_interval', type=float)
             dt = timedelta(hours=dt_h)
             step_signal = self.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)
         else:
             speed = self._settings.value('lab_mode/speed', type=float)
+            self._logger.info('Simulating at {:.0f}x'.format(speed))
             self.simulator.configure(time_range, speed=speed)
         self.engine.reset(time_range[0])
 

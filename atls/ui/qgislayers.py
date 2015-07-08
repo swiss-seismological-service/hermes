@@ -27,15 +27,9 @@ class AtlsLossPoeLayer(AtlsDataPointsLayer):
 
         pr = self.dataProvider()
         pr.addAttributes([QgsField('name', QVariant.String),
-                          QgsField('loss', QVariant.Double),
-                          QgsField('size', QVariant.Double)])
-
-        symbol = QgsSymbolV2.defaultSymbol(self.geometryType())
-        symbol.setColor(Qt.green)
-        renderer = QgsSingleSymbolRendererV2(symbol)
-        #renderer.setSizeScaleField('size')
-        #renderer.setSizeScaleField('size')
-        self.setRendererV2(renderer)
+                          QgsField('loss', QVariant.Double)])
+        self.updateFields()
+        self.rendererV2().symbol().setColor(Qt.red)
 
     def set_losses(self, losses):
         """
@@ -46,15 +40,19 @@ class AtlsLossPoeLayer(AtlsDataPointsLayer):
 
         """
         pr = self.dataProvider()
+        pr.deleteFeatures(self.allFeatureIds())
 
-        max_loss = max(l['loss'] for l in losses)
-        scale = 10.0 / max_loss
+        max_loss = max(loss['loss'] for loss in losses)
+        symbol_layer = self.rendererV2().symbol().symbolLayer(0)
+        symbol_layer.setDataDefinedProperty('size', '"loss" / {} * 100'
+                                            .format(max_loss))
+
         features = []
         for loss in losses:
             f = QgsFeature()
             f.setGeometry(QgsGeometry.fromPoint(QgsPoint(*loss['location'])))
             loss_val = loss['loss']
-            f.setAttributes([loss['name'], loss_val, 4.0])
+            f.setAttributes([loss['name'], loss_val])
             features.append(f)
 
         pr.addFeatures(features)

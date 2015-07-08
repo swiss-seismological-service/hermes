@@ -26,7 +26,7 @@
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tabGeneral">
     <attribute name="title">
@@ -102,7 +102,7 @@
      </widget>
      <widget class="QSpinBox" name="speedBox">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="geometry">
        <rect>

@@ -142,18 +142,17 @@ class SimulationWindow(QtGui.QDialog):
             if core.engine.state == EngineState.BUSY:
                 status += ' - Computing Forecast'
             self.ui.coreStatusLabel.setText(status)
-            self.ui.projectTimeLabel.\
-                setText(self.displayed_project_time.ctime())
+            self.ui.projectTimeLabel.setText(time.ctime())
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         elif core.simulator.state == SimulatorState.PAUSED:
             event = self.project.seismic_history.latest_event(time)
             self.ui.coreStatusLabel.setText('Paused')
-            self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
+            self.ui.projectTimeLabel.setText(time.ctime())
             self.ui.lastEventLabel.setText(str(event))
             self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
         else:
             self.ui.coreStatusLabel.setText('Idle')
-            self.ui.projectTimeLabel.setText(str(self.displayed_project_time))
+            self.ui.projectTimeLabel.setText(time.ctime())
             self.ui.lastEventLabel.setText('-')
             self.ui.nextForecastLabel.setText('-')
