@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_SettingsWindow(object):
     def setupUi(self, SettingsWindow):
         SettingsWindow.setObjectName(_fromUtf8("SettingsWindow"))
-        SettingsWindow.resize(766, 548)
+        SettingsWindow.setFixedSize(766, 548)
         self.settingsTabs = QtGui.QTabWidget(SettingsWindow)
         self.settingsTabs.setGeometry(QtCore.QRect(10, 10, 741, 471))
         self.settingsTabs.setTabShape(QtGui.QTabWidget.Rounded)
