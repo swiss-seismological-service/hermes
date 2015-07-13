@@ -144,6 +144,8 @@ class MainWindow(QtGui.QMainWindow):
                                                  'Open Project',
                                                  home,
                                                  'Atls Project Files (*.atl)')
+        if path == '':
+            return
         self._open_project_at_path(path)
 
     def _open_project_at_path(self, path):
@@ -195,6 +197,8 @@ class MainWindow(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open seismic data file',
                                                  home)
+        if path == '':
+            return
         history = self.project.seismic_history
         if path:
             self._import_file_to_history(path, history)
@@ -204,6 +208,8 @@ class MainWindow(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open hydraulic data file',
                                                  home)
+        if path == '':
+            return
         history = self.project.hydraulic_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
