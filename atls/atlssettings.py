@@ -15,6 +15,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from PyQt4.QtCore import QSettings
 from datetime import datetime
+import collections
 
 import logging
 
@@ -103,7 +104,11 @@ class AppSettings:
         if not key in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         default = known_settings[key]
-        return self._settings.value(key, defaultValue=default, type=type(default))
+        if isinstance(default, collections.Container):
+            return self._settings.value(key, defaultValue=default)
+        else:
+            return self._settings.value(key, defaultValue=default,
+                                        type=type(default))
 
     def set_value(self, key, value):
         """
