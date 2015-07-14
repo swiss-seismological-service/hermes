@@ -99,7 +99,7 @@ class Atls(QtCore.QObject):
     def on_app_launched(self):
         # Check if we should load a project on launch
         project = self.app_settings.value('project')
-        open_last = self.app_settings.value('open_last_project', type=bool)
+        open_last = self.app_settings.value('open_last_project')
         if not project and open_last:
             self.logger.warn('open_last_project is not currently implemented')
             pass  # TODO: implement loading the last project

@@ -81,7 +81,7 @@ class AppSettings:
         '2014-12-24 18:00:00'
 
         """
-        date_str = self.value(key, type=str)
+        date_str = self.value(key)
         if date_str is None:
             return None
         try:
@@ -92,7 +92,7 @@ class AppSettings:
         else:
             return date
 
-    def value(self, key, **kwargs):
+    def value(self, key):
         """
         Returns the value that is stored for key or the default value if
         no value is stored.
@@ -103,7 +103,7 @@ class AppSettings:
         if not key in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         default = known_settings[key]
-        return self._settings.value(key, defaultValue=default, **kwargs)
+        return self._settings.value(key, defaultValue=default, type=type(default))
 
     def set_value(self, key, value):
         """
