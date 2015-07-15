@@ -1,5 +1,4 @@
 before_script: 
-  - pip install tox
 
 flake8: 
-  script: "tox -e py27-flake8"
+  script: "flake8"
