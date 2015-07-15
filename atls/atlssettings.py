@@ -25,28 +25,28 @@ known_settings = {
     # (Qt automatically looks for top level keys in the general section)
 
     # List of recently opened projects (paths)
-    'recent_files':                 None,
+    'recent_files': None,
     # Project to load on startup (overrides open_last_project)
-    'project':                      None,
+    'project': None,
     # Open the last project when the app starts
-    'open_last_project':            False,
+    'open_last_project': False,
     # Enable lab mode to simulate through existing data
-    'enable_lab_mode':              True,
+    'enable_lab_mode': True,
 
     # Forecast Engine
 
     # Store forecast results in database
-    'engine/persist_results':       True,
+    'engine/persist_results': True,
     # Export results to the file system
-    'engine/export_results':        False,
+    'engine/export_results': False,
     # Output directory for results, if none it writes to the app directory
-    'engine/output_directory':      None,
+    'engine/output_directory': None,
     # Forecasting interval [hours]
-    'engine/fc_interval':           6.0,
+    'engine/fc_interval': 6.0,
     # Length of each forecast bin [hours]
-    'engine/fc_bin_size':           6.0,
+    'engine/fc_bin_size': 6.0,
     # Rate computation interval [minutes]
-    'engine/rt_interval':           1.0,
+    'engine/rt_interval': 1.0,
 
     # Lab mode settings
 
@@ -55,16 +55,16 @@ known_settings = {
     # want to specify on a per run basis. find better solution.
 
     # Simulate through catalog as fast as possible
-    'lab_mode/infinite_speed':      True,
+    'lab_mode/infinite_speed': True,
     # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
-    'lab_mode/speed':               1000,
+    'lab_mode/speed': 1000,
     # Time of the first forecast in iso format '2014-06-12 18:30:00'
-    'lab_mode/forecast_start':      '2006-12-04 00:00:00',
+    'lab_mode/forecast_start': '2006-12-04 00:00:00',
 
     # ISHA model settings
 
     # List of ISHA models to load (or 'all')
-    'ISHA/models':                  ['all'],
+    'ISHA/models': ['all'],
 }
 
 
@@ -126,7 +126,7 @@ class AppSettings:
         If the key is not known, the function will throw an exception.
 
         """
-        if not key in known_settings.keys():
+        if key not in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         default = known_settings[key]
         return self._settings.value(key, defaultValue=default, **kwargs)
@@ -138,7 +138,7 @@ class AppSettings:
         If the key is not known, the function will throw an exception.
 
         """
-        if not key in known_settings.keys():
+        if key not in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         return self._settings.setValue(key, value)
 

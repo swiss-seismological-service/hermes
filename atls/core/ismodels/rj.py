@@ -98,8 +98,9 @@ class Rj(Model):
             # Compute the integral of lambda(t, M) over the time bin interval
             # and subtract the upper magnitude limit from the lower limit to
             # get the appropriate range
-            rate = ((t2+c)**(1-p) - (t1+c)**(1-p)) / (1-p) * \
-                   ((10 ** (a+b*(m-m_min))) - (10 ** (a+b*(m-m_max))))
+            rate = ((t2 + c) ** (1 - p) - (t1 + c) ** (1 - p)) / (1 - p) * \
+                   ((10 ** (a + b * (m - m_min))) -
+                    (10 ** (a + b * (m - m_max))))
 
             # The implementation below is found in various SED codes. It's
             # based on a mistake in the original RJ '89 paper (see correction

@@ -57,7 +57,8 @@ class ISForecastResult(OrmBase):
     t_run = Column(DateTime)
     _reviewed = Column('reviewed', Boolean)
     model_results = relationship('ISModelResult', backref='isforecastresult',
-                                 collection_class=attribute_mapped_collection('model_name'),
+                                 collection_class=attribute_mapped_collection(
+                                     'model_name'),
                                  cascade="all, delete-orphan")
 
     def __init__(self, t_run):

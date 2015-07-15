@@ -189,8 +189,8 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
-  ('index', 'ATLS.tex', u'ATLS Documentation',
-   u'Lukas Heiniger', 'manual'),
+    ('index', 'ATLS.tex', u'ATLS Documentation',
+     u'Lukas Heiniger', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -233,9 +233,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'ATLS', u'ATLS Documentation',
-   u'Lukas Heiniger', 'ATLS', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'ATLS', u'ATLS Documentation',
+     u'Lukas Heiniger', 'ATLS', 'One line description of project.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

@@ -24,7 +24,7 @@ class RateComputationTest(unittest.TestCase):
         start = datetime(2013, 11, 27, 9, 15)
         dt = timedelta(hours=1)
         self.magnitudes = [4, 5.1, 5, 3.8, 2.6]
-        self.times = [start + i*dt for i in range(len(self.magnitudes))]
+        self.times = [start + i * dt for i in range(len(self.magnitudes))]
 
     def test_exact_range(self):
         """ Test rate computation for the exact t/M range of the events"""

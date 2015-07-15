@@ -26,10 +26,10 @@ class Import(unittest.TestCase):
         expected = []
         for i in range(3):
             date = base_date + timedelta(seconds=i)
-            row = {'flow_dh': (-82.0 - i*0.1),
-                   'flow_xt': (132.0 + i*0.1),
-                   'pr_dh': (719 + i*0.1),
-                   'pr_xt': (269 + i*0.1)}
+            row = {'flow_dh': (-82.0 - i * 0.1),
+                   'flow_xt': (132.0 + i * 0.1),
+                   'pr_dh': (719 + i * 0.1),
+                   'pr_xt': (269 + i * 0.1)}
             expected.append((date, row))
 
         with open('resources/test_hydr.csv', 'rb') as f:

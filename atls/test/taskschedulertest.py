@@ -89,7 +89,6 @@ class ScheduledTaskTest(unittest.TestCase):
 class TaskSchedulerTest(unittest.TestCase):
     """ Tests the TaskScheduler class """
 
-
     def setUp(self):
         """ Setup a combination of differently scheduled tasks """
         self.scheduler = TaskScheduler()

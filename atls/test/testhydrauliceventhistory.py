@@ -28,10 +28,10 @@ class BasicOperation(unittest.TestCase):
         for i in range(3):
             date = base_date + timedelta(seconds=i)
             event = HydraulicEvent(date,
-                                   flow_dh=(-82.0 - i*0.1),
-                                   flow_xt=(132.0 + i*0.1),
-                                   pr_dh=(719 + i*0.1),
-                                   pr_xt=(269 + i*0.1))
+                                   flow_dh=(-82.0 - i * 0.1),
+                                   flow_xt=(132.0 + i * 0.1),
+                                   pr_dh=(719 + i * 0.1),
+                                   pr_xt=(269 + i * 0.1))
             self.expected.append(event)
 
         def mock_iter():
