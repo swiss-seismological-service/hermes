@@ -43,9 +43,9 @@ class Point:
         ymax = ymin + cube.size
         zmin = cube.origin.z
         zmax = zmin + cube.size
-        return (xmin <= p.x < xmax and
-                ymin <= p.y < ymax and
-                zmin <= p.z < zmax)
+        return (xmin <= self.x < xmax and
+                ymin <= self.y < ymax and
+                zmin <= self.z < zmax)
 
 
 """
