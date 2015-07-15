@@ -19,7 +19,6 @@ from qgis.gui import QgsMapCanvasLayer
 from openquake.engine.db import models as oq_models
 
 from core import ismodelcontrol as mc
-from data.isforecastresult import ISModelResult
 from qgislayers import AtlsLossPoeLayer
 
 from viewmodels.eventhistorymodel import EventListModel

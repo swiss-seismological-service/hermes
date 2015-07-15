@@ -12,10 +12,8 @@ import logging
 
 from PyQt4 import QtCore
 
-from ismodels.common import Model
 from ismodels.rj import Rj
 from ismodels.etas import Etas
-from ismodels.shapiro import Shapiro
 
 active_models = []
 _detached_runners = []

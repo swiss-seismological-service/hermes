@@ -12,7 +12,6 @@ import logging
 
 from PyQt4 import QtCore
 
-from data.project.atlsproject import AtlsProject
 from data.forecastresult import ForecastResult
 from scheduler.taskscheduler import TaskScheduler, ScheduledTask
 from atlsjob import ForecastJob

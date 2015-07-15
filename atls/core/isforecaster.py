@@ -11,7 +11,6 @@ import logging
 from PyQt4 import QtCore
 
 import ismodelcontrol as mc
-from ismodels.common import ModelInput
 from data.isforecastresult import ISForecastResult, ISModelResult
 
 
