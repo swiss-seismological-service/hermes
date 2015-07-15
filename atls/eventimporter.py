@@ -3,7 +3,7 @@
 CSV reader for a list of events
 
 Extension to the python default csv reader for event histories
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -30,7 +30,7 @@ class EventImporter:
         :param csv_file: file handle
         :param delimiter: single character that delimits the columns
         :param date_field: name of the column that contains the date
-        
+
         """
         self.file = csv_file
         self.delimiter = delimiter
@@ -42,8 +42,8 @@ class EventImporter:
     @property
     def expects_base_date(self):
         """
-        Checks whether the file contains relative dates and the importer expects
-        a base date to parse the file.
+        Checks whether the file contains relative dates and the importer
+        expects a base date to parse the file.
 
         Side effect: rewinds the file when called for the first time
 

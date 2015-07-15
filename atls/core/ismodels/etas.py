@@ -29,7 +29,7 @@ can be computed as
           + \mu + c_f * \int_{T_1}^{T_2}F_r(t) dt
 
 which is what this model returns.
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """

@@ -9,7 +9,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-import logging
 
 
 class Store:
@@ -87,8 +86,8 @@ class Store:
 
     def _new_read_query(self, entity, predicate):
         """
-        Create and return a read query for the entity *entity* with the optional
-        predicate given in *predicate*.
+        Create and return a read query for the entity *entity* with the
+        optional predicate given in *predicate*.
 
         """
         query = self.session.query(entity)

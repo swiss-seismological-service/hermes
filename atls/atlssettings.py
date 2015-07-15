@@ -8,7 +8,7 @@ settingswindow.py
 
 Note that the module expects that the v2 API is used for QVariant (which is
 set in the Atls top level object)
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -20,25 +20,51 @@ import logging
 
 # known settings and their default values
 known_settings = {
-    # General Settings (Qt automatically looks for top level keys in the general section)
-    'recent_files':                 None,    # List of recently opened projects (paths)
-    'project':                      None,    # Project to load on startup (overrides open_last_project)
-    'open_last_project':            False,   # Open the last project when the app starts
-    'enable_lab_mode':              True,    # Enable lab mode to simulate through existing data
+
+    # General Settings
+    # (Qt automatically looks for top level keys in the general section)
+
+    # List of recently opened projects (paths)
+    'recent_files':                 None,
+    # Project to load on startup (overrides open_last_project)
+    'project':                      None,
+    # Open the last project when the app starts
+    'open_last_project':            False,
+    # Enable lab mode to simulate through existing data
+    'enable_lab_mode':              True,
+
     # Forecast Engine
-    'engine/persist_results':       True,    # Store forecast results in database
-    'engine/export_results':        False,   # Export results to the file system
-    'engine/output_directory':      None,    # Output directory for results, if none it writes to the app directory
-    'engine/fc_interval':           6.0,     # Forecasting interval [hours]
-    'engine/fc_bin_size':           6.0,     # Length of each forecast bin [hours]
-    'engine/rt_interval':           1.0,     # Rate computation interval [minutes]
+
+    # Store forecast results in database
+    'engine/persist_results':       True,
+    # Export results to the file system
+    'engine/export_results':        False,
+    # Output directory for results, if none it writes to the app directory
+    'engine/output_directory':      None,
+    # Forecasting interval [hours]
+    'engine/fc_interval':           6.0,
+    # Length of each forecast bin [hours]
+    'engine/fc_bin_size':           6.0,
+    # Rate computation interval [minutes]
+    'engine/rt_interval':           1.0,
+
     # Lab mode settings
-    'lab_mode/infinite_speed':      True,    # Simulate through catalog as fast as possible
-    'lab_mode/speed':               1000,    # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
-    # FIXME: fc start is project specific but also something the user might want to specify on a per run basis. find better solution.
-    'lab_mode/forecast_start':      '2006-12-04 00:00:00',    # Time of the first forecast in iso format '2014-06-12 18:30:00'
+
+    # FIXME:
+    # fc start is project specific but also something the user might
+    # want to specify on a per run basis. find better solution.
+
+    # Simulate through catalog as fast as possible
+    'lab_mode/infinite_speed':      True,
+    # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
+    'lab_mode/speed':               1000,
+    # Time of the first forecast in iso format '2014-06-12 18:30:00'
+    'lab_mode/forecast_start':      '2006-12-04 00:00:00',
+
     # ISHA model settings
-    'ISHA/models':                  ['all'],   # List of ISHA models to load (or 'all')
+
+    # List of ISHA models to load (or 'all')
+    'ISHA/models':                  ['all'],
 }
 
 

@@ -4,7 +4,7 @@ Reasenberg-Jones aftershock forecast model
 
 Reasenberg P. and L. Jones (1989, 1994), "Earthquake hazard after a main shock
 in California", Science 243, 1173-1176
-    
+
 """
 
 import numpy as np
@@ -14,17 +14,20 @@ from core.ismodels.common import Model, ModelOutput, ModelResult
 
 class Rj(Model):
     """
-    Reasenberg & Jones aftershock forecast model. The model predicts aftershocks
-    using an empirical relation to the main shock.
+    Reasenberg & Jones aftershock forecast model. The model predicts
+    aftershocks using an empirical relation to the main shock.
 
-    The result of the model run is a list of tuples containing for each forecast
-    time interval the rate of events in the magnitude range *forecast_mag_range*
-    and the probability of one or more events occurring as (rate, probability)
+    The result of the model run is a list of tuples containing for each
+    forecast time interval the rate of events in the magnitude range
+    *forecast_mag_range* and the probability of one or more events occurring as
+    (rate, probability)
 
     :ivar a: RJ parameter a (not Gutenberg-Richter)
     :ivar b: Gutenberg-Richter b value
-    :ivar p: Sequence specific empirical parameter for the Omori-Utsu (1961) law
-    :ivar c: Sequence specific empirical parameter for the Omori-Utsu (1961) law
+    :ivar p: Sequence specific empirical parameter for the Omori-Utsu (1961)
+             law
+    :ivar c: Sequence specific empirical parameter for the Omori-Utsu (1961)
+             law
     :ivar m_max: Maximum magnitude
     :ivar m_c: Magnitude of completeness
 
@@ -52,8 +55,8 @@ class Rj(Model):
 
         where a', b, c and p are empirical constants and M > Mc (magnitude of
         completeness). Thus, by integrating over t, the number of events in the
-        magnitude range [M1, M2] and time interval [T1, T2] after the main shock
-        can be computed as
+        magnitude range [M1, M2] and time interval [T1, T2] after the main
+        shock can be computed as
 
         .. math:: \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} * \
                   [10^{a+b(M_m-M_1)}-10^{a+b(M_m-M_2)}]
@@ -99,8 +102,8 @@ class Rj(Model):
                    ((10 ** (a+b*(m-m_min))) - (10 ** (a+b*(m-m_max))))
 
             # The implementation below is found in various SED codes. It's
-            # based on a mistake in the original RJ '89 paper (see correction in
-            # RJ '94). Do not use. It's just here for reference.
+            # based on a mistake in the original RJ '89 paper (see correction
+            # in RJ '94). Do not use. It's just here for reference.
             # rate = ((t1+c)**(1-p) - (t2+c)**(1-p)) / ((1-p)*b*log(10)) * \
             #        ((10 ** (a+b*(m-m_max))) - (10 ** (a+b*(m-m_min))))
 

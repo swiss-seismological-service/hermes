@@ -5,7 +5,6 @@ History of hydraulic events, i.e changes in flow or pressure
 """
 
 from data.project.eventhistory import EventHistory
-from eventimporter import EventImporter
 from data.hydraulicevent import HydraulicEvent
 
 

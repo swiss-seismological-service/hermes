@@ -29,7 +29,8 @@ class ModelInputTest(unittest.TestCase):
         """
         t0 = datetime(1970, 1, 1, 1)
         test_input = common.ModelInput(t0)
-        test_input.seismic_events = [MockSeismicEvent(t0), MockSeismicEvent(t0)]
+        test_input.seismic_events = [MockSeismicEvent(t0),
+                                     MockSeismicEvent(t0)]
         test_input.hydraulic_events = []
         test_input.forecast_mag_range = (3, 4)
         test_input.forecast_times = [t0]

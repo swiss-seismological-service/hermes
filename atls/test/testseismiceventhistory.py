@@ -3,7 +3,7 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -49,7 +49,6 @@ class BasicOperation(unittest.TestCase):
 
     def test_csv_import(self):
         """ Test if the csv import works as expected """
-
 
         self.history.import_events(self.mock_importer)
         self.mock_store.purge.assert_called_once_with(SeismicEvent)

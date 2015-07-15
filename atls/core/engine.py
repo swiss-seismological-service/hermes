@@ -170,7 +170,7 @@ class Engine(QtCore.QObject):
                                  't=' + str(t_run))
             return
 
-        self._logger.info(6*'----------')
+        self._logger.info(6 * '----------')
         self._logger.info('Initiating forecast')
 
         job_input = {

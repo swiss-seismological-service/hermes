@@ -3,7 +3,7 @@
 Simulates forecasting
 
 Simulates incoming seismic events and triggers updates on the forecast
-    
+
 """
 
 from PyQt4 import QtCore
@@ -129,7 +129,8 @@ class Simulator(QtCore.QObject):
         stopped. The first time step is scheduled to execute immediately.
 
         """
-        assert self._time_range is not None, 'Set a time range before simulating'
+        assert self._time_range is not None, \
+            'Set a time range before simulating'
         if self.state != SimulatorState.PAUSED:
             self._simulation_time = self._time_range[0]
         self._transition_to_state(SimulatorState.RUNNING)
@@ -163,7 +164,7 @@ class Simulator(QtCore.QObject):
         simulation_ended = False
         if self._external_signal is None:
             dt = timedelta(seconds=self.simulation_interval / 1000.0
-                                   * self.speed)
+                           * self.speed)
         else:
             dt = self._dt
         self._simulation_time += dt

@@ -27,14 +27,14 @@ KEEP_INPUTS = False
 atls_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 _OQ_RESOURCE_PATH = os.path.join(atls_path, 'resources', 'oq')
 _HAZ_RESOURCES = {
-    'job_def':   'job.ini',
-    'gmpe_lt':   'gmpe_logic_tree.xml',
-    'source':    'point_source_model.xml',
+    'job_def': 'job.ini',
+    'gmpe_lt': 'gmpe_logic_tree.xml',
+    'source': 'point_source_model.xml',
     'source_lt': 'source_model_logic_tree.xml'
 }
 _RISK_POE_RESOURCES = {
-    'job_def':    'job.ini',
-    'exp_model':  'exposure_model.xml',
+    'job_def': 'job.ini',
+    'exp_model': 'exposure_model.xml',
     'vuln_model': 'struct_vul_model.xml'
 }
 
@@ -93,7 +93,6 @@ class _OqRunner(QtCore.QObject):
 
 
 class _OqController(QtCore.QObject):
-
     def __init__(self):
         super(_OqController, self).__init__()
         # Setup the OQ listener thread and move the OQ runner object to it
@@ -182,12 +181,14 @@ class _OqController(QtCore.QObject):
     def _job_complete(self, result):
         self.busy = False
         self._logger.debug('Job #{} {}. Calling back.'
-                           .format(result['job_id'],
-                           'succeeded' if result['success'] else 'failed'))
+                           .format(
+                               result['job_id'],
+                               'succeeded' if result['success'] else 'failed'))
         if not KEEP_INPUTS:
             shutil.rmtree(self.job_dir)
         self._oq_thread.quit()
         self._oq_thread.wait()
         self.callback(result)
+
 
 controller = _OqController()

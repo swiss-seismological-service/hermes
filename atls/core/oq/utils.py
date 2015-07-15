@@ -3,12 +3,11 @@
 OpenQuake Helpers
 
 Helper functions to manipulate OpenQuake input files.
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-import os
 from lxml import etree
 
 # OQ specific constants

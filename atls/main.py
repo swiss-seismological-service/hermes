@@ -53,7 +53,6 @@ def main():
     atls.run()
 
 
-
 def configure_logging(verbosity):
     """
     Configures and the root logger.

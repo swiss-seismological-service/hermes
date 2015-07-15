@@ -6,7 +6,7 @@ We don't currently use this in ATLS but it might come in handy at some point.
 Note that we use PyQt API version 2, so those QVariants should be replaced
 with their respective python types.
 
-    
+
 © 2013 Mark Harviston, BSD License
 
 """
@@ -66,7 +66,7 @@ class AlchemicalTableModel(QAbstractTableModel):
 
     def __init__(self, session, query, columns):
         super(AlchemicalTableModel, self).__init__()
-        #TODO self.sort_data = None
+        # TODO self.sort_data = None
         self.session = session
         self.fields = columns
         self.query = query

@@ -98,7 +98,7 @@ class DetachedRunner(QtCore.QObject):
             self._qthread.started.connect(self.model.run)
         else:
             self._logger.warning('DEBUG mode, {} will run in main thread'
-                .format(model.title))
+                                 .format(model.title))
 
         self.model.finished.connect(self._on_model_finished)
         self._logger = logging.getLogger(__name__)

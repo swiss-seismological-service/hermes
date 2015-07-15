@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Unit test for the HydraulicEventHistory class
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """

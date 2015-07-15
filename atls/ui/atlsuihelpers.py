@@ -1,36 +1,37 @@
 # -*- encoding: utf-8 -*-
 """
 GUI helpers
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from PyQt4.QtGui import *
+from PyQt4 import QtGui
 from PyQt4.QtCore import QDateTime
 
 
-class DateDialog(QDialog):
+class DateDialog(QtGui.QDialog):
     def __init__(self, parent=None):
         super(DateDialog, self).__init__(parent)
 
-        layout = QVBoxLayout(self)
+        layout = QtGui.QVBoxLayout(self)
 
         # info text
-        self.label = QLabel(text='The file appears to contain relative dates.\n'
-                                 'Please specify a reference date.')
+        self.label = QtGui.QLabel(
+            text='The file appears to contain relative dates.\n'
+                 'Please specify a reference date.')
         layout.addWidget(self.label)
 
         # nice widget for editing the date
-        self.datetime = QDateTimeEdit(self)
+        self.datetime = QtGui.QDateTimeEdit(self)
         self.datetime.setCalendarPopup(True)
         self.datetime.setDisplayFormat('yyyy-MM-dd hh:mm:ss')
         self.datetime.setDateTime(QDateTime.currentDateTime())
         layout.addWidget(self.datetime)
 
         # OK and Cancel buttons
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok |
-                                        QDialogButtonBox.Cancel)
+        self.buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok |
+                                              QtGui.QDialogButtonBox.Cancel)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
 
@@ -47,5 +48,4 @@ class DateDialog(QDialog):
         dialog = DateDialog(parent)
         result = dialog.exec_()
         date = dialog.date_time()
-        return date.toPyDateTime(), result == QDialog.Accepted
-
+        return date.toPyDateTime(), result == QtGui.QDialog.Accepted

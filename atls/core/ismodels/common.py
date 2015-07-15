@@ -2,7 +2,7 @@
 """
 Common stuff for all ISHA models such as the parent class and the data
 structures that are required to interact with the model.
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -10,7 +10,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from PyQt4 import QtCore
 from datetime import datetime
 from datetime import timedelta
-from functools import wraps
 import logging
 
 

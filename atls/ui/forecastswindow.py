@@ -1,20 +1,19 @@
 # -*- encoding: utf-8 -*-
 """
 Controller class for the forecasts window
-    
+
 Copyright (C) 2014, ETH Zurich - Swiss Seismological Service SED
 
 """
 
 import os
 import logging
-import random
 
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import Qt, QThread
 import numpy as np
 from qgis.core import QgsRasterLayer, QgsMapLayerRegistry, QgsRectangle, \
-                      QgsCoordinateReferenceSystem, QgsLabel
+    QgsCoordinateReferenceSystem
 from qgis.gui import QgsMapCanvasLayer
 
 from openquake.engine.db import models as oq_models
@@ -310,6 +309,7 @@ class RiskTabPresenter(TabPresenter):
         extent = self.loss_layer.extent()
         extent.scale(1.1)
         self.ui.mapWidget.setExtent(extent)
+
 
 class ForecastsWindow(QtGui.QDialog):
 

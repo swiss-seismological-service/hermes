@@ -3,25 +3,22 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
 from PyQt4.QtCore import QVariant, Qt
 from qgis.core import QgsVectorLayer, QgsField, QgsFeature, QgsGeometry, \
-                      QgsPoint, QgsSingleSymbolRendererV2, QgsSymbolV2, \
-                      QgsSimpleMarkerSymbolLayerV2
+    QgsPoint
 
 
 class AtlsDataPointsLayer(QgsVectorLayer):
-
     def __init__(self, name):
         super(AtlsDataPointsLayer, self).__init__('Point', name, 'memory')
 
 
 class AtlsLossPoeLayer(AtlsDataPointsLayer):
-
     def __init__(self, name):
         super(AtlsLossPoeLayer, self).__init__(name)
 

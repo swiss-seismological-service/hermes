@@ -3,14 +3,14 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
 import unittest
 from datetime import datetime, timedelta
-from eqstats import SeismicRateHistory, SeismicRate
+from eqstats import SeismicRateHistory
 
 
 class RateComputationTest(unittest.TestCase):
@@ -64,8 +64,7 @@ class RateComputationTest(unittest.TestCase):
         # The first time bin has 1 event
         self.assertEqual(rates[0].review, 1)
         # The second time bin has 2 events
-        self.assertEqual(rates[1].review, 2.0/3)
-
+        self.assertEqual(rates[1].review, 2.0 / 3)
 
 
 if __name__ == '__main__':

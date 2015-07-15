@@ -3,7 +3,7 @@
 Runs oq in a separate process
 
 This file will be imported by the child process
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """

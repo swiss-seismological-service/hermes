@@ -3,7 +3,7 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -81,4 +81,3 @@ class ShapiroTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

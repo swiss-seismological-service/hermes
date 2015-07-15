@@ -263,8 +263,8 @@ class MainWindow(QtGui.QMainWindow):
     # ... Simulation
 
     def action_start_simulation(self):
-        #speed = self.ui.speedBox.value()
-        #self.atls_core.simulator.speed = speed
+        # speed = self.ui.speedBox.value()
+        # self.atls_core.simulator.speed = speed
         self.atls_core.start()
 
     def action_pause_simulation(self):
@@ -315,15 +315,15 @@ class MainWindow(QtGui.QMainWindow):
         else:
             self.ui.projectNameLabel.setText(self.project.title)
             time_range = self.project.event_time_range()
-            self.ui.startDateLabel.setText('Starts: {}'
-                .format(time_range[0]))
-            self.ui.endDateLabel.setText('Ends: {}'
-                .format(time_range[1]))
-            self.ui.seismicEventCountLabel.setText('{} seismic events'
-                .format(len(self.project.seismic_history)))
+            self.ui.startDateLabel.setText(
+                'Starts: {}'.format(time_range[0]))
+            self.ui.endDateLabel.setText(
+                'Ends: {}'.format(time_range[1]))
+            self.ui.seismicEventCountLabel.setText(
+                '{} seismic events'.format(len(self.project.seismic_history)))
             # TODO: show real data
             self.ui.exposureDataLabel.setText('Exposure data available '
-                                      'for 10 locations')
+                                              'for 10 locations')
             self.ui.boreholeDataLabel.setText('1 Borehole')
 
         state_msg = 'ATLS is idle'
