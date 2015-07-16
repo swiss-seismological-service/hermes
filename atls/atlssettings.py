@@ -104,7 +104,7 @@ class AppSettings:
         if not key in known_settings.keys():
             raise Exception(key + ' is not a known registered setting')
         default = known_settings[key]
-        if isinstance(default, collections.Container):
+        if isinstance(default, collections.Container) or default is None:
             return self._settings.value(key, defaultValue=default)
         else:
             return self._settings.value(key, defaultValue=default,
