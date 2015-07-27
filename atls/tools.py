@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 A bunch of useful general helpers
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -12,18 +12,18 @@ import functools
 import cProfile
 import pstats
 import StringIO
-import logging
 
 
 atls_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+
 
 # note that this decorator ignores **kwargs
 def memoize(obj):
     """
     Memoization decorator
 
-    A memoize decorated function is only evaluated on the first call. The result
-    is cached and returned without reevaluation on subsequent calls.
+    A memoize decorated function is only evaluated on the first call. The
+    result is cached and returned without reevaluation on subsequent calls.
     (from https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize)
 
     """

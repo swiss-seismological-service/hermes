@@ -12,7 +12,6 @@ import logging
 
 from PyQt4 import QtCore
 
-from data.project.atlsproject import AtlsProject
 from data.forecastresult import ForecastResult
 from scheduler.taskscheduler import TaskScheduler, ScheduledTask
 from atlsjob import ForecastJob
@@ -170,7 +169,7 @@ class Engine(QtCore.QObject):
                                  't=' + str(t_run))
             return
 
-        self._logger.info(6*'----------')
+        self._logger.info(6 * '----------')
         self._logger.info('Initiating forecast')
 
         job_input = {

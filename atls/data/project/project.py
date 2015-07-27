@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Provides the Project class which handles project data and state
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """

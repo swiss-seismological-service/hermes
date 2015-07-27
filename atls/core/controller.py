@@ -22,7 +22,7 @@ from core.engine import Engine
 import core.ismodelcontrol as mc
 
 
-#from tools import Profiler
+# from tools import Profiler
 
 
 class Controller(QtCore.QObject):
@@ -59,7 +59,7 @@ class Controller(QtCore.QObject):
 
         # Time, state and other internals
         self._logger = logging.getLogger(__name__)
-        #self._logger.setLevel(logging.DEBUG)
+        # self._logger.setLevel(logging.DEBUG)
 
     # Project handling
 
@@ -132,8 +132,8 @@ class Controller(QtCore.QObject):
         Replays the events from the seismic history.
 
         """
-        #self._profiler = Profiler()
-        #self._profiler.start()
+        # self._profiler = Profiler()
+        # self._profiler.start()
         if self.project is None:
             return
         self._logger.info('Starting simulation')
@@ -147,7 +147,8 @@ class Controller(QtCore.QObject):
         (Re)initialize simulator and scheduler for a new simulation
 
         """
-        self._logger.info('Deleting any forecasting results from previous runs')
+        self._logger.info(
+            'Deleting any forecasting results from previous runs')
         self.project.forecast_history.clear()
         # Reset task scheduler based on the first simulation step time
         time_range = self._simulation_time_range()
@@ -186,5 +187,3 @@ class Controller(QtCore.QObject):
     def _simulation_handler(self, simulation_time):
         """ Invoked by the simulation whenever the project time changes """
         self.project.update_project_time(simulation_time)
-
-

@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Provide classes to run a simple task scheduler
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -103,8 +103,8 @@ class TaskScheduler:
 
     def reset_schedule(self, t0):
         """
-        Reset the scheduled times by scheduling the first runs for all repeating
-        tasks based on t0. Non-repeating tasks are removed.
+        Reset the scheduled times by scheduling the first runs for all
+        repeating tasks based on t0. Non-repeating tasks are removed.
 
         """
         self.scheduled_tasks = [task for task in self.scheduled_tasks
@@ -120,8 +120,8 @@ class TaskScheduler:
 
     def run_pending_tasks(self, t, run_info):
         """
-        Run all tasks that are pending at time t. After running, repeating tasks
-        are scheduled for the next execution and non-repeating tasks are
+        Run all tasks that are pending at time t. After running, repeating
+        tasks are scheduled for the next execution and non-repeating tasks are
         removed from the task queue.
 
         :param t: time t against which the schedule is checked

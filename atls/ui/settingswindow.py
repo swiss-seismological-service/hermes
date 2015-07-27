@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Controller class for the settings window
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -28,17 +28,17 @@ class SettingsWindow(QtGui.QDialog):
         # it's corresponding widget in the settings window
         self.widget_map = {
             # General settings
-            'open_last_project':            self.ui.openLastProjectOnStartup,
-            'enable_lab_mode':              self.ui.enableLabModeCheckBox,
+            'open_last_project': self.ui.openLastProjectOnStartup,
+            'enable_lab_mode': self.ui.enableLabModeCheckBox,
             # Forecast core settings
-            'engine/persist_results':       self.ui.writeResultsToFileCheckBox,
-            'engine/fc_interval':           self.ui.forecastIntervalBox,
-            'engine/fc_bin_size':           self.ui.forecastBinTimeBox,
-            'engine/rt_interval':           self.ui.rateIntervalBox,
-            'engine/num_fc_bins':           self.ui.forecastBinNoBox,
+            'engine/persist_results': self.ui.writeResultsToFileCheckBox,
+            'engine/fc_interval': self.ui.forecastIntervalBox,
+            'engine/fc_bin_size': self.ui.forecastBinTimeBox,
+            'engine/rt_interval': self.ui.rateIntervalBox,
+            'engine/num_fc_bins': self.ui.forecastBinNoBox,
             # Lab mode settings
-            'lab_mode/infinite_speed':      self.ui.simulateAFAPRadioButton,
-            'lab_mode/speed':               self.ui.speedBox,
+            'lab_mode/infinite_speed': self.ui.simulateAFAPRadioButton,
+            'lab_mode/speed': self.ui.speedBox,
         }
         # Invert the mapping for reverse lookups when values change
         self.key_map = dict((v, k) for k, v in self.widget_map.items())

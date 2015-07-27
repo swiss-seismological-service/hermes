@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Unit test for the event simulator
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -18,6 +18,7 @@ from simulator import Simulator
 # Sets the test speed to 10x. If run on a busy system where the delivery of
 # timer events is delayed, this might have to be decreased
 TEST_SPEED = 10.0
+
 
 class SignalEmitter(QtCore.QObject):
     """
@@ -43,7 +44,7 @@ class BasicOperation(unittest.TestCase):
         """
         self.app = QtCore.QCoreApplication([])
         self.history = []
-        self.time_step = 1/TEST_SPEED
+        self.time_step = 1 / TEST_SPEED
         self.simulator = Simulator(self.callback)
         self.simulator.speed = TEST_SPEED
         self.simulator.step_on_internal_timer()
@@ -119,9 +120,9 @@ class BasicOperation(unittest.TestCase):
                (self.simulation_time is None or
                 self.simulation_time < self.simulator.time_range[1])):
             self.app.processEvents()
-            if self.t_elapsed == 2/TEST_SPEED:
+            if self.t_elapsed == 2 / TEST_SPEED:
                 self.simulator.pause()
-            elif self.t_elapsed == 5/TEST_SPEED:
+            elif self.t_elapsed == 5 / TEST_SPEED:
                 self.simulator.start()
             self.step_time()
         self.assertLess(self.t_elapsed, max_t,
@@ -140,7 +141,7 @@ class BasicOperation(unittest.TestCase):
 
         while self.t_elapsed < max_t:
             self.app.processEvents()
-            if self.t_elapsed == 2/TEST_SPEED:
+            if self.t_elapsed == 2 / TEST_SPEED:
                 self.simulator.stop()
             self.step_time()
         self.assertLess(self.simulation_time, self.simulator.time_range[1])

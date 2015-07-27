@@ -89,8 +89,6 @@ class ScheduledTaskTest(unittest.TestCase):
 class TaskSchedulerTest(unittest.TestCase):
     """ Tests the TaskScheduler class """
 
-
-
     def setUp(self):
         """ Setup a combination of differently scheduled tasks """
         self.scheduler = TaskScheduler()
@@ -132,7 +130,8 @@ class TaskSchedulerTest(unittest.TestCase):
 
     def test_reset_schedule(self):
         """
-        Reset schedule should reschedule repeating tasks and remove simple tasks
+        Reset schedule should reschedule repeating tasks and remove simple
+        tasks
 
         """
         self.scheduler.reset_schedule(self.t_run)

@@ -36,7 +36,7 @@ def estimate_gr_params(magnitudes, mc=None):
     m_mean = mags.mean()
     b = 1 / (log(10) * (m_mean - mc))
     a = log10(n) + b * mc
-    std_b = 2.3 * sqrt(sum((mags - m_mean)**2) / (n * (n - 1))) * b**2
+    std_b = 2.3 * sqrt(sum((mags - m_mean) ** 2) / (n * (n - 1))) * b ** 2
     return GrParams(a, b, std_b)
 
 

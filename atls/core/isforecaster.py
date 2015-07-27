@@ -3,7 +3,7 @@
 Atls IS forecaster
 
 See ISForecaster class documentation for details.
-    
+
 """
 
 import logging
@@ -11,7 +11,6 @@ import logging
 from PyQt4 import QtCore
 
 import ismodelcontrol as mc
-from ismodels.common import ModelInput
 from data.isforecastresult import ISForecastResult, ISModelResult
 
 
@@ -66,14 +65,14 @@ class ISForecaster(QtCore.QObject):
                                 't=' + str(t_run))
             return
         self.state = ISForecastState.FORECASTING
-        self.logger.info(6*'----------')
+        self.logger.info(6 * '----------')
         self.logger.info('Initiating forecast at t = ' + str(t_run))
         # Perform any pending result validations before we run the next
         # forecast. This will cause model weights to adjust.
         # FIXME: the review process (weighting) will be a separate stage (#17)
         # self.review_results(t_run, model_input.seismic_events)
         self.logger.debug('Expected flow during forecast: {:.1f} l/min.'
-            .format(model_input.expected_flow))
+                          .format(model_input.expected_flow))
         self.current_run = model_input.t_run
         self._running_models = list(mc.active_models)
         mc.run_active_models(model_input)

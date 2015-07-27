@@ -3,14 +3,14 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
 import unittest
 from datetime import datetime, timedelta
-from eqstats import SeismicRateHistory, SeismicRate
+from eqstats import SeismicRateHistory
 
 
 class RateComputationTest(unittest.TestCase):
@@ -24,7 +24,7 @@ class RateComputationTest(unittest.TestCase):
         start = datetime(2013, 11, 27, 9, 15)
         dt = timedelta(hours=1)
         self.magnitudes = [4, 5.1, 5, 3.8, 2.6]
-        self.times = [start + i*dt for i in range(len(self.magnitudes))]
+        self.times = [start + i * dt for i in range(len(self.magnitudes))]
 
     def test_exact_range(self):
         """ Test rate computation for the exact t/M range of the events"""
@@ -64,8 +64,7 @@ class RateComputationTest(unittest.TestCase):
         # The first time bin has 1 event
         self.assertEqual(rates[0].review, 1)
         # The second time bin has 2 events
-        self.assertEqual(rates[1].review, 2.0/3)
-
+        self.assertEqual(rates[1].review, 2.0 / 3)
 
 
 if __name__ == '__main__':

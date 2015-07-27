@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Controller class for the timeline window
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """

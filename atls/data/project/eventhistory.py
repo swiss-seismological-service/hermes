@@ -4,7 +4,6 @@ History of  events
 
 """
 
-from datetime import datetime
 from operator import attrgetter
 
 from PyQt4 import QtCore

@@ -3,7 +3,7 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -16,7 +16,6 @@ from sqlalchemy import Column, Integer, Float, DateTime, Boolean, String, \
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm import relationship, backref
 
-from core.ismodels.common import ModelOutput, ModelResult
 from ormbase import OrmBase
 
 
@@ -58,8 +57,9 @@ class ISForecastResult(OrmBase):
     t_run = Column(DateTime)
     _reviewed = Column('reviewed', Boolean)
     model_results = relationship('ISModelResult', backref='isforecastresult',
-        collection_class=attribute_mapped_collection('model_name'),
-        cascade="all, delete-orphan")
+                                 collection_class=attribute_mapped_collection(
+                                     'model_name'),
+                                 cascade="all, delete-orphan")
 
     def __init__(self, t_run):
         """
@@ -176,10 +176,10 @@ class ISModelResult(OrmBase):
             # TODO: compute LL per voxel
             # at the moment we don't know the region for each volumetric
             # result.
-            #for result in self.vol_results:
-            #    region = result.region
-            #    obs = len([e for e in observations if e.in_region(region)])
-            #    result.score = log_likelihood(result.review, obs)
+            # for result in self.vol_results:
+            #     region = result.region
+            #     obs = len([e for e in observations if e.in_region(region)])
+            #     result.score = log_likelihood(result.review, obs)
             pass
         self.cum_result.score = log_likelihood(self.cum_result.rate,
                                                len(observations))

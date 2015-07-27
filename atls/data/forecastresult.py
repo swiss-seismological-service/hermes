@@ -1,12 +1,10 @@
 # -*- encoding: utf-8 -*-
 """
 Forecast results
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
-
-import logging
 
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, inspect, orm
 from sqlalchemy.orm import relationship, backref

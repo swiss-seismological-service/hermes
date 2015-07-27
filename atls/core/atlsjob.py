@@ -3,7 +3,7 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -12,7 +12,6 @@ from job import Job, Stage
 
 from ismodels.common import ModelInput
 from isforecaster import ISForecaster
-from data.isforecastresult import ISResult
 from oq.controller import controller as oq
 
 
@@ -105,4 +104,3 @@ class RiskPoeStage(Stage):
 class ForecastJob(Job):
     job_id = 'fc_job'
     stages = [ISForecastStage, PshaStage, RiskPoeStage]
-

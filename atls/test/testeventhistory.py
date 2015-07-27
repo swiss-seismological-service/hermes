@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Tests the EventHistory class
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -61,7 +61,8 @@ class MockStore(MagicMock):
     def _get_child_mock(self, **kw):
         """
         If this is not implemented, the superclass will attempt to create child
-        mocks of class MockStore which fails since it can't provide test_content
+        mocks of class MockStore which fails since it can't provide
+        test_content
 
         """
         return MagicMock(**kw)

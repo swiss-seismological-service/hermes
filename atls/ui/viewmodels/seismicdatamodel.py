@@ -3,7 +3,7 @@
 (GUI) Model for the seismic catalog
 
 Serves up seismic catalog data for Qt
-    
+
 """
 
 from PyQt4 import QtCore
@@ -42,11 +42,9 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
             column = index.column()
             pass
 
-
         if role == QtCore.Qt.ToolTipRole:
             row = index.row()
             pass
-
 
         if role == QtCore.Qt.DecorationRole:
             row = index.row()

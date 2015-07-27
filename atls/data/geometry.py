@@ -3,7 +3,7 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
@@ -17,6 +17,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from collections import namedtuple
+
 
 class Point:
     """
@@ -42,9 +43,9 @@ class Point:
         ymax = ymin + cube.size
         zmin = cube.origin.z
         zmax = zmin + cube.size
-        return (xmin <= p.x < xmax and
-                ymin <= p.y < ymax and
-                zmin <= p.z < zmax)
+        return (xmin <= self.x < xmax and
+                ymin <= self.y < ymax and
+                zmin <= self.z < zmax)
 
 
 """
@@ -52,4 +53,3 @@ A cube defined by an origin (point) and a side length (size)
 
 """
 Cube = namedtuple('Cube', 'origin size')
-

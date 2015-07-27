@@ -8,7 +8,6 @@ import logging
 import traceback
 
 from data.project.eventhistory import EventHistory
-from eventimporter import EventImporter
 from data.seismicevent import SeismicEvent
 from data.geometry import Point
 

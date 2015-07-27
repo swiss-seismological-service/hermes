@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 EventHistory based Qt view model
-    
+
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """

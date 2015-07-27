@@ -4,7 +4,7 @@ Toplevel application object
 
 Bootstraps the application and ties everything together (more specifically
 the GUI and the Atls core application).
-    
+
 """
 
 import sys
@@ -24,7 +24,9 @@ from atlssettings import AppSettings
 VERSION = '0.1 "Bug Infested Alpha"'
 
 # Initialize QGIS
-QgsApplication.setPrefixPath('/usr/local/Cellar/qgis-26/2.6.1/QGIS.app/Contents/MacOS', True)
+prefix_path = '/usr/local/Cellar/qgis-26/2.6.1/QGIS.app/Contents/MacOS'
+QgsApplication.setPrefixPath(prefix_path, True)
+
 
 class Atls(QtCore.QObject):
     """
@@ -108,8 +110,6 @@ class Atls(QtCore.QObject):
             self.atls_core.open_project(path)
         if not self.has_gui:
             self.atls_core.start_simulation()
-
-
 
     def _emit_app_launched(self):
         self.app_launched.emit()
