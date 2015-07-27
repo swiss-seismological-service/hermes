@@ -152,15 +152,15 @@ class Controller(QtCore.QObject):
         self.project.forecast_history.clear()
         # Reset task scheduler based on the first simulation step time
         time_range = self._simulation_time_range()
-        inf_speed = self._settings.value('lab_mode/infinite_speed', type=bool)
+        inf_speed = self._settings.value('lab_mode/infinite_speed')
         if inf_speed:
             self._logger.info('Simulating at maximum speed')
-            dt_h = self._settings.value('engine/fc_interval', type=float)
+            dt_h = self._settings.value('engine/fc_interval')
             dt = timedelta(hours=dt_h)
             step_signal = self.engine.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)
         else:
-            speed = self._settings.value('lab_mode/speed', type=float)
+            speed = self._settings.value('lab_mode/speed')
             self._logger.info('Simulating at {:.0f}x'.format(speed))
             self.simulator.configure(time_range, speed=speed)
         self.engine.reset(time_range[0])

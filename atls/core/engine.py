@@ -139,7 +139,7 @@ class Engine(QtCore.QObject):
         scheduler = TaskScheduler()
 
         # Forecasting Task
-        dt = self._settings.value('engine/fc_interval', type=float)
+        dt = self._settings.value('engine/fc_interval')
         forecast_task = ScheduledTask(task_function=self.run_forecast,
                                       dt=timedelta(hours=dt),
                                       name='Forecast')
@@ -147,7 +147,7 @@ class Engine(QtCore.QObject):
         self._forecast_task = forecast_task  # keep a reference for later
 
         # Rate computations
-        dt = self._settings.value('engine/rt_interval', type=float)
+        dt = self._settings.value('engine/rt_interval')
         rate_update_task = ScheduledTask(task_function=self.update_rates,
                                          dt=timedelta(minutes=dt),
                                          name='Rate update')
@@ -174,14 +174,14 @@ class Engine(QtCore.QObject):
 
         job_input = {
             't_run': t_run,
-            'dt_h': self._settings.value('engine/fc_bin_size', type=float),
+            'dt_h': self._settings.value('engine/fc_bin_size'),
             'project': self._project
         }
         job = ForecastJob()
         job.stage_completed.connect(self.fc_stage_complete)
         self._current_fc_job = job
         self._current_fc_result = ForecastResult(t_run)
-        persist = self._settings.value('engine/persist_results', type=bool)
+        persist = self._settings.value('engine/persist_results')
         self._project.forecast_history.add(self._current_fc_result, persist)
         self._transition_to_state(EngineState.BUSY)
         self._current_fc_job.run(job_input)
