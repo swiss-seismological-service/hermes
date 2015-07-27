@@ -110,15 +110,6 @@ class SettingsWindow(QtGui.QDialog):
         return None
 
     def _set_value_in_widget(self, value, widget):
-        # Fix QSettings bug
-        if value == u'true':
-            value = True
-        elif value == u'false':
-            value = False
-        elif isinstance(value, basestring):
-            if value.isdigit():
-                value = int(value)
-
         if widget.inherits('QAbstractButton'):
             widget.setChecked(value)
         elif widget.inherits('QSpinBox'):
