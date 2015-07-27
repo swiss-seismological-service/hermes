@@ -10,8 +10,23 @@
     <height>139</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>497</width>
+    <height>139</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>497</width>
+    <height>139</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Simulation</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
   </property>
   <widget class="QPushButton" name="stopButton">
    <property name="geometry">

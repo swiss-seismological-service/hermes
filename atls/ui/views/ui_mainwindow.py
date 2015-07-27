@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(598, 220)
+        MainWindow.setFixedSize(450, 300)
         MainWindow.setUnifiedTitleAndToolBarOnMac(True)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName(_fromUtf8("centralWidget"))
@@ -82,6 +82,7 @@ class Ui_MainWindow(object):
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.mainToolBar)
         self.statusBar = QtGui.QStatusBar(MainWindow)
         self.statusBar.setObjectName(_fromUtf8("statusBar"))
+        self.statusBar.setSizeGripEnabled(False)
         MainWindow.setStatusBar(self.statusBar)
         self.actionImport_Seismic_Data = QtGui.QAction(MainWindow)
         self.actionImport_Seismic_Data.setObjectName(_fromUtf8("actionImport_Seismic_Data"))

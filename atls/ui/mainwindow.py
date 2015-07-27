@@ -122,6 +122,7 @@ class MainWindow(QtGui.QMainWindow):
         project.hydraulic_history.history_changed.connect(
             self.on_hydraulic_history_change)
         self.update_status()
+        self.update_controls()
 
     def on_project_will_close(self, project):
         project.will_close.disconnect(self.on_project_will_close)
@@ -143,6 +144,8 @@ class MainWindow(QtGui.QMainWindow):
                                                  'Open Project',
                                                  home,
                                                  'Atls Project Files (*.atl)')
+        if path == '':
+            return
         self._open_project_at_path(path)
 
     def _open_project_at_path(self, path):
@@ -194,6 +197,8 @@ class MainWindow(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open seismic data file',
                                                  home)
+        if path == '':
+            return
         history = self.project.seismic_history
         if path:
             self._import_file_to_history(path, history)
@@ -203,6 +208,8 @@ class MainWindow(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(None,
                                                  'Open hydraulic data file',
                                                  home)
+        if path == '':
+            return
         history = self.project.hydraulic_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
@@ -276,6 +283,17 @@ class MainWindow(QtGui.QMainWindow):
     # Menu Enabled State Updates
 
     def update_controls(self):
+        if self.project is None:
+            enable = False
+        else:
+            enable = True
+        self.ui.actionTimeline.setEnabled(enable)
+        self.ui.actionShow_3D.setEnabled(enable)
+        self.ui.actionForecasts.setEnabled(enable)
+        self.ui.actionSimulation.setEnabled(enable)
+        self.ui.actionScenario.setEnabled(enable)
+        self.ui.actionView_Data.setEnabled(enable)
+
         engine_state = self.atls_core.engine.state
         if engine_state == EngineState.INACTIVE:
             self.ui.actionStart_Simulation.setEnabled(False)
