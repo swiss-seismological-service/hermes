@@ -119,8 +119,8 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.sigRangeChanged.connect(self.set_axis_labels)
 
     def set_axis_labels(self):
-        left_axis_label = 'Y axis'
-        left_axis_units = 'units'
+        left_axis_label = 'Magnitude Mw'
+        left_axis_units = ''
         bottom_axis_label = 'Time'
         bottom_axis_units = self.getAxis('bottom').getDateLabel()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
@@ -143,8 +143,8 @@ class HydraulicsPlotWidget(TimePlotWidget):
         self.sigRangeChanged.connect(self.set_axis_labels)
 
     def set_axis_labels(self):
-        left_axis_label = 'Y axis'
-        left_axis_units = 'units'
+        left_axis_label = 'Flow rate'
+        left_axis_units = 'l/s'
         bottom_axis_label = 'Time'
         bottom_axis_units = self.getAxis('bottom').getDateLabel()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
@@ -187,8 +187,8 @@ class RateForecastPlotWidget(TimePlotWidget):
             self.addItem(bar)
 
     def set_axis_labels(self):
-        left_axis_label = 'Y axis'
-        left_axis_units = 'units'
+        left_axis_label = 'Rate of Seismicity'
+        left_axis_units = '6h^(-1)'
         bottom_axis_label = 'Time'
         bottom_axis_units = self.getAxis('bottom').getDateLabel()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
