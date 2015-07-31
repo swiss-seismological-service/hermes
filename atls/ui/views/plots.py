@@ -114,6 +114,26 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
                                        brush=pg.mkBrush(255, 255, 255, 120))
         self.addItem(self.plot)
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
+        self.sigRangeChanged.connect(self.set_axis_labels)
+
+    def set_axis_labels(self):
+        left_axis_label = 'Y axis'
+        left_axis_units = 'units'
+        bottom_axis_label = 'X axis'
+        bottom_axis_units = 'units'
+        date_label = self.getAxis('bottom').getDateLabel()
+        self.getAxis('left').setLabel(left_axis_label, left_axis_units)
+        if date_label:
+            self.getAxis('bottom').setLabel(
+                bottom_axis_label + ' - ' +
+                self.getAxis('bottom').getDateLabel(),
+                bottom_axis_units
+            )
+        else:
+            self.getAxis('bottom').setLabel(bottom_axis_label,
+                                            bottom_axis_units)
 
 
 class HydraulicsPlotWidget(TimePlotWidget):
@@ -127,6 +147,26 @@ class HydraulicsPlotWidget(TimePlotWidget):
         super(HydraulicsPlotWidget, self).__init__(parent, **kargs)
         self.plot = pg.PlotCurveItem()
         self.addItem(self.plot)
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
+        self.sigRangeChanged.connect(self.set_axis_labels)
+
+    def set_axis_labels(self):
+        left_axis_label = 'Y axis'
+        left_axis_units = 'units'
+        bottom_axis_label = 'X axis'
+        bottom_axis_units = 'units'
+        date_label = self.getAxis('bottom').getDateLabel()
+        self.getAxis('left').setLabel(left_axis_label, left_axis_units)
+        if date_label:
+            self.getAxis('bottom').setLabel(
+                bottom_axis_label + ' - ' +
+                self.getAxis('bottom').getDateLabel(),
+                bottom_axis_units
+            )
+        else:
+            self.getAxis('bottom').setLabel(bottom_axis_label,
+                                            bottom_axis_units)
 
 
 class RateForecastPlotWidget(TimePlotWidget):
@@ -143,6 +183,9 @@ class RateForecastPlotWidget(TimePlotWidget):
         self.rate_plot = pg.PlotCurveItem()
         self.addItem(self.rate_plot)
         self.forecast_bars = []
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
+        self.sigRangeChanged.connect(self.set_axis_labels)
 
     def set_forecast_data(self, x, y):
         # FIXME: this looks like a bug in bargraphitem (the fact that it doesn't
@@ -160,6 +203,23 @@ class RateForecastPlotWidget(TimePlotWidget):
                                   brush=brush, pen=pen)
             self.forecast_bars.append(bar)
             self.addItem(bar)
+
+    def set_axis_labels(self):
+        left_axis_label = 'Y axis'
+        left_axis_units = 'units'
+        bottom_axis_label = 'X axis'
+        bottom_axis_units = 'units'
+        date_label = self.getAxis('bottom').getDateLabel()
+        self.getAxis('left').setLabel(left_axis_label, left_axis_units)
+        if date_label:
+            self.getAxis('bottom').setLabel(
+                bottom_axis_label + ' - ' +
+                self.getAxis('bottom').getDateLabel(),
+                bottom_axis_units
+            )
+        else:
+            self.getAxis('bottom').setLabel(bottom_axis_label,
+                                            bottom_axis_units)
 
 
 class VoxelViewWidget(gl.GLViewWidget):
