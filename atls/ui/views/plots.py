@@ -121,19 +121,10 @@ class SeismicityPlotWidget(TimePlotWidget):
     def set_axis_labels(self):
         left_axis_label = 'Y axis'
         left_axis_units = 'units'
-        bottom_axis_label = 'X axis'
-        bottom_axis_units = 'units'
-        date_label = self.getAxis('bottom').getDateLabel()
+        bottom_axis_label = 'Time'
+        bottom_axis_units = self.getAxis('bottom').getDateLabel()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
-        if date_label:
-            self.getAxis('bottom').setLabel(
-                bottom_axis_label + ' - ' +
-                self.getAxis('bottom').getDateLabel(),
-                bottom_axis_units
-            )
-        else:
-            self.getAxis('bottom').setLabel(bottom_axis_label,
-                                            bottom_axis_units)
+        self.getAxis('bottom').setLabel(bottom_axis_label, bottom_axis_units)
 
 
 class HydraulicsPlotWidget(TimePlotWidget):
@@ -154,19 +145,10 @@ class HydraulicsPlotWidget(TimePlotWidget):
     def set_axis_labels(self):
         left_axis_label = 'Y axis'
         left_axis_units = 'units'
-        bottom_axis_label = 'X axis'
-        bottom_axis_units = 'units'
-        date_label = self.getAxis('bottom').getDateLabel()
+        bottom_axis_label = 'Time'
+        bottom_axis_units = self.getAxis('bottom').getDateLabel()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
-        if date_label:
-            self.getAxis('bottom').setLabel(
-                bottom_axis_label + ' - ' +
-                self.getAxis('bottom').getDateLabel(),
-                bottom_axis_units
-            )
-        else:
-            self.getAxis('bottom').setLabel(bottom_axis_label,
-                                            bottom_axis_units)
+        self.getAxis('bottom').setLabel(bottom_axis_label, bottom_axis_units)
 
 
 class RateForecastPlotWidget(TimePlotWidget):
@@ -207,19 +189,10 @@ class RateForecastPlotWidget(TimePlotWidget):
     def set_axis_labels(self):
         left_axis_label = 'Y axis'
         left_axis_units = 'units'
-        bottom_axis_label = 'X axis'
-        bottom_axis_units = 'units'
-        date_label = self.getAxis('bottom').getDateLabel()
+        bottom_axis_label = 'Time'
+        bottom_axis_units = self.getAxis('bottom').getDateLabel()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
-        if date_label:
-            self.getAxis('bottom').setLabel(
-                bottom_axis_label + ' - ' +
-                self.getAxis('bottom').getDateLabel(),
-                bottom_axis_units
-            )
-        else:
-            self.getAxis('bottom').setLabel(bottom_axis_label,
-                                            bottom_axis_units)
+        self.getAxis('bottom').setLabel(bottom_axis_label, bottom_axis_units)
 
 
 class VoxelViewWidget(gl.GLViewWidget):
