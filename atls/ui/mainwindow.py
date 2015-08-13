@@ -7,10 +7,9 @@ Controller module for the main window
 import os
 import logging
 
-from PyQt4 import QtGui
+from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QWidget, QSizePolicy
 
-from views.ui_mainwindow import Ui_MainWindow
 from forecastswindow import ForecastsWindow
 from settingswindow import SettingsWindow
 from timelinewindow import TimelineWindow
@@ -23,6 +22,10 @@ from core.engine import EngineState
 from simulator import SimulatorState
 from ui.views.plots import Event3DViewWidget
 import numpy as np
+
+ui_path = os.path.dirname(__file__)
+SETTINGS_WINDOW_PATH = os.path.join(ui_path, 'views', 'mainwindow.ui')
+Ui_MainWindow = uic.loadUiType(SETTINGS_WINDOW_PATH)[0]
 
 
 # Create a class for our main window
