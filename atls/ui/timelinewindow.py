@@ -121,18 +121,18 @@ class HydraulicsPresenter(TimelinePresenter):
         if max_time is None:
             max_time = datetime.max
 
-        data = []
+        attrs = {
+            0: 'pr_xt',
+            1: 'flow_xt',
+            2: 'pr_dh',
+            3: 'flow_dh'
+        }
         idx = self.ui.dataComboBox.currentIndex()
-        for e in events:
-            if e.date_time < max_time:
-                e_data = {
-                    0: e.pr_xt,
-                    1: e.flow_xt,
-                    2: e.pr_dh,
-                    3: e.flow_dh
-                }
-                data.append(((e.date_time - epoch).total_seconds(),
-                             e_data[idx]))
+        selected_attr = attrs[idx]
+        data = [
+            ((e.date_time - epoch).total_seconds(), getattr(e, selected_attr))
+            for e in events if e.date_time < max_time
+        ]
 
         x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
         self.time_plot_widget.plot.setData(x, y)
