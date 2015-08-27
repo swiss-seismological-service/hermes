@@ -30,29 +30,13 @@
       </widget>
      </item>
      <item>
-      <widget class="QFrame" name="seismic_data_frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
+      <widget class="SeismicityPlotWidget" name="seismic_data_plot" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <widget class="SeismicityPlotWidget" name="seismic_data_plot" native="true">
-        <property name="geometry">
-         <rect>
-          <x>-1</x>
-          <y>0</y>
-          <width>851</width>
-          <height>151</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
       </widget>
      </item>
      <item>
@@ -95,29 +79,14 @@
       </layout>
      </item>
      <item>
-      <widget class="QFrame" name="hydraulic_data_frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
+      <widget class="HydraulicsPlotWidget" name="hydraulic_data_plot" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <widget class="HydraulicsPlotWidget" name="hydraulic_data_plot" native="true">
-        <property name="geometry">
-         <rect>
-          <x>-1</x>
-          <y>-1</y>
-          <width>851</width>
-          <height>151</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
+       <zorder>hydraulic_data_frame</zorder>
       </widget>
      </item>
      <item>
@@ -169,29 +138,13 @@
       </layout>
      </item>
      <item>
-      <widget class="QFrame" name="forecasts_data_frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
+      <widget class="RateForecastPlotWidget" name="forecasts_data_plot" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <widget class="RateForecastPlotWidget" name="forecasts_data_plot" native="true">
-        <property name="geometry">
-         <rect>
-          <x>-1</x>
-          <y>0</y>
-          <width>851</width>
-          <height>151</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
       </widget>
      </item>
     </layout>
