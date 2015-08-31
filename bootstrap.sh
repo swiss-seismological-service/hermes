@@ -31,3 +31,6 @@ cp /vagrant/atls/resources/oq/gmpe-gsim/* /usr/lib/python2.7/dist-packages/openq
 
 # upgrade OpenQuake database
 oq-engine --upgrade-db -y
+
+# set QGIS prefix path
+export QGIS_PREFIX_PATH=/usr

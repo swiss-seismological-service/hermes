@@ -12,16 +12,15 @@ import logging
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import Qt, QThread
 import numpy as np
-from qgis.core import QgsRasterLayer, QgsMapLayerRegistry, QgsRectangle, \
-    QgsCoordinateReferenceSystem
+from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
 from qgis.gui import QgsMapCanvasLayer
 
 from openquake.engine.db import models as oq_models
 
 from core import ismodelcontrol as mc
-from qgislayers import AtlsLossPoeLayer
 
 from viewmodels.eventhistorymodel import EventListModel
+from qgislayers import AtlsLossPoeLayer
 
 ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'forecastswindow.ui')
@@ -30,6 +29,20 @@ Ui_ForecastsWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
 # Map service that provides the background map
 MAP_SOURCE_URL = 'http://server.arcgisonline.com/ArcGIS/rest/services/'\
                  'World_Street_Map/MapServer?f=json&pretty=true'
+
+
+# Shape files for background map
+BG_LAYER_PATH = 'resources/background_layers'
+BG_LAYER_FILES = ['ne_10m_ocean.shp',
+                  'ne_10m_admin_0_boundary_lines_land.shp',
+                  'ne_10m_lakes.shp',
+                  'ne_10m_land.shp']
+
+# Shape colors
+LAYER_COLORS = [QtGui.QColor.fromRgb(37, 52, 148),    # ocean
+                QtGui.QColor.fromRgb(30, 30, 30),     # borders
+                QtGui.QColor.fromRgb(65, 182, 196),   # lakes
+                QtGui.QColor.fromRgb(250, 250, 250)]  # land
 
 
 class TabPresenter(object):
@@ -248,30 +261,33 @@ class RiskTabPresenter(TabPresenter):
 
     def __init__(self, ui):
         super(RiskTabPresenter, self).__init__(ui)
-        self.ui.mapWidget.setCanvasColor(Qt.white)
 
-        layer = QgsRasterLayer(MAP_SOURCE_URL, "layer")
-        if not layer.isValid():
-            self.logger.error('Layer failed to load!')
+        # Load layers
 
-        # Work in the standard CRS (WGS-84) and reproject all other layers to
-        # the target CRS on the fly
-        crs = QgsCoordinateReferenceSystem(4326)
-        self.ui.mapWidget.setDestinationCrs(crs)
-        self.ui.mapWidget.setCrsTransformEnabled(True)
+        shape_files = [os.path.join(BG_LAYER_PATH, shp_file)
+                       for shp_file in BG_LAYER_FILES]
+        layers = []
+        for shp_file, color in zip(shape_files, LAYER_COLORS):
+            self.logger.info('Loading {}'.format(shp_file))
+            path = os.path.abspath(os.path.join(shp_file))
+            layer = QgsVectorLayer(path, 'shp_file', 'ogr')
+            if not layer.isValid():
+                self.logger.info('Layer at {} failed to load!'.format(path))
+            else:
+                symbols = layer.rendererV2().symbols()
+                symbol = symbols[0]
+                symbol.setColor(color)
+                layers.append(layer)
+                QgsMapLayerRegistry.instance().addMapLayer(layer)
 
         self.loss_layer = AtlsLossPoeLayer('Loss')
+        layers.append(self.loss_layer)
 
-        # add layer to the registry
-        QgsMapLayerRegistry.instance().addMapLayer(self.loss_layer)
-        QgsMapLayerRegistry.instance().addMapLayer(layer)
+        # Set layers
 
-        # set extent to the extent of our layer
+        canvas_layers = [QgsMapCanvasLayer(l) for l in layers]
         self.ui.mapWidget.setExtent(QgsRectangle(5.6, 45.6, 10.8, 47.5))
-
-        # set the map canvas layer set
-        self.ui.mapWidget.setLayerSet([QgsMapCanvasLayer(self.loss_layer),
-                                       QgsMapCanvasLayer(layer)])
+        self.ui.mapWidget.setLayerSet(canvas_layers)
 
     def refresh(self):
         self.logger.info('refreshing risk')
