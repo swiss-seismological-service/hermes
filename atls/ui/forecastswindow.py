@@ -281,6 +281,7 @@ class RiskTabPresenter(TabPresenter):
                 QgsMapLayerRegistry.instance().addMapLayer(layer)
 
         self.loss_layer = AtlsLossPoeLayer('Loss')
+        layers.append(self.loss_layer)
 
         # Set layers
 
