@@ -20,6 +20,7 @@ from openquake.engine.db import models as oq_models
 from core import ismodelcontrol as mc
 
 from viewmodels.eventhistorymodel import EventListModel
+from qgislayers import AtlsLossPoeLayer
 
 ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'forecastswindow.ui')
@@ -278,6 +279,8 @@ class RiskTabPresenter(TabPresenter):
                 symbol.setColor(color)
                 layers.append(layer)
                 QgsMapLayerRegistry.instance().addMapLayer(layer)
+
+        self.loss_layer = AtlsLossPoeLayer('Loss')
 
         # Set layers
 
