@@ -56,6 +56,7 @@ class MainWindow(QtGui.QMainWindow):
         # Setup the user interface
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.statusBar.setSizeGripEnabled(False)
         # ...additional setup
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
