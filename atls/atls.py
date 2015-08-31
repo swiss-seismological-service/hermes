@@ -24,13 +24,9 @@ from atlssettings import AppSettings
 VERSION = '0.1 "Bug Infested Alpha"'
 
 # Initialize QGIS
-prefix_path = ''
-if os.name == 'os2':
-    prefix_path = '/usr/local/Cellar/qgis-26/2.6.1/QGIS.app/Contents/MacOS'
-elif os.name == 'posix':
-    prefix_path = '/usr'
-else:
-    logging.getLogger(__name__).warn('QGIS is not supported on this platform')
+prefix_path = os.environ.get('QGIS_PREFIX_PATH')
+if not prefix_path:
+    logging.getLogger(__name__).warn('QGIS prefix path is not set')
 QgsApplication.setPrefixPath(prefix_path, True)
 
 
