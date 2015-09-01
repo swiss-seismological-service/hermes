@@ -52,6 +52,8 @@ class TimePlotWidget(pg.PlotWidget):
         self.v_line = pg.InfiniteLine(angle=90, movable=False, pen='g')
         self.addItem(self.v_line)
 
+        self.sigRangeChanged.connect(self.on_axis_range_changed)
+
     @property
     def marker_pos(self):
         return self.v_line.value()
@@ -100,6 +102,21 @@ class TimePlotWidget(pg.PlotWidget):
 
         vb.setXRange(pos, pos + display_range)
 
+    def on_axis_range_changed(self):
+        self.getAxis('bottom').setLabel('Time', self.get_bottom_axis_units())
+
+    def get_bottom_axis_units(self):
+        xmin, xmax = [datetime.utcfromtimestamp(v - time.timezone)
+                          for v in self.viewRange()[0]]
+        if xmin.year != xmax.year:
+            return ''
+        if xmin.month != xmax.month:
+            return xmin.strftime('%Y')
+        if xmin.day != xmax.day:
+            return xmin.strftime('%B %Y')
+        if xmin.minute != xmax.minute:
+            return xmin.strftime('%d %B %Y').lstrip('0')
+        return xmin.strftime('%d %B %Y, %H:%M').lstrip('0')
 
 class SeismicityPlotWidget(TimePlotWidget):
     """
@@ -114,6 +131,12 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
                                        brush=pg.mkBrush(255, 255, 255, 120))
         self.addItem(self.plot)
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
+
+    def on_axis_range_changed(self):
+        super(SeismicityPlotWidget, self).on_axis_range_changed()
+        self.getAxis('left').setLabel('Magnitude Mw', '')
 
 
 class HydraulicsPlotWidget(TimePlotWidget):
@@ -127,6 +150,12 @@ class HydraulicsPlotWidget(TimePlotWidget):
         super(HydraulicsPlotWidget, self).__init__(parent, **kargs)
         self.plot = pg.PlotCurveItem()
         self.addItem(self.plot)
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
+
+    def on_axis_range_changed(self):
+        super(HydraulicsPlotWidget, self).on_axis_range_changed()
+        self.getAxis('left').setLabel('Flow rate', 'l/s')
 
 
 class RateForecastPlotWidget(TimePlotWidget):
@@ -143,6 +172,8 @@ class RateForecastPlotWidget(TimePlotWidget):
         self.rate_plot = pg.PlotCurveItem()
         self.addItem(self.rate_plot)
         self.forecast_bars = []
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
 
     def set_forecast_data(self, x, y):
         # FIXME: this looks like a bug in bargraphitem (the fact that it doesn't
@@ -160,6 +191,10 @@ class RateForecastPlotWidget(TimePlotWidget):
                                   brush=brush, pen=pen)
             self.forecast_bars.append(bar)
             self.addItem(bar)
+
+    def on_axis_range_changed(self):
+        super(RateForecastPlotWidget, self).on_axis_range_changed()
+        self.getAxis('left').setLabel('Rate of Seismicity', '6h^(-1)')
 
 
 class VoxelViewWidget(gl.GLViewWidget):
