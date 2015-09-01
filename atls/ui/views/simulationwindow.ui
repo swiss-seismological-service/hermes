@@ -29,6 +29,9 @@
    <bool>false</bool>
   </property>
   <widget class="QPushButton" name="stopButton">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -42,6 +45,9 @@
    </property>
   </widget>
   <widget class="QPushButton" name="pauseButton">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>10</x>
