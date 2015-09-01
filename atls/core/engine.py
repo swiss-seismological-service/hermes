@@ -158,7 +158,7 @@ class Engine(QtCore.QObject):
     # Scheduled task functions
 
     def run_forecast(self, task_run_info):
-        assert(self.state != EngineState.INACTIVE)
+        assert self.state != EngineState.INACTIVE
         t_run = task_run_info.t_project
 
         # Skip this forecast if the core is busy
