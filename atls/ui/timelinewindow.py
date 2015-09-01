@@ -10,7 +10,7 @@ import os
 import logging
 import time
 from datetime import datetime, timedelta
-from PyQt4 import QtCore, QtGui, uic
+from PyQt4 import QtGui, uic
 import core.ismodelcontrol as mc
 from ui.views.plots import DisplayRange
 
