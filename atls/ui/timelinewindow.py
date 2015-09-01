@@ -10,6 +10,7 @@ import os
 import logging
 import time
 from datetime import datetime, timedelta
+from functools import partial
 from PyQt4 import QtGui, uic
 import core.ismodelcontrol as mc
 from ui.views.plots import DisplayRange
@@ -91,6 +92,16 @@ class SeismicityPresenter(TimelinePresenter):
 
 class HydraulicsPresenter(TimelinePresenter):
 
+    def __init__(self, ui, plot):
+        super(HydraulicsPresenter, self).__init__(ui, plot)
+        # Populate the combo box
+        self.ui.dataComboBox.clear()
+        for option in ['Top hole pressure', 'Top hole flow rate',
+                       'Bottom hole pressure', 'Bottom hole flow rate']:
+            self.ui.dataComboBox.addItem(option)
+        self.ui.dataComboBox.currentIndexChanged.connect(
+            partial(self.replot, max_time=None))
+
     def _on_history_changed(self, change):
         t = change.get('simulation_time')
         if t is None:
@@ -110,8 +121,18 @@ class HydraulicsPresenter(TimelinePresenter):
         if max_time is None:
             max_time = datetime.max
 
-        data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
-                for e in events if e.date_time < max_time]
+        attrs = {
+            0: 'pr_xt',
+            1: 'flow_xt',
+            2: 'pr_dh',
+            3: 'flow_dh'
+        }
+        idx = self.ui.dataComboBox.currentIndex()
+        selected_attr = attrs[idx]
+        data = [
+            ((e.date_time - epoch).total_seconds(), getattr(e, selected_attr))
+            for e in events if e.date_time < max_time
+        ]
 
         x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
         self.time_plot_widget.plot.setData(x, y)
