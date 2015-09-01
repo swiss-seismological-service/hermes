@@ -7,10 +7,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import logging
+import os
 
-from PyQt4 import QtGui
-from views.ui_settingswindow import Ui_SettingsWindow
+from PyQt4 import QtGui, uic
 import atlssettings
+
+ui_path = os.path.dirname(__file__)
+SETTINGS_WINDOW_PATH = os.path.join(ui_path, 'views', 'settingswindow.ui')
+Ui_SettingsWindow = uic.loadUiType(SETTINGS_WINDOW_PATH)[0]
 
 
 class SettingsWindow(QtGui.QDialog):
