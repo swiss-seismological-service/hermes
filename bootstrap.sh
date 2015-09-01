@@ -21,9 +21,9 @@ apt-get install -y --force-yes $DEB_PACKAGES
 pip install $PIP_PACKAGES
 
 # install pyqtgraph (custom version until this gets merged into the main repo)
-git clone https://github.com/ab124/pyqtgraph.git
+git clone https://github.com/3rdcycle/pyqtgraph.git
 cd pyqtgraph
-git checkout date-label
+git checkout date-axis-item
 python setup.py install
 
 # install custom GSIMs
