@@ -28,8 +28,8 @@ class Job(QtCore.QObject):
     stages = None
 
     def __init__(self):
-        assert(self.job_id is not None, "You must set a job id")
-        assert(self.stages is not None, "You must set a list of stages")
+        assert self.job_id is not None, "You must set a job id"
+        assert self.stages is not None, "You must set a list of stages"
         super(Job, self).__init__()
         self.stage_objects = [S(self._stage_complete) for S in self.stages]
         self._runnable_stages = None
@@ -74,7 +74,7 @@ class Stage(object):
         :type callback: method taking one argument (the stage)
 
         """
-        assert(self.stage_id is not None, "You must set a stage id")
+        assert self.stage_id is not None, "You must set a stage id"
         self.inputs = None
         self.completed = False
         self.results = None
