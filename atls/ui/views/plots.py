@@ -100,6 +100,18 @@ class TimePlotWidget(pg.PlotWidget):
 
         vb.setXRange(pos, pos + display_range)
 
+    def get_bottom_axis_units(self):
+        xmin, xmax = [datetime.utcfromtimestamp(v - time.timezone)
+                          for v in self.viewRange()[0]]
+        if xmin.year != xmax.year:
+            return ''
+        if xmin.month != xmax.month:
+            return xmin.strftime('%Y')
+        if xmin.day != xmax.day:
+            return xmin.strftime('%B %Y')
+        if xmin.minute != xmax.minute:
+            return xmin.strftime('%d %B %Y').lstrip('0')
+        return xmin.strftime('%d %B %Y, %H:%M').lstrip('0')
 
 class SeismicityPlotWidget(TimePlotWidget):
     """
@@ -122,7 +134,7 @@ class SeismicityPlotWidget(TimePlotWidget):
         left_axis_label = 'Magnitude Mw'
         left_axis_units = ''
         bottom_axis_label = 'Time'
-        bottom_axis_units = self.getAxis('bottom').getDateLabel()
+        bottom_axis_units = self.get_bottom_axis_units()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
         self.getAxis('bottom').setLabel(bottom_axis_label, bottom_axis_units)
 
@@ -146,7 +158,7 @@ class HydraulicsPlotWidget(TimePlotWidget):
         left_axis_label = 'Flow rate'
         left_axis_units = 'l/s'
         bottom_axis_label = 'Time'
-        bottom_axis_units = self.getAxis('bottom').getDateLabel()
+        bottom_axis_units = self.get_bottom_axis_units()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
         self.getAxis('bottom').setLabel(bottom_axis_label, bottom_axis_units)
 
@@ -190,7 +202,7 @@ class RateForecastPlotWidget(TimePlotWidget):
         left_axis_label = 'Rate of Seismicity'
         left_axis_units = '6h^(-1)'
         bottom_axis_label = 'Time'
-        bottom_axis_units = self.getAxis('bottom').getDateLabel()
+        bottom_axis_units = self.get_bottom_axis_units()
         self.getAxis('left').setLabel(left_axis_label, left_axis_units)
         self.getAxis('bottom').setLabel(bottom_axis_label, bottom_axis_units)
 
