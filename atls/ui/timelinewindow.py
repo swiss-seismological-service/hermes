@@ -27,7 +27,6 @@ class TimelinePresenter(object):
         self.time_plot_widget = time_plot_widget
         self.displayed_project_time = datetime.now()
         self.logger = logging.getLogger(__name__)
-        QtCore.QTimer.singleShot(500, self.time_plot_widget.set_axis_labels)
 
     @property
     def history(self):
