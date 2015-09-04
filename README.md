@@ -1,11 +1,10 @@
-[![build status](https://gitlab-ci.seismo.ethz.ch/projects/1/status.png?ref=develop)](https://gitlab-ci.seismo.ethz.ch/projects/1?ref=develop)
+# RT-RAMSIS
 
-# ATLS
+Real Time Risk Assessment and Mitigation for Induced Seismicity.
 
-ATLS is short for Adaptive Traffic Light System and is a software framework used
-to forecast induced seismicity in geothermal projects. ATLS was developed as 
-part of the GEOSIM project and is the predecessor or RT-RAMSIS.
+RT-RAMSIS is a KTI project that is developed in collaboration with
+Geo-Energie Suisse AG. It is the successor of ATLS, a prototype
+software developed under GEOSIM.
 
-See the Wiki page for more information.
-
-Copyright 2013, Swiss Seismological Service, ETH Zurich
+Copyright (c) 2015, Swiss Seismological Service, ETH Zurich and Geo-Energie Suisse
+AG, Zurich
