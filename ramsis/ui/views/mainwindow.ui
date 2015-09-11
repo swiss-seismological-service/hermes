@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>ATLS</string>
+   <string>RAMSIS</string>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>true</bool>

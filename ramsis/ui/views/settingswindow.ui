@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>ATLAS Configuration</string>
+   <string>RAMSIS Configuration</string>
   </property>
   <widget class="QTabWidget" name="settingsTabs">
    <property name="geometry">
@@ -57,7 +57,7 @@
       <string>In Simulation Mode seismic and hydraulic events are played back from an existing catalog.</string>
      </property>
      <property name="text">
-      <string>Run ATLAS in Lab Mode</string>
+      <string>Run RAMSIS in Lab Mode</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -431,7 +431,7 @@
        </font>
       </property>
       <property name="text">
-       <string>~/Desktop/AtlasResults</string>
+       <string>~/Desktop/RamsisResults</string>
       </property>
      </widget>
      <widget class="QPushButton" name="selectOutputDirButton">
