@@ -4,11 +4,16 @@ Controller module for the main window
 
 """
 
+from datetime import datetime, timedelta
 import os
 import logging
 
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QWidget, QSizePolicy
+
+from obspy import UTCDateTime
+from obspy.fdsn import Client
+from obspy.fdsn.header import FDSNException
 
 from forecastswindow import ForecastsWindow
 from settingswindow import SettingsWindow
@@ -16,6 +21,7 @@ from timelinewindow import TimelineWindow
 from simulationwindow import SimulationWindow
 
 from eventimporter import EventImporter
+from obspycatalogimporter import ObsPyCatalogImporter
 import atlsuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.engine import EngineState
@@ -71,6 +77,8 @@ class MainWindow(QtGui.QMainWindow):
             self.action_import_seismic_data)
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
             self.action_import_hydraulic_data)
+        self.ui.actionImport_FDSNWS_Data.triggered.connect(
+            self.action_import_fdsnws_data)
         self.ui.actionView_Data.triggered.\
             connect(self.action_view_seismic_data)
         self.ui.actionSettings.triggered.connect(self.action_show_settings)
@@ -236,6 +244,20 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
+
+    def action_import_fdsnws_data(self):
+        now = datetime.now()
+        starttime = UTCDateTime(now - timedelta(days=100))
+        endtime = UTCDateTime(now)
+        fdsnws_url = 'http://arclink.ethz.ch'
+        client = Client(fdsnws_url)
+        try:
+            catalog = client.get_events(starttime=starttime, endtime=endtime)
+        except FDSNException:
+            self.logger.error('Could not get events from FDSNWS server')
+            return
+        importer = ObsPyCatalogImporter(catalog)
+        self.project.seismic_history.import_events(importer)
 
     def action_show_forecasts(self):
         if self.forecast_window is None:

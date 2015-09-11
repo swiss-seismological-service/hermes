@@ -153,6 +153,7 @@
     <addaction name="separator"/>
     <addaction name="actionImport_Seismic_Data"/>
     <addaction name="actionImport_Hydraulic_Data"/>
+    <addaction name="actionImport_FDSNWS_Data"/>
     <addaction name="separator"/>
     <addaction name="actionView_Data"/>
    </widget>
@@ -305,6 +306,11 @@
    </property>
    <property name="toolTip">
     <string>Compute Scenario</string>
+   </property>
+  </action>
+  <action name="actionImport_FDSNWS_Data">
+   <property name="text">
+    <string>Import FDSNWS Data</string>
    </property>
   </action>
  </widget>
