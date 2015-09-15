@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.4">
+    <logicTree logicTreeID='lt1'>
+
+        <!-- GMPEs -->
+        <logicTreeBranchingLevel branchingLevelID="bl1">
+            <logicTreeBranchSet uncertaintyType="gmpeModel" branchSetID="bs1"
+                    applyToTectonicRegionType="Geothermal">
+                <!-- Kaestli & Faeh (2006) GMICE -->
+                <logicTreeBranch branchID="KFSD001Q600K005">
+                    <uncertaintyModel>KaestliFaeh2006SD001Q600K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD001Q600K020">
+                    <uncertaintyModel>KaestliFaeh2006SD001Q600K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD010Q600K005">
+                    <uncertaintyModel>KaestliFaeh2006SD010Q600K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD010Q600K020">
+                    <uncertaintyModel>KaestliFaeh2006SD010Q600K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD001Q1800K005">
+                    <uncertaintyModel>KaestliFaeh2006SD001Q1800K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD001Q1800K020">
+                    <uncertaintyModel>KaestliFaeh2006SD001Q1800K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD010Q1800K005">
+                    <uncertaintyModel>KaestliFaeh2006SD010Q1800K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="KFSD010Q1800K020">
+                    <uncertaintyModel>KaestliFaeh2006SD010Q1800K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <!-- Faccioli & Cauzzi (2006) GMICE -->
+                <logicTreeBranch branchID="FCSD001Q600K005">
+                    <uncertaintyModel>FaccioliCauzzi2006SD001Q600K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD001Q600K020">
+                    <uncertaintyModel>FaccioliCauzzi2006SD001Q600K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD010Q600K005">
+                    <uncertaintyModel>FaccioliCauzzi2006SD010Q600K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD010Q600K020">
+                    <uncertaintyModel>FaccioliCauzzi2006SD010Q600K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD001Q1800K005">
+                    <uncertaintyModel>FaccioliCauzzi2006SD001Q1800K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD001Q1800K020">
+                    <uncertaintyModel>FaccioliCauzzi2006SD001Q1800K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD010Q1800K005">
+                    <uncertaintyModel>FaccioliCauzzi2006SD010Q1800K005</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="FCSD010Q1800K020">
+                    <uncertaintyModel>FaccioliCauzzi2006SD010Q1800K020</uncertaintyModel>
+                    <uncertaintyWeight>0.0625</uncertaintyWeight>
+                </logicTreeBranch>
+            </logicTreeBranchSet>
+        </logicTreeBranchingLevel>
+
+    </logicTree>
+</nrml>

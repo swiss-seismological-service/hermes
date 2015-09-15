@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This bootstrap scripts sets up the dependencies for ATLS development
+# This bootstrap scripts sets up the dependencies for RAMSIS development
 # on an ubuntu trusty (14.04) machine.
 #
 # Note that while you might use this script to set up your own machine,
@@ -16,9 +16,9 @@ echo "deb http://deb.obspy.org trusty main" >> /etc/apt/sources.list
 PUBLIC_KEY=https://raw.github.com/obspy/obspy/master/misc/debian/public.key
 wget --quiet -O - $PUBLIC_KEY | sudo apt-key add -
 
-# dependencies for ATLS
+# dependencies for RAMSIS
 DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-obspy"\
-" python-sqlalchemy python-pip python-oq-engine git"
+" python-sphinx python-sqlalchemy python-pip python-oq-engine git"
 PIP_PACKAGES="numpy pymatlab"
 
 # install deb and pip packages

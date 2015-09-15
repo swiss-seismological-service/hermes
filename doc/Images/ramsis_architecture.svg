@@ -193,14 +193,14 @@
 		<text transform="matrix(1 0 0 1 63.4839 141.5063)" display="inline" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="24">Controller</text>
 	<rect x="52.936" y="220.211" display="inline" fill="#2C4E72" width="685.484" height="45.967"/>
 	
-		<text transform="matrix(1 0 0 1 63.4839 251.6353)" display="inline" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="24">ATLAS Core</text>
+		<text transform="matrix(1 0 0 1 63.4839 251.6353)" display="inline" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="24">RAMSIS Core</text>
 	<rect x="52.936" y="274.018" display="inline" fill="#2C4E72" width="137.097" height="98.982"/>
 	<rect x="52.936" y="411" display="inline" fill="#95BB65" width="137.097" height="29.756"/>
 	<polygon display="inline" fill="#2C4E72" points="692.453,274.017 244.128,274.017 206.161,274.017 198.161,274.017 
 		198.161,440.758 244.128,440.758 244.128,319.984 511,319.5 511,440.756 738.42,440.758 738.42,319.984 738.42,274.017 	"/>
 	<rect x="52.936" y="54.792" display="inline" fill="#2790B0" width="449.064" height="45.968"/>
 	<text transform="matrix(1 0 0 1 63.4839 87.2163)" display="inline" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="24">GUI</text>
-	<text transform="matrix(1 0 0 1 63.4839 294.6353)" display="inline"><tspan x="0" y="0" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="18">ATLS Project</tspan><tspan x="0" y="28.8" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="14">event history, </tspan><tspan x="0" y="45.6" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="14">hydraulics,</tspan><tspan x="0" y="62.4" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="14">well info</tspan></text>
+	<text transform="matrix(1 0 0 1 63.4839 294.6353)" display="inline"><tspan x="0" y="0" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="18">RAMSIS Project</tspan><tspan x="0" y="28.8" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="14">event history, </tspan><tspan x="0" y="45.6" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="14">hydraulics,</tspan><tspan x="0" y="62.4" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="14">well info</tspan></text>
 	
 		<text transform="matrix(1 0 0 1 63.4839 430.6504)" display="inline" fill="#FFFFFF" font-family="'HelveticaNeue'" font-size="18">sqlalchemy</text>
 	<rect x="752.936" y="54.792" display="inline" fill="#95BB65" width="121.064" height="385.965"/>
