@@ -20,8 +20,8 @@ from eqstats import SeismicRateHistory
 
 class RamsisProject(project.Project):
     """
-    Manages persistent and non-persistent ramsis project data such as the seismic
-    and hydraulic history, and project state information.
+    Manages persistent and non-persistent ramsis project data such as the
+    seismic and hydraulic history, and project state information.
 
     .. pyqt4:signal:project_time_changed: emitted when the project time changes
 
