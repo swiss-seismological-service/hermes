@@ -3,7 +3,7 @@ Project
 
 The :class:`project` maintains the data that is relevant for the project. This is mainly the seismic history, the hydraulic history and the forecasting results.
 
-Project data is loaded and stored from an .atl file which is an sqlite database. The content of the database is mapped to python objects through the third party ORM library `sqlalchemy <http://docs.sqlalchemy.org/en/rel_1_0/>`_. For more information on the persistence
+Project data is loaded and stored from an .rms file which is an sqlite database. The content of the database is mapped to python objects through the third party ORM library `sqlalchemy <http://docs.sqlalchemy.org/en/rel_1_0/>`_. For more information on the persistence
 stack, refer to the last section on this page. 
 
 

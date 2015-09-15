@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This bootstrap scripts sets up the dependencies for ATLS development
+# This bootstrap scripts sets up the dependencies for RAMSIS development
 # on an ubuntu trusty (14.04) machine.
 #
 # Note that while you might use this script to set up your own machine,
@@ -12,7 +12,7 @@
 add-apt-repository ppa:openquake/ppa
 apt-get update
 
-# dependencies for ATLS
+# dependencies for RAMSIS
 DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-sqlalchemy python-pip python-oq-engine git"
 PIP_PACKAGES="numpy pymatlab"
 
@@ -27,7 +27,7 @@ git checkout date-axis-item
 python setup.py install
 
 # install custom GSIMs
-cp /vagrant/atls/resources/oq/gmpe-gsim/* /usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
+cp /vagrant/ramsis/resources/oq/gmpe-gsim/* /usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
 
 # upgrade OpenQuake database
 oq-engine --upgrade-db -y

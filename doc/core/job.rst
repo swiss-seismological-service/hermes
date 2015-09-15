@@ -1,5 +1,5 @@
-Job and AtlsJob Module
-======================
+Job and RamsisJob Module
+========================
 
 Job
 ---
@@ -8,9 +8,9 @@ Job
    :members:
 
 
-AtlsJob
--------
+RamsisJob
+---------
 
-.. automodule:: core.atlsjob
+.. automodule:: core.ramsisjob
    :members:
    :show-inheritance:

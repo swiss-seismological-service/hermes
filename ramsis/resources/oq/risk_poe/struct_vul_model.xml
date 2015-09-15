@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml" xmlns="http://openquake.org/xmlns/nrml/0.4">
+    <vulnerabilityModel>
+        <discreteVulnerabilitySet assetCategory="buildings" lossCategory="buildings" vulnerabilitySetID="basel2006">
+            <IML IMT="MMI">0.000 0.417 0.833 1.250 1.667 2.083 2.500 2.917 3.333 3.750 4.167 4.583 5.000 5.417 5.833 6.250 6.667 7.083 7.500 7.917 8.333 8.750 9.167 9.583 10.000</IML>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M3">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.004 0.006 0.011 0.021 0.037 0.065 0.111 0.178 0.269 0.379 0.497</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="RC4">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.001 0.002 0.004 0.007 0.013 0.024 0.043 0.075 0.126 0.200 0.296</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="RC5">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.006 0.010 0.018 0.033 0.058 0.099 0.162</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="S1">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.005 0.009 0.017 0.030 0.053 0.092</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="RC1">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.005 0.008 0.014 0.026 0.046 0.081 0.134 0.211</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="RC2">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.005 0.009 0.016 0.029 0.051 0.088 0.145</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="RC3">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.006 0.010 0.018 0.032 0.057 0.098 0.160</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M5">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.005 0.009 0.016 0.028 0.050 0.086 0.142 0.222 0.324 0.439 0.556</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M4">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.001 0.002 0.004 0.007 0.013 0.024 0.043 0.075 0.126 0.200 0.296 0.410 0.528 0.638</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M7">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.006 0.011 0.019 0.034 0.060 0.103 0.167 0.255 0.363 0.481 0.595 0.697</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M6">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.005 0.009 0.016 0.028 0.050 0.086 0.142 0.222 0.324 0.439 0.556</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M1">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.006 0.011 0.019 0.034 0.060 0.103 0.167 0.255 0.363 0.481 0.595 0.697</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="W2">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.004 0.006 0.011 0.020 0.036 0.064 0.108 0.175 0.265</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="W1">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.005 0.008 0.015 0.027 0.048 0.084 0.139 0.218</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="M2">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.004 0.006 0.011 0.021 0.037 0.065 0.111 0.178 0.269 0.379 0.497</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+            <discreteVulnerability probabilisticDistribution="LN" vulnerabilityFunctionID="S2">
+                <lossRatio>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.001 0.001 0.002 0.003 0.006 0.010 0.018 0.032 0.057 0.098 0.160</lossRatio>
+                <coefficientsVariation>0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</coefficientsVariation>
+            </discreteVulnerability>
+        </discreteVulnerabilitySet>
+    </vulnerabilityModel>
+</nrml>

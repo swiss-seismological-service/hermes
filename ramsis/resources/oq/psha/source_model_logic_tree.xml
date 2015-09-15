@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.4">
+    <logicTree logicTreeID="lt1">
+
+        <!-- Point Source-->
+        <logicTreeBranchingLevel branchingLevelID="bl1">
+            <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs1">
+                <logicTreeBranch branchID="psrc">
+                    <uncertaintyModel>point_source_model.xml</uncertaintyModel>
+                    <uncertaintyWeight>1.0</uncertaintyWeight>
+                </logicTreeBranch>
+            </logicTreeBranchSet>
+        </logicTreeBranchingLevel>
+
+        <!-- GR 'a' value variation representing Shapiro (SR) and ETAS (E5) models -->
+        <logicTreeBranchingLevel branchingLevelID="bl2">
+            <logicTreeBranchSet branchSetID="bs21" uncertaintyType="abGRAbsolute">
+                <logicTreeBranch branchID="shapiro">
+                    <uncertaintyModel>4.32 1.58</uncertaintyModel>
+                    <uncertaintyWeight>0.5</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="etas">
+                    <uncertaintyModel>4.25 1.58</uncertaintyModel>
+                    <uncertaintyWeight>0.5</uncertaintyWeight>
+                </logicTreeBranch>
+            </logicTreeBranchSet>
+        </logicTreeBranchingLevel>
+
+        <!-- M_max value variation: 3.7, 5.0, 7.0 -->
+        <logicTreeBranchingLevel branchingLevelID="bl3">
+            <logicTreeBranchSet branchSetID="bs31" uncertaintyType="maxMagGRAbsolute">
+                <logicTreeBranch branchID="mmax37">
+                    <uncertaintyModel>3.7</uncertaintyModel>
+                    <uncertaintyWeight>0.3334</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="mmax50">
+                    <uncertaintyModel>5.0</uncertaintyModel>
+                    <uncertaintyWeight>0.3333</uncertaintyWeight>
+                </logicTreeBranch>
+                <logicTreeBranch branchID="mmax70">
+                    <uncertaintyModel>7.0</uncertaintyModel>
+                    <uncertaintyWeight>0.3333</uncertaintyWeight>
+                </logicTreeBranch>
+            </logicTreeBranchSet>
+        </logicTreeBranchingLevel>
+
+    </logicTree>
+</nrml>

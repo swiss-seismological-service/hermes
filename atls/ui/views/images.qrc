@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/toolbar-buttons">
-        <file>images/forecast-window-toolbar-button.png</file>
-        <file>images/view-3d-toolbar-button.png</file>
-        <file>images/scenario-toolbar-button.png</file>
-        <file>images/simulate-toolbar-button.png</file>
-        <file>images/timeline-window-toolbar-button.png</file>
-    </qresource>
-</RCC>
