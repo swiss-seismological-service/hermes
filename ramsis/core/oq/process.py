@@ -19,14 +19,6 @@ from django import db as django_db
 
 config.abort_if_no_config_available()
 
-# try:
-#     import celeryconfig
-# except ImportError:
-#     raise
-#     # TODO: line below is from original openquake_cli.py, check what to do
-#     # We prob. don't need this as long as we run without distribute
-#     sys.path.append('/usr/openquake/engine')
-
 import openquake.engine
 import openquake.engine.engine as oe
 
