@@ -1,5 +1,6 @@
 Project
 =======
 
-.. automodule:: data.project
+.. automodule:: data.project.ramsisproject
    :members:
+   :show-inheritance:
