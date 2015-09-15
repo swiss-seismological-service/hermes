@@ -1,3 +1,5 @@
+[![build status](https://gitlab-ci.seismo.ethz.ch/projects/4/status.png?ref=develop)](https://gitlab-ci.seismo.ethz.ch/projects/4?ref=develop)
+
 # RT-RAMSIS
 
 Real Time Risk Assessment and Mitigation for Induced Seismicity.
