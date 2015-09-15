@@ -11,7 +11,7 @@ Vagrant.configure(2) do |config|
   # https://docs.vagrantup.com.
 
   # Every Vagrant development environment requires a box. You can search for
-  # boxes at https://ramsis.hashicorp.com/search.
+  # boxes at https://atlas.hashicorp.com/search.
   config.vm.box = "ubuntu/trusty32"
 
   # SSH config
@@ -59,11 +59,11 @@ Vagrant.configure(2) do |config|
   # View the documentation for the provider you are using for more
   # information on available options.
 
-  # Define a Vagrant Push strategy for pushing to Ramsis. Other push strategies
+  # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
   # such as FTP and Heroku are also available. See the documentation at
-  # https://docs.vagrantup.com/v2/push/ramsis.html for more information.
-  # config.push.define "ramsis" do |push|
-  #   push.app = "YOUR_RAMSIS_USERNAME/YOUR_APPLICATION_NAME"
+  # https://docs.vagrantup.com/v2/push/atlas.html for more information.
+  # config.push.define "atlas" do |push|
+  #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   end
 
   # Suppresses some annoying messages on ubuntu
