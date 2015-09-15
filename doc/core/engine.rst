@@ -1,5 +1,5 @@
 Engine Module
 =============
 
-.. automodule:: core.controller
+.. automodule:: core.engine
    :members:
