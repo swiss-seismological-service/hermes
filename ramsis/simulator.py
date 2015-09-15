@@ -77,7 +77,7 @@ class Simulator(QtCore.QObject):
             step_on is used.
         :type speed: float
         :param step_on: Signal the simulator uses to advance time by dt. If
-            not set an internal timer is used and dt is ignored.
+            not set, an internal timer is used and dt is ignored.
         :type step_on: QtCore.QSignal
         :param dt: Time step when step signal is used
         :type dt: datetime
@@ -87,39 +87,6 @@ class Simulator(QtCore.QObject):
         self._time_range = time_range
         self._external_signal = step_on
         self._dt = dt
-
-    def step_on_internal_timer(self):
-        """
-        Configures the simulator to run on the internal timer.
-
-        This is the default.
-
-        """
-        self._dt = None
-        if self._external_signal:
-            self._external_signal.disconnect(self._simulate_time_step)
-        self._external_signal = None
-
-    def step_on_external_signal(self, step_signal, dt):
-        """
-        Configures the simulator to run on an external signal.
-
-        The simulator listens to the *step_signal* and increases the project
-        time by dt whenever the signal is received. The simulator connects to
-        the signal via a queue to make sure the run loop can return before the
-        next iteration executes.
-        The first step is executed immediately upon start()
-
-        :param step_signal: signal on which to simulate a time step
-        :type step_signal: pyqt signal
-        :param dt: time step
-        :type dt: timedelta
-
-        """
-        self._dt = dt
-        self._external_signal = step_signal
-        self._external_signal.connect(self._simulate_time_step,
-                                      type=QtCore.Qt.QueuedConnection)
 
     def start(self):
         """
@@ -135,6 +102,8 @@ class Simulator(QtCore.QObject):
             self._simulation_time = self._time_range[0]
         self._transition_to_state(SimulatorState.RUNNING)
         if self._external_signal:
+            self._external_signal.connect(self._simulate_time_step,
+                                          QtCore.Qt.QueuedConnection)
             # Execute first step immediately after run loop returns
             QtCore.QTimer.singleShot(0, self._simulate_time_step)
         else:
@@ -152,8 +121,6 @@ class Simulator(QtCore.QObject):
             self._timer.stop()
         else:
             self._external_signal.disconnect(self._simulate_time_step)
-            self._external_signal = None
-            self._dt = None
         self._transition_to_state(SimulatorState.STOPPED)
 
     def _simulate_time_step(self):
