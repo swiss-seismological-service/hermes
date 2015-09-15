@@ -144,10 +144,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_open_project(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.getOpenFileName(None,
-                                                 'Open Project',
-                                                 home,
-                                                 'Ramsis Project Files (*.rms)')
+        path = QtGui.QFileDialog.\
+            getOpenFileName(None, 'Open Project', home,
+                            'Ramsis Project Files (*.rms)')
         if path == '':
             return
         self._open_project_at_path(path)
@@ -190,10 +189,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_new_project(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.getSaveFileName(None,
-                                                 'New Project',
-                                                 home,
-                                                 'Ramsis Project Files (*.rms)')
+        path = QtGui.QFileDialog.\
+            getSaveFileName(None, 'New Project', home,
+                            'Ramsis Project Files (*.rms)')
         self.ramsis_core.create_project(path)
 
     def action_import_seismic_data(self):
@@ -239,8 +237,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_show_forecasts(self):
         if self.forecast_window is None:
-            self.forecast_window = ForecastsWindow(ramsis_core=self.ramsis_core,
-                                                   parent=self)
+            self.forecast_window = \
+                ForecastsWindow(ramsis_core=self.ramsis_core, parent=self)
         self.forecast_window.show()
 
     def action_show_timeline(self):
@@ -251,8 +249,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_show_sim_controls(self):
         if self.simulation_window is None:
-            self.simulation_window = SimulationWindow(ramsis_core=self.ramsis_core,
-                                                      parent=self)
+            self.simulation_window = \
+                SimulationWindow(ramsis_core=self.ramsis_core, parent=self)
         self.simulation_window.show()
 
     def action_show_3d(self):
