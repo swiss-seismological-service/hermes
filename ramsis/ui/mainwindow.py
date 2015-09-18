@@ -27,6 +27,7 @@ from viewmodels.seismicdatamodel import SeismicDataModel
 from core.engine import EngineState
 from simulator import SimulatorState
 from ui.views.plots import Event3DViewWidget
+from scheduler.taskscheduler import ScheduledTask
 import numpy as np
 
 ui_path = os.path.dirname(__file__)
@@ -244,6 +245,12 @@ class MainWindow(QtGui.QMainWindow):
             history.import_events(importer)
 
     def action_import_fdsnws_data(self):
+        task = ScheduledTask(task_function=self._import_fdsnws_data,
+                             dt=timedelta(minutes=1),
+                             name='FDSN')
+        self.ramsis_core.engine._scheduler.add_task(task)
+
+    def _import_fdsnws_data(self, run_info):
         now = datetime.now()
         starttime = UTCDateTime(now - timedelta(days=100))
         endtime = UTCDateTime(now)
