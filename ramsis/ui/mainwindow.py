@@ -255,7 +255,9 @@ class MainWindow(QtGui.QMainWindow):
             self.logger.error('Could not get events from FDSNWS server')
             return
         importer = ObsPyCatalogImporter(catalog)
-        self.project.seismic_history.import_events(importer)
+        self.project.seismic_history.import_events(importer,
+                                                   starttime.datetime,
+                                                   endtime.datetime)
 
     def action_show_forecasts(self):
         if self.forecast_window is None:
