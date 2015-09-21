@@ -25,6 +25,9 @@ class ObsPyCatalogImporter:
             # TODO: get origin lat/long and convert to cartesian coordinates
             origin = event.preferred_origin()
             magnitude = event.preferred_magnitude()
+            if not (hasattr(origin, depth) and hasattr(magnitude, mag)):
+                continue
+
             date = origin.time.datetime
             row = {
                 'x': 1.0,
