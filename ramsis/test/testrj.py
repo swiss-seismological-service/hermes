@@ -15,7 +15,7 @@ from PyQt4 import QtCore
 
 from data.seismicevent import SeismicEvent
 from data.geometry import Point
-from ismodels.rj import Rj
+from core.ismodels.rj import Rj
 from core.ismodels.common import ModelInput
 
 

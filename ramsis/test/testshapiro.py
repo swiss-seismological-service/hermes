@@ -17,7 +17,7 @@ from data.seismicevent import SeismicEvent
 from data.hydraulicevent import HydraulicEvent
 from data.injectionwell import InjectionWell
 from data.geometry import Point
-from ismodels.shapiro import Shapiro
+from core.ismodels.shapiro import Shapiro
 from core.ismodels.common import ModelInput
 
 
