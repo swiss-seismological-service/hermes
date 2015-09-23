@@ -254,6 +254,7 @@ class MainWindow(QtGui.QMainWindow):
         now = datetime.now()
         starttime = UTCDateTime(now - timedelta(days=100))
         endtime = UTCDateTime(now)
+        timerange = (starttime.datetime, endtime.datetime)
         fdsnws_url = 'http://arclink.ethz.ch'
         client = Client(fdsnws_url)
         try:
@@ -262,9 +263,7 @@ class MainWindow(QtGui.QMainWindow):
             self.logger.error('Could not get events from FDSNWS server')
             return
         importer = ObsPyCatalogImporter(catalog)
-        self.project.seismic_history.import_events(importer,
-                                                   starttime.datetime,
-                                                   endtime.datetime)
+        self.project.seismic_history.import_events(importer, timerange)
 
     def action_show_forecasts(self):
         if self.forecast_window is None:

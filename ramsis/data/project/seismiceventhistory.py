@@ -23,7 +23,7 @@ class SeismicEventHistory(EventHistory):
         super(SeismicEventHistory, self).__init__(store, SeismicEvent)
         self._logger = logging.getLogger(__name__)
 
-    def import_events(self, importer, starttime=None, endtime=None):
+    def import_events(self, importer, timerange=None):
         """
         Imports seismic events from a csv file by using an EventImporter
 
@@ -53,9 +53,9 @@ class SeismicEventHistory(EventHistory):
                                + traceback.format_exc())
         else:
             predicate = None
-            if starttime and endtime:
-                predicate = (self.entity.date_time >= starttime,
-                             self.entity.date_time <= endtime)
+            if timerange:
+                predicate = (self.entity.date_time >= timerange[0],
+                             self.entity.date_time <= timerange[1])
             self.store.purge_entity(self.entity, predicate)
             self.store.add(events)
             self._logger.info('Imported {} events.'.format(len(events)))
