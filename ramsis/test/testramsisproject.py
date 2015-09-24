@@ -42,10 +42,11 @@ class RamsisProjectTest(unittest.TestCase):
         s_config = {'return_value.__getitem__.side_effect': s_get_item}
         h_config = {'return_value.__getitem__.side_effect': h_get_item}
 
-        self.s_patch = patch('project.RamsisProject.SeismicEventHistory',
-                             **s_config)
-        self.h_patch = patch('project.RamsisProject.HydraulicEventHistory',
-                             **h_config)
+        s_path = 'data.project.seismiceventhistory.SeismicEventHistory'
+        h_path = 'data.project.hydrauliceventhistory.HydraulicEventHistory'
+
+        self.s_patch = patch(s_path, **s_config)
+        self.h_patch = patch(h_path, **h_config)
         self.s_mock = self.s_patch.start()
         self.h_mock = self.h_patch.start()
 

@@ -51,8 +51,8 @@ class DetachedRunnerTest(unittest.TestCase):
     def test_start_finish(self):
         """ Check if the model starts and terminates as expected """
         on_finished = MagicMock()
-        on_state_changed = MagicMock()
-        self.mock_model.state_changed.connect(on_state_changed)
+        # on_state_changed = MagicMock()
+        # self.mock_model.state_changed.connect(on_state_changed)
         self.mock_model.finished.connect(on_finished)
         dummy_run_data = ModelInput(datetime.now())
         self.detached_runner.run_model(dummy_run_data)
