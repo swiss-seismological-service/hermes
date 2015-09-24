@@ -66,8 +66,8 @@ class TestRj(unittest.TestCase):
         self.assertIsNotNone(self.run_results)
 
         # Compare the result with a precomputed known result for this case
-        rate = self.run_results.rates[0]
-        prob = self.run_results.probabilities[0]
+        rate = self.run_results.output.cum_result.rate
+        prob = self.run_results.output.cum_result.prob
         self.assertAlmostEqual(rate, 0.442, delta=0.001)
         self.assertAlmostEqual(prob, 0.357, delta=0.001)
 
@@ -92,9 +92,9 @@ class TestRj(unittest.TestCase):
         # Compare the result with a precomputed known result for this case
         expected_rates = [0.564, 0.066]
         expected_probs = [0.431, 0.064]
-        for comp, ex in zip(self.run_results.rates, expected_rates):
+        for comp, ex in zip(self.run_results.output.cum_result.rate, expected_rates):
             self.assertAlmostEqual(comp, ex, delta=0.001)
-        for comp, ex in zip(self.run_results.probabilities, expected_probs):
+        for comp, ex in zip(self.run_results.output.cum_result.prob, expected_probs):
             self.assertAlmostEqual(comp, ex, delta=0.001)
 
     def test_ignore_future_events(self):
@@ -118,8 +118,8 @@ class TestRj(unittest.TestCase):
         self.assertIsNotNone(self.run_results)
 
         # Compare the result with a precomputed known result for this case
-        rate = self.run_results.rates[0]
-        prob = self.run_results.probabilities[0]
+        rate = self.run_results.output.cum_result.rate
+        prob = self.run_results.output.cum_result.prob
         self.assertAlmostEqual(rate, 0.442, delta=0.001)
         self.assertAlmostEqual(prob, 0.357, delta=0.001)
 
