@@ -73,12 +73,10 @@ class TestRj(unittest.TestCase):
 
     def test_multiple_events(self):
         """
-        Test the forecast for multiple time bins based on multiple events
+        Test the forecast based on multiple events
 
         """
         run_data = self.create_run_data(num_events=2)
-        t_forecast = run_data.forecast_times[0]
-        run_data.forecast_times.append(t_forecast + timedelta(hours=6))
 
         # Run the model
         self.model.prepare_run(run_data)
@@ -90,12 +88,10 @@ class TestRj(unittest.TestCase):
         self.assertIsNotNone(self.run_results)
 
         # Compare the result with a precomputed known result for this case
-        expected_rates = [0.564, 0.066]
-        expected_probs = [0.431, 0.064]
-        for comp, ex in zip(self.run_results.output.cum_result.rate, expected_rates):
-            self.assertAlmostEqual(comp, ex, delta=0.001)
-        for comp, ex in zip(self.run_results.output.cum_result.prob, expected_probs):
-            self.assertAlmostEqual(comp, ex, delta=0.001)
+        rate = self.run_results.output.cum_result.rate
+        prob = self.run_results.output.cum_result.prob
+        self.assertAlmostEqual(rate, 0.564, delta=0.001)
+        self.assertAlmostEqual(prob, 0.431, delta=0.001)
 
     def test_ignore_future_events(self):
         """
