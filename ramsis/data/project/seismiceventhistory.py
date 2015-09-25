@@ -20,7 +20,7 @@ class SeismicEventHistory(EventHistory):
     """
 
     def __init__(self, store):
-        super(SeismicEventHistory, self).__init__(store, SeismicEvent)
+        EventHistory.__init__(self, store, SeismicEvent)
         self._logger = logging.getLogger(__name__)
 
     def import_events(self, importer):

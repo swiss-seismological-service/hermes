@@ -16,7 +16,25 @@ from PyQt4 import QtCore
 from data.project.ramsisproject import RamsisProject
 
 
+# Patch Seismic and HydraulicEventHistory imports in ramsisproject
 Event = namedtuple('Event', 'date_time')
+hydraulic_events = [Event(date_time=datetime(2013, 12, 5, 9)),
+                         Event(date_time=datetime(2013, 12, 5, 10))]
+seismic_events = [Event(date_time=datetime(2013, 12, 5, 8)),
+                       Event(date_time=datetime(2013, 12, 5, 11))]
+
+def h_get_item(item):
+    return hydraulic_events[item]
+
+def s_get_item(item):
+    return seismic_events[item]
+
+s_config = {'return_value.__getitem__.side_effect': s_get_item}
+h_config = {'return_value.__getitem__.side_effect': h_get_item}
+s_path = 'data.project.ramsisproject.SeismicEventHistory'
+h_path = 'data.project.ramsisproject.HydraulicEventHistory'
+s_patch = patch(s_path, **s_config)
+h_patch = patch(h_path, **h_config)
 
 
 class RamsisProjectTest(unittest.TestCase):
@@ -27,40 +45,21 @@ class RamsisProjectTest(unittest.TestCase):
         use upon instantiation.
 
         """
-        self.hydraulic_events = [Event(date_time=datetime(2013, 12, 5, 9)),
-                                 Event(date_time=datetime(2013, 12, 5, 10))]
 
-        self.seismic_events = [Event(date_time=datetime(2013, 12, 5, 8)),
-                               Event(date_time=datetime(2013, 12, 5, 11))]
-
-        def h_get_item(item):
-            return self.hydraulic_events[item]
-
-        def s_get_item(item):
-            return self.seismic_events[item]
-
-        s_config = {'return_value.__getitem__.side_effect': s_get_item}
-        h_config = {'return_value.__getitem__.side_effect': h_get_item}
-
-        s_path = 'data.project.seismiceventhistory.SeismicEventHistory'
-        h_path = 'data.project.hydrauliceventhistory.HydraulicEventHistory'
-
-        self.s_patch = patch(s_path, **s_config)
-        self.h_patch = patch(h_path, **h_config)
-        self.s_mock = self.s_patch.start()
-        self.h_mock = self.h_patch.start()
+        self.s_mock = s_patch.start()
+        self.h_mock = h_patch.start()
 
         # Prepare a fake Store object
         self.store_mock = MagicMock()
 
     def tearDown(self):
-        self.s_patch.stop()
-        self.h_patch.stop()
+        s_patch.stop()
+        h_patch.stop()
 
     def test_init(self):
         """ Test if the RamsisProject initializes as expected. """
         self.project = RamsisProject(self.store_mock)
-        t_expected = self.seismic_events[0].date_time
+        t_expected = seismic_events[0].date_time
         self.assertEqual(self.project.project_time, t_expected)
 
     def test_earliest_no_hydr(self):
@@ -68,7 +67,7 @@ class RamsisProjectTest(unittest.TestCase):
         self.h_mock.return_value.__getitem__.side_effect = None
         self.h_mock.return_value.__getitem__.return_value = None
         self.project = RamsisProject(self.store_mock)
-        t_expected = self.seismic_events[0].date_time
+        t_expected = seismic_events[0].date_time
         self.assertEqual(self.project.earliest_event().date_time, t_expected)
 
     def test_earliest_no_seis(self):
@@ -76,7 +75,7 @@ class RamsisProjectTest(unittest.TestCase):
         self.s_mock.return_value.__getitem__.side_effect = None
         self.s_mock.return_value.__getitem__.return_value = None
         self.project = RamsisProject(self.store_mock)
-        t_expected = self.hydraulic_events[0].date_time
+        t_expected = hydraulic_events[0].date_time
         self.assertEqual(self.project.earliest_event().date_time, t_expected)
 
     def test_earliest_no_events(self):
@@ -89,8 +88,8 @@ class RamsisProjectTest(unittest.TestCase):
 
     def test_event_time_range(self):
         self.project = RamsisProject(self.store_mock)
-        expected = (self.seismic_events[0].date_time,
-                    self.seismic_events[1].date_time)
+        expected = (seismic_events[0].date_time,
+                    seismic_events[1].date_time)
         self.assertEqual(self.project.event_time_range(), expected)
 
     def test_update_project_time(self):
