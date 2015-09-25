@@ -9,6 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, inspect, orm
 from sqlalchemy.orm import relationship, backref
 
+from isforecastresult import ISForecastResult
 from ormbase import OrmBase
 from PyQt4 import QtCore
 
@@ -36,7 +37,7 @@ class ForecastResult(OrmBase):
     id = Column(Integer, primary_key=True)
     t_run = Column(DateTime)
     is_forecast_result_id = Column(Integer, ForeignKey('isforecastresult.id'))
-    is_forecast_result = relationship('ISForecastResult',
+    is_forecast_result = relationship(ISForecastResult.__name__,
                                       cascade='all, delete-orphan',
                                       backref=backref('forecastresult',
                                                       uselist=False),
