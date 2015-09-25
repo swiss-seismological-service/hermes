@@ -31,10 +31,12 @@ class ScheduledTaskTest(unittest.TestCase):
 
         dt = timedelta(minutes=10)
         task = ScheduledTask(self.handler, dt=dt, name='MyTask')
+        self.assertEqual(task.task_function, self.handler)
         self.assertEqual(task.dt, dt)
         self.assertEqual(task.name, 'MyTask')
 
         task = ScheduledTask(self.handler)
+        self.assertEqual(task.task_function, self.handler)
         self.assertIsNone(task.dt)
         self.assertIsNotNone(task.name)
 
