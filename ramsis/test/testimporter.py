@@ -32,7 +32,7 @@ class Import(unittest.TestCase):
                    'pr_xt': (269 + i * 0.1)}
             expected.append((date, row))
 
-        with open('resources/test_hydr.csv', 'rb') as f:
+        with open('test/resources/test_hydr.csv', 'rb') as f:
             # Create unit under test
             importer = EventImporter(f, delimiter='\t')
             importer.date_format = '%Y-%m-%dT%H:%M:%S'
@@ -68,7 +68,7 @@ class Import(unittest.TestCase):
 
         expected = [(date1, row1), (date2, row2), (date3, row3)]
 
-        with open('resources/test_catalog.csv', 'rb') as f:
+        with open('test/resources/test_catalog.csv', 'rb') as f:
             # Create unit under test
             importer = EventImporter(f)
             importer.base_date = base_date

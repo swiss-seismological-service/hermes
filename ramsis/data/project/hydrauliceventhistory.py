@@ -16,7 +16,7 @@ class HydraulicEventHistory(EventHistory):
     """
 
     def __init__(self, store):
-        super(HydraulicEventHistory, self).__init__(store, HydraulicEvent)
+        EventHistory.__init__(self, store, HydraulicEvent)
 
     def import_events(self, importer):
         """

@@ -77,9 +77,11 @@ class SeismicRateHistory(QtCore.QObject):
         self.history_changed.emit(self)
 
     def lookup_rate(self, t):
-        idx = self.times.index(t)
-        if idx:
+        if t in self.times:
+            idx = self.times.index(t)
             return self._rates[idx]
+        else:
+            return None
 
     def clear(self):
         self._rates = []
@@ -120,6 +122,6 @@ class SeismicRateHistory(QtCore.QObject):
 
         self._rates += computed
         # Store the time and magnitude lower bin boundaries for reference
-        self.times.append(t_rates)
+        self.times.extend(t_rates)
         self.history_changed.emit(self)
         return computed

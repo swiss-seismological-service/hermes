@@ -16,6 +16,26 @@ Core Modules
    core/ismodelcontrol
    core/isforecaster
 
+Unit Tests
+----------
+
+.. toctree::
+
+   test/taskschedulertest
+   test/testcommon
+   test/testeqstats
+   test/testeventhistory
+   test/testhydrauliceventhistory
+   test/testimporter
+   test/testishamodelcontrol
+   test/testproject
+   test/testramsisproject
+   test/testrj
+   test/testseismicevent
+   test/testseismiceventhistory
+   test/testshapiro
+   test/testsimulator
+   test/teststore
 
 User Interface
 --------------

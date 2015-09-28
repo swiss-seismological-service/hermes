@@ -13,7 +13,7 @@ add-apt-repository ppa:openquake/ppa
 apt-get update
 
 # dependencies for RAMSIS
-DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-sphinx python-sqlalchemy python-pip python-oq-engine git"
+DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-sphinx python-sqlalchemy python-pip python-oq-engine python-nose git"
 PIP_PACKAGES="numpy pymatlab"
 
 # install deb and pip packages

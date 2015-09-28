@@ -9,6 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 import unittest
+import distutils.spawn
 from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
@@ -17,10 +18,11 @@ from data.seismicevent import SeismicEvent
 from data.hydraulicevent import HydraulicEvent
 from data.injectionwell import InjectionWell
 from data.geometry import Point
-from ismodels.shapiro import Shapiro
+from core.ismodels.shapiro import Shapiro
 from core.ismodels.common import ModelInput
 
-
+@unittest.skipIf(distutils.spawn.find_executable('matlab') is None,
+                 "MATLAB does not seem to be installed.")
 class ShapiroTest(unittest.TestCase):
 
     def setUp(self):

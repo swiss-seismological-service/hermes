@@ -31,10 +31,12 @@ class ScheduledTaskTest(unittest.TestCase):
 
         dt = timedelta(minutes=10)
         task = ScheduledTask(self.handler, dt=dt, name='MyTask')
+        self.assertEqual(task.task_function, self.handler)
         self.assertEqual(task.dt, dt)
         self.assertEqual(task.name, 'MyTask')
 
         task = ScheduledTask(self.handler)
+        self.assertEqual(task.task_function, self.handler)
         self.assertIsNone(task.dt)
         self.assertIsNotNone(task.name)
 
@@ -143,7 +145,7 @@ class TaskSchedulerTest(unittest.TestCase):
 
     def test_run_pending(self):
         """ Test running pending tasks and updating schedule """
-        self.scheduler.run_pending_tasks(self.t_run)
+        self.scheduler.run_pending_tasks(self.t_run, None)
         self.assertEqual(self.handler.call_count, 2)
         self.assertEqual(self.task1.run_time, self.t_run + self.task1.dt)
         self.assertEqual(self.task5.run_time, self.t_run + self.task5.dt)

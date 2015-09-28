@@ -16,7 +16,7 @@ from PyQt4 import QtCore
 from mock import MagicMock, call
 
 from core.ismodelcontrol import DetachedRunner
-from core.ismodels.common import ModelInput, Model, ModelState
+from core.ismodels.common import ModelInput, Model
 
 
 class MockIshaModel(Model):
@@ -51,8 +51,8 @@ class DetachedRunnerTest(unittest.TestCase):
     def test_start_finish(self):
         """ Check if the model starts and terminates as expected """
         on_finished = MagicMock()
-        on_state_changed = MagicMock()
-        self.mock_model.state_changed.connect(on_state_changed)
+        # on_state_changed = MagicMock()
+        # self.mock_model.state_changed.connect(on_state_changed)
         self.mock_model.finished.connect(on_finished)
         dummy_run_data = ModelInput(datetime.now())
         self.detached_runner.run_model(dummy_run_data)
@@ -61,8 +61,6 @@ class DetachedRunnerTest(unittest.TestCase):
         sleep(0.2)
         self.app.processEvents()
         on_finished.assert_called_once_with(self.mock_model)
-        expected_calls = [call(ModelState.RUNNING), call(ModelState.IDLE)]
-        on_state_changed.assert_has_calls(expected_calls)
 
 
 if __name__ == '__main__':

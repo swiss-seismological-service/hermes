@@ -40,7 +40,7 @@ class EventHistory(QtCore.QObject):
         :type date_time_attr: str
 
         """
-        super(EventHistory, self).__init__()
+        QtCore.QObject.__init__(self)
         self.store = store
         self.entity = entity
         self.date_attr = date_time_attr

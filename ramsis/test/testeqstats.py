@@ -27,7 +27,7 @@ class RateComputationTest(unittest.TestCase):
         self.times = [start + i * dt for i in range(len(self.magnitudes))]
 
     def test_exact_range(self):
-        """ Test rate computation for the exact t/M range of the events"""
+        """ Test rate computation for the exact t/M range of the events """
         t_max = max(self.times)
         dt = max(self.times) - min(self.times)
 
@@ -36,7 +36,7 @@ class RateComputationTest(unittest.TestCase):
         rates = rate_history.compute_and_add(self.magnitudes,
                                              self.times,
                                              [t_max])
-        self.assertEqual(rates[0].review, 1.25)
+        self.assertEqual(rates[0].rate, 1.25)
 
     def test_one_range(self):
         """ Test rate computation for a larger t_range """
@@ -48,7 +48,7 @@ class RateComputationTest(unittest.TestCase):
         rates = rate_history.compute_and_add(self.magnitudes,
                                              self.times,
                                              [t_max])
-        self.assertEqual(rates[0].review, 1)
+        self.assertEqual(rates[0].rate, 1)
 
     def test_multiple_bins(self):
         """ Test multiple t bins """
@@ -62,9 +62,26 @@ class RateComputationTest(unittest.TestCase):
                                              t_range)
 
         # The first time bin has 1 event
-        self.assertEqual(rates[0].review, 1)
+        self.assertEqual(rates[0].rate, 1)
         # The second time bin has 2 events
-        self.assertEqual(rates[1].review, 2.0 / 3)
+        self.assertEqual(rates[1].rate, 2.0 / 3)
+
+    def test_lookup_and_clear(self):
+        """ Test rate lookups and clearing of history """
+        t_max = max(self.times)
+        dt = max(self.times) - min(self.times)
+
+        rate_history = SeismicRateHistory()
+        rate_history.t_bin = dt
+        rate_history.compute_and_add(self.magnitudes,
+                                             self.times,
+                                             [t_max])
+
+        rate = rate_history.lookup_rate(t_max)
+        self.assertEqual(rate.rate, 1.25)
+        rate_history.clear()
+        self.assertEqual(rate_history.rates, [])
+        self.assertEqual(rate_history.times, [])
 
 
 if __name__ == '__main__':
