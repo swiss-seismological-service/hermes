@@ -262,8 +262,8 @@ class MainWindow(QtGui.QMainWindow):
         client = Client(url)
         try:
             catalog = client.get_events(starttime=starttime, endtime=endtime)
-        except FDSNException:
-            self.logger.error('Could not get events from FDSNWS server')
+        except FDSNException as e:
+            self.logger.error('FDSNException: ' + str(e))
             return
         importer = ObsPyCatalogImporter(catalog)
         self.project.seismic_history.import_events(importer, timerange)
