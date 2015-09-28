@@ -77,8 +77,8 @@ class RateComputationTest(unittest.TestCase):
                                              self.times,
                                              [t_max])
 
-        rate = rate_history.lookup_rate([t_max])
-        self.assertEqual(rate, None)
+        rate = rate_history.lookup_rate(t_max)
+        self.assertEqual(rate.rate, 1.25)
         rate_history.clear()
         self.assertEqual(rate_history.rates, [])
         self.assertEqual(rate_history.times, [])
