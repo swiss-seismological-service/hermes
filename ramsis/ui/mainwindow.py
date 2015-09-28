@@ -245,18 +245,21 @@ class MainWindow(QtGui.QMainWindow):
             history.import_events(importer)
 
     def action_import_fdsnws_data(self):
-        task = ScheduledTask(task_function=self._import_fdsnws_data,
-                             dt=timedelta(minutes=1),
-                             name='FDSN')
-        self.ramsis_core.engine._scheduler.add_task(task)
+        if self.settings.value('data_acquisition/fdsnws_enabled'):
+            minutes = self.settings.value('data_acquisition/fdsnws_interval')
+            task = ScheduledTask(task_function=self._import_fdsnws_data,
+                                 dt=timedelta(minutes=minutes),
+                                 name='FDSNWS')
+            self.ramsis_core.engine._scheduler.add_task(task)
 
     def _import_fdsnws_data(self, run_info):
+        minutes = self.settings.value('data_acquisition/fdsnws_length')
+        url = self.settings.value('data_acquisition/fdsnws_url')
         now = datetime.now()
-        starttime = UTCDateTime(now - timedelta(days=100))
+        starttime = UTCDateTime(now - timedelta(minutes=minutes))
         endtime = UTCDateTime(now)
         timerange = (starttime.datetime, endtime.datetime)
-        fdsnws_url = 'http://arclink.ethz.ch'
-        client = Client(fdsnws_url)
+        client = Client(url)
         try:
             catalog = client.get_events(starttime=starttime, endtime=endtime)
         except FDSNException:
