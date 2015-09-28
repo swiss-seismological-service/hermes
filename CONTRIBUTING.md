@@ -33,6 +33,16 @@ Then start PyMap from `/vagrant` (this is where vagrant mounts the repo director
 
 ### Documentation
 
+**RT-RAMSIS Code Documentation**
+
+You can build and access the code documentation for RT-RAMSIS as follows
+
+1. Make sure you're in a working RAMSIS development environment, i.e. that all
+   module includes are available.
+2. ``cd`` to the ``doc`` directory
+3. Run ``make html``.
+4. Open ``doc/_build/html/index.html``
+
 **PyQt**
 
 - PyQt4 reference guide: http://pyqt.sourceforge.net/Docs/PyQt4/
