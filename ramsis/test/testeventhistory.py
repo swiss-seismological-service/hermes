@@ -116,6 +116,24 @@ class BasicOperation(unittest.TestCase):
         events = self.history.events_between(earliest, latest)
         self.assertListEqual(events, self.test_content[2:5])
 
+    def test_add_retrieve_and_clear(self):
+        """ Test adding, retrieving and clearing events """
+        for event in self.test_content:
+            self.history.add(event)
+
+        idx = NUM_TEST_EVENTS / 2
+        date = self.date + timedelta(seconds=idx)
+        all_events = self.history.all_events()
+        events_before = self.history.events_before(date)
+        events_after = self.history.events_after(date)
+
+        self.assertEqual(all_events, self.test_content)
+        self.assertEqual(events_before, self.test_content[:idx])
+        self.assertEqual(events_after, self.test_content[idx+1:])
+
+        self.history.clear()
+        self.assertEqual(self.history.all_events(), [])
+
 
 if __name__ == '__main__':
     unittest.main()
