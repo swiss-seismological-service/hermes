@@ -153,7 +153,6 @@
     <addaction name="separator"/>
     <addaction name="actionImport_Seismic_Data"/>
     <addaction name="actionImport_Hydraulic_Data"/>
-    <addaction name="actionImport_FDSNWS_Data"/>
     <addaction name="separator"/>
     <addaction name="actionView_Data"/>
    </widget>

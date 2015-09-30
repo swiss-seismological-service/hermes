@@ -78,8 +78,6 @@ class MainWindow(QtGui.QMainWindow):
             self.action_import_seismic_data)
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
             self.action_import_hydraulic_data)
-        self.ui.actionImport_FDSNWS_Data.triggered.connect(
-            self.action_import_fdsnws_data)
         self.ui.actionView_Data.triggered.\
             connect(self.action_view_seismic_data)
         self.ui.actionSettings.triggered.connect(self.action_show_settings)
@@ -243,30 +241,6 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.import_events(importer)
-
-    def action_import_fdsnws_data(self):
-        if self.settings.value('data_acquisition/fdsnws_enabled'):
-            minutes = self.settings.value('data_acquisition/fdsnws_interval')
-            task = ScheduledTask(task_function=self._import_fdsnws_data,
-                                 dt=timedelta(minutes=minutes),
-                                 name='FDSNWS')
-            self.ramsis_core._scheduler.add_task(task)
-
-    def _import_fdsnws_data(self, run_info):
-        minutes = self.settings.value('data_acquisition/fdsnws_length')
-        url = self.settings.value('data_acquisition/fdsnws_url')
-        now = datetime.now()
-        starttime = UTCDateTime(now - timedelta(minutes=minutes))
-        endtime = UTCDateTime(now)
-        timerange = (starttime.datetime, endtime.datetime)
-        client = Client(url)
-        try:
-            catalog = client.get_events(starttime=starttime, endtime=endtime)
-        except FDSNException as e:
-            self.logger.error('FDSNException: ' + str(e))
-            return
-        importer = ObsPyCatalogImporter(catalog)
-        self.project.seismic_history.import_events(importer, timerange)
 
     def action_show_forecasts(self):
         if self.forecast_window is None:

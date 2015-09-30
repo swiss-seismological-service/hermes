@@ -10,11 +10,16 @@ control facilities should be hooked up in the Ramsis class instead.
 
 from collections import namedtuple
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 import os
 
 from PyQt4 import QtCore
 
+from obspy import UTCDateTime
+from obspy.fdsn import Client
+from obspy.fdsn.header import FDSNException
+
+from obspycatalogimporter import ObsPyCatalogImporter
 from data.project.store import Store
 from data.project.ramsisproject import RamsisProject
 from data.ormbase import OrmBase
@@ -93,6 +98,7 @@ class Controller(QtCore.QObject):
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
         self._logger.info('...done')
+        self._add_fdsnws_task()
 
     def create_project(self, path):
         """
@@ -111,6 +117,7 @@ class Controller(QtCore.QObject):
         store.commit()
         store.close()
         self.open_project(path)
+        self._add_fdsnws_task()
 
     def close_project(self):
         self.project.close()
@@ -251,3 +258,30 @@ class Controller(QtCore.QObject):
             info = TaskRunInfo(t_project=t_project)
             self._logger.debug('Run pending tasks')
             self._scheduler.run_pending_tasks(t_project, info)
+
+    # FDSNWS
+
+    def _add_fdsnws_task(self):
+        minutes = self._settings.value('data_acquisition/fdsnws_interval')
+        task = ScheduledTask(task_function=self._import_fdsnws_data,
+                             dt=timedelta(minutes=minutes),
+                             name='FDSNWS')
+        self._scheduler.add_task(task)
+
+    def _import_fdsnws_data(self, run_info):
+        if not self._settings.value('data_acquisition/fdsnws_enabled'):
+            return
+        minutes = self._settings.value('data_acquisition/fdsnws_length')
+        url = self._settings.value('data_acquisition/fdsnws_url')
+        now = datetime.now()
+        starttime = UTCDateTime(now - timedelta(minutes=minutes))
+        endtime = UTCDateTime(now)
+        timerange = (starttime.datetime, endtime.datetime)
+        client = Client(url)
+        try:
+            catalog = client.get_events(starttime=starttime, endtime=endtime)
+        except FDSNException as e:
+            self._logger.error('FDSNException: ' + str(e))
+            return
+        importer = ObsPyCatalogImporter(catalog)
+        self.project.seismic_history.import_events(importer, timerange)
