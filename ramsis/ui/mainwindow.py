@@ -250,7 +250,7 @@ class MainWindow(QtGui.QMainWindow):
             task = ScheduledTask(task_function=self._import_fdsnws_data,
                                  dt=timedelta(minutes=minutes),
                                  name='FDSNWS')
-            self.ramsis_core.engine._scheduler.add_task(task)
+            self.ramsis_core._scheduler.add_task(task)
 
     def _import_fdsnws_data(self, run_info):
         minutes = self.settings.value('data_acquisition/fdsnws_length')
