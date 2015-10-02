@@ -17,7 +17,7 @@ from PyQt4 import QtCore
 from data.project.store import Store
 from data.project.ramsisproject import RamsisProject
 from data.ormbase import OrmBase
-from simulator import Simulator, SimulatorState
+from core.simulator import Simulator, SimulatorState
 from core.engine import Engine
 import core.ismodelcontrol as mc
 
