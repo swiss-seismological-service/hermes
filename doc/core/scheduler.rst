@@ -1,5 +1,5 @@
 Scheduler
 =========
 
-.. automodule:: scheduler.taskscheduler
+.. automodule:: core.taskscheduler
    :members:
