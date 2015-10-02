@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
-Provide classes to run a simple task scheduler
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+The classes in this module implement a simple task scheduler that executes
+code at certain points in time or at regular intervals.
 
 """
 
@@ -15,24 +15,22 @@ class ScheduledTask:
 
     The task manages its own scheduling interval and time for next execution.
 
+    Create a new task by providing a function to run at the
+    scheduled time and an optional scheduling interval for repeating tasks.
+    The name is optional too and is simply used for logging purposes.
+
+    :param task_function: the function which TaskScheduler invokes when the
+        task should run. This function must take one argument which is the
+        run_info object that contains everything the task needs in order
+        to execute.
+    :param dt: optional scheduling interval for repeating tasks
+    :type dt: timedelta
+    :param name: name of the task
+    :type name: str
 
     """
+
     def __init__(self, task_function, dt=None, name='Task'):
-        """
-        Create a new task by providing a function to run at the
-        scheduled time and an optional scheduling interval for repeating tasks.
-        The name is optional too and is simply used for logging purposes.
-
-        :param task_function: the function which TaskScheduler invokes when the
-            task should run. This function must take one argument which is the
-            run_info object that contains everything the task needs in order
-            to execute.
-        :param dt: optional scheduling interval for repeating tasks
-        :type dt: timedelta
-        :param name: name of the task
-        :type name: str
-
-        """
         self.name = name
         self.dt = dt
         self.run_time = None
@@ -42,8 +40,8 @@ class ScheduledTask:
         """
         Return True if execution is pending at time *t*
 
-        :param t: time to check against scheduled execution time
-        :type t: datetime
+        :param datetime.datetime t: time to check against scheduled execution
+            time
 
         """
         return t >= self.run_time if self.run_time is not None else False
@@ -56,8 +54,7 @@ class ScheduledTask:
         first call). In that case the tasks next execution will be scheduled on
         the previous execution time + dt.
 
-        :param t_run: time at which to run the task
-        :type t_run: datetime
+        :param datetime.datetime t_run: time at which to run the task
 
         """
         if t_run is None:
@@ -78,7 +75,7 @@ class TaskScheduler:
     """
     Manages and executes scheduled tasks.
 
-    You add tasks to the list using add_task.
+    You add tasks to the list using `add_task`.
 
     """
 
@@ -95,8 +92,7 @@ class TaskScheduler:
         """
         Add a new task to the scheduler
 
-        :param task: Task to add
-        :type task: ScheduledTask
+        :param ScheduledTask task: Task to add
 
         """
         self.scheduled_tasks.append(task)
@@ -104,7 +100,7 @@ class TaskScheduler:
     def reset_schedule(self, t0):
         """
         Reset the scheduled times by scheduling the first runs for all
-        repeating tasks based on t0. Non-repeating tasks are removed.
+        repeating tasks based on `t0`. Non-repeating tasks are removed.
 
         """
         self.scheduled_tasks = [task for task in self.scheduled_tasks
@@ -124,8 +120,8 @@ class TaskScheduler:
         tasks are scheduled for the next execution and non-repeating tasks are
         removed from the task queue.
 
-        :param t: time t against which the schedule is checked
-        :type t: datetime
+        :param datetime.datetime t: time t against which the schedule is
+            checked
         :param run_info: object that will be passed to the task function
 
         """

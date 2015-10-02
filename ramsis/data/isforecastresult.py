@@ -1,10 +1,24 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, SED (ETH Zurich) and Geo-Energie Suisse AG
+
 """
-Short Description
+Classes that store results for induced seismicity forecasts (i.e. the
+`ISForecastStage` of `ForecastJob`) and methods to analyse those results.
 
-Long Description
+The following graph shows the relationship between the classes in this module:
 
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+.. graphviz::
+
+   graph results {
+      "ISForecastResult" [xlabel="IS stage results (all models)"];
+      "ISResult-c" [shape=box, label="ISResult"];
+      "ISResult-v" [shape=box, label="ISResult", xlabel="Computed values"];
+      "ISModelResult" [shape=box, xlabel="Single model results"];
+      "ISForecastResult" -- "ISModelResult" [label="model_results",
+          headlabel="1"];
+      "ISModelResult" -- "ISResult-c" [label="cum_result", headlabel="1"];
+      "ISModelResult" -- "ISResult-v" [label="vol_results", headlabel="*"];
+   }
 
 """
 
@@ -21,14 +35,14 @@ from ormbase import OrmBase
 
 def log_likelihood(forecast, observation):
     """
-    Compute the log likelihood of an observed rate given a forecast
+    Computes the log likelihood of an observed rate given a forecast
 
     The forecast value is interpreted as expected value of a poisson
     distribution. The function expects scalars or numpy arrays as input. In the
     latter case it computes the LL for each element.
 
-    :param forecast: forecast rate
-    :param observations: observed rate
+    :param float forecast: forecasted rate
+    :param float observation: observed rate
     :return: log likelihood for each element of the input
 
     """
@@ -38,16 +52,14 @@ def log_likelihood(forecast, observation):
 
 class ISForecastResult(OrmBase):
     """
-    Results of one IS forecast run
+    Top level results container for IS forecasts.
 
-    ISForecastResult holds the results from individual IS forecast models in
-    *model_results*. The member *model_results* is a dict of the form
+    `ISForecastResult` stores the results of all `Models <Model>` in
+    ``model_results``. The attribute ``model_results`` is a list of
+    `ISModelResult` objects.
 
-    model_results = {
-        'etas': model_result,
-        'rj': model_result,
-        ...
-    }
+    :ivar bool reviewed: True if the result has been evaluated against
+        measured rates.
 
     """
 
@@ -73,9 +85,20 @@ class ISForecastResult(OrmBase):
 
     @property
     def reviewed(self):
+        """
+        True if the forecast result has been evaluated against real measured
+        seismicity rates through `review`.
+
+        """
         return self._reviewed
 
     def review(self, observed_events):
+        """
+        Compare forecasted rate against observed rate of seismicity.
+
+        :param list[SeismicEvent] observed_events: Observed seismic events
+
+        """
         for result in self.model_results.itervalues():
             result.review(observed_events)
         self._reviewed = True
@@ -83,21 +106,27 @@ class ISForecastResult(OrmBase):
 
 class ISModelResult(OrmBase):
     """
-    Output resulting from IS forecast run for one specific IS model. The output
-    either contains a result or a reason why no result is available.
+    Result from a single forecast `Model` The result either contains actual
+    result values in `cum_result` and optionally `vol_results` or a reason
+    why no result is available in `failure_reason`. The `failed` attribute
+    indicates whether results are available or not.
 
-    :ivar model_name: a reference to the model that created the forecast
-    :ivar t_run: time of the forecast
-    :type t_run: datetime
-    :ivar dt: forecast period duration [hours]
-    :type dt: float
-    :ivar failed: true if the model did not produce any results
-    :ivar failure_reason: a reason given by the model for not producing any
+    For models that compute a single value for the entire volume, the
+    `cum_result` attribute will contain that value. Some models, such as
+    `Shapiro`, have more fine grained spatial resolution. Those store the
+    cumulative forecast in `cum_result` and the results for individual voxels
+    in `vol_results`.
+
+    :ivar model_name: The name of the model that created the forecast
+    :ivar datetime.datetime t_run: Time of the forecast
+    :ivar float dt: forecast period duration [hours]
+    :ivar bool failed: true if the model did not produce any results
+    :ivar str failure_reason: a reason given by the model for not producing any
         results.
-    :ivar cum_result: cumulative forecast result
-    :type cum_result: ISResult
-    :ivar vol_results: volumetric results (per voxel)
-    :type vol_results: list[ISResult]
+    :ivar ISResult cum_result: Cumulative forecast result.
+    :ivar list[ISResult] vol_results: Volumetric results (per voxel)
+    :ivar bool reviewed: True if the result has been evaluated against
+        measured rates.
 
     """
 
@@ -148,6 +177,11 @@ class ISModelResult(OrmBase):
 
     @property
     def reviewed(self):
+        """
+        True if the forecast result has been evaluated against real measured
+        seismicity rates through `review`.
+
+        """
         return self._reviewed
 
     def compute_cumulative(self):
@@ -190,7 +224,17 @@ class ISModelResult(OrmBase):
 
 
 class ISResult(OrmBase):
-    """ Result container for a single forecast """
+    """
+    Result container for a single forecasted seismic rate
+
+    :ivar float rate: Forecasted seismicity rate
+    :ivar float b_val: Expected b value
+    :ivar float prob: Expected probability of exceedance
+    :ivar score: Score (log-likelihood value) of the forecast after review
+    :ivar model_result: Reference to the model result that this result belongs
+        to.
+
+    """
 
     # ORM declarations
     __tablename__ = 'isresult'
@@ -203,9 +247,10 @@ class ISResult(OrmBase):
     # Configures the one-to-many relationship between ISModelResult's
     # vol_results and this entity
     model_result_id = Column(Integer, ForeignKey(ISModelResult.id))
-    model_result = relationship(ISModelResult, foreign_keys=model_result_id,
+    model_result = relationship(ISModelResult,
+                                foreign_keys=model_result_id,
                                 backref=backref('vol_results',
-                                                cascade="all, delete-orphan"))
+                                cascade="all, delete-orphan"))
 
     def __init__(self, rate, b_val, prob):
         self.prob = prob
@@ -216,7 +261,7 @@ class ISResult(OrmBase):
     @classmethod
     def from_model_result(cls, result):
         """
-        Inits an ISResult from a bare model result
+        Convenience initializer to init an ISResult from a bare model result
 
         :param result: model result
         :type result: ModelResult

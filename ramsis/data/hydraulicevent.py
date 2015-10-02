@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+
 """
-Provides HydraulicEvent, a class to represent hydraulic events
+Defines the `HydraulicEvent` class.
+
+Hydraulic events are the samples that are recorded
+at the borehole sensors to measure injection pressure and flow rate.
 
 """
 
@@ -9,18 +14,14 @@ from ormbase import OrmBase
 
 
 class HydraulicEvent(OrmBase):
-    """Represents a hydraulic event (change in fluxrate or pressure)
+    """
+    Represents a hydraulic event (i.e. a flowrate and pressure)
 
-    :ivar date_time: Date and time when the event occurred
-    :type date_time: datetime.datetime
-    :ivar flow_dh: flow downhole [l/min]
-    :type flow_dh: float
-    :ivar flow_xt: flow @ x-mas tree (top hole) [l/min]
-    :type flow_xt: float
-    :ivar pr_dh: pressure downhole [bar]
-    :type pr_dh: float
-    :ivar pr_xt: pressure @ x-mas tree (top hole) [bar]
-    :type pr_xt: float
+    :ivar datetime.datetime date_time: Date and time when the event occurred
+    :ivar float flow_dh: Flow downhole [l/min]
+    :ivar float float flow_xt: Flow @ x-mas tree (top hole) [l/min]
+    :ivar float pr_dh: pressure downhole [bar]
+    :ivar float pr_xt: pressure @ x-mas tree (top hole) [bar]
 
     """
 

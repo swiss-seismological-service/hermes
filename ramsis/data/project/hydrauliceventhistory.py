@@ -24,10 +24,11 @@ class HydraulicEventHistory(EventHistory):
 
         The EventReporter must return the following fields (which must thus
         be present in the csv file)
-            flow_dh: flow down hole [l/min]
-            flow_xt: flow @ x-mas tree (top hole) [l/min]
-            pr_dh: pressure down hole [bar]
-            pr_xt: pressure @ x-mas tree (top hole) [bar]
+
+        - ``flow_dh``: flow down hole [l/min]
+        - ``flow_xt``: flow @ x-mas tree (top hole) [l/min]
+        - ``pr_dh``: pressure down hole [bar]
+        - ``pr_xt``: pressure @ x-mas tree (top hole) [bar]
 
         :param importer: an EventReporter object
         :type importer: EventImporter

@@ -24,6 +24,10 @@ class SeismicEvent(OrmBase):
     :ivar z: Event depth [m] (0 at surface, positive downwards)
     :type z: float
 
+    :param datetime.datetime date_time: Date and time of the event
+    :param float magnitude: Event magnitude
+    :param Point location: Event coordinates
+
     """
 
     # ORM declarations
@@ -42,23 +46,13 @@ class SeismicEvent(OrmBase):
         """
         Tests if the event is located inside **region**
 
-        :param region: Region to test (cube)
-        :type region: Cube
+        :param Cube region: Region to test (cube)
         :return: True if the event is inside the region, false otherwise
 
         """
         return Point(self.x, self.y, self.z).in_cube(region)
 
     def __init__(self, date_time, magnitude, location):
-        """
-        :param date_time: Date and time when the event occurred
-        :type date_time: datetime.datetime
-        :param magnitude: Event magnitude
-        :type magnitude: float
-        :param location: Event coordinates
-        :type location: Point
-
-        """
         self.date_time = date_time
         self.magnitude = magnitude
         self.x = location.x

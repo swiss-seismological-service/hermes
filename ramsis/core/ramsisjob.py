@@ -1,10 +1,15 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
+Defines the components of a forecast job.
 
-Long Description
+A forecast job consists of three `Stages <Stage>`:
 
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+1. Forecasting of induced seismicity ( computed by the `ISForecastStage`)
+2. Computation of the probabilistic seismic hazard (`PshaStage`)
+3. Computation of the probability to exceed certain losses (`RiskPoeStage`)
+
+The three stages are invoked in succession by `ForecastJob`.
 
 """
 
@@ -17,13 +22,14 @@ from oq.controller import controller as oq
 
 class ISForecastStage(Stage):
     """
-    Uses an ISForecaster to compute induced seismicity forecasts from a
+    Uses an `ISForecaster` to compute induced seismicity forecasts from a
     seismic and hydraulic history.
 
-    The ISForecastStage expects as input a dictionary containing
-      - 't_run' the project time at which the forecast starts (datetime)
-      - 'dt_h' the forecast bin duration in hours (float)
-      - 'project' a reference to the project (Project)
+    The `ISForecastStage` expects as input a dictionary containing at least:
+
+    - ``t_run``: the project time at which the forecast starts (`datetime`)
+    - ``dt_h``: the forecast bin duration in hours (`float`)
+    - ``project``: a reference to the `Project <RamsisProject>`
 
     """
     stage_id = 'is_forecast_stage'
@@ -55,7 +61,7 @@ class ISForecastStage(Stage):
 class PshaStage(Stage):
     """
     Invokes the classical PSHA calculator of OpenQuake to compute hazard
-    curves from one or more Gutenberg Richter relationships.
+    curves from one or more frequency-magnitude relationships.
 
     """
     stage_id = 'psha_stage'
@@ -85,7 +91,7 @@ class PshaStage(Stage):
 class RiskPoeStage(Stage):
     """
     Invokes the classical probabilistic risk calculator of OpenQuake to compute
-    the probability of exceedance for specified loss values
+    the probability of exceedance for specified loss values.
 
     """
     stage_id = 'risk_poe_stage'
@@ -102,5 +108,9 @@ class RiskPoeStage(Stage):
 
 
 class ForecastJob(Job):
-    job_id = 'fc_job'
-    stages = [ISForecastStage, PshaStage, RiskPoeStage]
+    """
+    Defines the job of computing forecasts with it's three stages
+
+    """
+    job_id = 'fc_job'  #: Job ID for ForecastJob
+    stages = [ISForecastStage, PshaStage, RiskPoeStage]  #: ForecastJob stages

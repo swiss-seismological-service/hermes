@@ -24,9 +24,11 @@ By integrating over t, the number of events in the
 magnitude range [M1, M2] and time interval [T1, T2] after the main shock
 can be computed as
 
-.. math:: \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} \
-          * K * [10^\alpha(M_m-M_1)-10^\alpha(M_m-M_2)] \
-          + \mu + c_f * \int_{T_1}^{T_2}F_r(t) dt
+.. math::
+
+   \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} \
+   * K * [10^\alpha(M_m-M_1)-10^\alpha(M_m-M_2)] \
+   + \mu + c_f * \int_{T_1}^{T_2}F_r(t) dt
 
 which is what this model returns.
 

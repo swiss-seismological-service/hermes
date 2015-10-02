@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
-Forecast results
+Defines the class that holds the results of a `ForecastJob` (all stages)
 
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
@@ -27,8 +27,17 @@ class ForecastResult(OrmBase):
     """
     Results of one forecast run
 
-    ForecastResult holds the results from a forecast run including the IS
-    forecast, hazard and risk results
+    `ForecastResult` holds the results of all `Stages <Stage>` from the
+    execution of a `ForecastJob`.
+
+    :param datetime t_run: time of the forecast run
+    :ivar datetime t_run: time when the `ForecastJob` was run
+    :ivar ISForecastResult is_forecast_result: Result of the induced seismicity
+        forecast stage.
+    :ivar int hazard_oq_calc_id: Calculation id in the OpenQuake database for
+        the record that contains the hazard computation results.
+    :ivar int risk_oq_calc_id: Calculation id in the OpenQuake database for
+        the record that contains the risk computation results.
 
     """
 
@@ -46,11 +55,6 @@ class ForecastResult(OrmBase):
     risk_oq_calc_id = Column(Integer)
 
     def __init__(self, t_run):
-        """
-        :param t_run: time of the model run
-        :type t_run: datetime
-
-        """
         self.t_run = t_run
         self._mediator = _Mediator()
 
@@ -60,7 +64,9 @@ class ForecastResult(OrmBase):
 
     def commit_changes(self):
         """
-        Emit the changed signal and persist changes to the database if we
+        Commit any changes to the database
+
+        Emits the changed signal and persists changes to the database if we
         are within a session
 
         """

@@ -1,10 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-RAMSIS Core Application.
+RAMSIS Core Controller.
 
-Top level object for the core Ramsis application. Core meaning it is not
-aware of any gui components (or other user control facilities). The user
-control facilities should be hooked up in the Ramsis class instead.
+This module defines a single class `Controller` which acts as the
+central coordinator for all core components.
 
 """
 
@@ -27,25 +26,24 @@ import core.ismodelcontrol as mc
 
 class Controller(QtCore.QObject):
     """
-    Top level class for RAMSIS i.s.
+    RT-RAMSIS Core Controller Class
 
-    Instantiation of this class bootstraps the entire application
+    A singleton instance of `Controller` is created when the program
+    launches. The `Controller` is responsible for setting up and connecting
+    all other core components, so it effectively bootstraps the application
+    logic.
 
-    :ivar project: Ramsis Project
-    :type project: RamsisProject
+    During run time, the `Controller` acts as the central entry point for
+    the user interface.
+
+    :ivar RamsisProject project: Currently loaded project
+    :param AppSettings settings: reference to the application settings
 
     """
 
     project_loaded = QtCore.pyqtSignal(object)
 
     def __init__(self, settings):
-        """
-        Bootstraps the Ramsis core logic
-
-        :param settings: object that holds the app settings
-        :type settings: AppSettings
-
-        """
         super(Controller, self).__init__()
         self._settings = settings
         self.project = None
@@ -67,8 +65,7 @@ class Controller(QtCore.QObject):
         """
         Open RAMSIS project file located at path
 
-        :param path: path to the ramsis project file
-        :type path: str
+        :param str path: path to the ramsis project file
 
         """
         if not os.path.exists(path):
@@ -104,6 +101,10 @@ class Controller(QtCore.QObject):
         self.open_project(path)
 
     def close_project(self):
+        """
+        Close the current project.
+
+        """
         self.project.close()
         self.project = None
 
@@ -127,9 +128,18 @@ class Controller(QtCore.QObject):
 
     def start_simulation(self):
         """
-        (Re)starts the simulation.
+        Starts the simulation.
 
-        Replays the events from the seismic history.
+        The simulation replays the events from the seismic and hydraulic
+        histories at the simulation speed that is currently configured and
+        triggers forecasts and other computations at the appropriate times.
+        See :doc:`core` documentation for further information on how simulation
+        works.
+
+        If the simulation was previously paused by `pause_simulation` the
+        simulation will simply continue. Otherwise, the simulator will be
+        reset to the start of its :meth:`configured
+        <core.simulator.Simulator.configure>` time range and begin from there.
 
         """
         # self._profiler = Profiler()

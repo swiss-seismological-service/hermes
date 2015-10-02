@@ -1,7 +1,20 @@
 # -*- encoding: utf-8 -*-
 """
-Common stuff for all ISHA models such as the parent class and the data
-structures that are required to interact with the model.
+This module defines the common interface for all ISHA models, that is the model
+base class and classes used for data input and output.
+
+* Class :class:`Model` is the abstract super class for all ISHA models and
+  defines the minimal methods that each model must implement.
+* Class :class:`ModelInput`. An instance of this class is passed to the model
+  when the framework invokes :meth:`Model.prepare_run`. The ModelInput contains
+  the input data for each model run.
+* Class :class:`ModelOutput`. An object of this class must be returned by the
+  models ``Model._do_run`` method. It contains information about the
+  outcome of the model run. This doesn't have to be a result, it can also be
+  an error message if the run was not successful. See the class definition for
+  details.
+* Class :class:`ModelResult` contains the result of the model run if it was
+  successful, i.e. the actual computed forecast rates and probabilities.
 
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
@@ -179,9 +192,9 @@ class Model(QtCore.QObject):
     forecast models
 
     .. pyqt4:signal:finished: emitted when the model has finished its run
-    successfully and has new run results. Carries the model as payload.
+       successfully and has new run results. Carries the model as payload.
 
-    :ivar output: output of the last run
+    :ivar ModelOutput output: output of the last run
     :ivar title: display title of the model
 
     """
@@ -190,12 +203,13 @@ class Model(QtCore.QObject):
     RAISE_ON_ERRORS = True
 
     finished = QtCore.pyqtSignal(object)
+    """ Signal emitted when the model run has completed """
 
     def __init__(self):
         """ Initializes the model """
         super(Model, self).__init__()
         self._model_input = None
-        self.output = None
+        self.output = None  #: bla
         self.title = 'Model'
         self._logger = logging.getLogger(self.__class__.__name__)
 

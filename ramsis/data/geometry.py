@@ -1,23 +1,11 @@
 # -*- encoding: utf-8 -*-
-"""
-Short Description
-
-Long Description
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
-
-"""
-
-# -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 Basic 3D geometric objects and functions
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
 from collections import namedtuple
-
 
 class Point:
     """
@@ -48,8 +36,8 @@ class Point:
                 zmin <= self.z < zmax)
 
 
+Cube = namedtuple('Cube', 'origin size')
 """
 A cube defined by an origin (point) and a side length (size)
 
 """
-Cube = namedtuple('Cube', 'origin size')

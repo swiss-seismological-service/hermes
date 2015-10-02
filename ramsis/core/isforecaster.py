@@ -2,7 +2,7 @@
 """
 Ramsis IS forecaster
 
-See ISForecaster class documentation for details.
+See `ISForecaster` class documentation for details.
 
 """
 
@@ -15,16 +15,16 @@ from data.isforecastresult import ISForecastResult, ISModelResult
 
 
 class ISForecastState:
-    IDLE = 0
-    FORECASTING = 1
+    IDLE = 0  #: Idle state
+    FORECASTING = 1  #: Busy state
 
 
 class ISForecaster(QtCore.QObject):
     """
-    The IS Forecaster runs induced seismicity forecast models.
+    The `ISForecaster` runs induced seismicity forecast models.
 
     The forecaster launches model runs on request. Model run results are of
-    type ISForecastResult and are returned to the caller by invoking the
+    type `ISForecastResult` and are returned to the caller by invoking the
     completion handler.
 
     """

@@ -1,9 +1,11 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2015, SED (ETH Zurich) and Geo-Energie Suisse AG
+
 """
-Short Description
+RT-RAMSIS Business Logic
 
-Long Description
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+The `core` package contains most of the business logic of RT-RAMSIS, i.e.
+everything that is not part of the :doc:`user interface <ui>` or
+:doc:`data model <data>`.
 
 """

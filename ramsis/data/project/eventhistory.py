@@ -16,30 +16,25 @@ class EventHistory(QtCore.QObject):
 
     :ivar store: event store (interface to persistent store / db)
 
+    :param EventStore store: the store the history can use to persist events
+    :param entity: the class that represents events in this history.
+    :param str date_time_attr: attribute that defines the event date and time
+
     """
 
     history_changed = QtCore.pyqtSignal(dict)
     """
-    history_changed is a Qt signal, emitted when the history changes. The
+    `history_changed` is a Qt signal, emitted when the history changes. The
     signal carries a dict with further information about the changes
     contained as follows:
-        'history': the history object that has changed
+
+        ``history``: the history object that has changed
 
     Subclasses may add additional fields
 
     """
 
     def __init__(self, store, entity, date_time_attr='date_time'):
-        """
-        Creates and initializes an event history
-
-        :param store: the store the history can use to persist events
-        :type store: EventStore
-        :param entity: the class that represents events in this history.
-        :param date_time_attr: attribute that defines the event date and time
-        :type date_time_attr: str
-
-        """
         QtCore.QObject.__init__(self)
         self.store = store
         self.entity = entity

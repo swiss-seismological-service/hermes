@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
-Short Description
+User interface components
 
-Long Description
+This package contains everything that is related to the RT-RAMSIS user
+interface. I.e. windows, views and view controllers.
 
 """
