@@ -133,10 +133,7 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.addItem(self.plot)
         self.getAxis('left').enableAutoSIPrefix(False)
         self.getAxis('bottom').enableAutoSIPrefix(False)
-
-    def on_axis_range_changed(self):
-        super(SeismicityPlotWidget, self).on_axis_range_changed()
-        self.getAxis('left').setLabel('Magnitude Mw', '')
+        self.getAxis('left').setLabel('Magnitude', 'Mw')
 
 
 class HydraulicsPlotWidget(TimePlotWidget):
@@ -152,9 +149,6 @@ class HydraulicsPlotWidget(TimePlotWidget):
         self.addItem(self.plot)
         self.getAxis('left').enableAutoSIPrefix(False)
         self.getAxis('bottom').enableAutoSIPrefix(False)
-
-    def on_axis_range_changed(self):
-        super(HydraulicsPlotWidget, self).on_axis_range_changed()
         self.getAxis('left').setLabel('Flow rate', 'l/s')
 
 
@@ -174,6 +168,7 @@ class RateForecastPlotWidget(TimePlotWidget):
         self.forecast_bars = []
         self.getAxis('left').enableAutoSIPrefix(False)
         self.getAxis('bottom').enableAutoSIPrefix(False)
+        self.getAxis('left').setLabel('Rate of Seismicity', '6h^(-1)')
 
     def set_forecast_data(self, x, y):
         # FIXME: this looks like a bug in bargraphitem (the fact that it doesn't
@@ -191,10 +186,6 @@ class RateForecastPlotWidget(TimePlotWidget):
                                   brush=brush, pen=pen)
             self.forecast_bars.append(bar)
             self.addItem(bar)
-
-    def on_axis_range_changed(self):
-        super(RateForecastPlotWidget, self).on_axis_range_changed()
-        self.getAxis('left').setLabel('Rate of Seismicity', '6h^(-1)')
 
 
 class VoxelViewWidget(gl.GLViewWidget):

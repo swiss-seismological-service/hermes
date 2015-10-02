@@ -137,6 +137,11 @@ class HydraulicsPresenter(TimelinePresenter):
         x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
         self.time_plot_widget.plot.setData(x, y)
 
+        # Update left axis
+        label = 'Pressure' if idx in (0, 2) else 'Flow rate'
+        units = '' if idx in (0, 2) else 'l/s'
+        self.time_plot_widget.getAxis('left').setLabel(label, units)
+
 
 class ForecastsPresenter(TimelinePresenter):
     """
