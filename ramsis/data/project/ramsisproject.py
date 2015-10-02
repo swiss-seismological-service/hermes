@@ -10,7 +10,6 @@ from datetime import datetime
 
 from PyQt4 import QtCore
 
-import project
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
 from data.project.forecasthistory import ForecastHistory
@@ -18,7 +17,7 @@ from data.injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
 
-class RamsisProject(project.Project):
+class RamsisProject(QtCore.QObject):
     """
     Manages persistent and non-persistent ramsis project data such as the
     seismic and hydraulic history, and project state information.
@@ -33,11 +32,13 @@ class RamsisProject(project.Project):
     """
 
     # Signals
+    will_close = QtCore.pyqtSignal(object)
     project_time_changed = QtCore.pyqtSignal(datetime)
 
     def __init__(self, store, title=''):
         """ Create a project based on the data that is contained in *store* """
-        super(RamsisProject, self).__init__(store)
+        super(RamsisProject, self).__init__()
+        self._store = store
         self.seismic_history = SeismicEventHistory(self._store)
         self.seismic_history.reload_from_store()
         self.hydraulic_history = HydraulicEventHistory(self._store)
@@ -56,6 +57,16 @@ class RamsisProject(project.Project):
         # Set the project time to the time of the first event
         event = self.earliest_event()
         self._project_time = event.date_time if event else datetime.now()
+
+    def close(self):
+        """
+        Closes the project file. Before closing, the *will_close* signal is
+        emitted. After closing, the project is not usable anymore and will have
+        to be reinstatiated if it is needed again.
+
+        """
+        self.will_close.emit(self)
+        self._store.close()
 
     @property
     def project_time(self):
