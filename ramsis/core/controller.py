@@ -15,7 +15,7 @@ import os
 from PyQt4 import QtCore
 
 from data.project.store import Store
-from data.project.ramsisproject import RamsisProject
+from data.project.project import Project
 from data.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
 from core.engine import Engine
@@ -32,7 +32,7 @@ class Controller(QtCore.QObject):
     Instantiation of this class bootstraps the entire application
 
     :ivar project: Ramsis Project
-    :type project: RamsisProject
+    :type project: Project
 
     """
 
@@ -80,7 +80,7 @@ class Controller(QtCore.QObject):
         self._logger.info('Loading project at ' + path +
                           ' - This might take a while...')
         store = Store(store_path, OrmBase)
-        self.project = RamsisProject(store, os.path.basename(path))
+        self.project = Project(store, os.path.basename(path))
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
         self._logger.info('...done')

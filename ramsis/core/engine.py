@@ -64,7 +64,7 @@ class Engine(QtCore.QObject):
     def __init__(self, settings):
         """
         :param project: Project to observe on time changes
-        :type project: RamsisProject
+        :type project: Project
 
         """
         super(Engine, self).__init__()

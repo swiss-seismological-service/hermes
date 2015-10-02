@@ -29,7 +29,7 @@ ramsis/main.py -text
 ramsis/main.py.profile -text
 ramsis/modelvalidation.py -text
 ramsis/project/__init__.py -text
-ramsis/project/ramsisproject.py -text
+ramsis/project/project.py -text
 ramsis/project/eventhistory.py -text
 ramsis/project/hydrauliceventhistory.py -text
 ramsis/project/project.py -text
@@ -43,7 +43,7 @@ ramsis/test/resources/__init__.py -text
 ramsis/test/resources/test_catalog.csv -text
 ramsis/test/resources/test_hydr.csv -text
 ramsis/test/taskschedulertest.py -text
-ramsis/test/testramsisproject.py -text
+ramsis/test/testproject.py -text
 ramsis/test/testcommon.py -text
 ramsis/test/testeqstats.py -text
 ramsis/test/testeventhistory.py -text
