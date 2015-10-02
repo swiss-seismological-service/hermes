@@ -8,6 +8,7 @@ control facilities should be hooked up in the Ramsis class instead.
 
 """
 
+from collections import namedtuple
 import logging
 from datetime import timedelta
 import os
@@ -18,11 +19,15 @@ from data.project.store import Store
 from data.project.ramsisproject import RamsisProject
 from data.ormbase import OrmBase
 from simulator import Simulator, SimulatorState
-from core.engine import Engine
+from core.engine import Engine, EngineState
 import core.ismodelcontrol as mc
-
+from scheduler.taskscheduler import TaskScheduler, ScheduledTask
 
 # from tools import Profiler
+
+# Used internally to pass information to repeating tasks
+# t_project is the project time at which the task is launched
+TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
 
 
 class Controller(QtCore.QObject):
@@ -57,6 +62,9 @@ class Controller(QtCore.QObject):
         # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)
 
+        # Scheduler
+        self._scheduler = self._create_task_scheduler()
+
         # Time, state and other internals
         self._logger = logging.getLogger(__name__)
         # self._logger.setLevel(logging.DEBUG)
@@ -81,6 +89,7 @@ class Controller(QtCore.QObject):
                           ' - This might take a while...')
         store = Store(store_path, OrmBase)
         self.project = RamsisProject(store, os.path.basename(path))
+        self.project.project_time_changed.connect(self._on_project_time_change)
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
         self._logger.info('...done')
@@ -106,6 +115,8 @@ class Controller(QtCore.QObject):
     def close_project(self):
         self.project.close()
         self.project = None
+        self.project.project_time_changed.disconnect(
+            self._on_project_time_change)
 
     # Running
 
@@ -163,7 +174,7 @@ class Controller(QtCore.QObject):
             speed = self._settings.value('lab_mode/speed')
             self._logger.info('Simulating at {:.0f}x'.format(speed))
             self.simulator.configure(time_range, speed=speed)
-        self.engine.reset(time_range[0])
+        self.reset(time_range[0])
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -187,3 +198,56 @@ class Controller(QtCore.QObject):
     def _simulation_handler(self, simulation_time):
         """ Invoked by the simulation whenever the project time changes """
         self.project.update_project_time(simulation_time)
+
+    # Scheduler management
+
+    def _create_task_scheduler(self):
+        """
+        Creates the task scheduler and schedules recurring tasks
+
+        """
+        scheduler = TaskScheduler()
+
+        # Forecasting Task
+        dt = self._settings.value('engine/fc_interval')
+        forecast_task = ScheduledTask(
+            task_function=self.engine.run_forecast,
+            dt=timedelta(hours=dt),
+            name='Forecast')
+        scheduler.add_task(forecast_task)
+        self.engine._forecast_task = forecast_task  # keep reference for later
+
+        # Rate computations
+        dt = self._settings.value('engine/rt_interval')
+        rate_update_task = ScheduledTask(
+            task_function=self.engine.update_rates,
+            dt=timedelta(minutes=dt),
+            name='Rate update')
+        scheduler.add_task(rate_update_task)
+
+        return scheduler
+
+    def reset(self, t0):
+        """
+        Reset core and all schedulers to t0
+
+        """
+        self._scheduler.reset_schedule(t0)
+
+    def _on_project_time_change(self, t_project):
+        """
+        Invoked when the project time changes. Triggers scheduled computations.
+
+        :param t_project: current project time
+        :type t_project: datetime
+
+        """
+        # Project time changes can also occur on startup or due to manual user
+        # interaction. In those cases we don't trigger any computations.
+        if self.engine.state == EngineState.INACTIVE:
+            return
+        if self._scheduler.has_pending_tasks(t_project):
+            self._logger.debug('Scheduler has pending tasks. Executing')
+            info = TaskRunInfo(t_project=t_project)
+            self._logger.debug('Run pending tasks')
+            self._scheduler.run_pending_tasks(t_project, info)
