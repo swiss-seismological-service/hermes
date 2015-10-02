@@ -19,7 +19,7 @@ from eventimporter import EventImporter
 import ramsisuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.engine import EngineState
-from simulator import SimulatorState
+from core.simulator import SimulatorState
 from ui.views.plots import Event3DViewWidget
 import numpy as np
 

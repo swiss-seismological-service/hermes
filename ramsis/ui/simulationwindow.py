@@ -11,7 +11,7 @@ import logging
 from PyQt4 import QtGui, uic
 
 from core.engine import EngineState
-from simulator import SimulatorState
+from core.simulator import SimulatorState
 
 ui_path = os.path.dirname(__file__)
 SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')

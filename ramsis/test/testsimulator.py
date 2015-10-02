@@ -12,7 +12,7 @@ from time import sleep
 
 from PyQt4 import QtCore
 
-from simulator import Simulator
+from core.simulator import Simulator
 
 
 # Sets the test speed to 10x. If run on a busy system where the delivery of

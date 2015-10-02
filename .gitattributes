@@ -35,8 +35,8 @@ ramsis/project/hydrauliceventhistory.py -text
 ramsis/project/project.py -text
 ramsis/project/seismiceventhistory.py -text
 ramsis/project/store.py -text
-ramsis/simulation.profile -text
-ramsis/simulator.py -text
+ramsis/core/simulation.profile -text
+ramsis/core/simulator.py -text
 ramsis/taskscheduler.py -text
 ramsis/test/__init__.py -text
 ramsis/test/resources/__init__.py -text
