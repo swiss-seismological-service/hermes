@@ -56,9 +56,21 @@ class RamsisProjectTest(unittest.TestCase):
         s_patch.stop()
         h_patch.stop()
 
+    def test_close(self):
+        """ Test if closing the project emits the will_close signal """
+        app = QtCore.QCoreApplication([])
+        mock_store = MagicMock()
+        mock_signal_handler = MagicMock()
+        project = RamsisProject(mock_store)
+        project.will_close.connect(mock_signal_handler)
+        project.close()
+        app.processEvents()
+        mock_signal_handler.assert_called_once_with(project)
+
     def test_init(self):
         """ Test if the RamsisProject initializes as expected. """
         self.project = RamsisProject(self.store_mock)
+        self.assertIsNotNone(self.project)
         t_expected = seismic_events[0].date_time
         self.assertEqual(self.project.project_time, t_expected)
 
