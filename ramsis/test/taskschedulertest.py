@@ -11,7 +11,7 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from scheduler.taskscheduler import TaskScheduler, ScheduledTask
+from core.taskscheduler import TaskScheduler, ScheduledTask
 
 
 class ScheduledTaskTest(unittest.TestCase):

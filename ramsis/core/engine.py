@@ -13,7 +13,7 @@ import logging
 from PyQt4 import QtCore
 
 from data.forecastresult import ForecastResult
-from scheduler.taskscheduler import TaskScheduler, ScheduledTask
+from core.taskscheduler import TaskScheduler, ScheduledTask
 from ramsisjob import ForecastJob
 
 
