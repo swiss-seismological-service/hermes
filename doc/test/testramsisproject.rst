@@ -1,6 +1,6 @@
-testramsisproject module
+testproject module
 ========================
 
-.. automodule:: test.testramsisproject
+.. automodule:: test.testproject
    :members:
    :undoc-members:

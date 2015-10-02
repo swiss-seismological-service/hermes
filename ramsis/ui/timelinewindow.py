@@ -291,7 +291,7 @@ class TimelineWindow(QtGui.QDialog):
 
     def on_project_load(self, project):
         """
-        :param project: RamsisProject
+        :param project: Project
         """
         self.project = project
 

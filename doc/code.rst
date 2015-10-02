@@ -29,7 +29,7 @@ Unit Tests
    test/testimporter
    test/testishamodelcontrol
    test/testproject
-   test/testramsisproject
+   test/testproject
    test/testrj
    test/testseismicevent
    test/testseismiceventhistory

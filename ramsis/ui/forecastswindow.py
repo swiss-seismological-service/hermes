@@ -405,7 +405,7 @@ class ForecastsWindow(QtGui.QDialog):
     def on_project_load(self, project):
         """
         :param project: RAMSIS project
-        :type project: RamsisProject
+        :type project: Project
 
         """
         self._load_project_data(project)

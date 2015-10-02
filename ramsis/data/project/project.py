@@ -17,7 +17,7 @@ from data.injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
 
-class RamsisProject(QtCore.QObject):
+class Project(QtCore.QObject):
     """
     Manages persistent and non-persistent ramsis project data such as the
     seismic and hydraulic history, and project state information.
@@ -37,7 +37,7 @@ class RamsisProject(QtCore.QObject):
 
     def __init__(self, store, title=''):
         """ Create a project based on the data that is contained in *store* """
-        super(RamsisProject, self).__init__()
+        super(Project, self).__init__()
         self._store = store
         self.seismic_history = SeismicEventHistory(self._store)
         self.seismic_history.reload_from_store()

@@ -46,7 +46,7 @@ class ModelInput(object):
         :param t_run: time of the run (serves as an identifier)
         :type t_run: datetime
         :param project: ramsis project containing the data
-        :type project: RamsisProject
+        :type project: Project
         :param bin_size: size of the forecast bin [hours]
         :type bin_size: float
         :param mc: magnitude of completeness
