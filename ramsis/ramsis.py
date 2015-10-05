@@ -68,13 +68,12 @@ class Ramsis(QtCore.QObject):
         self.qt_app.setOrganizationDomain('seismo.ethz.ch')
         self.qt_app.setApplicationVersion(VERSION)
         self.qt_app.setOrganizationName('SED')
-        # We expect a settings file when launching without GUI
-        if self.has_gui:
-            self.app_settings = AppSettings()
-        else:
-            settings_file = os.path.abspath(args.config)
-            self.app_settings = AppSettings(settings_file)
-            # reenable Ctrl-C
+        # Load settings
+        path = args.config if args.config else 'ramsis.ini'
+        settings_file = os.path.abspath(path)
+        self.app_settings = AppSettings(settings_file)
+        if not self.has_gui:
+            # Re-enable Ctrl-C
             signal.signal(signal.SIGINT, signal.SIG_DFL)
         # Launch core
         self.ramsis_core = Controller(settings=self.app_settings)

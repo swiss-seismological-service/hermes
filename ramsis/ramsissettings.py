@@ -66,6 +66,17 @@ known_settings = {
 
     # List of ISHA models to load (or 'all')
     'ISHA/models': ['all'],
+
+    # FDSNWS settings
+
+    # Fetch seismic data from an FDSNWS service
+    'data_acquisition/fdsnws_enabled': True,
+    # Base url for the FDSNWS service
+    'data_acquisition/fdsnws_url': 'http://arclink.ethz.ch',
+    # Fetch interval [minutes]
+    'data_acquisition/fdsnws_interval': 5,
+    # Amount of data [minutes] to fetch
+    'data_acquisition/fdsnws_length': 30
 }
 
 

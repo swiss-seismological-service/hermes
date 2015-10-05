@@ -58,7 +58,7 @@ class EventHistory(QtCore.QObject):
         Delete all data from the db
 
         """
-        self.store.purge(self.entity)
+        self.store.purge_entity(self.entity)
         self._events = []
         self._emit_change_signal({})
 

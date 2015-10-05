@@ -39,21 +39,26 @@ class Store:
         session = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.session = session()
 
-    def purge(self, entity=None):
+    def purge_all(self):
         """
         Deletes all data from the store
 
-        If entity is given, only data for this entity will be deleted. Cascades
-        deletes as configured in the model.
+        """
+        self.model.metadata.drop_all(bind=self.engine)
+        self.model.metadata.create_all(self.engine)
+
+    def purge_entity(self, entity, predicate=None):
+        """
+        Deletes data from the given entity with the optional predicate given in
+        *predicate*. Cascades deletes as configured in the model.
 
         """
-        if entity is not None:
-            for obj in self.session.query(entity):
-                self.session.delete(obj)
-            self.session.commit()
-        else:
-            self.model.metadata.drop_all(bind=self.engine)
-            self.model.metadata.create_all(self.engine)
+        query = self.session.query(entity)
+        if predicate is not None:
+            query = query.filter(*predicate)
+        for obj in query:
+            self.session.delete(obj)
+        self.session.commit()
 
     def commit(self):
         """

@@ -307,6 +307,11 @@
     <string>Compute Scenario</string>
    </property>
   </action>
+  <action name="actionImport_FDSNWS_Data">
+   <property name="text">
+    <string>Import FDSNWS Data</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>

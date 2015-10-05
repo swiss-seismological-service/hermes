@@ -10,13 +10,19 @@
 
 # add OpenQuake repository
 add-apt-repository ppa:openquake/ppa
-apt-get update
+
+# add ObsPy repository and public key
+echo "deb http://deb.obspy.org trusty main" >> /etc/apt/sources.list
+PUBLIC_KEY=https://raw.github.com/obspy/obspy/master/misc/debian/public.key
+wget --quiet -O - $PUBLIC_KEY | sudo apt-key add -
 
 # dependencies for RAMSIS
-DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-sqlalchemy python-pip python-oq-engine python-nose python-lxml git"
+DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-obspy"\
+" python-sqlalchemy python-pip python-oq-engine python-nose python-lxml git"
 PIP_PACKAGES="numpy pymatlab sphinx"
 
 # install deb and pip packages
+apt-get update
 apt-get install -y --force-yes $DEB_PACKAGES
 pip install $PIP_PACKAGES
 
@@ -27,7 +33,8 @@ git checkout date-axis-item
 python setup.py install
 
 # install custom GSIMs
-cp /vagrant/ramsis/resources/oq/gmpe-gsim/* /usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
+cp /vagrant/atls/resources/oq/gmpe-gsim/* \
+/usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
 
 # upgrade OpenQuake database
 oq-engine --upgrade-db -y

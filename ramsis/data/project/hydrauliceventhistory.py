@@ -33,7 +33,7 @@ class HydraulicEventHistory(EventHistory):
         :type importer: EventImporter
 
         """
-        self.store.purge(self.entity)
+        self.store.purge_entity(self.entity)
         events = []
         for date, fields in importer:
             event = HydraulicEvent(date,
