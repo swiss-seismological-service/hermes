@@ -98,7 +98,6 @@ class Controller(QtCore.QObject):
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
         self._logger.info('...done')
-        self._add_fdsnws_task()
 
     def create_project(self, path):
         """
@@ -117,7 +116,6 @@ class Controller(QtCore.QObject):
         store.commit()
         store.close()
         self.open_project(path)
-        self._add_fdsnws_task()
 
     def close_project(self):
         self.project.close()
@@ -232,6 +230,13 @@ class Controller(QtCore.QObject):
             name='Rate update')
         scheduler.add_task(rate_update_task)
 
+        # Fetching seismic data over fdsnws
+        minutes = self._settings.value('data_acquisition/fdsnws_interval')
+        task = ScheduledTask(task_function=self._import_fdsnws_data,
+                             dt=timedelta(minutes=minutes),
+                             name='FDSNWS')
+        scheduler.add_task(task)
+
         return scheduler
 
     def reset(self, t0):
@@ -243,7 +248,10 @@ class Controller(QtCore.QObject):
 
     def _on_project_time_change(self, t_project):
         """
-        Invoked when the project time changes. Triggers scheduled computations.
+        Invoked when the project time changes.
+
+        Checks if the `TaskScheduler` has pending tasks at the new project
+        time and, if yes, executes them.
 
         :param t_project: current project time
         :type t_project: datetime
@@ -251,6 +259,7 @@ class Controller(QtCore.QObject):
         """
         # Project time changes can also occur on startup or due to manual user
         # interaction. In those cases we don't trigger any computations.
+        # FIXME: Don't make this dependent on the eng. state (see issue #11)
         if self.engine.state == EngineState.INACTIVE:
             return
         if self._scheduler.has_pending_tasks(t_project):
@@ -259,14 +268,7 @@ class Controller(QtCore.QObject):
             self._logger.debug('Run pending tasks')
             self._scheduler.run_pending_tasks(t_project, info)
 
-    # FDSNWS
-
-    def _add_fdsnws_task(self):
-        minutes = self._settings.value('data_acquisition/fdsnws_interval')
-        task = ScheduledTask(task_function=self._import_fdsnws_data,
-                             dt=timedelta(minutes=minutes),
-                             name='FDSNWS')
-        self._scheduler.add_task(task)
+    # FDSNWS task function
 
     def _import_fdsnws_data(self, run_info):
         if not self._settings.value('data_acquisition/fdsnws_enabled'):
