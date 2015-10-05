@@ -123,19 +123,6 @@ class Engine(QtCore.QObject):
         self._transition_to_state(EngineState.BUSY)
         self._current_fc_job.run(job_input)
 
-    def update_rates(self, info):
-        t_run = info.t_project
-        # FIXME: do not hardcode  mc
-        seismic_events = self._project.seismic_history.events_before(t_run)
-        data = [(e.date_time, e.magnitude) for e in seismic_events]
-        if len(data) == 0:
-            return
-        t, m = zip(*data)
-        t = list(t)
-        m = list(m)
-        rates = self._project.rate_history.compute_and_add(m, t, [t_run])
-        self._logger.debug('New rate computed: ' + str(rates[0].rate))
-
     # Task completion handlers
 
     def fc_stage_complete(self, stage):

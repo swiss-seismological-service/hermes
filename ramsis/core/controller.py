@@ -227,7 +227,7 @@ class Controller(QtCore.QObject):
         # Rate computations
         dt = self._settings.value('engine/rt_interval')
         rate_update_task = ScheduledTask(
-            task_function=self.engine.update_rates,
+            task_function=self._update_rates,
             dt=timedelta(minutes=dt),
             name='Rate update')
         scheduler.add_task(rate_update_task)
@@ -285,3 +285,17 @@ class Controller(QtCore.QObject):
             return
         importer = ObsPyCatalogImporter(catalog)
         self.project.seismic_history.import_events(importer, timerange)
+
+    # Rate computation task function
+
+    def _update_rates(self, info):
+        t_run = info.t_project
+        seismic_events = self.project.seismic_history.events_before(t_run)
+        data = [(e.date_time, e.magnitude) for e in seismic_events]
+        if len(data) == 0:
+            return
+        t, m = zip(*data)
+        t = list(t)
+        m = list(m)
+        rates = self.project.rate_history.compute_and_add(m, t, [t_run])
+        self._logger.debug('New rate computed: ' + str(rates[0].rate))
