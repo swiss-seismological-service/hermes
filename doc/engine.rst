@@ -7,7 +7,7 @@ The forecast engine runs forecasts when the forecast task (see Scheduler in :doc
 2. The computation of hazard
 3. The computation of risk
 
-The ``ForecastJob`` automatically passes the results from each stage as the input to the next stage. The engine subscribes to the ``stage_completed`` signal that :class:`~core.job.Job` emits to collect the results from each stage and store the in the :doc:`Projects <project>` forecast history.
+The ``ForecastJob`` automatically passes the results from each stage as the input to the next stage. The engine subscribes to the ``stage_completed`` signal that :class:`~core.job.Job` emits to collect the results from each stage and store them in the :doc:`Project's <project>` forecast history.
 
 The hazard and risk computations are performed by `OpenQuake <http://www.globalquakemodel.org/openquake/about/>`_ which maintains its own database for results. The forecast result history thus only stores a reference the OpenQuake results for stages 2 and 3.
 
@@ -26,9 +26,9 @@ Hazard and Risk Computation
 ---------------------------
 
 The hazard and risk computation are performed externally by OpenQuake (OQ). The modules in the :doc:`modules/core.oq` provide the interface classes to start OQs own engine and to collect the results when the computation is done.
-OpenQuake reads some of its inputs from .xml files. The input files generated on the fly by :mod:`core.oq.controller`.
+OpenQuake reads some of its inputs from .xml files. The input files are generated on the fly by :mod:`core.oq.controller`.
 
 .. figure:: images/engine_clsd.png
    :align: center
 
-   Classes controlled by Engine to perform forecasts and hazerd/risk computations.
+   Classes controlled by Engine to perform forecasts and hazard/risk computations.

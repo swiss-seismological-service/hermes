@@ -36,7 +36,7 @@ class Controller(QtCore.QObject):
     During run time, the `Controller` acts as the central entry point for
     the user interface.
 
-    :ivar RamsisProject project: Currently loaded project
+    :ivar Project project: Currently loaded project
     :param AppSettings settings: reference to the application settings
 
     """

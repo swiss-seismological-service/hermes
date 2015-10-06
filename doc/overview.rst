@@ -33,7 +33,7 @@ Source Code Organisation
 The source code directory organizes the components shown above as follows
 
 * **ui** contains the the :doc:`user interface <user_interface>` files, i.e. the GUI elements and their respective controllers. All view/window controllers are named xxx\ *window.py*. Qt generated user interface files are stored in *ui/views*. Some of the more complex views have their own `view models <https://en.wikipedia.org/wiki/Model_View_ViewModel>`_ to hold data in a view specific manner. These are stored under **ui/viewmodels**.
-* **core** The :doc:`core` package contains most of the business logic of RT-RAMSIS. It's main module defines the ``Controller``: class which owns the main components of RT-RAMSIS and serves as the entry point for the user interface actions. ``Controller`` controls the forecasting :doc:`engine`, the :doc:`scheduler` the :doc:`simulator`. It also manages the currently active :doc:`project`.
+* **core** The :doc:`core` package contains most of the business logic of RT-RAMSIS. Its main module defines the ``Controller``: class which owns the main components of RT-RAMSIS and serves as the entry point for the user interface actions. ``Controller`` controls the forecasting :doc:`engine`, the :doc:`scheduler` and the :doc:`simulator`. It also manages the currently active :doc:`project`.
 
   The two sub-packages **core/oq** and **core/ismodels** contain the modules for interfacing with openquake and for running induced seismicity forecasting models respectively.
 

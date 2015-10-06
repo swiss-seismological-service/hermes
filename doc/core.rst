@@ -1,7 +1,7 @@
 Core
 ====
 
-The RT-RAMSIS :doc:`modules/core` contains the business logic of RT-RAMSIS. It's top level module is :mod:`~core.controller` with the :class:`~core.controller.Controller` class, which controls most of the components that make up the core and also serves as the entry point for the user interface.
+The RT-RAMSIS :doc:`modules/core` contains the business logic of RT-RAMSIS. Its top level module is :mod:`~core.controller` with the :class:`~core.controller.Controller` class, which controls most of the components that make up the core and also serves as the entry point for the user interface.
 
 The class diagram below shows the main component and the attributes and methods that are important when the software is running forecasts.
 
@@ -10,7 +10,7 @@ The class diagram below shows the main component and the attributes and methods 
 
    Class diagram of the RT-RAMSIS core.
 
-While the :class:`~core.controller.Controller` class coordinates between the core objects, it is the ``Engine`` that is does the actual work of computing forecasts. 
+While the :class:`~core.controller.Controller` class coordinates between the core objects, it is the ``Engine`` that does the actual work of computing forecasts.
 
 Engine
 ------
@@ -29,7 +29,7 @@ IS Rate Forecasting
 
 .. py:currentmodule:: core.ismodels.common
 
-The basis for each forecast job are the induced seismicity rate forecasting models. When invoked, the framework passes the seismic and the hydraulic history to :class:`Model` as input. The model then computes a forecast for the epected rate of seismicity in the near future. The result, a synthetic earthquake catalog, is passed to the next stage.
+The basis for each forecast job are the induced seismicity rate forecasting models. When invoked, the framework passes the seismic and the hydraulic history to :class:`Model` as input. The model then computes a forecast for the expected rate of seismicity in the near future. The result, a synthetic earthquake catalog, is passed to the next stage.
 
 The common interface for IS models is defined and documented in the :mod:`core.ismodels.common` module.
 
@@ -53,17 +53,17 @@ Scheduler
 
 The :class:`TaskScheduler` keeps a list of :class:`ScheduledTasks <ScheduledTask>` that it runs at specific absolute times (one-off tasks) or relative time intervals (repeating tasks). For example, one of the most central tasks is the task that initiates a new forecast every six hours (or whatever time interval is configured in the app's settings). When it is time to execute the forecast task, the ``run_forecast()`` method in :class:`~core.engine.Engine` will be invoked by the forecast task.
 
-It is important to note the the tasks themselves do not do any work at all. In fact, ``ScheduledTask`` has only three properties: a name, the time that defines when the task should execute, and a reference to an external method it should call.
+It is important to note the tasks themselves do not do any work at all. In fact, ``ScheduledTask`` has only three properties: a name, the time that defines when the task should execute, and a reference to an external method it should call.
 
 .. py:currentmodule:: data.project.ramsisproject
 
-Also note, that the scheduler does not work with the current local system time. Instead it only reacts to changes on the current ``project_time`` which is a property of ``RamsisProject``. In real time operation, ``project_time`` and the current system time are the same. However, when the software operates in simulation mode, ``project_time`` is updated by the ``simulator`` and can thus run faster or slower than the system time, depending on the configured simulation speed.
+Also note, that the scheduler does not work with the current local system time. Instead it only reacts to changes on the current ``project_time`` which is a property of ``Project``. In real time operation, ``project_time`` and the current system time are the same. However, when the software operates in simulation mode, ``project_time`` is updated by the ``simulator`` and can thus run faster or slower than the system time, depending on the configured simulation speed.
 
 
 Project
 -------
 
-``Project`` (implemented in :class:`RamsisProject`) contains all the relevant data for the currently active project, such as the history of seismic event, hydraulic events, forecast results and project specific settings.
+``Project`` (implemented in :class:`Project`) contains all the relevant data for the currently active project, such as the history of seismic event, hydraulic events, forecast results and project specific settings.
 
 The current ``project_time`` (a property of project) serves as the basis for all scheduled activity of the core.
 
