@@ -1,6 +1,13 @@
 # -*- encoding: utf-8 -*-
 """
-The core handles time dependent tasks on the project.
+The `engine` module handles everything that is related to computing
+forecasts (see also :doc:`engine`). The central class is `Engine` which is
+responsible for setting up `ForecastJob`\s and coordinating between the
+different stages of a forecast.
+
+The `Engine` maintains an internal state machine with three possible `states
+<EngineState>`.
+
 
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
@@ -16,18 +23,25 @@ from ramsisjob import ForecastJob
 
 class EngineState:
     """
-    The core state switches from inactive to ready as soon as project is
-    associated with the core.
-    The busy states indicates that the core is currently running a forecast
-    and is thus not ready for another one.
+    Defines the possible states of `Engine`.
+
+    The `EngineState` goes from `INACTIVE` to `READY` as soon as a project is
+    set through `observe_project`.
 
     """
-    INACTIVE = 0
-    READY = 1
-    BUSY = 2
+    INACTIVE = 0  #: No project is loaded, the `Engine` won't do anything
+    READY = 1  #: The `Engine` is ready to start a new forecast
+    BUSY = 2  #: The `Engine` is busy computing a forecast
 
     @classmethod
     def text(cls, state):
+        """
+        Returns a text representation of `state`
+
+        :param EngineState state: State for which a text representation should
+            be returned.
+
+        """
         if state == cls.INACTIVE:
             return 'inactive'
         elif state == cls.READY:
@@ -38,9 +52,19 @@ class EngineState:
 
 class Engine(QtCore.QObject):
     """
-    An core is closely linked to the project and handles all time dependent
-    tasks on the project such as forecast scheduling, regular rate computations
-    etc.
+    The `Engine` handles forecasting.
+
+    When no project is set, the `Engine` is in the `INACTIVE` state. Once a
+    project is loaded, the `Controller` invokes `observe_project` and the
+    engine transitions to `READY`.
+
+    In `READY` state, a new forecast can be initiated by calling
+    `run_forecast`. The `Engine` will then assemble the input for the
+    forecast, transition to the `BUSY` state and initiate the first forecast
+    stage. After all stages have completed, the `Engine` emits the
+    `forecast_complete` signal and transitions back to the `READY` state.
+
+    :param AppSettings settings: Application settings
 
     """
 
@@ -51,13 +75,12 @@ class Engine(QtCore.QObject):
     # we need to be careful not to starve the run loop). The Ui updates from
     # project emitted change signals.
     forecast_complete = QtCore.pyqtSignal()
+    """
+    Signal emitted by the `Engine` when the current forecast has completed.
+
+    """
 
     def __init__(self, settings):
-        """
-        :param project: Project to observe on time changes
-        :type project: Project
-
-        """
         super(Engine, self).__init__()
         self._settings = settings
         self._project = None
@@ -73,9 +96,19 @@ class Engine(QtCore.QObject):
 
     @property
     def state(self):
+        """
+        :return EngineState: The current state of the `Engine`
+
+        """
         return self._state
 
     def observe_project(self, project):
+        """
+        Start observing a new project and set the engine to `READY`
+
+        :param RamsisProject project: Project to observe
+
+        """
         project.will_close.connect(self._on_project_close)
         self._project = project
         self._transition_to_state(EngineState.READY)
@@ -95,6 +128,23 @@ class Engine(QtCore.QObject):
     # Scheduled task functions
 
     def run_forecast(self, task_run_info):
+        """
+        Run a new forecast.
+
+        If the `Engine` is in `READY` state this will initiate a new forecast.
+        Otherwise the method does nothing.
+
+        The parameter `task_run_info` contains all the information the engine
+        needs to start a forecast, particularly the forecast time. Upon
+        invocation `run_forecast` creates a new `ForecastJob` and assembles
+        the input data for the job. It then transitions to the `BUSY` state
+        and calls :meth:`core.ramsisjob.ForecastJob.run` to set the job in
+        motion.
+
+        :param TaskRunInfo task_run_info: Forecast info such as the forecast
+           time.
+
+        """
         assert self.state != EngineState.INACTIVE
         t_run = task_run_info.t_project
 

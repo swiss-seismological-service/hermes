@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
+
 """
 Injection well information
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
@@ -15,12 +15,9 @@ class InjectionWell(OrmBase):
     """
     Injection well information
 
-    :ivar well_tip_x: Well tip x coordinate [m]
-    :type well_tip_x: float
-    :ivar well_tip_y: well tip y coordinate [m]
-    :type well_tip_y: float
-    :ivar well_tip_z: well tip depth [m] (positive downwards)
-    :type well_tip_z: float
+    :ivar float well_tip_x: Well tip x coordinate [m]
+    :ivar float well_tip_y: Well tip y coordinate [m]
+    :ivar float well_tip_z: Well tip depth [m] (positive downwards)
 
     """
 

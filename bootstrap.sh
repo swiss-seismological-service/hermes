@@ -18,7 +18,8 @@ wget --quiet -O - $PUBLIC_KEY | sudo apt-key add -
 
 # dependencies for RAMSIS
 DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-obspy"\
-" python-sqlalchemy python-pip python-oq-engine python-nose python-lxml git"
+" python-sqlalchemy python-pip python-oq-engine python-nose python-lxml git"\
+" graphviz"
 PIP_PACKAGES="numpy pymatlab sphinx"
 
 # install deb and pip packages

@@ -26,17 +26,15 @@ class Simulator(QtCore.QObject):
     an external pyqt signal can be used to trigger time steps which must be
     set by calling step_on_external_signal.
 
+    :param handler: function that is called on each simulation step
+        with the current simulation time.
+
     """
 
     # Signals
     state_changed = QtCore.pyqtSignal(int)
 
     def __init__(self, handler):
-        """
-        :param handler: function that is called on each simulation step
-            with the current simulation time.
-
-        """
         super(Simulator, self).__init__()
         self.simulation_interval = 200  # simulate a time step every X ms
         self._speed = 1000
@@ -71,16 +69,14 @@ class Simulator(QtCore.QObject):
         """
         Configures the simulator.
 
-        :param time_range: Simulation time range (start and end time)
-        :type time_range: list[datetime]
-        :param speed: simulation speed multiplier (real time = 1). Ignored if
-            step_on is used.
-        :type speed: float
-        :param step_on: Signal the simulator uses to advance time by dt. If
-            not set, an internal timer is used and dt is ignored.
-        :type step_on: QtCore.QSignal
-        :param dt: Time step when step signal is used
-        :type dt: datetime
+        :param list[datetime] time_range: Simulation time range (start and
+            end time)
+        :param float speed: simulation speed multiplier (real time = 1).
+            Ignored if step_on is specified.
+        :param QtCore.QSignal step_on: Signal the simulator uses to advance
+            time by dt. If not set, an internal timer is used and dt is
+            ignored.
+        :param datetime dt: Time step when step signal is used
 
         """
         self._speed = speed
@@ -92,7 +88,7 @@ class Simulator(QtCore.QObject):
         """
         Starts the simulation at start of the simulation time range
 
-        If invoked after *pause*, the simulation is continued from where it
+        If invoked after `pause`, the simulation is continued from where it
         stopped. The first time step is scheduled to execute immediately.
 
         """
@@ -110,13 +106,13 @@ class Simulator(QtCore.QObject):
             self._timer.start(self.simulation_interval)
 
     def pause(self):
-        """ Pauses the simulation. Unpause with start. """
+        """ Pauses the simulation. Unpause by calling `start` again. """
         if self._external_signal is None:
             self._timer.stop()
         self._transition_to_state(SimulatorState.PAUSED)
 
     def stop(self):
-        """ Stops the simulation"""
+        """ Stops the simulation. """
         if self._external_signal is None:
             self._timer.stop()
         else:

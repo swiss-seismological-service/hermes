@@ -1,8 +1,7 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 RAMSIS Job management
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
@@ -12,14 +11,19 @@ import logging
 
 class Job(QtCore.QObject):
     """
-    A job is the most high level computational unit in RAMSIS
+    Multi stage computational unit.
 
     A job consists of stages that are run in succession. The Job class takes
     care of managing those stages, passing intermediate results to the next
     stage and reporting final results back to the framework.
 
-    Derived classes should set the job_id (str) and stages attributes. The
-    latter is a list of Stage classes.
+    Derived classes should at a minimum set the job_id (str) and the stages
+    attributes. The latter is a list of `Stage` derived classes that the `Job`
+    instantiates and executes sequentially.
+
+    :ivar str job_id: Unique identifier for the job
+    :ivar list[Stage] stages: List of classes that represent the `Jobs <Job>`
+        different stages.
 
     """
 
@@ -60,20 +64,19 @@ class Stage(object):
     """
     Abstract base class for job stages.
 
-    Derived classes should set the stage_id (str) and implement the stage_fun
-    function that does the actual work of the stage.
+    Derived classes should override `stage_id` and implement `stage_fun`.
+    The latter does the actual work of the stage.
+
+    :param callback: Callback invoked when stage completes (must take exactly
+        one argument which is the `Stage` that just completed.
+    :ivar inputs: Stage inputs, set with `run`.
+    :ivar results: Stage results, set by `stage_fun` after completion
+    :ivar completed: Set to True when the stage has completed
 
     """
-    stage_id = None
+    stage_id = None  #: Unique identifier for stage
 
     def __init__(self, callback):
-        """
-        Derived classes should set stage_id on init.
-
-        :param callback: callback invoked when stage completes
-        :type callback: method taking one argument (the stage)
-
-        """
         assert self.stage_id is not None, "You must set a stage id"
         self.inputs = None
         self.completed = False
@@ -82,21 +85,31 @@ class Stage(object):
         self._logger = logging.getLogger(__name__)
 
     def run(self, inputs):
+        """
+        Runs the stage by setting the inputs and executing `stage_fun`.
+
+        :param inputs: Stage input data
+
+        """
         self.inputs = inputs
         self.stage_fun()
 
     def stage_fun(self):
         """
-        Executes the stage. The default implementation completes immediately.
-        Subclasses should implement this function set self.results on
-        completion and call stage_complete at the end.
+        Executes the stage. The default implementation does nothing.
+        Subclasses should implement this function, set ``self.results`` on
+        completion and call `stage_complete` at the end.
 
         The when this method is invoked, the inputs to the stage are available
-        in self.inputs.
+        in ``self.inputs``.
 
         """
         pass
 
     def stage_complete(self):
+        """
+        Must be called by `stage_fun` on completion.
+
+        """
         self.completed = True
         self.callback(self)

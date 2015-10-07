@@ -1,10 +1,9 @@
 # -*- encoding: utf-8 -*-
+# Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
-Provides Ramsis specific control functions for ISHA models. The load_models()
+Provides Ramsis specific control functions for ISHA models. The `load_models()`
 function is the central place where models are loaded to be used in RAMSIS.
 I.e. this is also the place where you add new models to the system.
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
@@ -64,10 +63,12 @@ def run_active_models(model_input):
 
 class DetachedRunner(QtCore.QObject):
     """
-    The ISModelRunner manages the actual IS models which live on a separate
+    The `DetachedRunner` manages the actual IS models which live on a separate
     thread each. It communicates data back and forth in a thread safe manner
-    and replicates some of the models basic properties (name etc.) to make
-    it available on the main thread.
+    and replicates some of the model's basic properties (name etc.) to make
+    them available on the main thread.
+
+    :param `Model` model: ISHA model that the controller should manage
 
     """
 
@@ -75,15 +76,6 @@ class DetachedRunner(QtCore.QObject):
     DEBUG = False
 
     def __init__(self, model):
-        """
-        Takes the ISHA model provided as a parameter and moves it to a
-        separate thread for concurrent execution. The model is expected to
-        have a run() method and to emit a *finished* signal when it's done.
-
-        :param model: ISHA model that the controller should manage
-        :type model: Model
-
-        """
         super(DetachedRunner, self).__init__()
         # the reference to the actual model is private since it must not be
         # accessed from the main thread directly.
@@ -108,10 +100,10 @@ class DetachedRunner(QtCore.QObject):
 
     def run_model(self, run_data):
         """
-        Starts a new forecast with the information given in run_data
+        Starts a model run with the information given in run_data
 
-        :param run_data: model inputs and parameters for this forecast
-        :type run_data: ModelInput
+        :param ModelInput run_data: model inputs and parameters for this
+            forecast
 
         """
         self._logger.debug('preparing %s', self.model.title)
@@ -124,7 +116,7 @@ class DetachedRunner(QtCore.QObject):
             self.model.run()
 
     def _on_model_finished(self):
-        """ The model is done so we can quit the thread """
+        """ Finished handler. The model is done so we can quit the thread """
         if DetachedRunner.DEBUG:
             return
         self._qthread.quit()
