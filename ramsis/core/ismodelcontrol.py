@@ -65,7 +65,7 @@ class DetachedRunner(QtCore.QObject):
     """
     The `DetachedRunner` manages the actual IS models which live on a separate
     thread each. It communicates data back and forth in a thread safe manner
-    and replicates some of the models basic properties (name etc.) to make
+    and replicates some of the model's basic properties (name etc.) to make
     them available on the main thread.
 
     :param `Model` model: ISHA model that the controller should manage

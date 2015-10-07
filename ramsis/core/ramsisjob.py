@@ -5,7 +5,7 @@ Defines the components of a forecast job.
 
 A forecast job consists of three `Stages <Stage>`:
 
-1. Forecasting of induced seismicity ( computed by the `ISForecastStage`)
+1. Forecasting of induced seismicity (computed by the `ISForecastStage`)
 2. Computation of the probabilistic seismic hazard (`PshaStage`)
 3. Computation of the probability to exceed certain losses (`RiskPoeStage`)
 
@@ -29,7 +29,7 @@ class ISForecastStage(Stage):
 
     - ``t_run``: the project time at which the forecast starts (`datetime`)
     - ``dt_h``: the forecast bin duration in hours (`float`)
-    - ``project``: a reference to the `Project <RamsisProject>`
+    - ``project``: a reference to the `Project`
 
     """
     stage_id = 'is_forecast_stage'
@@ -109,7 +109,7 @@ class RiskPoeStage(Stage):
 
 class ForecastJob(Job):
     """
-    Defines the job of computing forecasts with it's three stages
+    Defines the job of computing forecasts with its three stages
 
     """
     job_id = 'fc_job'  #: Job ID for ForecastJob

@@ -4,7 +4,7 @@
 """
 Classes to store and persist project related data.
 
-A `RamsisProject` consists of several `EventHistories <EventHistory>` to store
+A `Project` consists of several `EventHistories <EventHistory>` to store
 seismic and hydraulic data as well as the results of forecasts.
 
 The `Store` class acts as the interface between the in-memory data classes

@@ -18,7 +18,8 @@ class Job(QtCore.QObject):
     stage and reporting final results back to the framework.
 
     Derived classes should at a minimum set the job_id (str) and the stages
-    attributes. The latter is a list of `Stage` derived classes that `Job`.
+    attributes. The latter is a list of `Stage` derived classes that the `Job`
+    instantiates and executes sequentially.
 
     :ivar str job_id: Unique identifier for the job
     :ivar list[Stage] stages: List of classes that represent the `Jobs <Job>`

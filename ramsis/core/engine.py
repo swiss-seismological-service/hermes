@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 The `engine` module handles everything that is related to computing
-forecasts (see also :doc:`engine`. The central class is `Engine` which is
+forecasts (see also :doc:`engine`). The central class is `Engine` which is
 responsible for setting up `ForecastJob`\s and coordinating between the
 different stages of a forecast.
 

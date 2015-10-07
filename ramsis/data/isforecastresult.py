@@ -106,7 +106,7 @@ class ISForecastResult(OrmBase):
 
 class ISModelResult(OrmBase):
     """
-    Result from a single forecast `Model` The result either contains actual
+    Result from a single forecast `Model`. The result either contains actual
     result values in `cum_result` and optionally `vol_results` or a reason
     why no result is available in `failure_reason`. The `failed` attribute
     indicates whether results are available or not.

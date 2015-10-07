@@ -209,7 +209,7 @@ class Model(QtCore.QObject):
         """ Initializes the model """
         super(Model, self).__init__()
         self._model_input = None
-        self.output = None  #: bla
+        self.output = None
         self.title = 'Model'
         self._logger = logging.getLogger(self.__class__.__name__)
 
