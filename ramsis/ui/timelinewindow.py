@@ -139,7 +139,7 @@ class HydraulicsPresenter(TimelinePresenter):
 
         # Update left axis
         label = 'Pressure' if idx in (0, 2) else 'Flow rate'
-        units = 'Pa' if idx in (0, 2) else 'l/s'
+        units = 'bar' if idx in (0, 2) else 'l/s'
         self.time_plot_widget.getAxis('left').setLabel(label, units)
 
 
