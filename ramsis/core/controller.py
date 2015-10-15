@@ -26,7 +26,7 @@ from core.simulator import Simulator, SimulatorState
 from core.engine import Engine
 
 import core.ismodelcontrol as mc
-from scheduler.taskscheduler import TaskScheduler, ScheduledTask
+from core.taskscheduler import TaskScheduler, ScheduledTask
 
 # from tools import Profiler
 

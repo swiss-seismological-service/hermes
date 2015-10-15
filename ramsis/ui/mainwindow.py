@@ -27,7 +27,7 @@ from viewmodels.seismicdatamodel import SeismicDataModel
 from core.engine import EngineState
 from core.simulator import SimulatorState
 from ui.views.plots import Event3DViewWidget
-from scheduler.taskscheduler import ScheduledTask
+from core.taskscheduler import ScheduledTask
 import numpy as np
 
 ui_path = os.path.dirname(__file__)
