@@ -1,4 +1,4 @@
-[![build status](https://gitlab.seismo.ethz.ch/ci/projects/4/status.png?ref=develop)](https://gitlab.seismo.ethz.ch/ci/projects/4?ref=develop)
+[![Build Status](http://jenkins.ethz.ch/buildStatus/icon?job=ramsis-develop)](http://jenkins.ethz.ch/job/ramsis-develop/)
 
 # RT-RAMSIS
 
