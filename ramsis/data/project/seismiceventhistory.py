@@ -27,7 +27,7 @@ class SeismicEventHistory(EventHistory):
         """
         Imports seismic events from a csv file by using an EventImporter
 
-        The EventReporter must return the following fields (which must thus
+        The EventImporter must return the following fields (which must thus
         be present in the csv file)
             x: x coordinate [m]
             y: y coordinate [m]
