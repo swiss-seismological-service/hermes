@@ -18,8 +18,22 @@ class Client:
         if args:
             url += '?' + '&'.join(args)
 
-        catalog = json.load(urllib2.urlopen(url))
+        result = urllib2.urlopen(url)
+        code = result.getcode()
+        if code == 204:
+            raise HYDWSException('No data available for request.')
+        elif code == 400:
+            raise HYDWSException('Bad request. Please contact the developers.')
+        elif code == 401:
+            raise HYDWSException('Unauthorized, authentication required.')
+        elif code == 403:
+            raise HYDWSException('Authentication failed.')
+        elif code == 413:
+            raise HYDWSException('Request would result in too much data. '
+                                 'Denied by the datacenter. Split the request '
+                                 'in smaller parts.')
 
+        catalog = json.load(result)
         return catalog
 
 
