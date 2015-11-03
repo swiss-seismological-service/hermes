@@ -23,7 +23,7 @@ from data.project.store import Store
 from data.project.project import Project
 from data.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
-from core.engine import Engine
+from core.engine import Engine, EngineState
 
 import core.ismodelcontrol as mc
 from core.taskscheduler import TaskScheduler, ScheduledTask
