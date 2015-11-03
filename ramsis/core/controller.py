@@ -64,6 +64,8 @@ class Controller(QtCore.QObject):
         self._settings = settings
         self.project = None
         self.engine = Engine(settings)
+        self.fdsnws_previous_end_time = None
+        self.hydws_previous_end_time = None
 
         # Load active IS models
         mc.load_models(self._settings.value('ISHA/models'))
@@ -299,7 +301,10 @@ class Controller(QtCore.QObject):
         minutes = self._settings.value('data_acquisition/fdsnws_length')
         url = self._settings.value('data_acquisition/fdsnws_url')
         now = datetime.now()
-        starttime = UTCDateTime(now - timedelta(minutes=minutes))
+        if self.fdsnws_previous_end_time:
+            starttime = self.fdsnws_previous_end_time
+        else:
+            starttime = UTCDateTime(now - timedelta(minutes=minutes))
         endtime = UTCDateTime(now)
         timerange = (starttime.datetime, endtime.datetime)
         client = Client(url)
@@ -310,6 +315,7 @@ class Controller(QtCore.QObject):
             return
         importer = ObsPyCatalogImporter(catalog)
         self.project.seismic_history.import_events(importer, timerange)
+        self.fdsnws_previous_end_time = endtime
 
     # HYDWS task function
 
@@ -319,7 +325,10 @@ class Controller(QtCore.QObject):
         minutes = self._settings.value('data_acquisition/hydws_length')
         url = self._settings.value('data_acquisition/hydws_url')
         now = datetime.now()
-        starttime = UTCDateTime(now - timedelta(minutes=minutes))
+        if self.hydws_previous_end_time:
+            starttime = self.hydws_previous_end_time
+        else:
+            starttime = UTCDateTime(now - timedelta(minutes=minutes))
         endtime = UTCDateTime(now)
         timerange = (starttime.datetime, endtime.datetime)
         client = hydws.Client(url)
@@ -330,6 +339,7 @@ class Controller(QtCore.QObject):
             return
         importer = HYDWSCatalogImporter(catalog)
         self.project.hydraulic_history.import_events(importer, timerange)
+        self.hydws_previous_end_time = endtime
 
     # Rate computation task function
 
