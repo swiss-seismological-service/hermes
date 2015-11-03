@@ -76,7 +76,18 @@ known_settings = {
     # Fetch interval [minutes]
     'data_acquisition/fdsnws_interval': 5,
     # Amount of data [minutes] to fetch
-    'data_acquisition/fdsnws_length': 30
+    'data_acquisition/fdsnws_length': 30,
+
+    # HYDWS settings
+
+    # Fetch seismic data from an HYDWS service
+    'data_acquisition/hydws_enabled': True,
+    # Base url for the HYDWS service
+    'data_acquisition/hydws_url': 'http://inducat.ethz.ch/hydws/api/v1.0/hydraulicproject/basel2006/hydraulicevents',
+    # Fetch interval [minutes]
+    'data_acquisition/hydws_interval': 5,
+    # Amount of data [minutes] to fetch
+    'data_acquisition/hydws_length': 30
 }
 
 

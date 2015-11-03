@@ -18,6 +18,8 @@ from obspy import UTCDateTime
 from obspy.fdsn import Client
 from obspy.fdsn.header import FDSNException
 
+import hydws
+from hydwscatalogimporter import HYDWSCatalogImporter
 from obspycatalogimporter import ObsPyCatalogImporter
 from data.project.store import Store
 from data.project.project import Project
@@ -251,6 +253,13 @@ class Controller(QtCore.QObject):
                              name='FDSNWS')
         scheduler.add_task(task)
 
+        # Fetching hydraulic data
+        minutes = self._settings.value('data_acquisition/hydws_interval')
+        task = ScheduledTask(task_function=self._import_hydws_data,
+                             dt=timedelta(minutes=minutes),
+                             name='HYDWS')
+        scheduler.add_task(task)
+
         return scheduler
 
     def reset(self, t0):
@@ -301,6 +310,26 @@ class Controller(QtCore.QObject):
             return
         importer = ObsPyCatalogImporter(catalog)
         self.project.seismic_history.import_events(importer, timerange)
+
+    # HYDWS task function
+
+    def _import_hydws_data(self, run_info):
+        if not self._settings.value('data_acquisition/hydws_enabled'):
+            return
+        minutes = self._settings.value('data_acquisition/hydws_length')
+        url = self._settings.value('data_acquisition/hydws_url')
+        now = datetime.now()
+        starttime = UTCDateTime(now - timedelta(minutes=minutes))
+        endtime = UTCDateTime(now)
+        timerange = (starttime.datetime, endtime.datetime)
+        client = hydws.Client(url)
+        try:
+            catalog = client.get_events(starttime=starttime, endtime=endtime)
+        except hydws.HYDWSException as e:
+            self._logger.error('HYDWSException: ' + str(e))
+            return
+        importer = HYDWSCatalogImporter(catalog)
+        self.project.hydraulic_history.import_events(importer, timerange)
 
     # Rate computation task function
 
