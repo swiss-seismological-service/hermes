@@ -18,12 +18,14 @@ from obspy import UTCDateTime
 from obspy.fdsn import Client
 from obspy.fdsn.header import FDSNException
 
+import hydws
+from hydwscatalogimporter import HYDWSCatalogImporter
 from obspycatalogimporter import ObsPyCatalogImporter
 from data.project.store import Store
 from data.project.project import Project
 from data.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
-from core.engine import Engine
+from core.engine import Engine, EngineState
 
 import core.ismodelcontrol as mc
 from core.taskscheduler import TaskScheduler, ScheduledTask
@@ -62,6 +64,8 @@ class Controller(QtCore.QObject):
         self._settings = settings
         self.project = None
         self.engine = Engine(settings)
+        self.fdsnws_previous_end_time = None
+        self.hydws_previous_end_time = None
 
         # Load active IS models
         mc.load_models(self._settings.value('ISHA/models'))
@@ -251,6 +255,13 @@ class Controller(QtCore.QObject):
                              name='FDSNWS')
         scheduler.add_task(task)
 
+        # Fetching hydraulic data
+        minutes = self._settings.value('data_acquisition/hydws_interval')
+        task = ScheduledTask(task_function=self._import_hydws_data,
+                             dt=timedelta(minutes=minutes),
+                             name='HYDWS')
+        scheduler.add_task(task)
+
         return scheduler
 
     def reset(self, t0):
@@ -290,7 +301,10 @@ class Controller(QtCore.QObject):
         minutes = self._settings.value('data_acquisition/fdsnws_length')
         url = self._settings.value('data_acquisition/fdsnws_url')
         now = datetime.now()
-        starttime = UTCDateTime(now - timedelta(minutes=minutes))
+        if self.fdsnws_previous_end_time:
+            starttime = self.fdsnws_previous_end_time
+        else:
+            starttime = UTCDateTime(now - timedelta(minutes=minutes))
         endtime = UTCDateTime(now)
         timerange = (starttime.datetime, endtime.datetime)
         client = Client(url)
@@ -301,6 +315,31 @@ class Controller(QtCore.QObject):
             return
         importer = ObsPyCatalogImporter(catalog)
         self.project.seismic_history.import_events(importer, timerange)
+        self.fdsnws_previous_end_time = endtime
+
+    # HYDWS task function
+
+    def _import_hydws_data(self, run_info):
+        if not self._settings.value('data_acquisition/hydws_enabled'):
+            return
+        minutes = self._settings.value('data_acquisition/hydws_length')
+        url = self._settings.value('data_acquisition/hydws_url')
+        now = datetime.now()
+        if self.hydws_previous_end_time:
+            starttime = self.hydws_previous_end_time
+        else:
+            starttime = UTCDateTime(now - timedelta(minutes=minutes))
+        endtime = UTCDateTime(now)
+        timerange = (starttime.datetime, endtime.datetime)
+        client = hydws.Client(url)
+        try:
+            catalog = client.get_events(starttime=starttime, endtime=endtime)
+        except hydws.HYDWSException as e:
+            self._logger.error('HYDWSException: ' + str(e))
+            return
+        importer = HYDWSCatalogImporter(catalog)
+        self.project.hydraulic_history.import_events(importer, timerange)
+        self.hydws_previous_end_time = endtime
 
     # Rate computation task function
 
