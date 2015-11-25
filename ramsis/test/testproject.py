@@ -19,12 +19,14 @@ from data.project.project import Project
 # Patch Seismic and HydraulicEventHistory imports in project
 Event = namedtuple('Event', 'date_time')
 hydraulic_events = [Event(date_time=datetime(2013, 12, 5, 9)),
-                         Event(date_time=datetime(2013, 12, 5, 10))]
+                    Event(date_time=datetime(2013, 12, 5, 10))]
 seismic_events = [Event(date_time=datetime(2013, 12, 5, 8)),
-                       Event(date_time=datetime(2013, 12, 5, 11))]
+                  Event(date_time=datetime(2013, 12, 5, 11))]
+
 
 def h_get_item(item):
     return hydraulic_events[item]
+
 
 def s_get_item(item):
     return seismic_events[item]
