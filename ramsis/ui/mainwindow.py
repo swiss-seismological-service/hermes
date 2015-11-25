@@ -4,16 +4,11 @@ Controller module for the main window
 
 """
 
-from datetime import datetime, timedelta
 import os
 import logging
 
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QWidget, QSizePolicy
-
-from obspy import UTCDateTime
-from obspy.fdsn import Client
-from obspy.fdsn.header import FDSNException
 
 from forecastswindow import ForecastsWindow
 from settingswindow import SettingsWindow
@@ -21,13 +16,11 @@ from timelinewindow import TimelineWindow
 from simulationwindow import SimulationWindow
 
 from eventimporter import EventImporter
-from obspycatalogimporter import ObsPyCatalogImporter
 import ramsisuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.engine import EngineState
 from core.simulator import SimulatorState
 from ui.views.plots import Event3DViewWidget
-from core.taskscheduler import ScheduledTask
 import numpy as np
 
 ui_path = os.path.dirname(__file__)

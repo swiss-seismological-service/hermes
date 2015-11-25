@@ -74,8 +74,8 @@ class RateComputationTest(unittest.TestCase):
         rate_history = SeismicRateHistory()
         rate_history.t_bin = dt
         rate_history.compute_and_add(self.magnitudes,
-                                             self.times,
-                                             [t_max])
+                                     self.times,
+                                     [t_max])
 
         rate = rate_history.lookup_rate(t_max)
         self.assertEqual(rate.rate, 1.25)

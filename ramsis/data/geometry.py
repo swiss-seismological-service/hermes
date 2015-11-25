@@ -7,6 +7,7 @@ Basic 3D geometric objects and functions
 
 from collections import namedtuple
 
+
 class Point:
     """
     A point in 3D space defined by coordinates x, y and z where z
