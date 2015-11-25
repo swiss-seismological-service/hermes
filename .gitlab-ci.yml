@@ -1,5 +1,8 @@
 before_script: 
   - pip install tox
 
+variables:
+  GIT_SSL_NO_VERIFY: "true"
+
 flake8: 
   script: "tox -e py27-flake8"
