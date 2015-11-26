@@ -21,6 +21,7 @@ from data.geometry import Point
 from core.ismodels.shapiro import Shapiro
 from core.ismodels.common import ModelInput
 
+
 @unittest.skipIf(distutils.spawn.find_executable('matlab') is None,
                  "MATLAB does not seem to be installed.")
 class ShapiroTest(unittest.TestCase):

@@ -250,7 +250,7 @@ class ISResult(OrmBase):
     model_result = relationship(ISModelResult,
                                 foreign_keys=model_result_id,
                                 backref=backref('vol_results',
-                                cascade="all, delete-orphan"))
+                                                cascade="all, delete-orphan"))
 
     def __init__(self, rate, b_val, prob):
         self.prob = prob

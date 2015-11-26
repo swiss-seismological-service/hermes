@@ -129,7 +129,7 @@ class BasicOperation(unittest.TestCase):
 
         self.assertEqual(all_events, self.test_content)
         self.assertEqual(events_before, self.test_content[:idx])
-        self.assertEqual(events_after, self.test_content[idx+1:])
+        self.assertEqual(events_after, self.test_content[idx + 1:])
 
         self.history.clear()
         self.assertEqual(self.history.all_events(), [])

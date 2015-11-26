@@ -13,7 +13,7 @@ from datetime import datetime
 from time import sleep
 
 from PyQt4 import QtCore
-from mock import MagicMock, call
+from mock import MagicMock
 
 from core.ismodelcontrol import DetachedRunner
 from core.ismodels.common import ModelInput, Model
