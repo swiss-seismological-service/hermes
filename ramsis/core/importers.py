@@ -31,7 +31,7 @@ class FDSNWSImporter(QtCore.QObject):
         if self.fdsnws_previous_end_time:
             starttime = self.fdsnws_previous_end_time
         else:
-            starttime = UTCDateTime(now - timedelta(minutes=1440))
+            starttime = UTCDateTime(now - timedelta(minutes=minutes))
         endtime = UTCDateTime(now)
         timerange = (starttime.datetime, endtime.datetime)
         client = Client(url)
