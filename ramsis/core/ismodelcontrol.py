@@ -9,7 +9,7 @@ I.e. this is also the place where you add new models to the system.
 
 import logging
 
-from detachedrunners import ModelRunner
+from runners import ModelRunner
 from ismodels.rj import Rj
 from ismodels.etas import Etas
 
