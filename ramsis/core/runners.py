@@ -9,6 +9,8 @@ import logging
 
 from PyQt4 import QtCore
 
+from importers import FDSNWSImporter, HYDWSImporter
+
 
 class ModelRunner(QtCore.QObject):
     """
@@ -68,5 +70,61 @@ class ModelRunner(QtCore.QObject):
         """ Finished handler. The model is done so we can quit the thread """
         if ModelRunner.DEBUG:
             return
+        self._qthread.quit()
+        self._qthread.wait()
+
+
+class FDSNWSRunner(QtCore.QObject):
+    finished = QtCore.pyqtSignal(object)
+
+    def __init__(self, project, settings):
+        QtCore.QObject.__init__(self)
+
+        self._qthread = QtCore.QThread()
+        self._importer = FDSNWSImporter(project, settings)
+
+        self._importer.moveToThread(self._qthread)
+
+        self._qthread.started.connect(self._importer.import_fdsnws_data)
+        self._importer.finished.connect(self.on_finished)
+
+    def __del__(self):
+        self._qthread.quit()
+        self._qthread.wait()
+
+    def start(self):
+        self._qthread.start()
+
+    def on_finished(self, str_):
+        self.finished.emit(str_)
+
+        self._qthread.quit()
+        self._qthread.wait()
+
+
+class HYDWSRunner(QtCore.QObject):
+    finished = QtCore.pyqtSignal(object)
+
+    def __init__(self, project, settings):
+        QtCore.QObject.__init__(self)
+
+        self._qthread = QtCore.QThread()
+        self._importer = HYDWSImporter(project, settings)
+
+        self._importer.moveToThread(self._qthread)
+
+        self._qthread.started.connect(self._importer.import_hydws_data)
+        self._importer.finished.connect(self.on_finished)
+
+    def __del__(self):
+        self._qthread.quit()
+        self._qthread.wait()
+
+    def start(self):
+        self._qthread.start()
+
+    def on_finished(self, str_):
+        self.finished.emit(str_)
+
         self._qthread.quit()
         self._qthread.wait()
