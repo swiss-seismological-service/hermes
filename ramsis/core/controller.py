@@ -9,18 +9,11 @@ central coordinator for all core components.
 
 from collections import namedtuple
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
 
 from PyQt4 import QtCore
 
-from obspy import UTCDateTime
-from obspy.fdsn import Client
-from obspy.fdsn.header import FDSNException
-
-import hydws
-from hydwscatalogimporter import HYDWSCatalogImporter
-from obspycatalogimporter import ObsPyCatalogImporter
 from data.project.store import Store
 from data.project.project import Project
 from data.ormbase import OrmBase
