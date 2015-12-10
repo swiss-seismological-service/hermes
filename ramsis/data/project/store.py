@@ -8,7 +8,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from sqlalchemy import create_engine, desc
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 
 class Store:
@@ -36,7 +36,8 @@ class Store:
         self.engine = create_engine(store_url, echo=False)
         self.model = model
         self.model.metadata.create_all(self.engine, checkfirst=True)
-        session = sessionmaker(bind=self.engine, expire_on_commit=False)
+        session = scoped_session(sessionmaker(bind=self.engine,
+                                              expire_on_commit=False))
         self.session = session()
 
     def purge_all(self):
