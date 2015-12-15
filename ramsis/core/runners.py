@@ -95,8 +95,8 @@ class FDSNWSRunner(QtCore.QObject):
     def start(self):
         self._qthread.start()
 
-    def on_finished(self, str_):
-        self.finished.emit(str_)
+    def on_finished(self, results):
+        self.finished.emit(results)
 
         self._qthread.quit()
         self._qthread.wait()
@@ -123,8 +123,8 @@ class HYDWSRunner(QtCore.QObject):
     def start(self):
         self._qthread.start()
 
-    def on_finished(self, str_):
-        self.finished.emit(str_)
+    def on_finished(self, results):
+        self.finished.emit(results)
 
         self._qthread.quit()
         self._qthread.wait()

@@ -25,6 +25,8 @@ from core.taskscheduler import TaskScheduler, ScheduledTask
 
 from runners import FDSNWSRunner, HYDWSRunner
 
+from obspycatalogimporter import ObsPyCatalogImporter
+
 # from tools import Profiler
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -102,6 +104,8 @@ class Controller(QtCore.QObject):
         self._logger.info('... initializing runners...')
         self.fdsnws_runner = FDSNWSRunner(self.project, self._settings)
         self.hydws_runner = HYDWSRunner(self.project, self._settings)
+        self.fdsnws_runner.finished.connect(self._on_fdsnws_runner_finished)
+        self.hydws_runner.finished.connect(self._on_hydws_runner_finished)
         self._logger.info('...done')
 
     def create_project(self, path):
@@ -298,10 +302,18 @@ class Controller(QtCore.QObject):
     def _import_fdsnws_data(self, run_info):
         self.fdsnws_runner.start()
 
+    def _on_fdsnws_runner_finished(self, results):
+        if results is not None:
+            self.project.seismic_history.import_events(**results)
+
     # HYDWS task function
 
     def _import_hydws_data(self, run_info):
         self.hydws_runner.start()
+
+    def _on_hydws_runner_finished(self, results):
+        if results is not None:
+            self.project.hydraulic_history.import_events(**results)
 
     # Rate computation task function
 
