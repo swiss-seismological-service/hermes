@@ -25,8 +25,6 @@ from core.taskscheduler import TaskScheduler, ScheduledTask
 
 from runners import FDSNWSRunner, HYDWSRunner
 
-from obspycatalogimporter import ObsPyCatalogImporter
-
 # from tools import Profiler
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
