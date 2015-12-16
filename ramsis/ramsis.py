@@ -72,9 +72,13 @@ class Ramsis(QtCore.QObject):
         path = args.config if args.config else 'ramsis.ini'
         settings_file = os.path.abspath(path)
         self.app_settings = AppSettings(settings_file)
-        if not self.has_gui:
-            # Re-enable Ctrl-C
-            signal.signal(signal.SIGINT, signal.SIG_DFL)
+        # Enable Ctrl-C
+        signal.signal(signal.SIGINT, self._on_sigint)
+        # Once the Qt event loop is running, we need a timer to periodically
+        # run the Python interpreter so it can process Ctrl-C signals
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(lambda: None)
+        self.timer.start(500)
         # Launch core
         self.ramsis_core = Controller(settings=self.app_settings)
         if self.has_gui:
@@ -95,9 +99,7 @@ class Ramsis(QtCore.QObject):
         if self.has_gui:
             self.main_window.show()
         QtCore.QTimer.singleShot(0, self._emit_app_launched)
-        sys.exit(self.qt_app.exec_())
-        if self.has_gui:
-            QgsApplication.exitQgis()
+        self._exit(self.qt_app.exec_())
 
     def on_app_launched(self):
         # Check if we should load a project on launch
@@ -114,3 +116,11 @@ class Ramsis(QtCore.QObject):
 
     def _emit_app_launched(self):
         self.app_launched.emit()
+
+    def _on_sigint(self, signalnum, frame):
+        self._exit(-1)
+
+    def _exit(self, code):
+        if self.has_gui:
+            QgsApplication.exitQgis()
+        sys.exit(code)
