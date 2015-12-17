@@ -118,7 +118,7 @@ class Ramsis(QtCore.QObject):
         self.app_launched.emit()
 
     def _on_sigint(self, signalnum, frame):
-        self._exit(-1)
+        self._exit(0)
 
     def _exit(self, code):
         if self.has_gui:
