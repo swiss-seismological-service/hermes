@@ -130,9 +130,9 @@ class Controller(QtCore.QObject):
 
         """
         self.project.close()
-        self.project = None
         self.project.project_time_changed.disconnect(
             self._on_project_time_change)
+        self.project = None
 
     # Running
 
