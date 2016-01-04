@@ -12,9 +12,9 @@ class Client:
         endtime = endtime.strftime('%Y-%m-%dT%H:%M:%S')
         args = []
         if starttime:
-            args.append('starttime=' + starttime)
+            args.append('mintime=' + starttime)
         if endtime:
-            args.append('endtime=' + endtime)
+            args.append('maxtime=' + endtime)
         if args:
             url += '?' + '&'.join(args)
 
