@@ -42,8 +42,10 @@ class HydraulicEventHistory(EventHistory):
         try:
             for date, fields in importer:
                 event = HydraulicEvent(date,
-                                       flow_dh=float(fields.get('flow_dh') or 0),
-                                       flow_xt=float(fields.get('flow_xt') or 0),
+                                       flow_dh=float(
+                                           fields.get('flow_dh') or 0),
+                                       flow_xt=float(
+                                           fields.get('flow_xt') or 0),
                                        pr_dh=float(fields.get('pr_dh') or 0),
                                        pr_xt=float(fields.get('pr_xt') or 0))
                 events.append(event)
