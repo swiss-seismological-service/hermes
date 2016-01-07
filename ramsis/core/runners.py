@@ -77,11 +77,11 @@ class ModelRunner(QtCore.QObject):
 class FDSNWSRunner(QtCore.QObject):
     finished = QtCore.pyqtSignal(object)
 
-    def __init__(self, project, settings):
+    def __init__(self, settings):
         QtCore.QObject.__init__(self)
 
         self._qthread = QtCore.QThread()
-        self._importer = FDSNWSImporter(project, settings)
+        self._importer = FDSNWSImporter(settings)
 
         self._importer.moveToThread(self._qthread)
 
@@ -105,11 +105,11 @@ class FDSNWSRunner(QtCore.QObject):
 class HYDWSRunner(QtCore.QObject):
     finished = QtCore.pyqtSignal(object)
 
-    def __init__(self, project, settings):
+    def __init__(self, settings):
         QtCore.QObject.__init__(self)
 
         self._qthread = QtCore.QThread()
-        self._importer = HYDWSImporter(project, settings)
+        self._importer = HYDWSImporter(settings)
 
         self._importer.moveToThread(self._qthread)
 

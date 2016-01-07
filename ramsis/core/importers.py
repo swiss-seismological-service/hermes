@@ -15,10 +15,9 @@ from obspycatalogimporter import ObsPyCatalogImporter
 class FDSNWSImporter(QtCore.QObject):
     finished = QtCore.pyqtSignal(object)
 
-    def __init__(self, project, settings):
+    def __init__(self, settings):
         QtCore.QObject.__init__(self)
 
-        self._project = project
         self._settings = settings
         self.fdsnws_previous_end_time = None
         self._logger = logging.getLogger(__name__)
@@ -56,10 +55,9 @@ class FDSNWSImporter(QtCore.QObject):
 class HYDWSImporter(QtCore.QObject):
     finished = QtCore.pyqtSignal(object)
 
-    def __init__(self, project, settings):
+    def __init__(self, settings):
         QtCore.QObject.__init__(self)
 
-        self._project = project
         self._settings = settings
         self.hydws_previous_end_time = None
         self._logger = logging.getLogger(__name__)
