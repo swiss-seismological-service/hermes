@@ -56,8 +56,9 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 #         self.mock_model.finished.connect(on_finished)
 #         dummy_run_data = ModelInput(datetime.now())
 #         self.detached_runner.run_model(dummy_run_data)
-#         # Wait until the model thread emits its signals. This is a bit fragile
-#         # since event delivery from the model thread might take longer
+#         # Wait until the model thread emits its signals. This is a bit
+#         # fragile since event delivery from the model thread might take
+#         # longer
 #         sleep(0.2)
 #         self.app.processEvents()
 #         on_finished.assert_called_once_with(self.mock_model)
