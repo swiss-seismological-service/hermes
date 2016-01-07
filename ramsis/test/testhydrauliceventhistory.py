@@ -48,7 +48,8 @@ class BasicOperation(unittest.TestCase):
     def test_import(self):
         """ Test if the event import works as expected """
         self.history.import_events(self.mock_importer)
-        self.mock_store.purge.assert_called_once_with(HydraulicEvent)
+        self.mock_store.purge_entity.assert_called_once_with(HydraulicEvent,
+                                                             None)
         self.mock_store.add.assert_called_once_with(self.expected)
 
 
