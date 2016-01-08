@@ -23,6 +23,10 @@ class FDSNWSImporter(QtCore.QObject):
         self._logger = logging.getLogger(__name__)
 
     def import_fdsnws_data(self):
+        results = self._run()
+        self.finished.emit(results)
+
+    def _run(self):
         if not self._settings.value('data_acquisition/fdsnws_enabled'):
             return
         minutes = self._settings.value('data_acquisition/fdsnws_length')
@@ -49,7 +53,7 @@ class FDSNWSImporter(QtCore.QObject):
             'timerange': timerange
         }
 
-        self.finished.emit(results)
+        return results
 
 
 class HYDWSImporter(QtCore.QObject):
@@ -63,6 +67,10 @@ class HYDWSImporter(QtCore.QObject):
         self._logger = logging.getLogger(__name__)
 
     def import_hydws_data(self):
+        results = self._run()
+        self.finished.emit(results)
+
+    def _run(self):
         if not self._settings.value('data_acquisition/hydws_enabled'):
             return
         minutes = self._settings.value('data_acquisition/hydws_length')
@@ -89,4 +97,4 @@ class HYDWSImporter(QtCore.QObject):
             'timerange': timerange
         }
 
-        self.finished.emit(results)
+        return results
