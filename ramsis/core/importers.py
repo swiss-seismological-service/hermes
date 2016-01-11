@@ -13,6 +13,13 @@ from obspycatalogimporter import ObsPyCatalogImporter
 
 
 class FDSNWSImporter(QtCore.QObject):
+    """
+    Fetches seismic data from a web service and returns the results.
+
+    The web service URL and time length can be adjusted in the user settings.
+
+    """
+
     finished = QtCore.pyqtSignal(object)
 
     def __init__(self, settings):
@@ -57,6 +64,13 @@ class FDSNWSImporter(QtCore.QObject):
 
 
 class HYDWSImporter(QtCore.QObject):
+    """
+    Fetches hydraulic data from a web service and returns the results.
+
+    The web service URL and time length can be adjusted in the user settings.
+
+    """
+
     finished = QtCore.pyqtSignal(object)
 
     def __init__(self, settings):

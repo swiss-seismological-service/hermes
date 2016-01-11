@@ -75,6 +75,12 @@ class ModelRunner(QtCore.QObject):
 
 
 class FDSNWSRunner(QtCore.QObject):
+    """
+    Start and run a new thread to fetch seismic data from a web service
+    and return the results.
+
+    """
+
     finished = QtCore.pyqtSignal(object)
 
     def __init__(self, settings):
@@ -89,6 +95,7 @@ class FDSNWSRunner(QtCore.QObject):
         self._importer.finished.connect(self.on_finished)
 
     def __del__(self):
+        # Make sure the thread ends before we destroy it
         self._qthread.quit()
         self._qthread.wait()
 
@@ -96,6 +103,12 @@ class FDSNWSRunner(QtCore.QObject):
         self._qthread.start()
 
     def on_finished(self, results):
+        """
+        Finished handler. Returns results from the web service and quits the
+        thread.
+
+        """
+
         self.finished.emit(results)
 
         self._qthread.quit()
@@ -103,6 +116,12 @@ class FDSNWSRunner(QtCore.QObject):
 
 
 class HYDWSRunner(QtCore.QObject):
+    """
+    Start and run a new thread to fetch hydraulic data from a web service
+    and return the results.
+
+    """
+
     finished = QtCore.pyqtSignal(object)
 
     def __init__(self, settings):
@@ -117,6 +136,7 @@ class HYDWSRunner(QtCore.QObject):
         self._importer.finished.connect(self.on_finished)
 
     def __del__(self):
+        # Make sure the thread ends before we destroy it
         self._qthread.quit()
         self._qthread.wait()
 
@@ -124,6 +144,12 @@ class HYDWSRunner(QtCore.QObject):
         self._qthread.start()
 
     def on_finished(self, results):
+        """
+        Finished handler. Returns results from the web service and quits the
+        thread.
+
+        """
+
         self.finished.emit(results)
 
         self._qthread.quit()
