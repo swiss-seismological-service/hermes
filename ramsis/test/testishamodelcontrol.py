@@ -15,7 +15,7 @@ from time import sleep
 from PyQt4 import QtCore
 from mock import MagicMock
 
-from core.ismodelcontrol import DetachedRunner
+from core.runners import ModelRunner
 from core.ismodels.common import ModelInput, Model
 
 
@@ -30,7 +30,7 @@ class MockIshaModel(Model):
         return self
 
 
-class DetachedRunnerTest(unittest.TestCase):
+class ModelRunnerTest(unittest.TestCase):
 
     def setUp(self):
         """
@@ -41,7 +41,7 @@ class DetachedRunnerTest(unittest.TestCase):
         """
         self.app = QtCore.QCoreApplication([])
         self.mock_model = MockIshaModel()
-        self.detached_runner = DetachedRunner(self.mock_model)
+        self.model_runner = ModelRunner(self.mock_model)
 
     def test_initialization(self):
         """ Make sure the model is not associated with the main thread """
@@ -55,7 +55,7 @@ class DetachedRunnerTest(unittest.TestCase):
         # self.mock_model.state_changed.connect(on_state_changed)
         self.mock_model.finished.connect(on_finished)
         dummy_run_data = ModelInput(datetime.now())
-        self.detached_runner.run_model(dummy_run_data)
+        self.model_runner.run_model(dummy_run_data)
         # Wait until the model thread emits its signals. This is a bit fragile
         # since event delivery from the model thread might take longer
         sleep(0.2)

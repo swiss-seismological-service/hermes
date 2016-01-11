@@ -46,11 +46,11 @@ class SeismicEventHistory(EventHistory):
                 event = SeismicEvent(date, float(fields['mag']), location)
                 events.append(event)
         except:
-            self._logger.error('Failed to import events. Make sure the .csv '
-                               'file contains x, y, depth, and mag fields '
-                               'and that the date field has the format '
-                               'dd.mm.yyyyTHH:MM:SS. The original error was '
-                               + traceback.format_exc())
+            self._logger.error('Failed to import seismic events. Make sure '
+                               'the .csv file contains x, y, depth, and mag '
+                               'fields and that the date field has the format '
+                               'dd.mm.yyyyTHH:MM:SS. The original error was ' +
+                               traceback.format_exc())
         else:
             predicate = None
             if timerange:
@@ -58,7 +58,8 @@ class SeismicEventHistory(EventHistory):
                              self.entity.date_time <= timerange[1])
             self.store.purge_entity(self.entity, predicate)
             self.store.add(events)
-            self._logger.info('Imported {} events.'.format(len(events)))
+            self._logger.info('Imported {} seismic events.'.format(
+                len(events)))
             self.reload_from_store()
             self._emit_change_signal({})
 

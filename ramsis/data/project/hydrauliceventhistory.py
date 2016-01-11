@@ -4,6 +4,9 @@ History of hydraulic events, i.e changes in flow or pressure
 
 """
 
+import logging
+import traceback
+
 from data.project.eventhistory import EventHistory
 from data.hydraulicevent import HydraulicEvent
 
@@ -17,8 +20,9 @@ class HydraulicEventHistory(EventHistory):
 
     def __init__(self, store):
         EventHistory.__init__(self, store, HydraulicEvent)
+        self._logger = logging.getLogger(__name__)
 
-    def import_events(self, importer):
+    def import_events(self, importer, timerange=None):
         """
         Imports seismic events from a csv file by using an EventReporter
 
@@ -34,16 +38,32 @@ class HydraulicEventHistory(EventHistory):
         :type importer: EventImporter
 
         """
-        self.store.purge_entity(self.entity)
         events = []
-        for date, fields in importer:
-            event = HydraulicEvent(date,
-                                   flow_dh=float(fields.get('flow_dh') or 0),
-                                   flow_xt=float(fields.get('flow_xt') or 0),
-                                   pr_dh=float(fields.get('pr_dh') or 0),
-                                   pr_xt=float(fields.get('pr_xt') or 0))
-            events.append(event)
-
-        self.store.add(events)
-        self.reload_from_store()
-        self._emit_change_signal({})
+        try:
+            for date, fields in importer:
+                event = HydraulicEvent(date,
+                                       flow_dh=float(
+                                           fields.get('flow_dh') or 0),
+                                       flow_xt=float(
+                                           fields.get('flow_xt') or 0),
+                                       pr_dh=float(fields.get('pr_dh') or 0),
+                                       pr_xt=float(fields.get('pr_xt') or 0))
+                events.append(event)
+        except:
+            self._logger.error('Failed to import hydraulic events. Make sure '
+                               'the .csv file contains top and bottom hole '
+                               'flow and pressure fields and that the date '
+                               'field has the format dd.mm.yyyyTHH:MM:SS. The '
+                               'original error was ' +
+                               traceback.format_exc())
+        else:
+            predicate = None
+            if timerange:
+                predicate = (self.entity.date_time >= timerange[0],
+                             self.entity.date_time <= timerange[1])
+            self.store.purge_entity(self.entity, predicate)
+            self.store.add(events)
+            self._logger.info('Imported {} hydraulic events.'.format(
+                len(events)))
+            self.reload_from_store()
+            self._emit_change_signal({})

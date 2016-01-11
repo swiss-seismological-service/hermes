@@ -51,7 +51,8 @@ class BasicOperation(unittest.TestCase):
         """ Test if the csv import works as expected """
 
         self.history.import_events(self.mock_importer)
-        self.mock_store.purge.assert_called_once_with(SeismicEvent)
+        self.mock_store.purge_entity.assert_called_once_with(SeismicEvent,
+                                                             None)
         self.mock_store.add.assert_called_once_with(self.expected)
 
 

@@ -161,7 +161,7 @@ class Purging(unittest.TestCase):
 
     def test_purge_specific(self):
         """ Test deletion of specific entity """
-        self.store.purge(EventB)
+        self.store.purge_entity(EventB)
         count_a = self.store.count(EventA)
         count_b = self.store.count(EventB)
         self.assertEqual(count_a, 1)
@@ -175,7 +175,7 @@ class Purging(unittest.TestCase):
 
     def test_purge_all(self):
         """ Test deletion of all data """
-        self.store.purge()
+        self.store.purge_all()
         count_a = self.store.count(EventA)
         count_b = self.store.count(EventB)
         self.assertEqual(count_a, 0)

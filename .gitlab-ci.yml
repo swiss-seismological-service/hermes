@@ -8,4 +8,4 @@ flake8:
   script: "tox -e py27-flake8"
 
 nosetests:
-  script: "nosetests"
+  script: "cd ramsis; nosetests"

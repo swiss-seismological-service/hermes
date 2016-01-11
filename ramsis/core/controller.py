@@ -9,18 +9,11 @@ central coordinator for all core components.
 
 from collections import namedtuple
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
 
 from PyQt4 import QtCore
 
-from obspy import UTCDateTime
-from obspy.fdsn import Client
-from obspy.fdsn.header import FDSNException
-
-import hydws
-from hydwscatalogimporter import HYDWSCatalogImporter
-from obspycatalogimporter import ObsPyCatalogImporter
 from data.project.store import Store
 from data.project.project import Project
 from data.ormbase import OrmBase
@@ -29,6 +22,8 @@ from core.engine import Engine, EngineState
 
 import core.ismodelcontrol as mc
 from core.taskscheduler import TaskScheduler, ScheduledTask
+
+from runners import FDSNWSRunner, HYDWSRunner
 
 # from tools import Profiler
 
@@ -66,6 +61,8 @@ class Controller(QtCore.QObject):
         self.engine = Engine(settings)
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None
+        self.fdsnws_runner = None
+        self.hydws_runner = None
 
         # Load active IS models
         mc.load_models(self._settings.value('ISHA/models'))
@@ -102,6 +99,11 @@ class Controller(QtCore.QObject):
         self.project.project_time_changed.connect(self._on_project_time_change)
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
+        self._logger.info('... initializing runners...')
+        self.fdsnws_runner = FDSNWSRunner(self._settings)
+        self.hydws_runner = HYDWSRunner(self._settings)
+        self.fdsnws_runner.finished.connect(self._on_fdsnws_runner_finished)
+        self.hydws_runner.finished.connect(self._on_hydws_runner_finished)
         self._logger.info('...done')
 
     def create_project(self, path):
@@ -128,9 +130,9 @@ class Controller(QtCore.QObject):
 
         """
         self.project.close()
-        self.project = None
         self.project.project_time_changed.disconnect(
             self._on_project_time_change)
+        self.project = None
 
     # Running
 
@@ -296,50 +298,20 @@ class Controller(QtCore.QObject):
     # FDSNWS task function
 
     def _import_fdsnws_data(self, run_info):
-        if not self._settings.value('data_acquisition/fdsnws_enabled'):
-            return
-        minutes = self._settings.value('data_acquisition/fdsnws_length')
-        url = self._settings.value('data_acquisition/fdsnws_url')
-        now = datetime.now()
-        if self.fdsnws_previous_end_time:
-            starttime = self.fdsnws_previous_end_time
-        else:
-            starttime = UTCDateTime(now - timedelta(minutes=minutes))
-        endtime = UTCDateTime(now)
-        timerange = (starttime.datetime, endtime.datetime)
-        client = Client(url)
-        try:
-            catalog = client.get_events(starttime=starttime, endtime=endtime)
-        except FDSNException as e:
-            self._logger.error('FDSNException: ' + str(e))
-            return
-        importer = ObsPyCatalogImporter(catalog)
-        self.project.seismic_history.import_events(importer, timerange)
-        self.fdsnws_previous_end_time = endtime
+        self.fdsnws_runner.start()
+
+    def _on_fdsnws_runner_finished(self, results):
+        if results is not None:
+            self.project.seismic_history.import_events(**results)
 
     # HYDWS task function
 
     def _import_hydws_data(self, run_info):
-        if not self._settings.value('data_acquisition/hydws_enabled'):
-            return
-        minutes = self._settings.value('data_acquisition/hydws_length')
-        url = self._settings.value('data_acquisition/hydws_url')
-        now = datetime.now()
-        if self.hydws_previous_end_time:
-            starttime = self.hydws_previous_end_time
-        else:
-            starttime = UTCDateTime(now - timedelta(minutes=minutes))
-        endtime = UTCDateTime(now)
-        timerange = (starttime.datetime, endtime.datetime)
-        client = hydws.Client(url)
-        try:
-            catalog = client.get_events(starttime=starttime, endtime=endtime)
-        except hydws.HYDWSException as e:
-            self._logger.error('HYDWSException: ' + str(e))
-            return
-        importer = HYDWSCatalogImporter(catalog)
-        self.project.hydraulic_history.import_events(importer, timerange)
-        self.hydws_previous_end_time = endtime
+        self.hydws_runner.start()
+
+    def _on_hydws_runner_finished(self, results):
+        if results is not None:
+            self.project.hydraulic_history.import_events(**results)
 
     # Rate computation task function
 
