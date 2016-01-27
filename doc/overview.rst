@@ -45,7 +45,7 @@ The other top level packages and files are
 * **main.py** is responsible for launching the application and for setting up the logging facilities etc.
 * **ramsis.py** contains the application object, handles application wide settings and connects the GUI with the core logic.
 
-The diagram below shows the class relationships for the main components and packages as listed above.
+The diagram below shows the class relationships for the main components and packages as listed above. A complete class diagram is available :download:`here <images/overviewdetailed_clsd.png>`.
 
 .. figure:: images/overview_clsd.png
    :align: center
