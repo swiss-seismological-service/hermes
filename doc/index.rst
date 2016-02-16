@@ -26,6 +26,7 @@ directory.
    project
    engine
    user_interface
+   uml
 
 .. toctree::
    :maxdepth: 2
