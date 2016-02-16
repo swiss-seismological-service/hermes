@@ -126,8 +126,8 @@ class Simulator(QtCore.QObject):
 
         simulation_ended = False
         if self._external_signal is None:
-            dt = timedelta(seconds=self.simulation_interval / 1000.0
-                           * self.speed)
+            seconds = self.simulation_interval / 1000.0 * self.speed
+            dt = timedelta(seconds=seconds)
         else:
             dt = self._dt
         self._simulation_time += dt

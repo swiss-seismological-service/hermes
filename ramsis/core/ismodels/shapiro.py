@@ -22,9 +22,9 @@ class Shapiro(Model):
 
     _MATLAB_ERROR_MSG = 'The Shapiro model encountered an error in the ' \
                         'Matlab code. The model inputs that led to the error '\
-                        'have been saved to ismodels/model_inputs.mat. To debug ' \
-                        'the model load model_inputs.mat file in matlab and ' \
-                        'execute shapiro_wrapper.m'
+                        'have been saved to ismodels/model_inputs.mat. To ' \
+                        'debug the model load model_inputs.mat file in ' \
+                        'matlab and execute shapiro_wrapper.m'
     'directly.'
 
     def __init__(self):
