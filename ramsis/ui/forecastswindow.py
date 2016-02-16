@@ -360,7 +360,8 @@ class ForecastsWindow(QtGui.QDialog):
 
         # setup view model
 
-        def date_display(x): return x.t_run.ctime()
+        def date_display(x):
+            return x.t_run.ctime()
 
         roles = {
             Qt.DisplayRole: date_display
