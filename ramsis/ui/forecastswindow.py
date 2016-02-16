@@ -301,9 +301,9 @@ class RiskTabPresenter(TabPresenter):
             self.ui.riskCalcIdLabel.setText('N/A')
 
         outputs = oq_models.Output.objects.filter(oq_job=83)
-        mean_loss_maps = [o.loss_map for o in outputs
-                          if o.output_type == 'loss_map'
-                          and o.loss_map.statistics == 'mean']
+        mean_loss_maps = [o.loss_map for o in outputs if
+                          o.output_type == 'loss_map' and
+                          o.loss_map.statistics == 'mean']
 
         # Just display the first one for now (poE = 0.01)
         # TODO: provide a dropdown selector to choose which poe level to show
@@ -357,14 +357,19 @@ class ForecastsWindow(QtGui.QDialog):
 
     def _load_project_data(self, project):
         self._observe_project_changes(project)
+
         # setup view model
-        date_display = lambda x: x.t_run.ctime()
+
+        def date_display(x): return x.t_run.ctime()
+
         roles = {
             Qt.DisplayRole: date_display
         }
         self.fc_history_model = EventListModel(project.forecast_history, roles)
         self.ui.forecastListView.setModel(self.fc_history_model)
+
         # observe selection changes
+
         fc_selection = self.ui.forecastListView.selectionModel()
         fc_selection.selectionChanged.connect(self.on_fc_selection_change)
 

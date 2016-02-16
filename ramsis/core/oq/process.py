@@ -17,10 +17,10 @@ from openquake.engine.db.schema.upgrades import upgrader
 from openquake.engine.celery_node_monitor import CeleryNodeMonitor
 from django import db as django_db
 
-config.abort_if_no_config_available()
-
 import openquake.engine
 import openquake.engine.engine as oe
+
+config.abort_if_no_config_available()
 
 # no distribute for now
 OQ_DISTRIBUTE = False
