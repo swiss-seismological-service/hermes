@@ -23,3 +23,4 @@ Sequence diagrams
 * :download:`engine_seq <images/engine_seq.png>`
 * :download:`engine_v2_seq <images/engine_v2_seq.png>`
 * :download:`engine_v3_seq <images/engine_v3_seq.png>`
+* :download:`simulator_seq <images/simulator_seq.png>`
