@@ -264,6 +264,7 @@ class Model(QtCore.QObject):
         """ Initializes the model """
         super(Model, self).__init__()
         self._model_input = None
+        self._job_id = None
         self.output = None
         self.title = 'Model'
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -272,7 +273,7 @@ class Model(QtCore.QObject):
     def model_input(self):
         return self._model_input
 
-    def prepare_run(self, model_input):
+    def prepare_run(self, model_input, job_id):
         """
         Prepares the model for the next run. The data that is required for the
         run is supplied in *model_input*
@@ -282,6 +283,7 @@ class Model(QtCore.QObject):
 
         """
         self._model_input = model_input
+        self._job_id = job_id
 
     def run(self):
         """
@@ -296,7 +298,7 @@ class Model(QtCore.QObject):
         self.output = self._do_run()
         self._logger.info('<{}> {} model run completed'
                           .format(self.thread().objectName(), self.title))
-        self.finished.emit(self)
+        self.finished.emit(self._job_id)
 
     def _do_run(self):
         """
