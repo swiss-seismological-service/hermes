@@ -25,6 +25,11 @@ from datetime import datetime
 from datetime import timedelta
 import logging
 
+from data.hydraulicevent import HydraulicEvent
+from data.seismicevent import SeismicEvent
+from data.geometry import Point
+from data.injectionwell import InjectionWell
+
 
 class ModelInput(object):
     """
@@ -136,6 +141,56 @@ class ModelInput(object):
                     yield combined_name, _primitive(data)
             else:
                 yield base_name, _primitive(attr)
+
+    def serialize(self, datetime_format):
+        data = {}
+        for attr in self._data_attrs:
+            data[attr] = getattr(self, attr)
+
+        data["t_run"] = data["t_run"].strftime(datetime_format)
+        data["mc"] = str(data["mc"])
+        data["forecast_times"] = [
+            data["forecast_times"][0].strftime(datetime_format)]
+        data["seismic_events"] = [{
+                "date_time": e.date_time.strftime(datetime_format),
+                "magnitude": e.magnitude,
+                "location": (e.x, e.y, e.z)
+            } for e in data["seismic_events"]]
+        data["hydraulic_events"] = [{
+                "date_time": e.date_time.strftime(datetime_format),
+                "flow_dh": e.flow_dh,
+                "flow_xt": e.flow_xt,
+                "pr_dh": e.pr_dh,
+                "pr_xt": e.pr_xt
+            } for e in data["hydraulic_events"]]
+        data["injection_well"] = (
+            data["injection_well"].well_tip_x,
+            data["injection_well"].well_tip_y,
+            data["injection_well"].well_tip_z)
+
+        return data
+
+    def deserialize(self, data, datetime_format):
+        data["t_run"] = datetime.strptime(data["t_run"], datetime_format)
+        data["mc"] = float(data["mc"])
+        data["forecast_times"] = [datetime.strptime(data["forecast_times"][0],
+                                                    datetime_format)]
+        data["seismic_events"] = [SeismicEvent(
+                datetime.strptime(e["date_time"], datetime_format),
+                e["magnitude"],
+                Point(*e["location"])
+            ) for e in data["seismic_events"]]
+        data["hydraulic_events"] = [HydraulicEvent(
+                datetime.strptime(e["date_time"], datetime_format),
+                e["flow_dh"],
+                e["flow_xt"],
+                e["pr_dh"],
+                e["pr_xt"]
+            ) for e in data["hydraulic_events"]]
+        data["injection_well"] = InjectionWell(*data["injection_well"])
+
+        for attr in self._data_attrs:
+            setattr(self, attr, data[attr])
 
 
 class ModelResult(object):

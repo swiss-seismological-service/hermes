@@ -65,7 +65,7 @@ class Controller(QtCore.QObject):
         self.hydws_runner = None
 
         # Load active IS models
-        mc.load_models(self._settings.value('ISHA/models'))
+        mc.load_models(self._settings.value('ISHA/models'), settings)
 
         # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)

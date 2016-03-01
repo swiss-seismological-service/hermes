@@ -9,15 +9,13 @@ I.e. this is also the place where you add new models to the system.
 
 import logging
 
-from runners import ModelRunner
-from ismodels.rj import Rj
-from ismodels.etas import Etas
+from modelclient import ModelClient
 
 active_models = []
-_detached_runners = []
+_clients = []
 
 
-def load_models(model_ids):
+def load_models(model_ids, settings):
     """
     Load ISHA models. Register new models here.
 
@@ -25,36 +23,44 @@ def load_models(model_ids):
     and add it to the list of models.
 
     """
-    global _detached_runners
+    global _clients
     load_all = True if 'all' in model_ids else False
 
     # Reasenberg Jones
     if load_all or 'rj' in model_ids:
-        rj_model = Rj(a=-1.6, b=1.58, p=1.2, c=0.05)
-        rj_model.title = 'Reasenberg-Jones'
-        active_models.append(rj_model)
+        model = {
+            'model': 'rj',
+            'title': 'Reasenberg-Jones',
+            'parameters': {'a': -1.6, 'b': 1.58, 'p': 1.2, 'c': 0.05}
+        }
+        active_models.append(model)
 
     # ETAS
     if load_all or 'etas' in model_ids:
-        etas_model = Etas(alpha=0.8, k=8.66, p=1.2, c=0.01, mu=12.7, cf=1.98)
-        etas_model.title = 'ETAS'
-        active_models.append(etas_model)
+        model = {
+            'model': 'etas',
+            'title': 'ETAS',
+            'parameters': {'alpha': 0.8, 'k': 8.66, 'p': 1.2, 'c': 0.01,
+                           'mu': 12.7, 'cf': 1.98}
+        }
+        active_models.append(model)
 
     # Shapiro
     # TODO: Re-enable. Temp. disabled bc matlab is not installed on vagrant
     # if load_all or 'shapiro' in model_ids:
-    #     shapiro_model = Shapiro()
-    #     shapiro_model.title = 'Shapiro (Spatial)'
-    #     active_models.append(shapiro_model)
+    #     model = {
+    #         'model': 'shapiro',
+    #         'title': 'Shapiro (spatial)',
+    #         'parameters': None
+    #     }
+    #     active_models.append(model)
 
-    # This moves the models to their own thread. Do not access model
-    # members directly after this line
-    _detached_runners = [ModelRunner(m) for m in active_models]
+    _clients = [ModelClient(m, settings) for m in active_models]
 
-    titles = [m.title for m in active_models]
+    titles = [m["title"] for m in active_models]
     logging.getLogger(__name__).info('Loaded models: ' + ', '.join(titles))
 
 
 def run_active_models(model_input):
-    for runner in _detached_runners:
-        runner.run_model(model_input)
+    for client in _clients:
+        client.run(model_input)
