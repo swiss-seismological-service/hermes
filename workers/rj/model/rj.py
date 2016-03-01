@@ -9,7 +9,7 @@ in California", Science 243, 1173-1176
 
 import numpy as np
 
-from core.ismodels.common import Model, ModelOutput, ModelResult
+from common import Model, ModelOutput, ModelResult
 
 
 class Rj(Model):
