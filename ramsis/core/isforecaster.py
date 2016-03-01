@@ -56,8 +56,8 @@ class ISForecaster(QtCore.QObject):
 
         """
         t_run = model_input.t_run
-        for model in mc.active_models:
-            model.finished.connect(self._on_model_run_finished)
+        # for model in mc.active_models:
+        #     model.finished.connect(self._on_model_run_finished)
         # Skip this forecast if the forecaster is not IDLE
         if self.state != ISForecastState.IDLE:
             self.logger.warning('Attempted to initiate IS forecast while the '
