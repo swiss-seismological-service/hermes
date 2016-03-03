@@ -3,7 +3,7 @@ from multiprocessing import Process
 from model.common import ModelInput
 from model.rj import Rj
 
-_jobs = []
+_jobs = {}
 
 
 def run(request_data, job_id):
@@ -25,8 +25,7 @@ def _run(request_data, job_id):
                             request_data["datetime_format"])
 
     model = Rj(**request_data["parameters"])
-    job = {job_id: {'model': model, 'status': 'processing'}}
-    _jobs.append(job)
+    _jobs[job_id] = {'model': model, 'status': 'processing'}
     model.finished.connect(_on_model_finished)
     model.prepare_run(model_input, job_id)
     model.run()
