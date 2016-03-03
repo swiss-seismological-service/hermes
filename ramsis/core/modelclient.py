@@ -16,4 +16,4 @@ class ModelClient(object):
             "parameters": self.model["parameters"]
         }
 
-        response = requests.post(self.url, data={"data": json.dumps(data)})
+        requests.post(self.url, data={"data": json.dumps(data)})

@@ -12,6 +12,8 @@ import time
 import getpass
 
 # OpenQuake modules
+import openquake.engine
+import openquake.engine.engine as oe
 from openquake.engine.utils import config
 from openquake.engine.db.schema.upgrades import upgrader
 from openquake.engine.celery_node_monitor import CeleryNodeMonitor
@@ -19,8 +21,6 @@ from django import db as django_db
 
 config.abort_if_no_config_available()
 
-import openquake.engine
-import openquake.engine.engine as oe
 
 # no distribute for now
 OQ_DISTRIBUTE = False
