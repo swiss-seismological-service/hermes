@@ -245,6 +245,29 @@ class ModelOutput:
         self.cum_result = None
         self.vol_results = None
 
+    def serialize(self):
+        data = {}
+        data["failed"] = self.failed
+        data["failure_reason"] = self.failure_reason
+        data["t_run"] = self.t_run
+        data["dt"] = self.dt
+        data["model"] = None
+        if isinstance(self.cum_result, ModelResult):
+            data["cum_result"] = (self.cum_result.rate, self.cum_result.b_val,
+                                  self.cum_result.prob)
+        else:
+            data["cum_result"] = None
+        data["vol_results"] = None
+
+        return data
+
+    def deserialize(self, data):
+        if data["cum_result"] is not None:
+            data["cum_result"] = ModelResult(*data["cum_result"])
+
+        for attr in data:
+            setattr(self, attr, data[attr])
+
 
 class Model(QtCore.QObject):
     """
