@@ -21,8 +21,7 @@ def _run(request_data, job_id):
     global _jobs
 
     model_input = ModelInput(None)
-    model_input.deserialize(request_data["data"],
-                            request_data["datetime_format"])
+    model_input.deserialize(request_data["model_input"])
 
     model = Rj(**request_data["parameters"])
     _jobs[job_id] = {'model': model, 'status': 'processing'}

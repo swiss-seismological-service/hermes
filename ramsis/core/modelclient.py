@@ -9,10 +9,8 @@ class ModelClient(object):
         self.url = settings.value(key)
 
     def run(self, model_input):
-        datetime_format = "%Y-%m-%dT%H:%M:%S"
         data = {
-            "data": model_input.serialize(datetime_format),
-            "datetime_format": datetime_format,
+            "model_input": model_input.serialize(),
             "parameters": self.model["parameters"]
         }
 

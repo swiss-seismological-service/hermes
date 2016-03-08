@@ -142,7 +142,8 @@ class ModelInput(object):
             else:
                 yield base_name, _primitive(attr)
 
-    def serialize(self, datetime_format):
+    def serialize(self):
+        datetime_format = "%Y-%m-%dT%H:%M:%S"
         data = {}
         for attr in self._data_attrs:
             data[attr] = getattr(self, attr)
@@ -169,9 +170,11 @@ class ModelInput(object):
             data["injection_well"].well_tip_z
         )
 
-        return data
+        return {"data": data, "datetime_format": datetime_format}
 
-    def deserialize(self, data, datetime_format):
+    def deserialize(self, data):
+        data, datetime_format = data["data"], data["datetime_format"]
+
         data["t_run"] = datetime.strptime(data["t_run"], datetime_format)
         data["mc"] = float(data["mc"])
         data["forecast_times"] = [datetime.strptime(data["forecast_times"][0],
