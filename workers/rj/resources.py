@@ -1,16 +1,27 @@
+from multiprocessing import Process
 import json
 
 from flask import request
 from flask_restful import Resource
 
-import jobcontrol as jc
+from model.common import ModelInput
+from model.rj import Rj
 
 
-class Jobs(Resource):
-    def get(self, job_id):
-        status = jc.get_status(job_id)
-        return status
+class Run(Resource):
+    def post(self):
+        data = json.loads(request.form["data"])
+        p = Process(target=self._run, args=(data,))
+        p.start()
 
-    def post(self, job_id):
-        request_data = json.loads(request.form["data"])
-        jc.run(request_data, job_id)
+    def _run(self, data):
+        model_input = ModelInput(None)
+        model_input.deserialize(data["model_input"])
+
+        model = Rj(**data["parameters"])
+        model.finished.connect(self._on_model_finished)
+        model.prepare_run(model_input)
+        model.run()
+
+    def _on_model_finished(self):
+        pass
