@@ -245,10 +245,11 @@ class ModelOutput:
         self.vol_results = None
 
     def serialize(self):
+        datetime_format = "%Y-%m-%dT%H:%M:%S"
         data = {}
         data["failed"] = self.failed
         data["failure_reason"] = self.failure_reason
-        data["t_run"] = self.t_run
+        data["t_run"] = self.t_run.strftime(datetime_format)
         data["dt"] = self.dt
         data["model"] = None
         if isinstance(self.cum_result, ModelResult):
@@ -258,9 +259,12 @@ class ModelOutput:
             data["cum_result"] = None
         data["vol_results"] = None
 
-        return data
+        return {"data": data, "datetime_format": datetime_format}
 
     def deserialize(self, data):
+        data, datetime_format = data["data"], data["datetime_format"]
+
+        data["t_run"] = datetime.strptime(data["t_run"], datetime_format)
         if data["cum_result"] is not None:
             data["cum_result"] = ModelResult(*data["cum_result"])
 
