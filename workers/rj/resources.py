@@ -18,7 +18,7 @@ class Run(Resource):
         p = Process(target=self._run, args=(data,))
         p.start()
 
-        response = requests.get(settings["url_next_id"])
+        requests.get(settings["url_next_id"])
 
     def _run(self, data):
         model_input = ModelInput(None)
