@@ -12,13 +12,16 @@ from settings import settings
 
 class Run(Resource):
     model = None
+    job_id = None
 
     def post(self):
+        r = requests.get(settings["url_next_id"])
+        self.job_id = ''.join([c for c in r.content if c.isdigit()])
         data = json.loads(request.form["data"])
         p = Process(target=self._run, args=(data,))
         p.start()
 
-        requests.get(settings["url_next_id"])
+        return self.job_id
 
     def _run(self, data):
         model_input = ModelInput(None)

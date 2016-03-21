@@ -44,5 +44,9 @@ class Rj(Resource):
 
 
 class RjId(Resource):
+    store = Store("sqlite:///db.sqlite", OrmBase)
+
     def get(self):
-        pass
+        layer = ModelResultsLayer(self.store, ModelResultsItem)
+        next_id = layer.get_next_id()
+        return next_id

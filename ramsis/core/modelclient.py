@@ -7,6 +7,7 @@ class ModelClient(object):
         self.model = model
         key = 'worker/%s_url' % self.model['model']
         self.url = settings.value(key)
+        self.job_id = None
 
     def run(self, model_input):
         data = {
@@ -14,4 +15,5 @@ class ModelClient(object):
             "parameters": self.model["parameters"]
         }
 
-        requests.post(self.url, data={"data": json.dumps(data)})
+        r = requests.post(self.url, data={"data": json.dumps(data)})
+        self.job_id = ''.join([c for c in r.content if c.isdigit()])

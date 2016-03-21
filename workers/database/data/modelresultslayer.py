@@ -46,6 +46,10 @@ class ModelResultsLayer(QtCore.QObject):
             self.store.add(it_list)
         self._emit_change_signal({})
 
+    def get_next_id(self):
+        last_row = self.store.read_last(self.entity, order="id")
+        return last_row.id + 1
+
     def __getitem__(self, item):
         return self._items[item]
 
