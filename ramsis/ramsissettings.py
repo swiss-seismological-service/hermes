@@ -93,11 +93,11 @@ known_settings = {
     # Worker settings
 
     # Rj server URL
-    'worker/rj_url': 'http://localhost:5000/job1',
+    'worker/rj_url': 'http://localhost:5000/run',
     # ETAS server URL
-    'worker/etas_url': 'http://localhost:5000/job1',
+    'worker/etas_url': '',
     # Shapiro server URL
-    'worker/shapiro_url': 'http://localhost:5000/job1'
+    'worker/shapiro_url': ''
 }
 
 
