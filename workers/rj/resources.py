@@ -35,4 +35,4 @@ class Run(Resource):
     def _on_model_finished(self):
         model_output = self.model.output.serialize()
         data = {"data": json.dumps({"model_output": model_output})}
-        requests.post(settings["url_rj"] + '/job1', data)
+        requests.post(settings["url_rj"], data)

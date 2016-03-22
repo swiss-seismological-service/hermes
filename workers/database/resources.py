@@ -13,7 +13,7 @@ from data.ormbase import OrmBase
 class Rj(Resource):
     store = Store("sqlite:///db.sqlite", OrmBase)
 
-    def post(self, job_id):
+    def post(self):
         data = json.loads(request.form["data"])
 
         model_output = ModelOutput(None, None, None)
