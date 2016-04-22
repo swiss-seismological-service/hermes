@@ -20,7 +20,8 @@ class Run(Resource):
             'limit': 1,
             'order_by': [{'field': 'id', 'direction': 'desc'}]
         })}
-        r = requests.get(settings["url_rj"], params=params, headers=headers)
+        r = requests.get(settings["url_database"], params=params,
+                         headers=headers)
         objects = json.loads(r.text)["objects"]
         if objects:
             self.job_id = objects[-1]["id"] + 1
@@ -56,4 +57,4 @@ class Run(Resource):
             "b_val": cr[1] if cr else "",
             "prob": cr[2] if cr else ""
         })
-        requests.post(settings["url_rj"], data=data, headers=headers)
+        requests.post(settings["url_database"], data=data, headers=headers)
