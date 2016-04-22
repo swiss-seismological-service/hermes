@@ -1,12 +1,25 @@
-from flask import Flask
-from flask_restful import Api
+import flask
+import flask.ext.sqlalchemy
+import flask.ext.restless
 
-from resources import Rj, RjId
+app = flask.Flask(__name__)
+app.config['DEBUG'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
-app = Flask(__name__)
-api = Api(app)
-api.add_resource(Rj, '/rj')
-api.add_resource(RjId, '/rj/next_job_id')
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+class ModelResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    failed = db.Column(db.Boolean)
+    failure_reason = db.Column(db.String)
+    t_run = db.Column(db.DateTime)
+    dt = db.Column(db.Float)
+    rate = db.Column(db.Float)
+    b_val = db.Column(db.Float)
+    prob = db.Column(db.Float)
+
+
+db.create_all()
+manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
+manager.create_api(ModelResult, methods=['GET', 'POST'])
+app.run(port=5001)
