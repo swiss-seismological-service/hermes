@@ -12,7 +12,7 @@ import logging
 from modelclient import ModelClient
 
 active_models = []
-_clients = []
+clients = []
 
 
 def load_models(model_ids, settings):
@@ -23,7 +23,7 @@ def load_models(model_ids, settings):
     and add it to the list of models.
 
     """
-    global _clients
+    global clients
     load_all = True if 'all' in model_ids else False
 
     # Reasenberg Jones
@@ -55,12 +55,12 @@ def load_models(model_ids, settings):
     #     }
     #     active_models.append(model)
 
-    _clients = [ModelClient(m, settings) for m in active_models]
+    clients = [ModelClient(m, settings) for m in active_models]
 
     titles = [m["title"] for m in active_models]
     logging.getLogger(__name__).info('Loaded models: ' + ', '.join(titles))
 
 
 def run_active_models(model_input):
-    for client in _clients:
+    for client in clients:
         client.run(model_input)

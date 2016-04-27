@@ -92,12 +92,15 @@ known_settings = {
 
     # Worker settings
 
-    # Rj server URL
+    # Rj server URLs
     'worker/rj_url': 'http://localhost:5000/run',
-    # ETAS server URL
+    'worker/rj_database_url': 'http://localhost:5001/api/model_result',
+    # ETAS server URLs
     'worker/etas_url': '',
-    # Shapiro server URL
-    'worker/shapiro_url': ''
+    'worker/etas_database_url': '',
+    # Shapiro server URLs
+    'worker/shapiro_url': '',
+    'worker/shapiro_database_url': ''
 }
 
 
