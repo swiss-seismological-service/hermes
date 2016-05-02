@@ -59,7 +59,10 @@ class ModelClient(QtCore.QObject):
             'filters': [{'name': 'id', 'op': '==', 'val': self.job_id}]
         })}
         r = requests.get(self.url_database, params=params, headers=headers)
-        objects = json.loads(r.text)["objects"]
+        results = json.loads(r.text)
+        objects = None
+        if "objects" in results:
+            objects = results["objects"]
 
         if objects:
             row = objects[0]
