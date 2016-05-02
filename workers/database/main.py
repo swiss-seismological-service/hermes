@@ -4,7 +4,7 @@ import flask.ext.restless
 
 app = flask.Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////vagrant/ramsis/basel.rms'
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
 
