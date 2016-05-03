@@ -16,17 +16,9 @@ class Run(Resource):
 
     def post(self):
         headers = {'content-type': 'application/json'}
-        params = {'q': json.dumps({
-            'limit': 1,
-            'order_by': [{'field': 'id', 'direction': 'desc'}]
-        })}
-        r = requests.get(settings["url_database"], params=params,
-                         headers=headers)
-        objects = json.loads(r.text)["objects"]
-        if objects:
-            self.job_id = objects[-1]["id"] + 1
-        else:
-            self.job_id = 1
+        data = json.dumps({})
+        r = requests.post(settings["url_database"], data=data, headers=headers)
+        self.job_id = json.loads(r.text)["id"]
 
         data = json.loads(request.form["data"])
         p = Process(target=self._run, args=(data,))
@@ -57,4 +49,5 @@ class Run(Resource):
             "b_val": cr[1] if cr else "",
             "prob": cr[2] if cr else ""
         })
-        requests.post(settings["url_database"], data=data, headers=headers)
+        url = settings["url_database"] + "/" + str(self.job_id)
+        requests.put(url, data=data, headers=headers)

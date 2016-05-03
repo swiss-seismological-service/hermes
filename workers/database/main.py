@@ -21,5 +21,5 @@ class ModelResult(db.Model):
 
 db.create_all()
 manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
-manager.create_api(ModelResult, methods=['GET', 'POST'])
+manager.create_api(ModelResult, methods=['GET', 'POST', 'PUT'])
 app.run(port=5001)

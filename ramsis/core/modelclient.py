@@ -60,9 +60,14 @@ class ModelClient(QtCore.QObject):
         })}
         r = requests.get(self.url_database, params=params, headers=headers)
         results = json.loads(r.text)
+
+        # check for results
         objects = None
         if "objects" in results:
-            objects = results["objects"]
+            items = results["objects"][0].items()
+            result_set = set([v for k, v in items if k != "id"])
+            if result_set != {None}:
+                objects = results["objects"]
 
         if objects:
             row = objects[0]
