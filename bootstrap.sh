@@ -17,10 +17,24 @@ PUBLIC_KEY=https://raw.github.com/obspy/obspy/master/misc/debian/public.key
 wget --quiet -O - $PUBLIC_KEY | sudo apt-key add -
 
 # dependencies for RAMSIS
-DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-obspy"\
-" python-sqlalchemy python-pip python-oq-engine python-nose python-lxml git"\
-" graphviz"
-PIP_PACKAGES="numpy pymatlab sphinx sphinx-rtd-theme"
+DEB_PACKAGES=""\
+" python-qt4=4.10.4+dfsg-1ubuntu1"\
+" python-qt4-gl=4.10.4+dfsg-1ubuntu1"\
+" qgis=2.0.1-2build2"\
+" python-mock=1.0.1-3"\
+" python-obspy=1.0.1-1~trusty"\
+" python-sqlalchemy=0.8.4-1build1"\
+" python-pip=1.5.4-1ubuntu3"\
+" python-oq-engine=1.9.1-0~trusty01"\
+" python-nose=1.3.1-2"\
+" python-lxml=3.3.3-1ubuntu0.1"\
+" git=1:1.9.1-1ubuntu0.3"\
+" graphviz=2.36.0-0ubuntu3.1"
+PIP_PACKAGES=""\
+" numpy==1.8.2"\
+" pymatlab==0.2.3"\
+" sphinx==1.4.1"\
+" sphinx-rtd-theme==0.1.9"
 
 # install deb and pip packages
 apt-get update
