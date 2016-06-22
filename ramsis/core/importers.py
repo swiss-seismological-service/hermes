@@ -4,8 +4,8 @@ import logging
 from PyQt4 import QtCore
 
 from obspy import UTCDateTime
-from obspy.fdsn import Client
-from obspy.fdsn.header import FDSNException
+from obspy.clients.fdsn import Client
+from obspy.clients.fdsn.header import FDSNException
 
 import hydws
 from hydwscatalogimporter import HYDWSCatalogImporter

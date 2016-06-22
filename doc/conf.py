@@ -26,8 +26,8 @@ sys.path.insert(0, os.path.abspath('../ramsis'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 
-              'sphinx.ext.imgmath', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode',
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.imgmath',
+              'sphinx.ext.ifconfig', 'sphinx.ext.viewcode',
               'sphinx.ext.graphviz']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -90,10 +90,11 @@ pygments_style = 'sphinx'
 #modindex_common_prefix = []
 
 # Output warnings for missing references
-nitpicky = True
-nitpick_ignore = [('py:class', 'PyQt4.QtCore.QObject'),
-                  ('py:class', 'PyQt4.QtGui.QDialog'),
-                  ('py:class', 'PyQt4.QtGui.QMainWindow')]
+nitpicky = False
+# nitpicky = True
+# nitpick_ignore = [('py:class', 'PyQt4.QtCore.QObject'),
+#                   ('py:class', 'PyQt4.QtGui.QDialog'),
+#                   ('py:class', 'PyQt4.QtGui.QMainWindow')]
 
 # Group by type
 autodoc_member_order = 'groupwise'
@@ -261,6 +262,6 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None),
-                       'PyQt4': ('http://pyqt.sourceforge.net/Docs/PyQt4', None),
-                       'sqlalchemy': ('http://docs.sqlalchemy.org/en/rel_0_8', None)}
+# intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None),
+#                        'PyQt4': ('http://pyqt.sourceforge.net/Docs/PyQt4', None),
+#                        'sqlalchemy': ('http://docs.sqlalchemy.org/en/rel_0_8', None)}

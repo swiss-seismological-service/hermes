@@ -33,13 +33,6 @@ data.project Package
     :members:
     :show-inheritance:
 
-:mod:`data.ramsisproject` Module
---------------------------------
-
-.. automodule:: data.project.ramsisproject
-    :members:
-    :show-inheritance:
-
 :mod:`data.seismiceventhistory` Module
 --------------------------------------
 
