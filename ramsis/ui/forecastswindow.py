@@ -312,7 +312,8 @@ class RiskTabPresenter(TabPresenter):
         # # order assets by location
         # locations = {}
         # for asset in loss_map:
-        #     # asset.location (of type GEOSGeometry) does not implement __cmp__
+        #     # asset.location (of type GEOSGeometry)
+        #     # does not implement __cmp__
         #     (x, y) = asset.location
         #     locations.setdefault((x, y), []).append(asset)
         #
