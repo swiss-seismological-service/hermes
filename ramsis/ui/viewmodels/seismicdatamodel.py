@@ -70,20 +70,18 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
                 return str(event.z)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
-        """
-        if role == QtCore.Qt.EditRole:
-
-            row = index.row()
-            column = index.column()
-
-            color = QtGui.QColor(value)
-
-            if color.isValid():
-                self.__colors[row][column] = color
-                self.dataChanged.emit(index, index)
-                return True
-        return False
-        """
+        # if role == QtCore.Qt.EditRole:
+        #
+        #     row = index.row()
+        #     column = index.column()
+        #
+        #     color = QtGui.QColor(value)
+        #
+        #     if color.isValid():
+        #         self.__colors[row][column] = color
+        #         self.dataChanged.emit(index, index)
+        #         return True
+        # return False
         pass
 
     def headerData(self, section, orientation, role):

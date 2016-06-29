@@ -15,7 +15,7 @@ import numpy as np
 from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
 from qgis.gui import QgsMapCanvasLayer
 
-from openquake.engine.db import models as oq_models
+# from openquake.engine.db import models as oq_models
 
 from core import ismodelcontrol as mc
 
@@ -221,36 +221,36 @@ class HazardTabPresenter(TabPresenter):
         else:
             self.ui.hazCalcIdLabel.setText('N/A')
 
-        outputs = oq_models.Output.objects.filter(oq_job=calc_id)
-
-        hazard_curves = (o.hazard_curve for o in outputs
-                         if o.output_type == 'hazard_curve')
-
-        imls = None
-        for hc in hazard_curves:
-            if hc.imt != 'MMI':
-                # we only support mmi for now
-                # TODO: show selection box for all IMTs
-                continue
-
-            # extract IMLs once
-            if imls is None:
-                imls = hc.imls
-
-            # extract x, y, poes
-            x_y_poes = oq_models.HazardCurveData.objects.all_curves_simple(
-                filter_args=dict(hazard_curve=hc.id))
-
-            x, y, poes = next(x_y_poes)  # there should be only one
-
-            if hc.statistics == 'mean':
-                pen = QtGui.QPen(Qt.red)
-            elif hc.statistics == 'quantile':
-                pen = QtGui.QPen(Qt.green)
-            else:
-                pen = QtGui.QPen(Qt.white)
-
-            self.ui.hazPlot.plot(imls, poes, pen=pen)
+        # outputs = oq_models.Output.objects.filter(oq_job=calc_id)
+        #
+        # hazard_curves = (o.hazard_curve for o in outputs
+        #                  if o.output_type == 'hazard_curve')
+        #
+        # imls = None
+        # for hc in hazard_curves:
+        #     if hc.imt != 'MMI':
+        #         # we only support mmi for now
+        #         # TODO: show selection box for all IMTs
+        #         continue
+        #
+        #     # extract IMLs once
+        #     if imls is None:
+        #         imls = hc.imls
+        #
+        #     # extract x, y, poes
+        #     x_y_poes = oq_models.HazardCurveData.objects.all_curves_simple(
+        #         filter_args=dict(hazard_curve=hc.id))
+        #
+        #     x, y, poes = next(x_y_poes)  # there should be only one
+        #
+        #     if hc.statistics == 'mean':
+        #         pen = QtGui.QPen(Qt.red)
+        #     elif hc.statistics == 'quantile':
+        #         pen = QtGui.QPen(Qt.green)
+        #     else:
+        #         pen = QtGui.QPen(Qt.white)
+        #
+        #     self.ui.hazPlot.plot(imls, poes, pen=pen)
 
 
 class RiskTabPresenter(TabPresenter):
@@ -300,30 +300,31 @@ class RiskTabPresenter(TabPresenter):
         else:
             self.ui.riskCalcIdLabel.setText('N/A')
 
-        outputs = oq_models.Output.objects.filter(oq_job=83)
-        mean_loss_maps = [o.loss_map for o in outputs if
-                          o.output_type == 'loss_map' and
-                          o.loss_map.statistics == 'mean']
-
-        # Just display the first one for now (poE = 0.01)
-        # TODO: provide a dropdown selector to choose which poe level to show
-        loss_map = mean_loss_maps[0]
-
-        # order assets by location
-        locations = {}
-        for asset in loss_map:
-            # asset.location (of type GEOSGeometry) does not implement __cmp__
-            (x, y) = asset.location
-            locations.setdefault((x, y), []).append(asset)
-
-        # sum losses for all assets at a specific location
-        losses = [{'name': assets[0].asset_ref,
-                   'loss': sum(a.value for a in assets),
-                   'location': loc} for (loc, assets) in locations.items()]
-        self.loss_layer.set_losses(losses)
-        extent = self.loss_layer.extent()
-        extent.scale(1.1)
-        self.ui.mapWidget.setExtent(extent)
+        # outputs = oq_models.Output.objects.filter(oq_job=83)
+        # mean_loss_maps = [o.loss_map for o in outputs if
+        #                   o.output_type == 'loss_map' and
+        #                   o.loss_map.statistics == 'mean']
+        #
+        # # Just display the first one for now (poE = 0.01)
+        # # TODO: provide a dropdown selector to choose which poe level to show
+        # loss_map = mean_loss_maps[0]
+        #
+        # # order assets by location
+        # locations = {}
+        # for asset in loss_map:
+        #     # asset.location (of type GEOSGeometry)
+        #     # does not implement __cmp__
+        #     (x, y) = asset.location
+        #     locations.setdefault((x, y), []).append(asset)
+        #
+        # # sum losses for all assets at a specific location
+        # losses = [{'name': assets[0].asset_ref,
+        #            'loss': sum(a.value for a in assets),
+        #            'location': loc} for (loc, assets) in locations.items()]
+        # self.loss_layer.set_losses(losses)
+        # extent = self.loss_layer.extent()
+        # extent.scale(1.1)
+        # self.ui.mapWidget.setExtent(extent)
 
 
 class ForecastsWindow(QtGui.QDialog):

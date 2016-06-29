@@ -13,9 +13,9 @@ import getpass
 
 # OpenQuake modules
 from openquake.engine.utils import config
-from openquake.engine.db.schema.upgrades import upgrader
+# from openquake.engine.db.schema.upgrades import upgrader
 from openquake.engine.celery_node_monitor import CeleryNodeMonitor
-from django import db as django_db
+# from django import db as django_db
 
 import openquake.engine
 import openquake.engine.engine as oe
@@ -29,7 +29,7 @@ OQ_DISTRIBUTE = False
 # set if we run distributed or not
 os.environ[openquake.engine.NO_DISTRIBUTE_VAR] = '0' if OQ_DISTRIBUTE else '1'
 # first of all check the database version and exit if the db is outdated
-upgrader.check_versions(django_db.connections['admin'])
+# upgrader.check_versions(django_db.connections['admin'])
 
 
 def run_job(queue, job_input):

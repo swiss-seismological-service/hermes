@@ -1,10 +1,6 @@
 core Package
 ============
 
-.. automodule:: core
-    :members:
-    :show-inheritance:
-
 :mod:`core.controller` Module
 -----------------------------
 

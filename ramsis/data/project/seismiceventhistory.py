@@ -29,10 +29,12 @@ class SeismicEventHistory(EventHistory):
 
         The EventImporter must return the following fields (which must thus
         be present in the csv file)
-            x: x coordinate [m]
-            y: y coordinate [m]
-            depth: depth [m], positive downwards
-            mag: magnitude
+
+        x: x coordinate [m]
+        y: y coordinate [m]
+        depth: depth [m], positive downwards
+        mag: magnitude
+
         :param importer: an EventImporter object
         :type importer: EventImporter
 

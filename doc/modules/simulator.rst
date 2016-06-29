@@ -4,6 +4,6 @@ simulator Module
 :mod:`simulator` Module
 -----------------------
 
-.. automodule:: simulator
+.. automodule:: core.simulator
     :members:
     :show-inheritance:
