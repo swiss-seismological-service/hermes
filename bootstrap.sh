@@ -40,7 +40,7 @@ PIP_PACKAGES=""\
 apt-get update
 for deb_package in $DEB_PACKAGES
 do
-    apt-get install -y --force-yes $deb_package
+    apt-get install -y $deb_package
 done
 for pip_package in $PIP_PACKAGES
 do
