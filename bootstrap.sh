@@ -17,15 +17,38 @@ PUBLIC_KEY=https://raw.github.com/obspy/obspy/master/misc/debian/public.key
 wget --quiet -O - $PUBLIC_KEY | sudo apt-key add -
 
 # dependencies for RAMSIS
-DEB_PACKAGES="python-qt4 python-qt4-gl qgis python-mock python-obspy"\
-" python-sqlalchemy python-pip python-oq-engine python-nose python-lxml git"\
-" graphviz texlive-latex-base dvipng python-epydoc"
-PIP_PACKAGES="numpy pymatlab sphinx sphinx-rtd-theme"
+DEB_PACKAGES=""\
+" dvipng=1.14-2"\
+" git=1:1.9.1-1ubuntu0.3"\
+" graphviz=2.36.0-0ubuntu3.1"\
+" python-epydoc=3.0.1+dfsg-4"\
+" python-lxml=3.3.3-1ubuntu0.1"\
+" python-mock=1.0.1-3"\
+" python-nose=1.3.1-2"\
+" python-obspy=1.0.1-1~trusty"\
+" python-oq-engine=1.9.1-0~trusty01"\
+" python-pip=1.5.4-1ubuntu3"\
+" python-qt4=4.10.4+dfsg-1ubuntu1"\
+" python-qt4-gl=4.10.4+dfsg-1ubuntu1"\
+" python-sqlalchemy=0.8.4-1build1"\
+" qgis=2.0.1-2build2"\
+" texlive-latex-base=2013.20140215-1"
+PIP_PACKAGES=""\
+" numpy==1.8.2"\
+" pymatlab==0.2.3"\
+" sphinx==1.4.1"\
+" sphinx-rtd-theme==0.1.9"
 
 # install deb and pip packages
 apt-get update
-apt-get install -y --force-yes $DEB_PACKAGES
-pip install $PIP_PACKAGES
+for deb_package in $DEB_PACKAGES
+do
+    apt-get install -y $deb_package
+done
+for pip_package in $PIP_PACKAGES
+do
+    pip install $pip_package
+done
 
 # install pyqtgraph (custom version until this gets merged into the main repo)
 git clone https://github.com/3rdcycle/pyqtgraph.git
@@ -34,7 +57,7 @@ git checkout date-axis-item
 python setup.py install
 
 # install custom GSIMs
-cp /vagrant/atls/resources/oq/gmpe-gsim/* \
+cp /vagrant/ramsis/resources/oq/gmpe-gsim/* \
 /usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
 
 # upgrade OpenQuake database
