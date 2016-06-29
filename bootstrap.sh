@@ -38,8 +38,14 @@ PIP_PACKAGES=""\
 
 # install deb and pip packages
 apt-get update
-apt-get install -y --force-yes $DEB_PACKAGES
-pip install $PIP_PACKAGES
+for deb_package in $DEB_PACKAGES
+do
+    apt-get install -y --force-yes $deb_package
+done
+for pip_package in $PIP_PACKAGES
+do
+    pip install $pip_package
+done
 
 # install pyqtgraph (custom version until this gets merged into the main repo)
 git clone https://github.com/3rdcycle/pyqtgraph.git
