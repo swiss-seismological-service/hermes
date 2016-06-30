@@ -39,4 +39,4 @@ model_inputs.mat
 ramsis/gdalwmscache
 
 # Vagrant
-.vagrant
+vm/.vagrant
