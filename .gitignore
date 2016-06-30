@@ -13,10 +13,10 @@ ramsis/external/shapiro_spatial
 .idea/
 
 # Sphinx
-doc/_build/*
+doc/manual/_build/*
 
 # epydoc
-api/html/*
+doc/api/html/*
 
 # QT Creator
 *.autosave
