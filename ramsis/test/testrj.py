@@ -15,8 +15,8 @@ from PyQt4 import QtCore
 
 from core.project.seismicevent import SeismicEvent
 from core.project.geometry import Point
-from core.ismodels.rj import Rj
-from core.ismodels.common import ModelInput
+from core.job.ismodels.rj import Rj
+from core.job.ismodels.common import ModelInput
 
 
 class TestRj(unittest.TestCase):

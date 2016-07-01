@@ -40,7 +40,7 @@ from datetime import timedelta
 
 import numpy as np
 
-from core.ismodels.common import Model, ModelOutput, ModelResult
+from core.job.ismodels.common import Model, ModelOutput, ModelResult
 
 
 class Etas(Model):
