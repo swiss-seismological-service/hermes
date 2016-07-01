@@ -9,8 +9,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 
-from data.project.eventhistory import EventHistory
-from data.forecastresult import ForecastResult
+from core.data.project.eventhistory import EventHistory
+from core.data.forecastresult import ForecastResult
 
 
 class ForecastHistory(EventHistory):

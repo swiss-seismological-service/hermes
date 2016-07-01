@@ -13,7 +13,7 @@ from datetime import datetime
 from mock import patch, MagicMock
 from PyQt4 import QtCore
 
-from data.project.project import Project
+from core.data.project.project import Project
 
 
 # Patch Seismic and HydraulicEventHistory imports in project

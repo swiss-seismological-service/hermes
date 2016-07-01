@@ -7,8 +7,8 @@ History of hydraulic events, i.e changes in flow or pressure
 import logging
 import traceback
 
-from data.project.eventhistory import EventHistory
-from data.hydraulicevent import HydraulicEvent
+from core.data.project.eventhistory import EventHistory
+from core.data.hydraulicevent import HydraulicEvent
 
 
 class HydraulicEventHistory(EventHistory):

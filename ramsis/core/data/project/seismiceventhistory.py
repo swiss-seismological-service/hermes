@@ -7,9 +7,9 @@ History of seismic events
 import logging
 import traceback
 
-from data.project.eventhistory import EventHistory
-from data.seismicevent import SeismicEvent
-from data.geometry import Point
+from core.data.project.eventhistory import EventHistory
+from core.data.seismicevent import SeismicEvent
+from core.data.geometry import Point
 
 
 class SeismicEventHistory(EventHistory):

@@ -17,7 +17,7 @@ import logging
 
 from PyQt4 import QtCore
 
-from data.forecastresult import ForecastResult
+from core.data.forecastresult import ForecastResult
 from ramsisjob import ForecastJob
 
 
