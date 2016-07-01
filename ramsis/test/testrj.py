@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
 
-from core.data.seismicevent import SeismicEvent
-from core.data.geometry import Point
+from core.project.seismicevent import SeismicEvent
+from core.project.geometry import Point
 from core.ismodels.rj import Rj
 from core.ismodels.common import ModelInput
 

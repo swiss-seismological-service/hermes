@@ -7,7 +7,7 @@ Provides SeismicEvent, a class to represent a seismic event
 from sqlalchemy import Column, Integer, Float, DateTime
 
 from ormbase import OrmBase
-from core.data.geometry import Point
+from core.project.geometry import Point
 
 
 class SeismicEvent(OrmBase):

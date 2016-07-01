@@ -11,8 +11,8 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.hydraulicevent import HydraulicEvent
-from core.data.project.hydrauliceventhistory import HydraulicEventHistory
+from core.project.hydraulicevent import HydraulicEvent
+from core.project.hydrauliceventhistory import HydraulicEventHistory
 from testeventhistory import MockStore
 
 

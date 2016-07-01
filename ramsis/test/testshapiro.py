@@ -14,10 +14,10 @@ from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
 
-from core.data.seismicevent import SeismicEvent
-from core.data.hydraulicevent import HydraulicEvent
-from core.data.injectionwell import InjectionWell
-from core.data.geometry import Point
+from core.project.seismicevent import SeismicEvent
+from core.project.hydraulicevent import HydraulicEvent
+from core.project.injectionwell import InjectionWell
+from core.project.geometry import Point
 from core.ismodels.shapiro import Shapiro
 from core.ismodels.common import ModelInput
 

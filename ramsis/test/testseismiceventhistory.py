@@ -13,10 +13,10 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.seismicevent import SeismicEvent
-from core.data.project.seismiceventhistory import SeismicEventHistory
+from core.project.seismicevent import SeismicEvent
+from core.project.seismiceventhistory import SeismicEventHistory
 from testeventhistory import MockStore
-from core.data.geometry import Point
+from core.project.geometry import Point
 
 
 class BasicOperation(unittest.TestCase):
