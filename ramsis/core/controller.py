@@ -21,7 +21,7 @@ from core.simulator import Simulator, SimulatorState
 from core.engine import Engine, EngineState
 
 import core.ismodelcontrol as mc
-from core.taskscheduler import TaskScheduler, ScheduledTask
+from core.scheduler import TaskScheduler, ScheduledTask
 
 from ws.runners import FDSNWSRunner, HYDWSRunner
 
