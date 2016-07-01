@@ -1,9 +1,9 @@
-tools Module
+core.tools Module
 ============
 
-:mod:`tools` Module
+:mod:`core.tools` Module
 -------------------
 
-.. automodule:: tools
+.. automodule:: core.tools
     :members:
     :show-inheritance:

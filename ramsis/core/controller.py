@@ -25,7 +25,7 @@ from core.taskscheduler import TaskScheduler, ScheduledTask
 
 from runners import FDSNWSRunner, HYDWSRunner
 
-# from tools import Profiler
+# from core.tools import Profiler
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
 """

@@ -1,9 +1,9 @@
-eqstats Module
+core.eqstats Module
 ==============
 
-:mod:`eqstats` Module
+:mod:`core.eqstats` Module
 ---------------------
 
-.. automodule:: eqstats
+.. automodule:: core.eqstats
     :members:
     :show-inheritance:

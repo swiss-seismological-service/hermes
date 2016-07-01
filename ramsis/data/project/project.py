@@ -14,7 +14,7 @@ from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
 from data.project.forecasthistory import ForecastHistory
 from data.injectionwell import InjectionWell
-from eqstats import SeismicRateHistory
+from core.eqstats import SeismicRateHistory
 
 
 class Project(QtCore.QObject):
