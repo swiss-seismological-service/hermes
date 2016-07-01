@@ -7,9 +7,9 @@ from obspy import UTCDateTime
 from obspy.fdsn import Client
 from obspy.fdsn.header import FDSNException
 
-from core import hydws
-from core.hydwscatalogimporter import HYDWSCatalogImporter
-from core.obspycatalogimporter import ObsPyCatalogImporter
+import hydws
+from hydwscatalogimporter import HYDWSCatalogImporter
+from obspycatalogimporter import ObsPyCatalogImporter
 
 
 class FDSNWSImporter(QtCore.QObject):
