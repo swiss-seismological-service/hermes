@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timedelta
 from functools import partial
 from PyQt4 import QtGui, uic
-import core.job.ismodelcontrol as mc
+import core.engine.ismodelcontrol as mc
 from ui.views.plots import DisplayRange
 
 ui_path = os.path.dirname(__file__)

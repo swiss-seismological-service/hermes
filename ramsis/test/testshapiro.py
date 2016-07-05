@@ -18,8 +18,8 @@ from core.project.seismicevent import SeismicEvent
 from core.project.hydraulicevent import HydraulicEvent
 from core.project.injectionwell import InjectionWell
 from core.project.geometry import Point
-from core.job.ismodels.shapiro import Shapiro
-from core.job.ismodels.common import ModelInput
+from core.engine.ismodels.shapiro import Shapiro
+from core.engine.ismodels.common import ModelInput
 
 
 @unittest.skipIf(distutils.spawn.find_executable('matlab') is None,

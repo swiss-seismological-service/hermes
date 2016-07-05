@@ -10,7 +10,7 @@ import os
 import logging
 from PyQt4 import QtGui, uic
 
-from core.job.engine import EngineState
+from core.engine.engine import EngineState
 from core.simulator import SimulatorState
 
 ui_path = os.path.dirname(__file__)

@@ -9,7 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from datetime import datetime
 
-import core.job.ismodels.common as common
+import core.engine.ismodels.common as common
 
 
 class MockSeismicEvent:

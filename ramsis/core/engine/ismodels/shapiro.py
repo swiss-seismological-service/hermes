@@ -11,7 +11,7 @@ import os
 import pymatlab
 import numpy as np
 
-from core.job.ismodels.common import Model, ModelOutput, ModelResult
+from core.engine.ismodels.common import Model, ModelOutput, ModelResult
 
 
 class Shapiro(Model):

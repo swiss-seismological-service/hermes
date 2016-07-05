@@ -18,9 +18,9 @@ from core.project.store import Store
 from core.project.project import Project
 from core.project.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
-from core.job.engine import Engine, EngineState
+from core.engine.engine import Engine, EngineState
 
-import core.job.ismodelcontrol as mc
+import core.engine.ismodelcontrol as mc
 from core.scheduler import TaskScheduler, ScheduledTask
 
 from ws.runners import FDSNWSRunner, HYDWSRunner
