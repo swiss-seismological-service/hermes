@@ -12,9 +12,9 @@ from PyQt4 import QtCore
 
 from seismiceventhistory import SeismicEventHistory
 from hydrauliceventhistory import HydraulicEventHistory
-from core.project.forecasthistory import ForecastHistory
-from core.project.injectionwell import InjectionWell
-from core.project.eqstats import SeismicRateHistory
+from core.data.forecasthistory import ForecastHistory
+from core.data.injectionwell import InjectionWell
+from core.data.eqstats import SeismicRateHistory
 
 
 class Project(QtCore.QObject):
