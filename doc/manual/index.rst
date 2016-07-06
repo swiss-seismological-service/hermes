@@ -16,7 +16,6 @@ directory.
 
 .. note:: This documentation is still work in progress. Some sections might be incomplete or outdated. You're encouraged to fix the docs where necessary. 
 
-
 .. toctree::
    :maxdepth: 1
    :caption: Concepts
@@ -33,22 +32,14 @@ directory.
    :caption: Main Packages
 
    modules/core.rst
-   modules/data.rst
    modules/ui.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: Additional Modules
 
-   modules/eqstats.rst
-   modules/eventimporter.rst
    modules/ramsis.rst
    modules/ramsissettings.rst
-   modules/scheduler.rst
-   modules/simulator.rst
-   modules/tools.rst
-
-
 
 Indices and tables
 ==================
@@ -56,4 +47,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

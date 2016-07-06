@@ -8,38 +8,17 @@ core Package
     :members:
     :show-inheritance:
 
-:mod:`core.engine` Module
--------------------------
-
-.. automodule:: core.engine
-    :members:
-    :show-inheritance:
-
-:mod:`core.isforecaster` Module
--------------------------------
-
-.. automodule:: core.isforecaster
-    :members:
-    :show-inheritance:
-
-:mod:`core.ismodelcontrol` Module
----------------------------------
-
-.. automodule:: core.ismodelcontrol
-    :members:
-    :show-inheritance:
-
-:mod:`core.job` Module
-----------------------
-
-.. automodule:: core.job
-    :members:
-    :show-inheritance:
-
-:mod:`core.ramsisjob` Module
+:mod:`core.scheduler` Module
 ----------------------------
 
-.. automodule:: core.ramsisjob
+.. automodule:: core.scheduler
+    :members:
+    :show-inheritance:
+
+:mod:`core.simulator` Module
+----------------------------
+
+.. automodule:: core.simulator
     :members:
     :show-inheritance:
 
@@ -48,6 +27,7 @@ Subpackages
 
 .. toctree::
 
-    core.ismodels
-    core.oq
-
+    core.data
+    core.engine
+    core.tools
+    core.web
