@@ -15,7 +15,7 @@ from settingswindow import SettingsWindow
 from timelinewindow import TimelineWindow
 from simulationwindow import SimulationWindow
 
-from core.eventimporter import EventImporter
+from core.tools.eventimporter import EventImporter
 import ramsisuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.engine.engine import EngineState
