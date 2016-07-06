@@ -7,7 +7,7 @@ ramsis/ramsis.ini -text
 ramsis/ramsis.py -text
 ramsis/ramsiscore.py -text
 ramsis/ramsissettings.py -text
-ramsis/basel.rms -text
+ramsis/basel.sqlite -text
 ramsis/domainmodel/__init__.py -text
 ramsis/domainmodel/datamodel.py -text
 ramsis/domainmodel/hydraulicevent.py -text
