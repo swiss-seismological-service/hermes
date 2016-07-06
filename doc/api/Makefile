@@ -3,6 +3,7 @@
 
 EPYDOC    = epydoc
 RAMSISDIR = ../../ramsis
+BUILDDIR  = _build
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -13,5 +14,7 @@ html:
 	touch $(RAMSISDIR)/__init__.py
 	$(EPYDOC) --html -o html $(RAMSISDIR)
 	-rm -f $(RAMSISDIR)/__init__.py $(RAMSISDIR)/__init__.pyc
+	mkdir $(BUILDDIR)
+	mv html $(BUILDDIR)
 	@echo
-	@echo "Build finished. The HTML pages are in html."
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

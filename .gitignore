@@ -16,7 +16,7 @@ ramsis/external/shapiro_spatial
 doc/manual/_build/*
 
 # epydoc
-doc/api/html/*
+doc/api/_build/*
 
 # QT Creator
 *.autosave
