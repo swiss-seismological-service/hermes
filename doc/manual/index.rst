@@ -11,8 +11,8 @@ RT-RAMSIS is an adaptive traffic light system for induced seismicity. This
 documentation describes the top level concepts of the software's architecture
 and the APIs of all important modules.
 
-This documentation can be created by running ``make html`` from the **doc**
-directory. 
+This documentation can be created by running ``make html`` from the
+**doc/manual** directory.
 
 .. note:: This documentation is still work in progress. Some sections might be incomplete or outdated. You're encouraged to fix the docs where necessary. 
 

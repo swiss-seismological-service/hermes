@@ -25,7 +25,7 @@ The individual *IS* models are run by the :class:`~core.isforecaster.ISForecaste
 Hazard and Risk Computation
 ---------------------------
 
-The hazard and risk computation are performed externally by OpenQuake (OQ). The modules in the :doc:`modules/core.oq` provide the interface classes to start OQs own engine and to collect the results when the computation is done.
+The hazard and risk computation are performed externally by OpenQuake (OQ). The modules in the :doc:`modules/core.engine.oq` provide the interface classes to start OQs own engine and to collect the results when the computation is done.
 OpenQuake reads some of its inputs from .xml files. The input files are generated on the fly by :mod:`core.oq.controller`.
 
 .. figure:: images/engine_clsd.png

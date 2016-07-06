@@ -1,9 +1,9 @@
 Core
 ====
 
-The RT-RAMSIS :doc:`modules/core` contains the business logic of RT-RAMSIS. Its top level module is :mod:`~core.controller` with the :class:`~core.controller.Controller` class, which controls most of the components that make up the core and also serves as the entry point for the user interface.
+The RT-RAMSIS :doc:`../modules/core` contains the business logic of RT-RAMSIS. Its top level module is :mod:`~core.controller` with the :class:`~core.controller.Controller` class, which controls most of the components that make up the core and also serves as the entry point for the user interface.
 
-The class diagram below shows the main component and the attributes and methods that are important when the software is running forecasts.
+The class diagram below shows the main components and the attributes and methods that are important when the software is running forecasts.
 
 .. figure:: images/core_clsd.png
    :align: center

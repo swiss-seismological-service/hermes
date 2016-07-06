@@ -1,9 +1,7 @@
 UML
 ===
 
-All diagrams were created using `Violet UML Editor <http://alexdp.free.fr/violetumleditor/page.php>`_.
-
-The original html files are located in doc/images/original.
+All diagrams were created using `Violet UML Editor <http://alexdp.free.fr/violetumleditor/page.php>`_. The original html files are located in doc/manual/concepts/images/original.
 
 Class diagrams
 --------------
