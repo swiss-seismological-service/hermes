@@ -34,6 +34,9 @@ DEB_PACKAGES=""\
 " qgis=2.0.1-2build2"\
 " texlive-latex-base=2013.20140215-1"
 PIP_PACKAGES=""\
+" flask==0.11.1"\
+" flask-restless==0.17.0"\
+" flask-sqlalchemy==2.1"\
 " numpy==1.8.2"\
 " pymatlab==0.2.3"\
 " sphinx==1.4.1"\

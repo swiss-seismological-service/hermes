@@ -88,7 +88,19 @@ known_settings = {
     # Fetch interval [minutes]
     'data_acquisition/hydws_interval': 5,
     # Amount of data [minutes] to fetch
-    'data_acquisition/hydws_length': 30
+    'data_acquisition/hydws_length': 30,
+
+    # Worker settings
+
+    # Rj server URLs
+    'worker/rj_url': 'http://localhost:5000/run',
+    'worker/rj_database_url': 'http://localhost:5001/api/model_result',
+    # ETAS server URLs
+    'worker/etas_url': '',
+    'worker/etas_database_url': '',
+    # Shapiro server URLs
+    'worker/shapiro_url': '',
+    'worker/shapiro_database_url': ''
 }
 
 

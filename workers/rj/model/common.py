@@ -25,10 +25,10 @@ from datetime import datetime
 from datetime import timedelta
 import logging
 
-from data.hydraulicevent import HydraulicEvent
-from data.seismicevent import SeismicEvent
-from data.geometry import Point
-from data.injectionwell import InjectionWell
+from hydraulicevent import HydraulicEvent
+from seismicevent import SeismicEvent
+from geometry import Point
+from injectionwell import InjectionWell
 
 
 class ModelInput(object):
@@ -151,8 +151,7 @@ class ModelInput(object):
         data["t_run"] = data["t_run"].strftime(datetime_format)
         data["mc"] = str(data["mc"])
         data["forecast_times"] = [
-            data["forecast_times"][0].strftime(datetime_format)
-        ]
+            data["forecast_times"][0].strftime(datetime_format)]
         data["seismic_events"] = [{
             "date_time": e.date_time.strftime(datetime_format),
             "magnitude": e.magnitude,
