@@ -156,7 +156,7 @@ class ForecastsPresenter(TimelinePresenter):
         # Populate the models chooser combo box
         self.ui.isModelComboBox.clear()
         for model in mc.active_models:
-            self.ui.isModelComboBox.addItem(model.title)
+            self.ui.isModelComboBox.addItem(model["title"])
         self.ui.isModelComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
 
@@ -194,7 +194,7 @@ class ForecastsPresenter(TimelinePresenter):
         if self.history is None:
             return
         idx = self.ui.isModelComboBox.currentIndex()
-        model_name = mc.active_models[idx].title
+        model_name = mc.active_models[idx]["title"]
         is_forecasts = [fcr.is_forecast_result for fcr in self.history
                         if fcr.is_forecast_result is not None]
         if len(is_forecasts) == 0:
