@@ -9,7 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from datetime import timedelta, datetime
 
-from eventimporter import EventImporter
+from core.tools.eventimporter import EventImporter
 
 
 class Import(unittest.TestCase):

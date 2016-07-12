@@ -10,7 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import unittest
 from datetime import datetime, timedelta
-from eqstats import SeismicRateHistory
+from core.tools.eqstats import SeismicRateHistory
 
 
 class RateComputationTest(unittest.TestCase):

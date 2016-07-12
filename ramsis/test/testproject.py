@@ -13,7 +13,7 @@ from datetime import datetime
 from mock import patch, MagicMock
 from PyQt4 import QtCore
 
-from data.project.project import Project
+from core.data.project import Project
 
 
 # Patch Seismic and HydraulicEventHistory imports in project
@@ -33,8 +33,8 @@ def s_get_item(item):
 
 s_config = {'return_value.__getitem__.side_effect': s_get_item}
 h_config = {'return_value.__getitem__.side_effect': h_get_item}
-s_path = 'data.project.project.SeismicEventHistory'
-h_path = 'data.project.project.HydraulicEventHistory'
+s_path = 'core.data.project.SeismicEventHistory'
+h_path = 'core.data.project.HydraulicEventHistory'
 s_patch = patch(s_path, **s_config)
 h_patch = patch(h_path, **h_config)
 

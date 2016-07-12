@@ -13,10 +13,10 @@ ramsis/external/shapiro_spatial
 .idea/
 
 # Sphinx
-doc/_build/*
+doc/manual/_build/*
 
 # epydoc
-api/html/*
+doc/api/_build/*
 
 # QT Creator
 *.autosave
@@ -39,4 +39,4 @@ model_inputs.mat
 ramsis/gdalwmscache
 
 # Vagrant
-.vagrant
+vm/.vagrant

@@ -15,8 +15,8 @@ from time import sleep
 from PyQt4 import QtCore
 from mock import MagicMock
 
-from core.runners import ModelRunner
-from core.ismodels.common import ModelInput, Model
+from core.engine.modelrunner import ModelRunner
+from core.engine.ismodels.common import ModelInput, Model
 
 
 class MockIshaModel(Model):

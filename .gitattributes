@@ -7,14 +7,14 @@ ramsis/ramsis.ini -text
 ramsis/ramsis.py -text
 ramsis/ramsiscore.py -text
 ramsis/ramsissettings.py -text
-ramsis/basel.rms -text
+ramsis/basel.sqlite -text
 ramsis/domainmodel/__init__.py -text
 ramsis/domainmodel/datamodel.py -text
 ramsis/domainmodel/hydraulicevent.py -text
 ramsis/domainmodel/injectionwell.py -text
 ramsis/domainmodel/seismicevent.py -text
-ramsis/eqstats.py -text
-ramsis/eventimporter.py -text
+ramsis/core/eqstats.py -text
+ramsis/core/eventimporter.py -text
 ramsis/external/README -text
 ramsis/forecastengine.py -text
 ramsis/geometry.py -text
@@ -57,7 +57,7 @@ ramsis/test/testseismiceventhistory.py -text
 ramsis/test/testshapiro.py -text
 ramsis/test/testsimulator.py -text
 ramsis/test/teststore.py -text
-ramsis/tools.py -text
+ramsis/core/tools.py -text
 ramsis/ui/__init__.py -text
 ramsis/ui/ramsisuihelpers.py -text
 ramsis/ui/forecastwindow.py -text
@@ -77,7 +77,7 @@ ramsis/ui/views/images.qrc -text
 ramsis/ui/views/images/forecast-window-toolbar-button.png -text
 ramsis/ui/views/images/view-3d-toolbar-button.png -text
 ramsis/ui/views/images/view-gr-toolbar-button.png -text
-ramsis/ui/views/images_rc.py -text
+ramsis/images_rc.py -text
 ramsis/ui/views/mainwindow.ui -text
 ramsis/ui/views/plots.py -text
 ramsis/ui/views/settingswindow.ui -text

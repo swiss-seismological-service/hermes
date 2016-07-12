@@ -14,18 +14,18 @@ import os
 
 from PyQt4 import QtCore
 
-from data.project.store import Store
-from data.project.project import Project
-from data.ormbase import OrmBase
+from core.data.store import Store
+from core.data.project import Project
+from core.data.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
-from core.engine import Engine, EngineState
+from core.engine.engine import Engine, EngineState
 
-import core.ismodelcontrol as mc
-from core.taskscheduler import TaskScheduler, ScheduledTask
+import core.engine.ismodelcontrol as mc
+from core.scheduler import TaskScheduler, ScheduledTask
 
-from runners import FDSNWSRunner, HYDWSRunner
+from web.runners import FDSNWSRunner, HYDWSRunner
 
-# from tools import Profiler
+# from core.tools.tools import Profiler
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
 """

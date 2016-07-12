@@ -17,7 +17,7 @@ from qgis.gui import QgsMapCanvasLayer
 
 # from openquake.engine.db import models as oq_models
 
-from core import ismodelcontrol as mc
+from core.engine import ismodelcontrol as mc
 
 from viewmodels.eventhistorymodel import EventListModel
 from qgislayers import RamsisLossPoeLayer

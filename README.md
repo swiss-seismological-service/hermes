@@ -12,7 +12,7 @@ either company you must not distribute the code to anyone without prior
 permission of GES or SED.** 
 
 RT-RAMSIS is licensed under the [*AGPL* license]
-(https://gitlab.seismo.ethz.ch/indu/rt-ramsis/blob/master/LICENSE.md) to be 
+(https://gitlab.seismo.ethz.ch/indu/rt-ramsis/blob/master/LICENSE) to be 
 compatible with some of the libraries we use.
 
 ## Developers and Contributors

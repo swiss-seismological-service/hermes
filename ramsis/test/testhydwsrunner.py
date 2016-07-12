@@ -14,7 +14,7 @@ from time import sleep
 from PyQt4 import QtCore
 from mock import MagicMock
 
-from core.runners import HYDWSRunner
+from core.web.runners import HYDWSRunner
 
 
 def mock_run():

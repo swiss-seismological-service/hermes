@@ -13,10 +13,10 @@ from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
 
-from data.seismicevent import SeismicEvent
-from data.geometry import Point
-from core.ismodels.rj import Rj
-from core.ismodels.common import ModelInput
+from core.data.seismicevent import SeismicEvent
+from core.data.geometry import Point
+from core.engine.ismodels.rj import Rj
+from core.engine.ismodels.common import ModelInput
 
 
 class TestRj(unittest.TestCase):
