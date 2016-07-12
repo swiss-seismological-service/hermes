@@ -15,7 +15,7 @@ active_models = []
 clients = []
 
 
-def load_models(model_ids, settings):
+def load_models(settings):
     """
     Load ISHA models. Register new models here.
 
@@ -24,6 +24,7 @@ def load_models(model_ids, settings):
 
     """
     global clients
+    model_ids = settings.value('ISHA/models')
     load_all = True if 'all' in model_ids else False
 
     # Reasenberg Jones
