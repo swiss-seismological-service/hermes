@@ -25,10 +25,10 @@ from datetime import datetime
 from datetime import timedelta
 import logging
 
-from data.hydraulicevent import HydraulicEvent
-from data.seismicevent import SeismicEvent
-from data.geometry import Point
-from data.injectionwell import InjectionWell
+from core.data.hydraulicevent import HydraulicEvent
+from core.data.seismicevent import SeismicEvent
+from core.data.geometry import Point
+from core.data.injectionwell import InjectionWell
 
 
 class ModelInput(object):
