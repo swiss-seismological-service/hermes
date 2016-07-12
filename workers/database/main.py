@@ -2,9 +2,11 @@ import flask
 import flask.ext.sqlalchemy
 import flask.ext.restless
 
+from settings import settings
+
 app = flask.Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////vagrant/ramsis/basel.rms'
+app.config['SQLALCHEMY_DATABASE_URI'] = settings['database_path']
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
 
