@@ -298,7 +298,8 @@ class Controller(QtCore.QObject):
     # FDSNWS task function
 
     def _import_fdsnws_data(self, run_info):
-        self.fdsnws_runner.start()
+        if self.project:
+            self.fdsnws_runner.start(self.project.project_time)
 
     def _on_fdsnws_runner_finished(self, results):
         if results is not None:
@@ -307,7 +308,8 @@ class Controller(QtCore.QObject):
     # HYDWS task function
 
     def _import_hydws_data(self, run_info):
-        self.hydws_runner.start()
+        if self.project:
+            self.hydws_runner.start(self.project.project_time)
 
     def _on_hydws_runner_finished(self, results):
         if results is not None:
