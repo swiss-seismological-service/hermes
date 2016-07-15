@@ -24,7 +24,7 @@ class HydraulicEventHistory(EventHistory):
 
     def import_events(self, importer, timerange=None):
         """
-        Imports seismic events from a csv file by using an EventReporter
+        Imports hydraulic events from a csv file by using an EventReporter
 
         The EventReporter must return the following fields (which must thus
         be present in the csv file)
