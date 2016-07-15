@@ -207,8 +207,15 @@ class Controller(QtCore.QObject):
         self.simulator.pause()
 
     def stop_simulation(self):
-        """ Stops the simulation """
+        """
+        Stops the simulation.
+
+        All seismic and hydraulic events are cleared from the database.
+
+        """
         self.simulator.stop()
+        self.project.seismic_history.clear_events()
+        self.project.hydraulic_history.clear_events()
         self._logger.info('Stopping simulation')
 
     def _simulation_time_range(self):

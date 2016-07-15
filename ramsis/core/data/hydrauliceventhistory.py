@@ -67,3 +67,13 @@ class HydraulicEventHistory(EventHistory):
                 len(events)))
             self.reload_from_store()
             self._emit_change_signal({})
+
+    def clear_events(self):
+        """
+        Clear all hydraulic events from the database
+
+        """
+        self.store.purge_entity(self.entity)
+        self._logger.info('Cleared all hydraulic events.')
+        self.reload_from_store()
+        self._emit_change_signal({})

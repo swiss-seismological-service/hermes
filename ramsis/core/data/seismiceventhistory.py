@@ -69,3 +69,13 @@ class SeismicEventHistory(EventHistory):
         """ Returns all events >mc before and including *end_date* """
         return [e for e in self._events
                 if e.date_time < end_date and e.magnitude > mc]
+
+    def clear_events(self):
+        """
+        Clear all seismic events from the database
+
+        """
+        self.store.purge_entity(self.entity)
+        self._logger.info('Cleared all seismic events.')
+        self.reload_from_store()
+        self._emit_change_signal({})
