@@ -41,7 +41,7 @@ class ModelInput(object):
     :ivar seismic_events: List of recorded seismic events
     :type seismic_events: List of SeismicEvent objects
     :ivar hydraulic_events: List of recorded hydraulic events
-    :type hydraulic_events: List of HydraulicEvent objects
+    :type hydraulic_events: List of InjectionSample objects
     :ivar forecast_times: List of times (datetime) at which to forecast
     :type forecast_times: List of datetime objects
     :ivar t_bin: Forecast bin size in hours. The default is 6h.

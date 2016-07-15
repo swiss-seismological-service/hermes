@@ -14,7 +14,7 @@ from datetime import timedelta, datetime
 from mock import MagicMock
 
 from core.data.seismicevent import SeismicEvent
-from core.data.seismiceventhistory import SeismicEventHistory
+from core.data.seismiceventhistory import SeismicCatalog
 from testeventhistory import MockStore
 from core.data.geometry import Point
 
@@ -25,7 +25,7 @@ class BasicOperation(unittest.TestCase):
     def setUp(self):
         """ Create a mock store for the history under test """
         self.mock_store = MockStore()
-        self.history = SeismicEventHistory(self.mock_store)
+        self.history = SeismicCatalog(self.mock_store)
 
         base_date = datetime(2013, 3, 15)
         e1 = SeismicEvent(base_date + timedelta(days=0.17), 0.4,

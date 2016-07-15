@@ -10,7 +10,7 @@ ramsis/ramsissettings.py -text
 ramsis/basel.sqlite -text
 ramsis/domainmodel/__init__.py -text
 ramsis/domainmodel/datamodel.py -text
-ramsis/domainmodel/hydraulicevent.py -text
+ramsis/domainmodel/injectionsample.py -text
 ramsis/domainmodel/injectionwell.py -text
 ramsis/domainmodel/seismicevent.py -text
 ramsis/core/eqstats.py -text
@@ -31,9 +31,9 @@ ramsis/modelvalidation.py -text
 ramsis/project/__init__.py -text
 ramsis/project/project.py -text
 ramsis/project/eventhistory.py -text
-ramsis/project/hydrauliceventhistory.py -text
+ramsis/project/injectionhistory.py -text
 ramsis/project/project.py -text
-ramsis/project/seismiceventhistory.py -text
+ramsis/project/seismiccatalog.py -text
 ramsis/project/store.py -text
 ramsis/simulation.profile -text
 ramsis/simulator.py -text

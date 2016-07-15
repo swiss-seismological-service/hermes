@@ -9,15 +9,18 @@ Provides a class to manage Ramsis project data
 from datetime import datetime
 
 from PyQt4 import QtCore
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from ormbase import OrmBase
 
-from seismiceventhistory import SeismicEventHistory
-from hydrauliceventhistory import HydraulicEventHistory
-from core.data.forecasthistory import ForecastHistory
+from seismiccatalog import SeismicCatalog
+from hydrauliceventhistory import InjectionHistory
+from core.data.forecasthistory import ForecastSet
 from core.data.injectionwell import InjectionWell
 from core.tools.eqstats import SeismicRateHistory
 
 
-class Project(QtCore.QObject):
+class Project(QtCore.QObject, OrmBase):
     """
     Manages persistent and non-persistent ramsis project data such as the
     seismic and hydraulic history, and project state information.
@@ -31,6 +34,21 @@ class Project(QtCore.QObject):
 
     """
 
+    # region ORM Declarations
+    __tablename__ = 'projects'
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    args = {'uselist': False,  # we use one to one relationships for now
+            'back_populates': 'project',
+            'uselist': False,
+            'cascade': 'all, delete-orphan'}
+    injection_well = relationship('InjectionWell', **args)
+    injection_history = relationship('InjectionHistory', **args)
+    forecast_list = relationship('ForecastList', **args)
+    seismic_catalog = relationship('SeismicCatalog',
+                                   **dict(args, cascade='all'))
+    # endregion
+
     # Signals
     will_close = QtCore.pyqtSignal(object)
     project_time_changed = QtCore.pyqtSignal(datetime)
@@ -39,12 +57,12 @@ class Project(QtCore.QObject):
         """ Create a project based on the data that is contained in *store* """
         super(Project, self).__init__()
         self._store = store
-        self.seismic_history = SeismicEventHistory(self._store)
+        self.seismic_history = SeismicCatalog(self._store)
         self.seismic_history.reload_from_store()
-        self.hydraulic_history = HydraulicEventHistory(self._store)
+        self.hydraulic_history = InjectionHistory(self._store)
         self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
-        self.forecast_history = ForecastHistory(self._store)
+        self.forecast_history = ForecastSet(self._store)
         self.forecast_history.reload_from_store()
         self.title = title
 

@@ -16,7 +16,7 @@ from PyQt4 import QtCore
 from core.data.project import Project
 
 
-# Patch Seismic and HydraulicEventHistory imports in project
+# Patch Seismic and InjectionHistory imports in project
 Event = namedtuple('Event', 'date_time')
 hydraulic_events = [Event(date_time=datetime(2013, 12, 5, 9)),
                     Event(date_time=datetime(2013, 12, 5, 10))]
@@ -33,8 +33,8 @@ def s_get_item(item):
 
 s_config = {'return_value.__getitem__.side_effect': s_get_item}
 h_config = {'return_value.__getitem__.side_effect': h_get_item}
-s_path = 'core.data.project.SeismicEventHistory'
-h_path = 'core.data.project.HydraulicEventHistory'
+s_path = 'core.data.project.SeismicCatalog'
+h_path = 'core.data.project.InjectionHistory'
 s_patch = patch(s_path, **s_config)
 h_patch = patch(h_path, **h_config)
 

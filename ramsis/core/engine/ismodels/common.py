@@ -25,7 +25,7 @@ from datetime import datetime
 from datetime import timedelta
 import logging
 
-from core.data.hydraulicevent import HydraulicEvent
+from core.data.hydraulicevent import InjectionSample
 from core.data.seismicevent import SeismicEvent
 from core.data.geometry import Point
 from core.data.injectionwell import InjectionWell
@@ -41,7 +41,7 @@ class ModelInput(object):
     :ivar seismic_events: List of recorded seismic events
     :type seismic_events: List of SeismicEvent objects
     :ivar hydraulic_events: List of recorded hydraulic events
-    :type hydraulic_events: List of HydraulicEvent objects
+    :type hydraulic_events: List of InjectionSample objects
     :ivar forecast_times: List of times (datetime) at which to forecast
     :type forecast_times: List of datetime objects
     :ivar t_bin: Forecast bin size in hours. The default is 6h.
@@ -185,7 +185,7 @@ class ModelInput(object):
             e["magnitude"],
             Point(*e["location"])
         ) for e in data["seismic_events"]]
-        data["hydraulic_events"] = [HydraulicEvent(
+        data["hydraulic_events"] = [InjectionSample(
             datetime.strptime(e["date_time"], datetime_format),
             e["flow_dh"],
             e["flow_xt"],
