@@ -195,8 +195,11 @@ class ForecastsPresenter(TimelinePresenter):
             return
         idx = self.ui.isModelComboBox.currentIndex()
         model_name = mc.active_models[idx]["title"]
-        is_forecasts = [fcr.is_forecast_result for fcr in self.history
-                        if fcr.is_forecast_result is not None]
+        if self.history:
+            is_forecasts = [fcr.is_forecast_result for fcr in self.history
+                            if fcr.is_forecast_result is not None]
+        else:
+            is_forecasts = []
         if len(is_forecasts) == 0:
             mr = None
         else:

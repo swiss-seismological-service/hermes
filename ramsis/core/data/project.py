@@ -82,7 +82,9 @@ class Project(QtCore.QObject):
         """
         earliest = self.earliest_event()
         latest = self.latest_event()
-        return earliest.date_time, latest.date_time
+        earliest_dt = earliest.date_time if earliest else self._project_time
+        latest_dt = latest.date_time if latest else self._project_time
+        return earliest_dt, latest_dt
 
     def earliest_event(self):
         """
