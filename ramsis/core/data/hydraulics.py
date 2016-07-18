@@ -7,11 +7,10 @@ History of hydraulic events, i.e changes in flow or pressure
 import logging
 import traceback
 
-from sqlalchemy import Column, Integer, Float, DateTime, String, ForeignKey
+from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase
 from core.data.eventhistory import EventHistory
-from core.data.hydraulicevent import InjectionSample
 
 
 class InjectionHistory(EventHistory, OrmBase):
@@ -150,7 +149,8 @@ class InjectionSample(OrmBase):
         return "Flow: %.1f @ %s" % (self.flow_dh, self.date_time.ctime())
 
     def __repr__(self):
-        return "<InjectionSample('%s' @ '%s')>" % (self.flow_dh, self.date_time)
+        return "<InjectionSample('{}' @ '{}')>"\
+            .format(self.flow_dh, self.date_time)
 
     def __eq__(self, other):
         if isinstance(other, InjectionSample):

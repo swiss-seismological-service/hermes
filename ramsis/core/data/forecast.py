@@ -1,16 +1,20 @@
 # -*- encoding: utf-8 -*-
 """
-Manages the history of induced seismicity forecasts
+Manages the history of induced seismicity forecasts (inluding planned future
+forecasts) and related classes.
 
-Long Description
 
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
+import logging
+from math import log, factorial
 
-from sqlalchemy import Column, Integer, Float, DateTime, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
+    ForeignKey
+from sqlalchemy.orm import relationship, reconstructor
+from sqlalchemy.inspection import inspect
 from ormbase import OrmBase
 
 from core.data.eventhistory import EventHistory
@@ -127,7 +131,7 @@ class ForecastResult(OrmBase):
     def __init__(self):
         self._mediator = _Mediator()
 
-    @orm.reconstructor
+    @reconstructor
     def _init_on_load(self):
         self._mediator = _Mediator()
 
@@ -212,17 +216,6 @@ class ModelResult(OrmBase):
                                    cascade='all, delete-orphan')
     # endregion
 
-    # # Configures the one-to-one relationship for the cumulative result
-    # # use_alter=True along with name='' adds this foreign key after RatePrediction
-    # # has been created to avoid circular dependency
-    # cum_result_id = Column(Integer, ForeignKey('isresult.id', use_alter=True,
-    #                                            name='fk_cum_result_id'))
-    # # set post_update=True to avoid circular dependency during
-    # cum_result = relationship('RatePrediction', foreign_keys=cum_result_id,
-    #                           post_update=True, cascade="all, delete-orphan",
-    #                           single_parent=True)
-
-
     def __init__(self, output):
         """
         Inits an ISModelResult from a bare ModelOutput
@@ -237,7 +230,8 @@ class ModelResult(OrmBase):
         self.t_run = output.t_run
         self.dt = output.dt
         if output.cum_result is not None:
-            self.cum_result = RatePrediction.from_model_result(output.cum_result)
+            self.cum_result = RatePrediction.\
+                from_model_result(output.cum_result)
         else:
             self.cum_result = None
         if output.vol_results is not None:
@@ -275,23 +269,25 @@ class ModelResult(OrmBase):
         :type observations: list of SeismicEvent objects
 
         """
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-        if self.vol_results:
-            # TODO: compute LL per voxel
-            # at the moment we don't know the region for each volumetric
-            # result.
-            # for result in self.vol_results:
-            #     region = result.region
-            #     obs = len([e for e in observations if e.in_region(region)])
-            #     result.score = log_likelihood(result.review, obs)
-            pass
-        self.cum_result.score = log_likelihood(self.cum_result.rate,
-                                               len(observations))
-        self._reviewed = True
-        logger.debug('{} at {}: LL = {}'.format(self.model.title,
-                                                self.t_run,
-                                                self.result.score.LL))
+        # FIXME: move this to the skill_test
+        pass
+        # logger = logging.getLogger(__name__)
+        # logger.setLevel(logging.DEBUG)
+        # if self.vol_results:
+        #     # TODO: compute LL per voxel
+        #     # at the moment we don't know the region for each volumetric
+        #     # result.
+        #     # for result in self.vol_results:
+        #     #     region = result.region
+        #     #     obs = len([e for e in observations if e.in_region(region)])
+        #     #     result.score = log_likelihood(result.review, obs)
+        #     pass
+        # self.cum_result.score = log_likelihood(self.cum_result.rate,
+        #                                        len(observations))
+        # self._reviewed = True
+        # logger.debug('{} at {}: LL = {}'.format(self.model.title,
+        #                                         self.t_run,
+        #                                         self.result.score.LL))
 
 
 class RatePrediction(OrmBase):
@@ -329,11 +325,13 @@ class RatePrediction(OrmBase):
         self.rate = rate
         self.b_val = b_val
         self.score = None
+        self.model_result = None
 
     @classmethod
     def from_model_result(cls, result):
         """
-        Convenience initializer to init an RatePrediction from a bare model result
+        Convenience initializer to init an RatePrediction from a bare model
+        result.
 
         :param result: model result
         :type result: ModelResult

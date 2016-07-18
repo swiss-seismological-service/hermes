@@ -7,12 +7,11 @@ History of seismic events
 import logging
 import traceback
 
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase
 
 from core.data.eventhistory import EventHistory
-from core.data.seismicevent import SeismicEvent
 from core.data.geometry import Point
 
 
@@ -53,6 +52,8 @@ class SeismicCatalog(EventHistory, OrmBase):
 
         :param importer: an EventImporter object
         :type importer: EventImporter
+        :param timerange: limit import to specified time range
+        :type timerange: DateTime tuple
 
         """
         events = []
@@ -113,7 +114,6 @@ class SnapshotCatalog(EventHistory, OrmBase):
     # endregion
 
 
-
 class EventSnapshot(OrmBase):
 
     # region ORM Declarations
@@ -133,23 +133,15 @@ class EventSnapshot(OrmBase):
     magnitude = relationship('Magnitude', uselist=False)
     # endregion
 
+
 class SeismicEvent(OrmBase):
-    """Represents a seismic event
+    """
+    Represents a seismic event
 
-    :ivar date_time: Date and time when the event occurred
-    :type date_time: datetime
-    :ivar magnitude: Event magnitude
-    :type magnitude: float
-    :ivar x: Event x coordinate
-    :type x: float
-    :ivar y: Event y coordinate [m]
-    :type y: float
-    :ivar z: Event depth [m] (0 at surface, positive downwards)
-    :type z: float
-
-    :param datetime.datetime date_time: Date and time of the event
-    :param float magnitude: Event magnitude
-    :param Point location: Event coordinates
+    A seismic event consists of at least one magnitude and one origin. Multiple
+    magnitudes and origins can be present for a single event. In that case, the
+    members *magnitude* and *origin* will point to the preferred magnitude and
+    origin respectively.
 
     """
 
@@ -219,7 +211,12 @@ class SeismicEvent(OrmBase):
         else:
             return not result
 
+
 class Origin(OrmBase):
+    """
+    Origin of a seismic event (i.e. location and date/time)
+
+    """
 
     # region ORM Declarations
     __tablename__ = 'origins'
@@ -251,7 +248,12 @@ class Origin(OrmBase):
                     self.z == other.z)
         return NotImplemented
 
+
 class Magnitude(OrmBase):
+    """
+    Magnitude of a seismic event
+
+    """
 
     # region ORM Declarations
     __tablename__ = 'magnitudes'

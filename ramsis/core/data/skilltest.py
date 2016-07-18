@@ -6,14 +6,15 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 
-from sqlalchemy import Column, Integer, Float, DateTime, String, ForeignKey
+from sqlalchemy import Column, Integer, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase
+
 
 class SkillTest(OrmBase):
 
     # region ORM Declarations
-    __tablename__='skilltests'
+    __tablename__ = 'skilltests'
     id = Column(Integer, primary_key=True)
     skill_score = Column(Float)
     test_interval = Column(Float)

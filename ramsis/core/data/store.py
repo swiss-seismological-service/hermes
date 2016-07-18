@@ -23,8 +23,6 @@ class Store:
     be created explicitly by calling init_read_cache(entity) where
     entity is the class for which reading should be cached.
 
-    :ivar core: sqlalchemy Engine that manages connections to the db
-
     """
 
     def __init__(self, store_url, model):

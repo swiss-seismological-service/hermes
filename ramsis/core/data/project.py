@@ -9,14 +9,14 @@ Provides a class to manage Ramsis project data
 from datetime import datetime
 
 from PyQt4 import QtCore
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase
 
-from seismiccatalog import SeismicCatalog
-from hydrauliceventhistory import InjectionHistory
-from core.data.forecasthistory import ForecastSet
-from core.data.injectionwell import InjectionWell
+from seismics import SeismicCatalog
+from hydraulics import InjectionHistory
+from forecast import ForecastSet
+from injectionwell import InjectionWell
 from core.tools.eqstats import SeismicRateHistory
 
 
@@ -29,8 +29,6 @@ class Project(QtCore.QObject, OrmBase):
 
     :ivar seismic_history: The seismic history of the project
     :ivar hydraulic_history: The hydraulic history of the project
-    :ivar path: Path of the project file (non persistent)
-    :ivar project_time: Current project time (non persistent)
 
     """
 
@@ -40,7 +38,6 @@ class Project(QtCore.QObject, OrmBase):
     title = Column(String)
     args = {'uselist': False,  # we use one to one relationships for now
             'back_populates': 'project',
-            'uselist': False,
             'cascade': 'all, delete-orphan'}
     injection_well = relationship('InjectionWell', **args)
     injection_history = relationship('InjectionHistory', **args)
