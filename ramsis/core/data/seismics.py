@@ -9,7 +9,7 @@ import traceback
 
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from ormbase import OrmBase
+from ormbase import OrmBase, DeclarativeQObjectMeta
 
 from core.data.eventhistory import EventHistory
 from core.data.geometry import Point
@@ -21,6 +21,7 @@ class SeismicCatalog(EventHistory, OrmBase):
     from/to a persistent store. The class uses Qt signals to signal changes.
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'seismic_catalogs'
@@ -96,6 +97,7 @@ class SnapshotCatalog(EventHistory, OrmBase):
     preferred origin and magnitude at the time the snapshot was taken.
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'snapshot_catalogs'

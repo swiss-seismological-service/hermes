@@ -9,7 +9,7 @@ import traceback
 
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from ormbase import OrmBase
+from ormbase import OrmBase, DeclarativeQObjectMeta
 from core.data.eventhistory import EventHistory
 
 
@@ -19,6 +19,7 @@ class InjectionHistory(EventHistory, OrmBase):
     from/to a persistent store. The class uses Qt signals to signal changes.
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'injection_histories'

@@ -11,7 +11,7 @@ from datetime import datetime
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from ormbase import OrmBase
+from ormbase import OrmBase, DeclarativeQObjectMeta
 
 from seismics import SeismicCatalog
 from hydraulics import InjectionHistory
@@ -31,6 +31,7 @@ class Project(QtCore.QObject, OrmBase):
     :ivar hydraulic_history: The hydraulic history of the project
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'projects'

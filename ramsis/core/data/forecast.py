@@ -15,7 +15,7 @@ from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
     ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.inspection import inspect
-from ormbase import OrmBase
+from ormbase import OrmBase, DeclarativeQObjectMeta
 
 from core.data.eventhistory import EventHistory
 
@@ -27,6 +27,7 @@ class ForecastSet(EventHistory, OrmBase):
     Planned and executed forecasts
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'forecastsets'
@@ -89,18 +90,7 @@ class ForecastInput(OrmBase):
     # endregion
 
 
-# FIXME: need to fix the metaclass mess
-# http://stackoverflow.com/questions/11537266/metaclass-error-when-combining-qgraphics-and-sqlalchemy
-class _Mediator(QtCore.QObject):
-    """
-    PyQt 4 doesn't support multiple inheritance, thus we use a mediator class
-    to handle signals
-
-    """
-    result_changed = QtCore.pyqtSignal(object)
-
-
-class ForecastResult(OrmBase):
+class ForecastResult(QtCore.QObject, OrmBase):
     """
     Results of one forecast run
 
@@ -115,6 +105,7 @@ class ForecastResult(OrmBase):
         the record that contains the risk computation results.
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM declarations
     __tablename__ = 'forecastresult'
@@ -128,12 +119,7 @@ class ForecastResult(OrmBase):
                                  back_populates='forecastresult')
     # endregion
 
-    def __init__(self):
-        self._mediator = _Mediator()
-
-    @reconstructor
-    def _init_on_load(self):
-        self._mediator = _Mediator()
+    result_changed = QtCore.pyqtSignal(object)
 
     def commit_changes(self):
         """
@@ -147,10 +133,6 @@ class ForecastResult(OrmBase):
         if session:
             session.commit()
         self.result_changed.emit(self)
-
-    @property
-    def result_changed(self):
-        return self._mediator.result_changed
 
 
 def log_likelihood(forecast, observation):
