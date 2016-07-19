@@ -10,6 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import unittest
 from time import sleep
+from datetime import datetime
 
 from PyQt4 import QtCore
 from mock import MagicMock
@@ -41,9 +42,10 @@ class FDSNWSRunnerTest(unittest.TestCase):
 
     def test_start_finish(self):
         """ Check if the importer starts and terminates as expected """
+        now = datetime.now()
         on_finished = MagicMock()
         self.fdsnws_runner._importer.finished.connect(on_finished)
-        self.fdsnws_runner.start()
+        self.fdsnws_runner.start(now)
         # Wait until the model thread emits its signals. This is a bit fragile
         # since event delivery from the model thread might take longer
         sleep(0.2)
