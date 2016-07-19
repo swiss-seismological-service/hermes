@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import logging
 
 from PyQt4 import QtCore
