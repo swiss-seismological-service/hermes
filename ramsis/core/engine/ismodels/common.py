@@ -25,8 +25,8 @@ from datetime import datetime
 from datetime import timedelta
 import logging
 
-from core.data.hydraulicevent import InjectionSample
-from core.data.seismicevent import SeismicEvent
+from core.data.hydraulics import InjectionSample
+from core.data.seismics import SeismicEvent
 from core.data.geometry import Point
 from core.data.injectionwell import InjectionWell
 
