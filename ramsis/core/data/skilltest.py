@@ -6,7 +6,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 
-from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy import Column, Integer, Float
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase
 
@@ -24,8 +24,8 @@ class SkillTest(OrmBase):
                                 back_populates='skill_test',
                                 uselist=False)
     # SnapshotCatalog relation
-    reference_catalog_id = Column(Integer, ForeignKey('snapshot_catalogs.id'))
-    reference_catalog = relationship('SnapshotCatalog',
+    reference_catalog = relationship('SeismicCatalog',
+                                     uselist=False,
                                      back_populates='skill_test',
-                                     cascade='all')
+                                     cascade='all, delete-orphan')
     # endregion

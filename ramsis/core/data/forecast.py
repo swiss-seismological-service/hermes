@@ -8,7 +8,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-import logging
 from math import log, factorial
 
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
@@ -79,10 +78,10 @@ class ForecastInput(OrmBase):
     forecast = relationship('Forecast', back_populates='input',
                             uselist=False)
     # SnapshotCatalog relation
-    input_catalog_id = Column(Integer, ForeignKey('snapshot_catalogs.id'))
-    input_catalog = relationship('SnapshotCatalog',
+    input_catalog = relationship('SeismicCatalog',
+                                 uselist=False,
                                  back_populates='forecast_input',
-                                 cascade='all')
+                                 cascade='all, delete-orphan')
     # InjectionPlan relation
     injection_plan = relationship('InjectionPlan',
                                   uselist=False,

@@ -7,9 +7,9 @@ History of seismic events
 import logging
 import traceback
 
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
-from sqlalchemy import select, text, column, table
-from sqlalchemy.orm import relationship, column_property
+from sqlalchemy import Column, Table
+from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
 from core.data.eventhistory import EventHistory
@@ -27,14 +27,23 @@ class SeismicCatalog(EventHistory, OrmBase):
     # region ORM Declarations
     __tablename__ = 'seismic_catalogs'
     id = Column(Integer, primary_key=True)
-    # Project relation
-    project_id = Column(Integer, ForeignKey('projects.id'))
-    project = relationship('Project', back_populates='seismic_catalog')
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
                                   order_by='SeismicEvent.date_time',
                                   back_populates='seismic_catalog',
                                   cascade='all, delete-orphan')
+    # Parents
+    # ...Project relation
+    project_id = Column(Integer, ForeignKey('projects.id'))
+    project = relationship('Project', back_populates='seismic_catalog')
+    # ...ForecastInput relation
+    forecast_input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
+    forecast_input = relationship('ForecastInput',
+                                  back_populates='input_catalog')
+    # ...SkillTest relation
+    skill_test_id = Column(Integer, ForeignKey('skill_tests.id'))
+    skill_test = relationship('SkillTest',
+                              back_populates='reference_catalog')
     # endregion
 
     def __init__(self, store):
@@ -92,66 +101,6 @@ class SeismicCatalog(EventHistory, OrmBase):
                 if e.date_time < end_date and e.magnitude > mc]
 
 
-class SnapshotCatalog(EventHistory, OrmBase):
-    """
-    A snapshot of a seismic catalog.
-
-    The snapshot catalog consists of snapshots of events. Each snapshot has the
-    preferred origin and magnitude at the time the snapshot was taken.
-
-    """
-    __metaclass__ = DeclarativeQObjectMeta
-
-    # region ORM Declarations
-    __tablename__ = 'snapshot_catalogs'
-    id = Column(Integer, primary_key=True)
-    snapshot_time = Column(DateTime)
-    # Snapshots relation
-    snapshots = relationship('EventSnapshot',
-                             order_by='EventSnapshot.date_time',
-                             back_populates='snapshot_catalog',
-                             cascade='all, delete-orphan')
-    # ForecastInput relation
-    forecast_input = relationship('ForecastInput', uselist=False,
-                                  back_populates='input_catalog')
-    # SkillTest relation
-    skill_test = relationship('SkillTest', uselist=False,
-                              back_populates='reference_catalog')
-    # endregion
-
-    def __init__(self, store):
-        EventHistory.__init__(self, store, EventSnapshot,
-                              date_time_attr=EventSnapshot.date_time)
-
-
-
-class EventSnapshot(OrmBase):
-
-    # region ORM Declarations
-    __tablename__ = 'event_snapshots'
-    id = Column(Integer, primary_key=True)
-    # SnapshotCatalog relation
-    snapshot_catalog_id = Column(Integer, ForeignKey('snapshot_catalogs.id'))
-    snapshot_catalog = relationship('SnapshotCatalog',
-                                    back_populates='snapshots')
-    # SeismicEvent relation
-    seismic_event_id = Column(Integer, ForeignKey('seismic_events.id'))
-    seismic_event = relationship('SeismicEvent', back_populates='snapshots')
-    # Pseudo relations to preferred origin/magnitude at time of snapshot
-    preferred_origin_id = Column(Integer, ForeignKey('origins.id'))
-    origin = relationship('Origin', uselist=False)
-    preferred_magnitude_id = Column(Integer, ForeignKey('magnitudes.id'))
-    magnitude = relationship('Magnitude', uselist=False)
-
-    # We create column property for date_time so that we can sort the snapshots
-    # relation on the snapshot catalog by date and time of the preferred
-    # origin.
-    stmt = select([column('date_time')], from_obj=table('origins')).\
-        where(text('id == event_snapshots.preferred_origin_id'))
-    date_time = column_property(stmt)
-    # endregion
-
-
 class SeismicEvent(OrmBase):
     """
     Represents a seismic event
@@ -166,37 +115,24 @@ class SeismicEvent(OrmBase):
     # region ORM declarations
     __tablename__ = 'seismic_events'
     id = Column(Integer, primary_key=True)
+    # Identifiers
     public_id = Column(String)
+    public_origin_id = Column(String)
+    public_magnitude_id = Column(String)
+    # Origin
+    date_time = Column(DateTime)
+    lat = Column(Float)
+    lon = Column(Float)
+    depth = Column(Float)
+    x = Column(Float)
+    y = Column(Float)
+    z = Column(Float)
+    # Magnitude
+    magnitude = Column(Float)
     # SeismicCatalog relation
     seismic_catalog_id = Column(Integer, ForeignKey('seismic_catalogs.id'))
     seismic_catalog = relationship('SeismicCatalog',
                                    back_populates='seismic_events')
-    # EventSnapshot relation
-    snapshots = relationship('EventSnapshot',
-                             back_populates='seismic_event',
-                             cascade='all, delete-orphan')
-    # Magnitude relation
-    magnitudes = relationship('Magnitude',
-                              foreign_keys='Magnitude.seismic_event_id',
-                              back_populates='seismic_event',
-                              cascade='all, delete-orphan')
-    preferred_magnitude_id = Column(Integer, ForeignKey('magnitudes.id'))
-    magnitude = relationship('Magnitude', uselist=False,
-                             foreign_keys=[preferred_magnitude_id])
-    # Origin relation
-    origins = relationship('Origin',
-                           foreign_keys='Origin.seismic_event_id',
-                           back_populates='seismic_event',
-                           cascade='all, delete-orphan')
-    preferred_origin_id = Column(Integer, ForeignKey('origins.id'))
-    origin = relationship('Origin', uselist=False,
-                          foreign_keys=[preferred_origin_id])
-
-    # We create column property for date_time so that we can sort the events
-    # relation on the seismic catalog by date and time of the preferred origin.
-    stmt = select([column('date_time')], from_obj=table('origins')).\
-        where(text('id == seismic_events.preferred_origin_id'))
-    date_time = column_property(stmt)
     # endregion
 
     # Data attributes (required for flattening)
@@ -213,8 +149,11 @@ class SeismicEvent(OrmBase):
         return Point(self.x, self.y, self.z).in_cube(region)
 
     def __init__(self, date_time, magnitude, location):
-        self.origin = Origin(date_time, location)
-        self.magnitude = Magnitude(magnitude)
+        self.date_time = date_time
+        self.magnitude = magnitude
+        self.x = location.x
+        self.y = location.y
+        self.z = location.z
 
     def __str__(self):
         return "M%.1f @ %s" % (self.magnitude.magnitude,
@@ -226,8 +165,7 @@ class SeismicEvent(OrmBase):
 
     def __eq__(self, other):
         if isinstance(other, SeismicEvent):
-            return (self.origin == other.origin and
-                    self.magnitude == other.magnitude)
+            return self.public_id == other.public_id
         return NotImplemented
 
     def __ne__(self, other):
@@ -236,67 +174,3 @@ class SeismicEvent(OrmBase):
             return result
         else:
             return not result
-
-
-class Origin(OrmBase):
-    """
-    Origin of a seismic event (i.e. location and date/time)
-
-    """
-
-    # region ORM Declarations
-    __tablename__ = 'origins'
-    id = Column(Integer, primary_key=True)
-    public_id = Column(String)
-    seismic_event_id = Column(Integer, ForeignKey('seismic_events.id'))
-    seismic_event = relationship('SeismicEvent', back_populates='origins',
-                                 foreign_keys=seismic_event_id)
-    date_time = Column(DateTime)
-    lat = Column(Float)
-    lon = Column(Float)
-    depth = Column(Float)
-    x = Column(Float)
-    y = Column(Float)
-    z = Column(Float)
-
-    # endregion
-
-    def __init__(self, date_time, location):
-        self.date_time = date_time
-        self.x = location.x
-        self.y = location.y
-        self.z = location.z
-
-    def __eq__(self, other):
-        if isinstance(other, Origin):
-            return (self.x == other.x and
-                    self.y == other.y and
-                    self.z == other.z)
-        return NotImplemented
-
-
-class Magnitude(OrmBase):
-    """
-    Magnitude of a seismic event
-
-    """
-
-    # region ORM Declarations
-    __tablename__ = 'magnitudes'
-    id = Column(Integer, primary_key=True)
-    public_id = Column(String)
-    seismic_event_id = Column(Integer, ForeignKey('seismic_events.id'))
-    seismic_event = relationship('SeismicEvent',
-                                 back_populates='magnitudes',
-                                 foreign_keys=seismic_event_id)
-    magnitude = Column(Float)
-
-    # endregion
-
-    def __init__(self, magnitude):
-        self.magnitude = magnitude
-
-    def __eq__(self, other):
-        if isinstance(other, Magnitude):
-            return self.magnitude == other.magnitude
-        return NotImplemented
