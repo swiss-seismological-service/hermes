@@ -98,8 +98,10 @@ class Project(QtCore.QObject, OrmBase):
         """
         earliest = self.earliest_event()
         latest = self.latest_event()
-        return earliest.date_time if earliest else None, \
-               latest.date_time if latest else None
+        start = earliest.date_time if earliest else None
+        end = latest.date_time if latest else None
+        return start, end
+
 
     def earliest_event(self):
         """

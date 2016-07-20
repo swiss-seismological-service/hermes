@@ -12,7 +12,7 @@ This attribute is used to flatten the content when passing data to matlab.
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
-from PyQt4.QtCore import QObject, pyqtSignal, pyqtWrapperType
+from PyQt4.QtCore import pyqtWrapperType
 
 # Base class for objects that are to be persisted by sqlalchemy
 OrmBase = declarative_base()

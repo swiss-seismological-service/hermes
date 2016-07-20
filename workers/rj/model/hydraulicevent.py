@@ -53,7 +53,8 @@ class HydraulicEvent(OrmBase):
         return "Flow: %.1f @ %s" % (self.flow_dh, self.date_time.ctime())
 
     def __repr__(self):
-        return "<InjectionSample('%s' @ '%s')>" % (self.flow_dh, self.date_time)
+        return "<InjectionSample('%s' @ '%s')>" % \
+            (self.flow_dh, self.date_time)
 
     def __eq__(self, other):
         if isinstance(other, HydraulicEvent):

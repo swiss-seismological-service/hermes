@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 Skill tests for forecasts
-    
+
 Copyright (C) 2015, SED (ETH Zurich)
 
 """

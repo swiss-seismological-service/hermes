@@ -190,7 +190,7 @@ class ModelResult(OrmBase):
                                    back_populates='model_results')
     # SkillTest relation
     skill_test_id = Column(Integer, ForeignKey('skill_tests.id'))
-    skill_test = relationship('SkillTest', back_populates='model_result')
+    skill_test = relationship(SkillTest, back_populates='model_result')
     # ISPrediction relation
     rate_prediction = relationship('RatePrediction',
                                    uselist=False,

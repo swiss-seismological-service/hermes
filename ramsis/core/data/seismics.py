@@ -16,9 +16,10 @@ from core.data.eventhistory import EventHistory
 from core.data.geometry import Point
 
 _catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
-    Column('seismic_catalogs_id', Integer, ForeignKey('seismic_catalogs.id')),
-    Column('seismic_events_id', Integer, ForeignKey('seismic_events.id'))
-)
+                               Column('seismic_catalogs_id', Integer,
+                                      ForeignKey('seismic_catalogs.id')),
+                               Column('seismic_events_id', Integer,
+                                      ForeignKey('seismic_events.id')))
 
 
 class SeismicCatalog(EventHistory, OrmBase):
