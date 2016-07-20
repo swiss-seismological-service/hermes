@@ -102,7 +102,6 @@ class Project(QtCore.QObject, OrmBase):
         end = latest.date_time if latest else None
         return start, end
 
-
     def earliest_event(self):
         """
         Returns the earliest event in the project, either seismic or hydraulic.
