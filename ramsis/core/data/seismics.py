@@ -15,6 +15,11 @@ from ormbase import OrmBase, DeclarativeQObjectMeta
 from core.data.eventhistory import EventHistory
 from core.data.geometry import Point
 
+_catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
+    Column('seismic_catalogs_id', Integer, ForeignKey('seismic_catalogs.id')),
+    Column('seismic_events_id', Integer, ForeignKey('seismic_events.id'))
+)
+
 
 class SeismicCatalog(EventHistory, OrmBase):
     """
@@ -30,8 +35,8 @@ class SeismicCatalog(EventHistory, OrmBase):
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
                                   order_by='SeismicEvent.date_time',
-                                  back_populates='seismic_catalog',
-                                  cascade='all, delete-orphan')
+                                  secondary=_catalogs_events_table,
+                                  back_populates='seismic_catalog')
     # Parents
     # ...Project relation
     project_id = Column(Integer, ForeignKey('projects.id'))
@@ -130,8 +135,8 @@ class SeismicEvent(OrmBase):
     # Magnitude
     magnitude = Column(Float)
     # SeismicCatalog relation
-    seismic_catalog_id = Column(Integer, ForeignKey('seismic_catalogs.id'))
     seismic_catalog = relationship('SeismicCatalog',
+                                   secondary=_catalogs_events_table,
                                    back_populates='seismic_events')
     # endregion
 
