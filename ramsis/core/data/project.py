@@ -42,7 +42,7 @@ class Project(QtCore.QObject, OrmBase):
             'cascade': 'all, delete-orphan'}
     injection_well = relationship('InjectionWell', **args)
     injection_history = relationship('InjectionHistory', **args)
-    forecast_list = relationship('ForecastList', **args)
+    forecast_set = relationship('ForecastSet', **args)
     seismic_catalog = relationship('SeismicCatalog',
                                    **dict(args, cascade='all'))
     # endregion
@@ -98,7 +98,8 @@ class Project(QtCore.QObject, OrmBase):
         """
         earliest = self.earliest_event()
         latest = self.latest_event()
-        return earliest.date_time, latest.date_time
+        return earliest.date_time if earliest else None, \
+               latest.date_time if latest else None
 
     def earliest_event(self):
         """
@@ -124,8 +125,11 @@ class Project(QtCore.QObject, OrmBase):
         Returns the latest event in the project, either seismic or hydraulic.
 
         """
-        es = self.seismic_history[-1]
-        eh = self.hydraulic_history[-1]
+        try:
+            es = self.seismic_history[-1]
+            eh = self.hydraulic_history[-1]
+        except IndexError:
+            return None
         if es is None and eh is None:
             return None
         elif es is None:

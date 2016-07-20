@@ -14,13 +14,15 @@ from ormbase import OrmBase
 class SkillTest(OrmBase):
 
     # region ORM Declarations
-    __tablename__ = 'skilltests'
+    __tablename__ = 'skill_tests'
     id = Column(Integer, primary_key=True)
     skill_score = Column(Float)
     test_interval = Column(Float)
     spatial_extent = Column(Float)  # TODO: define
     # ModelResult relation
-    relationship('ModelResult', back_populates='skill_test', uselist=False)
+    model_result = relationship('ModelResult',
+                                back_populates='skill_test',
+                                uselist=False)
     # SnapshotCatalog relation
     reference_catalog_id = Column(Integer, ForeignKey('snapshot_catalogs.id'))
     reference_catalog = relationship('SnapshotCatalog',

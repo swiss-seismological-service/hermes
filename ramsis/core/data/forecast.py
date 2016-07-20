@@ -13,9 +13,10 @@ from math import log, factorial
 
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
     ForeignKey
-from sqlalchemy.orm import relationship, reconstructor
+from sqlalchemy.orm import relationship
 from sqlalchemy.inspection import inspect
 from ormbase import OrmBase, DeclarativeQObjectMeta
+from skilltest import SkillTest
 
 from core.data.eventhistory import EventHistory
 
@@ -30,7 +31,7 @@ class ForecastSet(EventHistory, OrmBase):
     __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
-    __tablename__ = 'forecastsets'
+    __tablename__ = 'forecast_sets'
     id = Column(Integer, primary_key=True)
     # Project relation
     project_id = Column(Integer, ForeignKey('projects.id'))
@@ -41,9 +42,9 @@ class ForecastSet(EventHistory, OrmBase):
     # endregion
 
     def __init__(self, store):
-        super(ForecastSet, self).__init__(store,
-                                          ForecastResult,
-                                          date_time_attr='t_run')
+        super(ForecastSet, self).\
+            __init__(store, Forecast,
+                     date_time_attr=Forecast.forecast_time)
 
 
 class Forecast(OrmBase):
@@ -58,13 +59,13 @@ class Forecast(OrmBase):
     forecast_time = Column(DateTime)
     forecast_interval = Column(Float)
     # ForecastSet relation
-    forecast_set_id = Column(Integer, ForeignKey('forecastsets.id'))
+    forecast_set_id = Column(Integer, ForeignKey('forecast_sets.id'))
     forecast_set = relationship('ForecastSet', back_populates='forecasts')
     # ForecastInput relation
-    input_id = Column(Integer, ForeignKey('forecastinputs.id'))
+    input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     input = relationship('ForecastInput', back_populates='forecast')
     # ForecastResult relation
-    result_id = Column(Integer, ForeignKey('forecastresults.id'))
+    result_id = Column(Integer, ForeignKey('forecast_results.id'))
     result = relationship('ForecastResult', back_populates='forecast')
     # endregion
 
@@ -75,7 +76,7 @@ class ForecastInput(OrmBase):
     __tablename__ = 'forecast_inputs'
     id = Column(Integer, primary_key=True)
     # Forecast relation
-    forecast = relationship('Forecast', back_populates='forecast_input',
+    forecast = relationship('Forecast', back_populates='input',
                             uselist=False)
     # SnapshotCatalog relation
     input_catalog_id = Column(Integer, ForeignKey('snapshot_catalogs.id'))
@@ -83,8 +84,8 @@ class ForecastInput(OrmBase):
                                  back_populates='forecast_input',
                                  cascade='all')
     # InjectionPlan relation
-    injection_plan_id = Column(Integer, ForeignKey('injection_plans.id'))
     injection_plan = relationship('InjectionPlan',
+                                  uselist=False,
                                   back_populates='forecast_input',
                                   cascade='all, delete-orphan')
     # endregion
@@ -108,15 +109,15 @@ class ForecastResult(QtCore.QObject, OrmBase):
     __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM declarations
-    __tablename__ = 'forecastresult'
+    __tablename__ = 'forecast_results'
     id = Column(Integer, primary_key=True)
     hazard_oq_calc_id = Column(Integer)
     risk_oq_calc_id = Column(Integer)
     # Forecast relation
     forecast = relationship('Forecast', back_populates='result', uselist=False)
     # ISModelResult relation
-    model_results = relationship('ISModelResult', cascade='all, delete-orphan',
-                                 back_populates='forecastresult')
+    model_results = relationship('ModelResult', cascade='all, delete-orphan',
+                                 back_populates='forecast_result')
     # endregion
 
     result_changed = QtCore.pyqtSignal(object)
@@ -179,21 +180,21 @@ class ModelResult(OrmBase):
     """
 
     # region ORM declarations
-    __tablename__ = 'ismodelresult'
+    __tablename__ = 'model_results'
     id = Column(Integer, primary_key=True)
     model_name = Column(String)
     failed = Column(Boolean)
     failure_reason = Column(String)
     # ForecastResult relation
-    forecast_result_id = Column(Integer, ForeignKey('forecastresults.id'))
+    forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',
                                    back_populates='model_results')
     # SkillTest relation
-    skill_test_id = Column(Integer, ForeignKey('skilltests.id'))
+    skill_test_id = Column(Integer, ForeignKey('skill_tests.id'))
     skill_test = relationship('SkillTest', back_populates='model_result')
     # ISPrediction relation
-    rate_prediction_id = Column(Integer, ForeignKey('rate_predictions.id'))
     rate_prediction = relationship('RatePrediction',
+                                   uselist=False,
                                    back_populates='model_result',
                                    cascade='all, delete-orphan')
     # endregion
@@ -286,18 +287,18 @@ class RatePrediction(OrmBase):
     """
 
     # region ORM declarations
-    __tablename__ = 'isresult'
+    __tablename__ = 'rate_predictions'
     id = Column(Integer, primary_key=True)
     rate = Column(Float)
     b_val = Column(Float)
     prob = Column(Float)
     # ModelResult relation
+    model_result_id = Column(Integer, ForeignKey('model_results.id'))
     model_result = relationship('ModelResult',
-                                back_populates='rate_prediction',
-                                uselist=False)
+                                back_populates='rate_prediction')
     # Configures the one-to-many relationship between RatePrediction's
     # vol_predictions and this entity (self referential)
-    parent_id = Column(Integer, ForeignKey('isresults.id'))
+    parent_id = Column(Integer, ForeignKey('rate_predictions.id'))
     vol_predictions = relationship('RatePrediction',
                                    cascade="all, delete-orphan")
     # endregion

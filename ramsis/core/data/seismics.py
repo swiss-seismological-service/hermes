@@ -8,7 +8,8 @@ import logging
 import traceback
 
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import select, text, column, table
+from sqlalchemy.orm import relationship, column_property
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
 from core.data.eventhistory import EventHistory
@@ -31,12 +32,14 @@ class SeismicCatalog(EventHistory, OrmBase):
     project = relationship('Project', back_populates='seismic_catalog')
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
+                                  order_by='SeismicEvent.date_time',
                                   back_populates='seismic_catalog',
                                   cascade='all, delete-orphan')
     # endregion
 
     def __init__(self, store):
-        EventHistory.__init__(self, store, SeismicEvent)
+        EventHistory.__init__(self, store, SeismicEvent,
+                              date_time_attr=SeismicEvent.date_time)
         self._logger = logging.getLogger(__name__)
 
     def import_events(self, importer, timerange=None):
@@ -105,6 +108,7 @@ class SnapshotCatalog(EventHistory, OrmBase):
     snapshot_time = Column(DateTime)
     # Snapshots relation
     snapshots = relationship('EventSnapshot',
+                             order_by='EventSnapshot.date_time',
                              back_populates='snapshot_catalog',
                              cascade='all, delete-orphan')
     # ForecastInput relation
@@ -115,6 +119,11 @@ class SnapshotCatalog(EventHistory, OrmBase):
                               back_populates='reference_catalog')
     # endregion
 
+    def __init__(self, store):
+        EventHistory.__init__(self, store, EventSnapshot,
+                              date_time_attr=EventSnapshot.date_time)
+
+
 
 class EventSnapshot(OrmBase):
 
@@ -122,17 +131,24 @@ class EventSnapshot(OrmBase):
     __tablename__ = 'event_snapshots'
     id = Column(Integer, primary_key=True)
     # SnapshotCatalog relation
-    snapshot_catalog_id = Column(Integer, ForeignKey('snapshot_catalog.id'))
+    snapshot_catalog_id = Column(Integer, ForeignKey('snapshot_catalogs.id'))
     snapshot_catalog = relationship('SnapshotCatalog',
                                     back_populates='snapshots')
     # SeismicEvent relation
-    seismic_event_id = Column(Integer, ForeignKey('seismic_event.id'))
+    seismic_event_id = Column(Integer, ForeignKey('seismic_events.id'))
     seismic_event = relationship('SeismicEvent', back_populates='snapshots')
     # Pseudo relations to preferred origin/magnitude at time of snapshot
     preferred_origin_id = Column(Integer, ForeignKey('origins.id'))
     origin = relationship('Origin', uselist=False)
     preferred_magnitude_id = Column(Integer, ForeignKey('magnitudes.id'))
     magnitude = relationship('Magnitude', uselist=False)
+
+    # We create column property for date_time so that we can sort the snapshots
+    # relation on the snapshot catalog by date and time of the preferred
+    # origin.
+    stmt = select([column('date_time')], from_obj=table('origins')).\
+        where(text('id == event_snapshots.preferred_origin_id'))
+    date_time = column_property(stmt)
     # endregion
 
 
@@ -161,6 +177,7 @@ class SeismicEvent(OrmBase):
                              cascade='all, delete-orphan')
     # Magnitude relation
     magnitudes = relationship('Magnitude',
+                              foreign_keys='Magnitude.seismic_event_id',
                               back_populates='seismic_event',
                               cascade='all, delete-orphan')
     preferred_magnitude_id = Column(Integer, ForeignKey('magnitudes.id'))
@@ -168,11 +185,18 @@ class SeismicEvent(OrmBase):
                              foreign_keys=[preferred_magnitude_id])
     # Origin relation
     origins = relationship('Origin',
+                           foreign_keys='Origin.seismic_event_id',
                            back_populates='seismic_event',
                            cascade='all, delete-orphan')
     preferred_origin_id = Column(Integer, ForeignKey('origins.id'))
     origin = relationship('Origin', uselist=False,
                           foreign_keys=[preferred_origin_id])
+
+    # We create column property for date_time so that we can sort the events
+    # relation on the seismic catalog by date and time of the preferred origin.
+    stmt = select([column('date_time')], from_obj=table('origins')).\
+        where(text('id == seismic_events.preferred_origin_id'))
+    date_time = column_property(stmt)
     # endregion
 
     # Data attributes (required for flattening)

@@ -23,7 +23,7 @@ class InjectionWell(OrmBase):
     """
 
     # region ORM declarations
-    __tablename__ = 'injectionwells'
+    __tablename__ = 'injection_wells'
     id = Column(Integer, primary_key=True)
     # Project relation
     project_id = Column(Integer, ForeignKey('projects.id'))
