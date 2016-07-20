@@ -11,8 +11,7 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.hydraulicevent import InjectionSample
-from core.data.hydrauliceventhistory import InjectionHistory
+from core.data.hydraulics import InjectionSample, InjectionHistory
 from testeventhistory import MockStore
 
 

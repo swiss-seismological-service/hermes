@@ -13,8 +13,7 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.seismicevent import SeismicEvent
-from core.data.seismiceventhistory import SeismicCatalog
+from core.data.seismics import SeismicEvent, SeismicCatalog
 from testeventhistory import MockStore
 from core.data.geometry import Point
 

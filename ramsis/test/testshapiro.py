@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
 
-from core.data.seismicevent import SeismicEvent
-from core.data.hydraulicevent import InjectionSample
+from core.data.seismics import SeismicEvent
+from core.data.hydraulics import InjectionSample
 from core.data.injectionwell import InjectionWell
 from core.data.geometry import Point
 from core.engine.ismodels.shapiro import Shapiro

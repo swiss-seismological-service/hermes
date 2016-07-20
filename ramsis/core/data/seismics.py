@@ -171,7 +171,11 @@ class SeismicEvent(OrmBase):
 
     def __eq__(self, other):
         if isinstance(other, SeismicEvent):
-            return self.public_id == other.public_id
+            if self.public_id and other.public_id:
+                return self.public_id == other.public_id
+            else:
+                return all(getattr(self, a) == getattr(other, a)
+                           for a in self.data_attrs)
         return NotImplemented
 
     def __ne__(self, other):
