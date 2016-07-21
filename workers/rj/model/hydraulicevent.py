@@ -2,7 +2,7 @@
 # Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
-Defines the `HydraulicEvent` class.
+Defines the `InjectionSample` class.
 
 Hydraulic events are the samples that are recorded
 at the borehole sensors to measure injection pressure and flow rate.
@@ -53,7 +53,8 @@ class HydraulicEvent(OrmBase):
         return "Flow: %.1f @ %s" % (self.flow_dh, self.date_time.ctime())
 
     def __repr__(self):
-        return "<HydraulicEvent('%s' @ '%s')>" % (self.flow_dh, self.date_time)
+        return "<InjectionSample('%s' @ '%s')>" % \
+            (self.flow_dh, self.date_time)
 
     def __eq__(self, other):
         if isinstance(other, HydraulicEvent):

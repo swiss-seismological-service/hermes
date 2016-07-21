@@ -11,7 +11,7 @@ import logging
 from PyQt4 import QtCore
 
 import ismodelcontrol as mc
-from core.data.isforecastresult import ISForecastResult, ISModelResult
+from core.data.forecast import ForecastResult, ModelResult
 
 
 class ISForecastState:
@@ -96,11 +96,11 @@ class ISForecaster(QtCore.QObject):
         :type client: ModelClient
 
         """
-        is_model_result = ISModelResult(client.model.output)
+        is_model_result = ModelResult(client.model.output)
         model_name = client.model.title
         t_run = is_model_result.t_run
         if self._run_result is None:
-            self._run_result = ISForecastResult(t_run)
+            self._run_result = ForecastResult(t_run)
         self._run_result.model_results[model_name] = is_model_result
         if is_model_result.failed:
             self.logger.warn(model_name + ' did not produce any results for'

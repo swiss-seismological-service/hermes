@@ -9,7 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from datetime import datetime
 
-from core.data.seismicevent import SeismicEvent
+from core.data.seismics import SeismicEvent
 from core.data.geometry import Point
 
 

@@ -16,7 +16,7 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
         """Provides the seismic data catalog to the Qt user interface
 
         :param event_history: Event history
-        :type event_history: SeismicEventHistory
+        :type event_history: SeismicCatalog
 
         """
         QtCore.QAbstractTableModel.__init__(self, parent)

@@ -15,7 +15,7 @@ In addition to the data, the project also keeps the current time in the ``projec
 Project Data and the Persistence Stack
 --------------------------------------
 
-Time related project data is stored in event histories, e.g. :class:`~data.seismiceventhistory.SeismicEventHistory` for seismic events and :class:`~data.forecasthistory.ForecastHistory` for seismicity forecasting results. Several layers of abstraction are used to persist data as shown in the diagram below.
+Time related project data is stored in event histories, e.g. :class:`~data.seismiceventhistory.SeismicCatalog` for seismic events and :class:`~data.forecasthistory.ForecastSet` for seismicity forecasting results. Several layers of abstraction are used to persist data as shown in the diagram below.
 
 .. figure:: images/project_clsd.png
    :align: center

@@ -11,6 +11,18 @@ This attribute is used to flatten the content when passing data to matlab.
 """
 
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from PyQt4.QtCore import pyqtWrapperType
 
 # Base class for objects that are to be persisted by sqlalchemy
 OrmBase = declarative_base()
+
+
+class DeclarativeQObjectMeta(pyqtWrapperType, DeclarativeMeta):
+    """
+    Metaclass that allows us to inherit from both QObject and OrmBase
+
+    """
+    def __init__(cls, name, bases, dct):
+        pyqtWrapperType.__init__(cls, name, bases, dct)
+        DeclarativeMeta.__init__(cls, name, bases, dct)
