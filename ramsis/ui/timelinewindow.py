@@ -311,6 +311,7 @@ class TimelineWindow(QtGui.QDialog):
         self._present_project(project)
         self.seismicity_presenter.zoom(DisplayRange.WEEK)
         self.forecasts_presenter.zoom(DisplayRange.WEEK)
+        self._zoom_to_markers()
         # Trigger a project time change manually, so the plots will update
         self.on_project_time_change(project.project_time)
 
@@ -324,9 +325,6 @@ class TimelineWindow(QtGui.QDialog):
         for p in (self.seismicity_presenter, self.hydraulics_presenter,
                   self.forecasts_presenter):
             p.show_current_time(t)
-        # We need to do this on only one since the plots are linked
-        self.seismicity_presenter.time_plot_widget.zoom_to_marker()
-        self.forecasts_presenter.time_plot_widget.zoom_to_marker()
 
     def _present_project(self, project):
         if project is None:
@@ -339,3 +337,8 @@ class TimelineWindow(QtGui.QDialog):
             self.seismicity_presenter.history = project.seismic_history
             self.forecasts_presenter.history = project.forecast_history
             self.forecasts_presenter.rate_history = project.rate_history
+
+    def _zoom_to_markers(self):
+        # We need to do this on only one since the plots are linked
+        self.seismicity_presenter.time_plot_widget.zoom_to_marker()
+        self.forecasts_presenter.time_plot_widget.zoom_to_marker()
