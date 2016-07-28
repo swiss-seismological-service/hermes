@@ -311,9 +311,9 @@ class TimelineWindow(QtGui.QDialog):
         self._present_project(project)
         self.seismicity_presenter.zoom(DisplayRange.WEEK)
         self.forecasts_presenter.zoom(DisplayRange.WEEK)
-        self._zoom_to_markers()
         # Trigger a project time change manually, so the plots will update
         self.on_project_time_change(project.project_time)
+        self._zoom_to_markers()
 
     def on_project_will_close(self, project):
         project.will_close.disconnect(self.on_project_will_close)
