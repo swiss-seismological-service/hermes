@@ -59,8 +59,6 @@ known_settings = {
     'lab_mode/infinite_speed': True,
     # Simulation speed (factor), ignored if lab_mode/infinite_speed is True
     'lab_mode/speed': 1000,
-    # Time of the first forecast in iso format '2014-06-12 18:30:00'
-    'lab_mode/forecast_start': '2006-12-04 00:00:00',
 
     # ISHA model settings
 
