@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
 
-from core.data.seismicevent import SeismicEvent
-from core.data.hydraulicevent import HydraulicEvent
+from core.data.seismics import SeismicEvent
+from core.data.hydraulics import InjectionSample
 from core.data.injectionwell import InjectionWell
 from core.data.geometry import Point
 from core.engine.ismodels.shapiro import Shapiro
@@ -53,7 +53,8 @@ class ShapiroTest(unittest.TestCase):
         hydraulic_events = []
         for i in range(3):
             t_event = now - timedelta(hours=i, minutes=10)
-            hydraulic_event = HydraulicEvent(t_event, 100.0, 100.0, 10.0, 10.0)
+            hydraulic_event = InjectionSample(t_event,
+                                              100.0, 100.0, 10.0, 10.0)
             hydraulic_events.append(hydraulic_event)
 
         model_input = ModelInput(now)

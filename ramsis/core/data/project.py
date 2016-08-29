@@ -9,15 +9,18 @@ Provides a class to manage Ramsis project data
 from datetime import datetime
 
 from PyQt4 import QtCore
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
+from ormbase import OrmBase, DeclarativeQObjectMeta
 
-from seismiceventhistory import SeismicEventHistory
-from hydrauliceventhistory import HydraulicEventHistory
-from core.data.forecasthistory import ForecastHistory
-from core.data.injectionwell import InjectionWell
+from seismics import SeismicCatalog
+from hydraulics import InjectionHistory
+from forecast import ForecastSet
+from injectionwell import InjectionWell
 from core.tools.eqstats import SeismicRateHistory
 
 
-class Project(QtCore.QObject):
+class Project(QtCore.QObject, OrmBase):
     """
     Manages persistent and non-persistent ramsis project data such as the
     seismic and hydraulic history, and project state information.
@@ -26,10 +29,23 @@ class Project(QtCore.QObject):
 
     :ivar seismic_history: The seismic history of the project
     :ivar hydraulic_history: The hydraulic history of the project
-    :ivar path: Path of the project file (non persistent)
-    :ivar project_time: Current project time (non persistent)
 
     """
+    __metaclass__ = DeclarativeQObjectMeta
+
+    # region ORM Declarations
+    __tablename__ = 'projects'
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    args = {'uselist': False,  # we use one to one relationships for now
+            'back_populates': 'project',
+            'cascade': 'all, delete-orphan'}
+    injection_well = relationship('InjectionWell', **args)
+    injection_history = relationship('InjectionHistory', **args)
+    forecast_set = relationship('ForecastSet', **args)
+    seismic_catalog = relationship('SeismicCatalog',
+                                   **dict(args, cascade='all'))
+    # endregion
 
     # Signals
     will_close = QtCore.pyqtSignal(object)
@@ -39,12 +55,12 @@ class Project(QtCore.QObject):
         """ Create a project based on the data that is contained in *store* """
         super(Project, self).__init__()
         self._store = store
-        self.seismic_history = SeismicEventHistory(self._store)
+        self.seismic_history = SeismicCatalog(self._store)
         self.seismic_history.reload_from_store()
-        self.hydraulic_history = HydraulicEventHistory(self._store)
+        self.hydraulic_history = InjectionHistory(self._store)
         self.hydraulic_history.reload_from_store()
         self.rate_history = SeismicRateHistory()
-        self.forecast_history = ForecastHistory(self._store)
+        self.forecast_history = ForecastSet(self._store)
         self.forecast_history.reload_from_store()
         self.title = title
 
@@ -82,9 +98,9 @@ class Project(QtCore.QObject):
         """
         earliest = self.earliest_event()
         latest = self.latest_event()
-        earliest_dt = earliest.date_time if earliest else self._project_time
-        latest_dt = latest.date_time if latest else self._project_time
-        return earliest_dt, latest_dt
+        start = earliest.date_time if earliest else None
+        end = latest.date_time if latest else None
+        return start, end
 
     def earliest_event(self):
         """
@@ -110,8 +126,11 @@ class Project(QtCore.QObject):
         Returns the latest event in the project, either seismic or hydraulic.
 
         """
-        es = self.seismic_history[-1]
-        eh = self.hydraulic_history[-1]
+        try:
+            es = self.seismic_history[-1]
+            eh = self.hydraulic_history[-1]
+        except IndexError:
+            return None
         if es is None and eh is None:
             return None
         elif es is None:

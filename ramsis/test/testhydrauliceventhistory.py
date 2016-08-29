@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Unit test for the HydraulicEventHistory class
+Unit test for the InjectionHistory class
 
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
@@ -11,8 +11,7 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.hydraulicevent import HydraulicEvent
-from core.data.hydrauliceventhistory import HydraulicEventHistory
+from core.data.hydraulics import InjectionSample, InjectionHistory
 from testeventhistory import MockStore
 
 
@@ -22,16 +21,16 @@ class BasicOperation(unittest.TestCase):
     def setUp(self):
         """ Create a mock store for the history under test """
         self.mock_store = MockStore()
-        self.history = HydraulicEventHistory(self.mock_store)
+        self.history = InjectionHistory(self.mock_store)
         base_date = datetime(2013, 3, 15)
         self.expected = []
         for i in range(3):
             date = base_date + timedelta(seconds=i)
-            event = HydraulicEvent(date,
-                                   flow_dh=(-82.0 - i * 0.1),
-                                   flow_xt=(132.0 + i * 0.1),
-                                   pr_dh=(719 + i * 0.1),
-                                   pr_xt=(269 + i * 0.1))
+            event = InjectionSample(date,
+                                    flow_dh=(-82.0 - i * 0.1),
+                                    flow_xt=(132.0 + i * 0.1),
+                                    pr_dh=(719 + i * 0.1),
+                                    pr_xt=(269 + i * 0.1))
             self.expected.append(event)
 
         def mock_iter():
@@ -48,7 +47,7 @@ class BasicOperation(unittest.TestCase):
     def test_import(self):
         """ Test if the event import works as expected """
         self.history.import_events(self.mock_importer)
-        self.mock_store.purge_entity.assert_called_once_with(HydraulicEvent,
+        self.mock_store.purge_entity.assert_called_once_with(InjectionSample,
                                                              None)
         self.mock_store.add.assert_called_once_with(self.expected)
 

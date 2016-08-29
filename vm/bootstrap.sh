@@ -9,7 +9,7 @@
 # the script is executed.
 
 # add OpenQuake repository
-add-apt-repository ppa:openquake/ppa
+add-apt-repository ppa:openquake/release-1.9
 
 # add ObsPy repository and public key
 echo "deb http://deb.obspy.org trusty main" >> /etc/apt/sources.list
