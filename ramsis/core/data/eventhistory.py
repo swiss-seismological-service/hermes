@@ -112,7 +112,10 @@ class EventHistory(QtCore.QObject):
         self._emit_change_signal({})
 
     def __getitem__(self, item):
-        return self._events[item]
+        if len(self._events) == 0:
+            return None
+        else:
+            return self._events[item]
 
     def __len__(self):
         return len(self._events)

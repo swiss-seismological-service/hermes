@@ -136,9 +136,9 @@ class Controller(QtCore.QObject):
 
     # Running
 
-    def start(self):
+    def start(self, time_range):
         if self._settings.value('enable_lab_mode'):
-            self.start_simulation()
+            self.start_simulation(time_range)
         else:
             self._logger.notice('RAMSIS only works in lab mode at the moment')
 
@@ -152,7 +152,7 @@ class Controller(QtCore.QObject):
 
     # Simulation
 
-    def start_simulation(self):
+    def start_simulation(self, time_range):
         """
         Starts the simulation.
 
@@ -174,11 +174,11 @@ class Controller(QtCore.QObject):
             return
         self._logger.info('Starting simulation')
         if self.simulator.state == SimulatorState.STOPPED:
-            self._init_simulation()
+            self._init_simulation(time_range)
         # Start simulator
         self.simulator.start()
 
-    def _init_simulation(self):
+    def _init_simulation(self, time_range):
         """
         (Re)initialize simulator and scheduler for a new simulation
 
@@ -186,8 +186,6 @@ class Controller(QtCore.QObject):
         self._logger.info(
             'Deleting any forecasting results from previous runs')
         self.project.forecast_history.clear()
-        # Reset task scheduler based on the first simulation step time
-        time_range = self._simulation_time_range()
         inf_speed = self._settings.value('lab_mode/infinite_speed')
         if inf_speed:
             self._logger.info('Simulating at maximum speed')
@@ -207,16 +205,16 @@ class Controller(QtCore.QObject):
         self.simulator.pause()
 
     def stop_simulation(self):
-        """ Stops the simulation """
-        self.simulator.stop()
-        self._logger.info('Stopping simulation')
+        """
+        Stops the simulation.
 
-    def _simulation_time_range(self):
-        event_time_range = self.project.event_time_range()
-        start_date = self._settings.date_value('lab_mode/forecast_start')
-        start_date = start_date if start_date else event_time_range[0]
-        end_date = event_time_range[1]
-        return start_date, end_date
+        All seismic and hydraulic events are cleared from the database.
+
+        """
+        self.simulator.stop()
+        self.project.seismic_history.clear_events()
+        self.project.hydraulic_history.clear_events()
+        self._logger.info('Stopping simulation')
 
     # Simulation handling
 
@@ -298,7 +296,8 @@ class Controller(QtCore.QObject):
     # FDSNWS task function
 
     def _import_fdsnws_data(self, run_info):
-        self.fdsnws_runner.start()
+        if self.project:
+            self.fdsnws_runner.start(self.project.project_time)
 
     def _on_fdsnws_runner_finished(self, results):
         if results is not None:
@@ -307,7 +306,8 @@ class Controller(QtCore.QObject):
     # HYDWS task function
 
     def _import_hydws_data(self, run_info):
-        self.hydws_runner.start()
+        if self.project:
+            self.hydws_runner.start(self.project.project_time)
 
     def _on_hydws_runner_finished(self, results):
         if results is not None:

@@ -35,7 +35,8 @@ class FDSNWSRunner(QtCore.QObject):
         self._qthread.quit()
         self._qthread.wait()
 
-    def start(self):
+    def start(self, project_time):
+        self._importer.project_time = project_time
         self._qthread.start()
 
     def on_finished(self, results):
@@ -76,7 +77,8 @@ class HYDWSRunner(QtCore.QObject):
         self._qthread.quit()
         self._qthread.wait()
 
-    def start(self):
+    def start(self, project_time):
+        self._importer.project_time = project_time
         self._qthread.start()
 
     def on_finished(self, results):

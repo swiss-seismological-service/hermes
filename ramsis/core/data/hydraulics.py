@@ -39,7 +39,7 @@ class InjectionHistory(EventHistory, OrmBase):
 
     def import_events(self, importer, timerange=None):
         """
-        Imports seismic events from a csv file by using an EventReporter
+        Imports hydraulic events from a csv file by using an EventReporter
 
         The EventReporter must return the following fields (which must thus
         be present in the csv file)
@@ -82,6 +82,16 @@ class InjectionHistory(EventHistory, OrmBase):
                 len(events)))
             self.reload_from_store()
             self._emit_change_signal({})
+
+    def clear_events(self):
+        """
+        Clear all hydraulic events from the database
+
+        """
+        self.store.purge_entity(self.entity)
+        self._logger.info('Cleared all hydraulic events.')
+        self.reload_from_store()
+        self._emit_change_signal({})
 
 
 class InjectionPlan(OrmBase):

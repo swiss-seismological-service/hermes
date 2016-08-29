@@ -69,7 +69,12 @@ class SimulationWindow(QtGui.QDialog):
     # Actions
 
     def action_start_simulation(self):
-        self.ramsis_core.start()
+        # Convert from QDateTime to Python datetime
+        start_time = self.ui.startTimeEdit.dateTime().toPyDateTime()
+        end_time = self.ui.endTimeEdit.dateTime().toPyDateTime()
+
+        time_range = (start_time, end_time)
+        self.ramsis_core.start(time_range)
 
     def action_pause_simulation(self):
         self.ramsis_core.pause()
