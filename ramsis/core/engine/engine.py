@@ -18,7 +18,7 @@ import logging
 from PyQt4 import QtCore
 
 from core.data.forecast import ForecastResult
-from ramsisjob import ForecastJob
+from forecastjob import ForecastJob
 
 
 class EngineState:
@@ -138,7 +138,7 @@ class Engine(QtCore.QObject):
         needs to start a forecast, particularly the forecast time. Upon
         invocation `run_forecast` creates a new `ForecastJob` and assembles
         the input data for the job. It then transitions to the `BUSY` state
-        and calls :meth:`core.ramsisjob.ForecastJob.run` to set the job in
+        and calls :meth:`core.forecastjob.ForecastJob.run` to set the job in
         motion.
 
         :param TaskRunInfo task_run_info: Forecast info such as the forecast
