@@ -347,8 +347,6 @@ class ForecastsWindow(QtGui.QDialog):
 
         # Connect essential signals
         # ... from the core
-        self.ramsis_core.engine.state_changed.\
-            connect(self.on_engine_state_change)
         self.ramsis_core.project_loaded.connect(self.on_project_load)
 
         if self.ramsis_core.project is not None:
@@ -404,9 +402,6 @@ class ForecastsWindow(QtGui.QDialog):
         self.fc_history_model = None
 
     def on_project_time_change(self, t):
-        pass
-
-    def on_engine_state_change(self):
         pass
 
     def on_project_load(self, project):

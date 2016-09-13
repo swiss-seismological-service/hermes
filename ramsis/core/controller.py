@@ -18,7 +18,7 @@ from core.data.store import Store
 from core.data.project import Project
 from core.data.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
-from core.engine.engine import Engine, EngineState
+from core.engine.forecastjob import ForecastJob
 
 import core.engine.ismodelcontrol as mc
 from core.scheduler import TaskScheduler, ScheduledTask
@@ -58,7 +58,7 @@ class Controller(QtCore.QObject):
         super(Controller, self).__init__()
         self._settings = settings
         self.project = None
-        self.engine = Engine(settings)
+        self.forecast_job = ForecastJob(settings)
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None
         self.fdsnws_runner = None
@@ -97,7 +97,7 @@ class Controller(QtCore.QObject):
         store = Store(store_path, OrmBase)
         self.project = Project(store, os.path.basename(path))
         self.project.project_time_changed.connect(self._on_project_time_change)
-        self.engine.observe_project(self.project)
+        self.forecast_job.observe_project(self.project)
         self.project_loaded.emit(self.project)
         self._logger.info('... initializing runners...')
         self.fdsnws_runner = FDSNWSRunner(self._settings)
@@ -191,7 +191,7 @@ class Controller(QtCore.QObject):
             self._logger.info('Simulating at maximum speed')
             dt_h = self._settings.value('engine/fc_interval')
             dt = timedelta(hours=dt_h)
-            step_signal = self.engine.forecast_complete
+            step_signal = self.forecast_job.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)
         else:
             speed = self._settings.value('lab_mode/speed')
@@ -234,11 +234,12 @@ class Controller(QtCore.QObject):
         # Forecasting Task
         dt = self._settings.value('engine/fc_interval')
         forecast_task = ScheduledTask(
-            task_function=self.engine.run_forecast,
+            task_function=self.forecast_job.run_forecast,
             dt=timedelta(hours=dt),
             name='Forecast')
         scheduler.add_task(forecast_task)
-        self.engine._forecast_task = forecast_task  # keep reference for later
+        self.forecast_job._forecast_task =\
+            forecast_task  # keep reference for later
 
         # Rate computations
         dt = self._settings.value('engine/rt_interval')
@@ -282,11 +283,6 @@ class Controller(QtCore.QObject):
         :type t_project: datetime
 
         """
-        # Project time changes can also occur on startup or due to manual user
-        # interaction. In those cases we don't trigger any computations.
-        # FIXME: Don't make this dependent on the eng. state (see issue #11)
-        if self.engine.state == EngineState.INACTIVE:
-            return
         if self._scheduler.has_pending_tasks(t_project):
             self._logger.debug('Scheduler has pending tasks. Executing')
             info = TaskRunInfo(t_project=t_project)

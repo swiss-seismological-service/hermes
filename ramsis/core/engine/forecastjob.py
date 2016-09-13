@@ -13,11 +13,17 @@ The three stages are invoked in succession by `ForecastJob`.
 
 """
 
+import logging
+
+from PyQt4 import QtCore
+
 from job import Job, Stage
 
 from ismodels.common import ModelInput
 from isforecaster import ISForecaster
 from oq.controller import controller as oq
+
+from core.data.forecast import ForecastResult
 
 
 class ISForecastStage(Stage):
@@ -114,3 +120,92 @@ class ForecastJob(Job):
     """
     job_id = 'fc_job'  #: Job ID for ForecastJob
     stages = [ISForecastStage, PshaStage, RiskPoeStage]  #: ForecastJob stages
+
+    # Signals
+    forecast_complete = QtCore.pyqtSignal()
+
+    def __init__(self, settings):
+        super(ForecastJob, self).__init__()
+        self._settings = settings
+        self._project = None
+        self._forecast_task = None
+        self.busy = False
+        self._current_fc_result = None
+        self._logger = logging.getLogger(__name__)
+
+    @property
+    def t_next_forecast(self):
+        return self._forecast_task.run_time
+
+    def run_forecast(self, task_run_info):
+        """
+        Run a new forecast.
+
+        The parameter `task_run_info` contains all the information the job
+        needs to start a forecast, particularly the forecast time. Upon
+        invocation `run_forecast` assembles the input data for the job. It then
+        calls :meth:`core.forecastjob.ForecastJob.run` to set the job in
+        motion.
+
+        :param TaskRunInfo task_run_info: Forecast info such as the forecast
+           time.
+
+        """
+        assert self._project
+        t_run = task_run_info.t_project
+
+        # Skip this forecast if the core is busy
+        if self.busy:
+            self._logger.warning('Attempted to initiate forecast while the '
+                                 'core is still busy with a previously'
+                                 'started forecast. Skipping at '
+                                 't=' + str(t_run))
+            return
+
+        self._logger.info(6 * '----------')
+        self._logger.info('Initiating forecast')
+
+        job_input = {
+            't_run': t_run,
+            'dt_h': self._settings.value('engine/fc_bin_size'),
+            'project': self._project
+        }
+        self.stage_completed.connect(self.fc_stage_complete)
+        self._current_fc_result = ForecastResult(t_run)
+        persist = self._settings.value('engine/persist_results')
+        self._project.forecast_history.add(self._current_fc_result, persist)
+        self.busy = True
+        self.run(job_input)
+
+    def fc_stage_complete(self, stage):
+        if stage.stage_id == 'is_forecast_stage':
+            self._logger.info('IS forecast stage completed')
+            self._current_fc_result.is_forecast_result = stage.results
+        elif stage.stage_id == 'psha_stage':
+            self._logger.info('PSHA stage completed')
+            self._current_fc_result.hazard_oq_calc_id = stage.results['job_id']
+        elif stage.stage_id == 'risk_poe_stage':
+            self._logger.info('Risk PoE stage completed')
+            self._current_fc_result.risk_oq_calc_id = stage.results['job_id']
+        else:
+            raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
+
+        if stage == self.stage_objects[-1]:
+            self.busy = False
+            self.forecast_complete.emit()
+
+        self._current_fc_result.commit_changes()
+
+    def observe_project(self, project):
+        """
+        Start observing a new project
+
+        :param Project project: Project to observe
+
+        """
+        project.will_close.connect(self._on_project_close)
+        self._project = project
+
+    def _on_project_close(self, project):
+        project.will_close.disconnect(self._on_project_close)
+        self._project = None

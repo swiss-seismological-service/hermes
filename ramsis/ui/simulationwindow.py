@@ -10,7 +10,6 @@ import os
 import logging
 from PyQt4 import QtGui, uic
 
-from core.engine.engine import EngineState
 from core.simulator import SimulatorState
 
 ui_path = os.path.dirname(__file__)
@@ -38,15 +37,12 @@ class SimulationWindow(QtGui.QDialog):
         self.ui.pauseButton.clicked.connect(self.action_pause_simulation)
 
         # Hook up signals from the core
-        self.ramsis_core.engine.state_changed.\
-            connect(self.on_engine_state_change)
         self.ramsis_core.simulator.state_changed.\
             connect(self.on_sim_state_change)
         self.ramsis_core.project_loaded.connect(self.on_project_load)
 
     def update_controls(self):
-        engine_state = self.ramsis_core.engine.state
-        if engine_state == EngineState.INACTIVE:
+        if not self.ramsis_core.project:
             self.ui.startButton.setEnabled(False)
             self.ui.pauseButton.setEnabled(False)
             self.ui.stopButton.setEnabled(False)
@@ -84,10 +80,6 @@ class SimulationWindow(QtGui.QDialog):
 
     # Observed Signals
 
-    def on_engine_state_change(self, _):
-        self.update_controls()
-        self.update_status()
-
     def on_sim_state_change(self, _):
         self.update_controls()
         self.update_status()
@@ -102,6 +94,7 @@ class SimulationWindow(QtGui.QDialog):
             self.on_seismic_history_change)
         project.hydraulic_history.history_changed.connect(
             self.on_hydraulic_history_change)
+        self.update_controls()
         self.update_status()
 
     def on_project_will_close(self, project):
@@ -112,6 +105,7 @@ class SimulationWindow(QtGui.QDialog):
         project.hydraulic_history.history_changed.disconnect(
             self.on_hydraulic_history_change)
         self.project = None
+        self.update_controls()
         self.update_status()
 
     def on_project_time_change(self, _):
@@ -144,7 +138,7 @@ class SimulationWindow(QtGui.QDialog):
         if core.simulator.state == SimulatorState.RUNNING:
             event = self.project.seismic_history.latest_event(time)
             status = 'Simulating at ' + str(speed) + 'x'
-            if core.engine.state == EngineState.BUSY:
+            if core.forecast_job.busy:
                 status += ' - Computing Forecast'
             self.ui.coreStatusLabel.setText(status)
             self.ui.projectTimeLabel.setText(time.ctime())

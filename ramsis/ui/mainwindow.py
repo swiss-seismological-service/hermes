@@ -18,7 +18,6 @@ from simulationwindow import SimulationWindow
 from core.tools.eventimporter import EventImporter
 import ramsisuihelpers as helpers
 from viewmodels.seismicdatamodel import SeismicDataModel
-from core.engine.engine import EngineState
 from core.simulator import SimulatorState
 from ui.views.plots import Event3DViewWidget
 import numpy as np
@@ -90,8 +89,6 @@ class MainWindow(QtGui.QMainWindow):
 
         # Hook up essential signals from the core and the forecast core
         ramsis.app_launched.connect(self.on_app_launch)
-        self.ramsis_core.engine.state_changed.\
-            connect(self.on_engine_state_change)
         self.ramsis_core.simulator.state_changed.\
             connect(self.on_sim_state_change)
         self.ramsis_core.project_loaded.connect(self.on_project_load)
@@ -108,9 +105,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def on_hydraulic_history_change(self, _):
         self.update_status()
-
-    def on_engine_state_change(self, _):
-        self.update_controls()
 
     def on_sim_state_change(self, _):
         self.update_controls()
@@ -136,6 +130,7 @@ class MainWindow(QtGui.QMainWindow):
         project.hydraulic_history.history_changed.disconnect(
             self.on_hydraulic_history_change)
         self.project = None
+        self.update_controls()
 
     def on_project_time_change(self, time):
         self._replot_3d_event_data(time)
@@ -296,8 +291,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionScenario.setEnabled(enable)
         self.ui.actionView_Data.setEnabled(enable)
 
-        engine_state = self.ramsis_core.engine.state
-        if engine_state == EngineState.INACTIVE:
+        if not self.ramsis_core.project:
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
