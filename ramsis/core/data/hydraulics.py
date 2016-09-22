@@ -123,7 +123,7 @@ class InjectionSample(OrmBase):
     """
 
     # region ORM declarations
-    __tablename__ = 'hydraulicevents'
+    __tablename__ = 'injection_samples'
     id = Column(Integer, primary_key=True)
     date_time = Column(DateTime)
     flow_dh = Column(Float)

@@ -291,6 +291,7 @@ class RatePrediction(OrmBase):
     rate = Column(Float)
     b_val = Column(Float)
     prob = Column(Float)
+    score = Column(Float)
     # ModelResult relation
     model_result_id = Column(Integer, ForeignKey('model_results.id'))
     model_result = relationship('ModelResult',
