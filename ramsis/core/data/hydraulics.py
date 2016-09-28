@@ -99,14 +99,12 @@ class InjectionPlan(OrmBase):
     # region ORM Declarations
     __tablename__ = 'injection_plans'
     id = Column(Integer, primary_key=True)
-    # ForecastInput relation
-    forecast_input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
-    forecast_input = relationship('ForecastInput',
-                                  back_populates='injection_plan',
-                                  uselist=False)
     # InjectionSample relation
     samples = relationship('InjectionSample',
                            back_populates='injection_plan')
+    # Scenario relation
+    scenarios_id = Column(Integer, ForeignKey('scenarios.id'))
+    scenarios = relationship('Scenario', back_populates='injection_plans')
     # endregion
 
 
