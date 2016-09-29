@@ -167,7 +167,7 @@ class Engine(QtCore.QObject):
         job = ForecastJob()
         job.stage_completed.connect(self.fc_stage_complete)
         self._current_fc_job = job
-        self._current_fc_result = ForecastResult(t_run)
+        self._current_fc_result = ForecastResult()
         persist = self._settings.value('engine/persist_results')
         self._project.forecast_history.add(self._current_fc_result, persist)
         self._transition_to_state(EngineState.BUSY)

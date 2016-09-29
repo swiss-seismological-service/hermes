@@ -100,7 +100,7 @@ class ISForecaster(QtCore.QObject):
         model_name = client.model.title
         t_run = is_model_result.t_run
         if self._run_result is None:
-            self._run_result = ForecastResult(t_run)
+            self._run_result = ForecastResult()
         self._run_result.model_results[model_name] = is_model_result
         if is_model_result.failed:
             self.logger.warn(model_name + ' did not produce any results for'
