@@ -23,7 +23,7 @@ from core.engine.engine import Engine, EngineState
 import core.engine.ismodelcontrol as mc
 from core.scheduler import TaskScheduler, ScheduledTask
 
-from web.runners import FDSNWSRunner, HYDWSRunner
+from importers.runners import FDSNWSRunner, HYDWSRunner
 
 # from core.tools.tools import Profiler
 
