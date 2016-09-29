@@ -13,6 +13,7 @@ from math import log, factorial
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
     ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.inspection import inspect
 from ormbase import OrmBase, DeclarativeQObjectMeta
 from skilltest import SkillTest
@@ -114,7 +115,9 @@ class ForecastResult(QtCore.QObject, OrmBase):
     forecast = relationship('Forecast', back_populates='result')
     # ISModelResult relation
     model_results = relationship('ModelResult', cascade='all, delete-orphan',
-                                 back_populates='forecast_result')
+                                 back_populates='forecast_result',
+                                 collection_class=attribute_mapped_collection(
+                                     'model_name'))
     # Scenario relation
     scenarios = relationship('Scenario', back_populates='forecast_results',
                              uselist=False)
