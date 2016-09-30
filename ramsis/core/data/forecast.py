@@ -149,8 +149,8 @@ class Scenario(OrmBase):
     forecast_inputs = relationship('ForecastInput', back_populates='scenarios')
     # InjectionPlan relation
     injection_plans = relationship('InjectionPlan',
-                                  cascade='all, delete-orphan',
-                                  back_populates='scenarios')
+                                   cascade='all, delete-orphan',
+                                   back_populates='scenarios')
     # ForecastResult relation
     forecast_results_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_results = relationship('ForecastResult',
