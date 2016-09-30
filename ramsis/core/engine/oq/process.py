@@ -27,7 +27,8 @@ OQ_DISTRIBUTE = False
 
 # Initial configuration and checks
 # set if we run distributed or not
-# os.environ[openquake.engine.NO_DISTRIBUTE_VAR] = '0' if OQ_DISTRIBUTE else '1'
+# os.environ[openquake.engine.NO_DISTRIBUTE_VAR] = '0'\
+#     if OQ_DISTRIBUTE else '1'
 # first of all check the database version and exit if the db is outdated
 # upgrader.check_versions(django_db.connections['admin'])
 
