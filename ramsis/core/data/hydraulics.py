@@ -93,6 +93,18 @@ class InjectionHistory(EventHistory, OrmBase):
         self.reload_from_store()
         self._emit_change_signal({})
 
+    def copy(self):
+        """ Returns a new copy of itself """
+
+        arguments = {}
+        for name, column in self.__mapper__.columns.items():
+            if not (column.primary_key or column.unique):
+                arguments[name] = getattr(self, name)
+        copy = self.__class__(self.store)
+        for item in arguments.items():
+            setattr(copy, *item)
+        return copy
+
 
 class InjectionPlan(OrmBase):
 
@@ -144,6 +156,19 @@ class InjectionSample(OrmBase):
 
     # Data attributes (required for flattening)
     data_attrs = ['date_time', 'flow_dh', 'flow_xt', 'pr_dh', 'pr_xt']
+
+    def copy(self):
+        """ Returns a new copy of itself """
+
+        arguments = {}
+        for name, column in self.__mapper__.columns.items():
+            if not (column.primary_key or column.unique):
+                arguments[name] = getattr(self, name)
+        copy = self.__class__(self.date_time, self.flow_dh, self.flow_xt,
+                              self.pr_dh, self.pr_xt)
+        for item in arguments.items():
+            setattr(copy, *item)
+        return copy
 
     def __init__(self, date_time, flow_dh, flow_xt, pr_dh, pr_xt):
         """

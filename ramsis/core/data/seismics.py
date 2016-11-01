@@ -116,6 +116,18 @@ class SeismicCatalog(EventHistory, OrmBase):
         self.reload_from_store()
         self._emit_change_signal({})
 
+    def copy(self):
+        """ Returns a new copy of itself """
+
+        arguments = {}
+        for name, column in self.__mapper__.columns.items():
+            if not (column.primary_key or column.unique):
+                arguments[name] = getattr(self, name)
+        copy = self.__class__(self.store)
+        for item in arguments.items():
+            setattr(copy, *item)
+        return copy
+
 
 class SeismicEvent(OrmBase):
     """
@@ -163,6 +175,19 @@ class SeismicEvent(OrmBase):
 
         """
         return Point(self.x, self.y, self.z).in_cube(region)
+
+    def copy(self):
+        """ Returns a new copy of itself """
+
+        arguments = {}
+        for name, column in self.__mapper__.columns.items():
+            if not (column.primary_key or column.unique):
+                arguments[name] = getattr(self, name)
+        copy = self.__class__(self.date_time, self.magnitude,
+                              Point(self.x, self.y, self.z))
+        for item in arguments.items():
+            setattr(copy, *item)
+        return copy
 
     def __init__(self, date_time, magnitude, location):
         self.date_time = date_time
