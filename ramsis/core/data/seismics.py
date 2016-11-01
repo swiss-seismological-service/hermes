@@ -172,12 +172,10 @@ class SeismicEvent(OrmBase):
         self.z = location.z
 
     def __str__(self):
-        return "M%.1f @ %s" % (self.magnitude.magnitude,
-                               self.origin.date_time.ctime())
+        return "M%.1f @ %s" % (self.magnitude, self.date_time.ctime())
 
     def __repr__(self):
-        return "<SeismicEvent('%s' @ '%s')>" % (self.magnitude.magnitude,
-                                                self.origin.date_time)
+        return "<SeismicEvent('%s' @ '%s')>" % (self.magnitude, self.date_time)
 
     def __eq__(self, other):
         if isinstance(other, SeismicEvent):
