@@ -65,7 +65,6 @@ class Forecast(OrmBase):
     input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     input = relationship('ForecastInput', back_populates='forecast')
     # ForecastResult relation
-    result_id = Column(Integer, ForeignKey('forecast_results.id'))
     result = relationship('ForecastResult', back_populates='forecast')
     # endregion
 
@@ -83,11 +82,9 @@ class ForecastInput(OrmBase):
                                  uselist=False,
                                  back_populates='forecast_input',
                                  cascade='all, delete-orphan')
-    # InjectionPlan relation
-    injection_plan = relationship('InjectionPlan',
-                                  uselist=False,
-                                  back_populates='forecast_input',
-                                  cascade='all, delete-orphan')
+    # Scenario relation
+    scenarios = relationship('Scenario', back_populates='forecast_inputs',
+                             cascade='all, delete-orphan')
     # endregion
 
 
@@ -114,12 +111,16 @@ class ForecastResult(QtCore.QObject, OrmBase):
     hazard_oq_calc_id = Column(Integer)
     risk_oq_calc_id = Column(Integer)
     # Forecast relation
-    forecast = relationship('Forecast', back_populates='result', uselist=False)
+    forecast_id = Column(Integer, ForeignKey('forecasts.id'))
+    forecast = relationship('Forecast', back_populates='result')
     # ISModelResult relation
     model_results = relationship('ModelResult', cascade='all, delete-orphan',
                                  back_populates='forecast_result',
                                  collection_class=attribute_mapped_collection(
                                      'model_name'))
+    # Scenario relation
+    scenarios = relationship('Scenario', back_populates='forecast_results',
+                             uselist=False)
     # endregion
 
     result_changed = QtCore.pyqtSignal(object)
@@ -136,6 +137,25 @@ class ForecastResult(QtCore.QObject, OrmBase):
         if session:
             session.commit()
         self.result_changed.emit(self)
+
+
+class Scenario(OrmBase):
+
+    # region ORM declarations
+    __tablename__ = 'scenarios'
+    id = Column(Integer, primary_key=True)
+    # ForecastInput relation
+    forecast_inputs_id = Column(Integer, ForeignKey('forecast_inputs.id'))
+    forecast_inputs = relationship('ForecastInput', back_populates='scenarios')
+    # InjectionPlan relation
+    injection_plans = relationship('InjectionPlan',
+                                   cascade='all, delete-orphan',
+                                   back_populates='scenarios')
+    # ForecastResult relation
+    forecast_results_id = Column(Integer, ForeignKey('forecast_results.id'))
+    forecast_results = relationship('ForecastResult',
+                                    back_populates='scenarios')
+    # endregion
 
 
 def log_likelihood(forecast, observation):
@@ -294,6 +314,7 @@ class RatePrediction(OrmBase):
     rate = Column(Float)
     b_val = Column(Float)
     prob = Column(Float)
+    score = Column(Float)
     # ModelResult relation
     model_result_id = Column(Integer, ForeignKey('model_results.id'))
     model_result = relationship('ModelResult',
