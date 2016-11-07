@@ -1,3 +1,3 @@
 settings = {
-    "database_path": 'sqlite:////vagrant/ramsis/basel.rms'
+    "database_path": 'sqlite:////vagrant/ramsis/basel.db'
 }

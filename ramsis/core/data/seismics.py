@@ -33,6 +33,7 @@ class SeismicCatalog(EventHistory, OrmBase):
     # region ORM Declarations
     __tablename__ = 'seismic_catalogs'
     id = Column(Integer, primary_key=True)
+    catalog_date = Column(DateTime)
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
                                   order_by='SeismicEvent.date_time',

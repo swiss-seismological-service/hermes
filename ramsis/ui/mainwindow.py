@@ -146,7 +146,7 @@ class MainWindow(QtGui.QMainWindow):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.\
             getOpenFileName(None, 'Open Project', home,
-                            'Ramsis Project Files (*.sqlite)')
+                            'Ramsis Project Files (*.db)')
         if path == '':
             return
         self._open_project_at_path(path)
@@ -191,7 +191,7 @@ class MainWindow(QtGui.QMainWindow):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.\
             getSaveFileName(None, 'New Project', home,
-                            'Ramsis Project Files (*.sqlite)')
+                            'Ramsis Project Files (*.db)')
         self.ramsis_core.create_project(path)
 
     def action_import_seismic_data(self):

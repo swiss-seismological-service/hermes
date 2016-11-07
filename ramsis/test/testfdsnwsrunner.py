@@ -15,7 +15,7 @@ from datetime import datetime
 from PyQt4 import QtCore
 from mock import MagicMock
 
-from core.web.runners import FDSNWSRunner
+from core.importers.runners import FDSNWSRunner
 
 
 def mock_run():

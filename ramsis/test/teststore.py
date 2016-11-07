@@ -17,7 +17,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from core.data.store import Store
 
 
-DB_FILE = 'test.sqlite'
+DB_FILE = 'test.db'
 
 TestModel = declarative_base()
 
