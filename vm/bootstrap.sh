@@ -38,6 +38,7 @@ PIP_PACKAGES=""\
 " flask-restful==0.3.5"\
 " flask-restless==0.17.0"\
 " flask-sqlalchemy==2.1"\
+" marshmallow==2.10.3"\
 " numpy==1.8.2"\
 " pymatlab==0.2.3"\
 " sphinx==1.4.1"\
