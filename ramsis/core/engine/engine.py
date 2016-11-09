@@ -77,7 +77,8 @@ class Engine:
         forecast.forecast_time = forecast_time
         forecast.forecast_interval = self._settings.value('engine/fc_bin_size')
         forecast.mc = 0.9
-        forecast.mag_range = (0, 6)
+        forecast.m_min = 0
+        forecast.m_max = 6
 
         # injection_sample attributes
         injection_sample.date_time = forecast_time

@@ -58,6 +58,9 @@ class Forecast(OrmBase):
     name = Column(String)
     forecast_time = Column(DateTime)
     forecast_interval = Column(Float)
+    mc = Column(Float)
+    m_min = Column(Integer)
+    m_max = Column(Integer)
     # ForecastSet relation
     forecast_set_id = Column(Integer, ForeignKey('forecast_sets.id'))
     forecast_set = relationship('ForecastSet', back_populates='forecasts')

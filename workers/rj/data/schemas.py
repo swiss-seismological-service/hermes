@@ -90,6 +90,10 @@ class ForecastInputSchema(Schema):
 class ForecastSchema(Schema):
     name = fields.Str()
     forecast_time = fields.DateTime()
+    forecast_interval = fields.Float()
+    mc = fields.Float()
+    m_min = fields.Integer()
+    m_max = fields.Integer()
     input = fields.Nested(ForecastInputSchema)
 
     @post_load
