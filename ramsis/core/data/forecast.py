@@ -224,30 +224,6 @@ class ModelResult(OrmBase):
                                    cascade='all, delete-orphan')
     # endregion
 
-    def __init__(self, output):
-        """
-        Inits an ISModelResult from a bare ModelOutput
-
-        :param output: model output
-        :type output: ModelOutput
-
-        """
-        self.model_name = output.model.title
-        self.failed = output.failed
-        self.failure_reason = output.failure_reason
-        self.t_run = output.t_run
-        self.dt = output.dt
-        if output.cum_result is not None:
-            self.cum_result = RatePrediction.\
-                from_model_result(output.cum_result)
-        else:
-            self.cum_result = None
-        if output.vol_results is not None:
-            self.vol_results = [RatePrediction.from_model_result(r)
-                                for r in output.vol_results]
-        else:
-            self.vol_results = []
-
     @property
     def reviewed(self):
         """
@@ -335,15 +311,3 @@ class RatePrediction(OrmBase):
         self.b_val = b_val
         self.score = None
         self.model_result = None
-
-    @classmethod
-    def from_model_result(cls, result):
-        """
-        Convenience initializer to init an RatePrediction from a bare model
-        result.
-
-        :param result: model result
-        :type result: ModelResult
-
-        """
-        return cls(result.rate, result.b_val, result.prob)
