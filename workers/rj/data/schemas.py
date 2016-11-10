@@ -1,8 +1,47 @@
 from marshmallow import Schema, fields, post_load
 
-from forecast import Forecast, ForecastInput, Scenario
+from forecast import Forecast, ForecastInput, Scenario, ForecastResult,\
+    ModelResult, RatePrediction
 from seismics import SeismicCatalog, SeismicEvent
-from hydraulics import InjectionPlan, InjectionSample
+from hydraulics import InjectionPlan, InjectionHistory, InjectionSample
+
+
+class RatePredictionSchema(Schema):
+    rate = fields.Float()
+    b_val = fields.Float()
+    prob = fields.Float()
+    score = fields.Float()
+
+    @post_load
+    def make_rate_prediction(self, data):
+        return RatePrediction(**data)
+
+
+class ModelResultSchema(Schema):
+    model_name = fields.Str()
+    failed = fields.Boolean()
+    failure_reason = fields.Str()
+    rate_prediction = fields.Nested(RatePredictionSchema)
+
+    @post_load
+    def make_model_result(self, data):
+        model_result = ModelResult()
+        for key in data:
+            setattr(model_result, key, data[key])
+        return model_result
+
+
+class ForecastResultSchema(Schema):
+    hazard_oq_calc_id = fields.Integer()
+    risk_oq_calc_id = fields.Integer()
+    model_results = fields.Nested(ModelResultSchema)
+
+    @post_load
+    def make_forecast_result(self, data):
+        forecast_result = ForecastResult()
+        for key in data:
+            setattr(forecast_result, key, data[key])
+        return forecast_result
 
 
 class InjectionSamplesSchema(Schema):
@@ -15,6 +54,17 @@ class InjectionSamplesSchema(Schema):
     @post_load
     def make_injection_sample(self, data):
         return InjectionSample(**data)
+
+
+class InjectionHistorySchema(Schema):
+    samples = fields.Nested(InjectionSamplesSchema)
+
+    @post_load
+    def make_injection_history(self, data):
+        injection_history = InjectionHistory(store=None)
+        for key in data:
+            setattr(injection_history, key, data[key])
+        return injection_history
 
 
 class InjectionPlanSchema(Schema):
