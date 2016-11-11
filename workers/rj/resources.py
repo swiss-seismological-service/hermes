@@ -1,53 +1,91 @@
 from multiprocessing import Process
 import json
-import requests
 
 from flask import request
 from flask_restful import Resource
 
-from model.common import ModelInput
-from model.rj import Rj
-from settings import settings
+from data.schemas import ForecastSchema, ModelResultSchema
+from model import Rj
 
 
 class Run(Resource):
     model = None
-    job_id = None
+    output = None
 
     def post(self):
-        headers = {'content-type': 'application/json'}
-        data = json.dumps({})
-        r = requests.post(settings["url_database"], data=data, headers=headers)
-        self.job_id = json.loads(r.text)["id"]
+        """
+        Start model run and clear output file.
+        Return HTTP status code 200 on success or 500 on failure.
 
-        data = json.loads(request.form["data"])
-        p = Process(target=self._run, args=(data,))
-        p.start()
+        """
+        try:
+            self.output = _Persist('output.txt', ModelResultSchema)
+            self.output.clear()
+            data = json.loads(request.form["data"])
+            p = Process(target=self._run, args=(data,))
+            p.start()
+        except:
+            return 500
+        return
 
-        return self.job_id
+    def get(self):
+        """
+        Return results from output file
+
+        """
+        result = self.output.get()
+        return json.dumps(result)
 
     def _run(self, data):
-        model_input = ModelInput(None)
-        model_input.deserialize(data["model_input"])
+        """
+        Run the Rj forecast model using the request data provided in *data*
 
-        self.model = Rj(**data["parameters"])
+        :param data: request data containing the forecast input and parameters
+        :type data: dict
+
+        """
+        forecast_schema = ForecastSchema()
+        forecast = forecast_schema.load(data["forecast"])
+        parameters = data["parameters"]
+
+        self.model = Rj(**parameters)
         self.model.finished.connect(self._on_model_finished)
-        self.model.prepare_run(model_input)
-        self.model.run()
+        self.model.run(forecast)
 
     def _on_model_finished(self):
-        model_output = self.model.output.serialize()
+        """
+        Write model results to output file
 
-        headers = {'content-type': 'application/json'}
-        cr = model_output["data"]["cum_result"]
-        data = json.dumps({
-            "failed": model_output["data"]["failed"],
-            "failure_reason": model_output["data"]["failure_reason"],
-            "t_run": model_output["data"]["t_run"],
-            "dt": model_output["data"]["dt"],
-            "rate": cr[0] if cr else "",
-            "b_val": cr[1] if cr else "",
-            "prob": cr[2] if cr else ""
-        })
-        url = settings["url_database"] + "/" + str(self.job_id)
-        requests.put(url, data=data, headers=headers)
+        """
+        model_result = self.model.model_result
+        self.output.write(model_result)
+
+
+class _Persist:
+    """
+    Persist SQLAlchemy objects to temporary file
+
+    """
+    def __init__(self, filename, schema):
+        self.filename = filename
+        self.schema = schema
+
+    def write(self, o):
+        data = self.schema.dump(o)
+        with open(self.filename, 'w') as f:
+            f.write(data)
+
+    def get(self):
+        with open(self.filename, 'r') as f:
+            data = f.readall()
+        if data:
+            try:
+                o = self.schema.load(data)
+                return o
+            except:
+                return None
+        else:
+            return None
+
+    def clear(self):
+        open(self.filename, 'w').close()

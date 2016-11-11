@@ -7,12 +7,15 @@ in California", Science 243, 1173-1176
 
 """
 
+import logging
+
+from PyQt4 import QtCore
 import numpy as np
 
-from common import Model, ModelOutput, ModelResult
+from data.forecast import ModelResult, RatePrediction
 
 
-class Rj(Model):
+class Rj(QtCore.QObject):
     """
     Reasenberg & Jones aftershock forecast model. The model predicts
     aftershocks using an empirical relation to the main shock.
@@ -33,6 +36,9 @@ class Rj(Model):
 
     """
 
+    # Signals
+    finished = QtCore.pyqtSignal(object)
+
     def __init__(self, a, b, p, c):
         """Initializes the model parameters"""
         super(Rj, self).__init__()
@@ -40,8 +46,16 @@ class Rj(Model):
         self.b = b
         self.p = p
         self.c = c
+        self.model_result = None
+        self._logger = logging.getLogger(self.__class__.__name__)
 
-    def _do_run(self):
+    def run(self, forecast):
+        self._logger.info('Rj model run initiated')
+        self.model_result = self._do_run(forecast)
+        self._logger.info('Rj model run completed')
+        self.finished.emit(self)
+
+    def _do_run(self, forecast):
         """
         Forecast aftershocks at the times given in run data
 
@@ -73,10 +87,12 @@ class Rj(Model):
         b = self.b
         c = self.c
         p = self.p
-        events = self._model_input.seismic_events
-        forecast_times = self._model_input.forecast_times
-        t_bin = self._model_input.t_bin
-        m_min, m_max = self._model_input.forecast_mag_range
+        events = forecast.input.input_catalog.seismic_events
+        t_run = forecast.forecast_time
+        forecast_times = [t_run]
+        t_bin = forecast.forecast_interval
+        m_min = forecast.m_min
+        m_max = forecast.m_max
         num_t = len(forecast_times)
 
         # extract all main shock event magnitudes into a numpy array
@@ -115,10 +131,10 @@ class Rj(Model):
         probabilities = 1 - np.exp(-forecast_rates)
 
         # Finish up
-        # FIXME: we're only supporting a single forecast now, remove list stuff
-        forecast = ModelResult(rate=forecast_rates[0], b_val=b,
-                               prob=probabilities[0])
-        output = ModelOutput(t_run=self._model_input.t_run, dt=t_bin,
-                             model=self)
-        output.cum_result = forecast
-        return output
+        model_result = ModelResult()
+        model_result.model_name = 'Rj'
+        model_result.failed = False
+        rate_prediction = RatePrediction(rate=forecast_rates[0], b_val=b,
+                                         prob=probabilities[0])
+        model_result.rate_prediction = rate_prediction
+        return model_result
