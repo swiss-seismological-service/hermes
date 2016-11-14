@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timedelta
 from functools import partial
 from PyQt4 import QtGui, uic
-import core.engine.ismodelcontrol as mc
+# import core.engine.ismodelcontrol as mc
 from ui.views.plots import DisplayRange
 
 ui_path = os.path.dirname(__file__)
@@ -155,8 +155,8 @@ class ForecastsPresenter(TimelinePresenter):
         self._rate_history = None
         # Populate the models chooser combo box
         self.ui.isModelComboBox.clear()
-        for model in mc.active_models:
-            self.ui.isModelComboBox.addItem(model["title"])
+        # for model in mc.active_models:
+        #     self.ui.isModelComboBox.addItem(model["title"])
         self.ui.isModelComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
 
@@ -194,7 +194,8 @@ class ForecastsPresenter(TimelinePresenter):
         if self.history is None:
             return
         idx = self.ui.isModelComboBox.currentIndex()
-        model_name = mc.active_models[idx]["title"]
+        # model_name = mc.active_models[idx]["title"]
+        model_name = ''
         if self.history:
             is_forecasts = [fcr.is_forecast_result for fcr in self.history
                             if fcr.is_forecast_result is not None]

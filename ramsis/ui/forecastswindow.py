@@ -17,7 +17,7 @@ from qgis.gui import QgsMapCanvasLayer
 
 # from openquake.engine.db import models as oq_models
 
-from core.engine import ismodelcontrol as mc
+# from core.engine import ismodelcontrol as mc
 
 from viewmodels.eventhistorymodel import EventListModel
 from qgislayers import RamsisLossPoeLayer
@@ -103,8 +103,8 @@ class IsTabPresenter(TabPresenter):
         # Populate the models chooser combo box
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
-        for model in mc.active_models:
-            self.ui.modelSelectorComboBox.addItem(model["title"])
+        # for model in mc.active_models:
+        #     self.ui.modelSelectorComboBox.addItem(model["title"])
 
     def refresh(self):
         """
@@ -192,7 +192,8 @@ class IsTabPresenter(TabPresenter):
             return None
 
         model_idx = self.ui.modelSelectorComboBox.currentIndex()
-        model_name = mc.active_models[model_idx]["title"]
+        # model_name = mc.active_models[model_idx]["title"]
+        model_name = ''
         model_result = is_result.model_results.get(model_name)
 
         return model_result

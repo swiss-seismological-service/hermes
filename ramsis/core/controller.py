@@ -20,7 +20,6 @@ from core.data.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
 from core.engine.forecastjob import ForecastJob
 
-import core.engine.ismodelcontrol as mc
 from core.scheduler import TaskScheduler, ScheduledTask
 
 from importers.runners import FDSNWSRunner, HYDWSRunner
@@ -63,9 +62,6 @@ class Controller(QtCore.QObject):
         self.hydws_previous_end_time = None
         self.fdsnws_runner = None
         self.hydws_runner = None
-
-        # Load active IS models
-        mc.load_models(settings)
 
         # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)
