@@ -1,16 +1,22 @@
 import logging
 
+from PyQt4 import QtCore
+
 from core.engine.forecastjob import ForecastJob
 from core.data.forecast import Forecast, ForecastInput, Scenario
 from core.data.hydraulics import InjectionPlan, InjectionSample
 
 
 class Engine:
+    # Signals
+    forecast_complete = QtCore.pyqtSignal()
+
     def __init__(self, settings):
         self.busy = False
         self._project = None
         self._forecast = None
         self._forecast_job = None
+        self._forecast_task = None
         self._settings = settings
         self._logger = logging.getLogger(__name__)
 
@@ -41,6 +47,8 @@ class Engine:
         self._forecast.result = self._forecast_job.result
         # update not add ?
         self._project.forecast_history.add(self._forecast, persist=True)
+
+        self.forecast_complete.emit()
 
     def observe_project(self, project):
         """
