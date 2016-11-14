@@ -110,4 +110,4 @@ class ForecastJob(Job):
             raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
 
         if stage == self.stage_objects[-1]:
-            self.forecast_complete.emit()
+            self.forecast_job_complete.emit()
