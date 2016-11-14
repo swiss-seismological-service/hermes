@@ -17,7 +17,7 @@ from seismics import SeismicCatalog
 from hydraulics import InjectionHistory
 from forecast import ForecastSet
 from injectionwell import InjectionWell
-from core.tools.eqstats import SeismicRateHistory
+from tools.eqstats import SeismicRateHistory
 
 
 class Project(QtCore.QObject, OrmBase):

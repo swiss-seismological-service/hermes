@@ -18,7 +18,7 @@ from sqlalchemy.inspection import inspect
 from ormbase import OrmBase, DeclarativeQObjectMeta
 from skilltest import SkillTest
 
-from core.data.eventhistory import EventHistory
+from eventhistory import EventHistory
 
 from PyQt4 import QtCore
 

@@ -10,7 +10,7 @@ import traceback
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase, DeclarativeQObjectMeta
-from core.data.eventhistory import EventHistory
+from eventhistory import EventHistory
 
 
 class InjectionHistory(EventHistory, OrmBase):
