@@ -9,6 +9,8 @@ from core.data.forecast import ForecastResult
 
 
 class ISForecastStage(Stage):
+    stage_id = 'is_forecast_stage'
+
     def __init__(self, callback):
         super(ISForecastStage, self).__init__(callback)
         self.active_models = []
@@ -61,11 +63,11 @@ class ISForecastStage(Stage):
 
 
 class PshaStage(Stage):
-    pass
+    stage_id = 'psha_stage'
 
 
 class RiskPoeStage(Stage):
-    pass
+    stage_id = 'risk_poe_stage'
 
 
 class ForecastJob(Job):
