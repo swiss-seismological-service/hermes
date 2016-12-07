@@ -82,6 +82,14 @@ class Rj(QtCore.QObject):
 
         """
 
+        # validate input
+        if not self._validate(forecast):
+            model_result = ModelResult()
+            model_result.model_name = 'Rj'
+            model_result.failed = True
+            model_result.failure_reason = 'invalid data'
+            return model_result
+
         # copy everything into local variables for better readability
         a = self.a
         b = self.b
@@ -138,3 +146,15 @@ class Rj(QtCore.QObject):
                                          prob=probabilities[0])
         model_result.rate_prediction = rate_prediction
         return model_result
+
+    def _validate(self, forecast):
+        if not forecast:
+            return False
+        if not (forecast.input and forecast.forecast_time and
+                forecast.forecast_interval):
+            return False
+        if not forecast.input.input_catalog:
+            return False
+        if not forecast.input.input_catalog.seismic_events:
+            return False
+        return True

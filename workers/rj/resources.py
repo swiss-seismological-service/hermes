@@ -9,8 +9,9 @@ from model import Rj
 
 
 class Run(Resource):
-    model = None
-    output = None
+    def __init__(self):
+        self.output = _Persist('output.txt', ModelResultSchema)
+        self.model = None
 
     def post(self):
         """
@@ -19,22 +20,21 @@ class Run(Resource):
 
         """
         try:
-            self.output = _Persist('output.txt', ModelResultSchema)
             self.output.clear()
             data = json.loads(request.form["data"])
             p = Process(target=self._run, args=(data,))
             p.start()
         except:
             return 500
-        return
+        return 200
 
     def get(self):
         """
         Return results from output file
 
         """
-        result = self.output.get()
-        return json.dumps(result)
+        result = self.output.get_serialized()
+        return result
 
     def _run(self, data):
         """
@@ -46,6 +46,7 @@ class Run(Resource):
         """
         forecast_schema = ForecastSchema()
         forecast = forecast_schema.load(data["forecast"])
+        forecast = forecast.data
         parameters = data["parameters"]
 
         self.model = Rj(**parameters)
@@ -63,29 +64,47 @@ class Run(Resource):
 
 class _Persist:
     """
-    Persist SQLAlchemy objects to temporary file
+    Persist SQLAlchemy objects to a temporary file
 
     """
     def __init__(self, filename, schema):
         self.filename = filename
-        self.schema = schema
+        self.schema = schema()
 
     def write(self, o):
-        data = self.schema.dump(o)
+        """ Write SQLAlchemy object to file """
+        data = json.dumps(self.schema.dump(o).data)
+        with open(self.filename, 'w') as f:
+            f.write(data)
+
+    def write_serialized(self, o):
+        """ Write serialized object to file """
+        data = json.dumps(o)
         with open(self.filename, 'w') as f:
             f.write(data)
 
     def get(self):
+        """ Get SQLAlchemy object from file """
         with open(self.filename, 'r') as f:
-            data = f.readall()
+            data = f.read()
         if data:
             try:
-                o = self.schema.load(data)
+                o = self.schema.load(json.loads(data))
                 return o
             except:
                 return None
         else:
             return None
 
+    def get_serialized(self):
+        """ Get serialized object from file """
+        with open(self.filename, 'r') as f:
+            data = f.read()
+        if data:
+            return json.loads(data)
+        else:
+            return None
+
     def clear(self):
+        """ Clear the file contents """
         open(self.filename, 'w').close()
