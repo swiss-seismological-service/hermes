@@ -1,12 +1,10 @@
 import json
 import requests
 import logging
-from datetime import datetime
 
 from PyQt4 import QtCore
 
-from ismodels.common import Model, ModelResult, ModelOutput
-from core.data.schemas import ForecastSchema
+from core.data.schemas import ForecastSchema, ModelResultSchema
 
 
 class ModelClient(QtCore.QObject):
@@ -21,8 +19,10 @@ class ModelClient(QtCore.QObject):
         key_database = 'worker/%s_database_url' % self.model_info['model']
         self.url = settings.value(key)
         self.url_database = settings.value(key_database)
+        self.poll_interval = 5000  # ms
         self.job_id = None
         self.model = None
+        self.model_result = None
 
     def run(self, forecast):
         """
@@ -49,7 +49,7 @@ class ModelClient(QtCore.QObject):
             self.logger.error("Job ID not received")
             return
 
-        self._get_results()
+        QtCore.QTimer.singleShot(self.poll_interval, self._get_results)
 
     def _get_results(self):
         """
@@ -57,8 +57,13 @@ class ModelClient(QtCore.QObject):
         retrieved, then emit the finished signal.
 
         """
-        # todo
-        pass
+        r = requests.get(self.url).json()
+        if r:
+            model_result_schema = ModelResultSchema()
+            self.model_result = model_result_schema.load(r).data
+            self.finished.emit(self)
+        else:
+            QtCore.QTimer.singleShot(self.poll_interval, self._get_results)
 
         # headers = {'content-type': 'application/json'}
         # params = {'q': json.dumps({

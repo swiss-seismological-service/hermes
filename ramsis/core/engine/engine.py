@@ -7,11 +7,12 @@ from core.data.forecast import Forecast, ForecastInput, Scenario
 from core.data.hydraulics import InjectionPlan, InjectionSample
 
 
-class Engine:
+class Engine(QtCore.QObject):
     # Signals
     forecast_complete = QtCore.pyqtSignal()
 
     def __init__(self, settings):
+        super(Engine, self).__init__()
         self.busy = False
         self._project = None
         self._forecast = None
@@ -44,10 +45,10 @@ class Engine:
         self._forecast_job.run_forecast(self._forecast)
 
     def fc_job_complete(self):
-        self._forecast.result = self._forecast_job.result
+        self._forecast.result = [self._forecast_job.result]
         # update not add ?
         self._project.forecast_history.add(self._forecast, persist=True)
-
+        self.busy = False
         self.forecast_complete.emit()
 
     def observe_project(self, project):

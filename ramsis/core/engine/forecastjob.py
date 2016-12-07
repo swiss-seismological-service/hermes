@@ -14,6 +14,8 @@ class ISForecastStage(Stage):
     def __init__(self, callback):
         super(ISForecastStage, self).__init__(callback)
         self.active_models = []
+        self.clients = []
+        self.results = []
 
     def stage_fun(self):
         forecast = self.inputs['forecast']
@@ -23,9 +25,12 @@ class ISForecastStage(Stage):
         self._logger.info('Invoking IS forecast stage at t={}.'.format(t_run))
 
         self.load_models(settings)
-        clients = [ModelClient(m, settings) for m in self.active_models]
+        self.clients = [ModelClient(m, settings) for m in self.active_models]
 
-        for client in clients:
+        for client in self.clients:
+            client.finished.connect(self._on_client_run_finished)
+
+        for client in self.clients:
             client.run(forecast)
 
     def load_models(self, settings):
@@ -60,6 +65,12 @@ class ISForecastStage(Stage):
         #         'parameters': None
         #     }
         #     self.active_models.append(model)
+
+    def _on_client_run_finished(self, client):
+        self.results.append(client.model_result)
+        self.clients.remove(client)
+        if not self.clients:
+            self.stage_complete()
 
 
 class PshaStage(Stage):
@@ -99,7 +110,8 @@ class ForecastJob(Job):
     def fc_stage_complete(self, stage):
         if stage.stage_id == 'is_forecast_stage':
             self._logger.info('IS forecast stage completed')
-            self.result.model_results = stage.results
+            for result in stage.results:
+                self.result.model_results[result.model_name] = result
         elif stage.stage_id == 'psha_stage':
             self._logger.info('PSHA stage completed')
             self.result.hazard_oq_calc_id = stage.results['job_id']
