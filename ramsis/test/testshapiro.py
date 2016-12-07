@@ -75,8 +75,8 @@
 #         self.model.prepare_run(model_input)
 #         self.model.run()
 #
-#         # Deliver signals manually and check if the 'finished' signal has been
-#         # emitted as expected
+#         # Deliver signals manually and check if the 'finished' signal has
+#         # been emitted as expected
 #         self.app.processEvents()
 #         self.assertIsNotNone(self.run_results)
 #

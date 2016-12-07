@@ -60,8 +60,8 @@
 #         self.model.prepare_run(run_data)
 #         self.model.run()
 #
-#         # Deliver signals manually and check if the 'finished' signal has been
-#         # emitted as expected
+#         # Deliver signals manually and check if the 'finished' signal has
+#         # been emitted as expected
 #         self.app.processEvents()
 #         self.assertIsNotNone(self.run_results)
 #
@@ -82,8 +82,8 @@
 #         self.model.prepare_run(run_data)
 #         self.model.run()
 #
-#         # Deliver signals manually and check if the 'finished' signal has been
-#         # emitted as expected
+#         # Deliver signals manually and check if the 'finished' signal has
+#         # been emitted as expected
 #         self.app.processEvents()
 #         self.assertIsNotNone(self.run_results)
 #
@@ -95,7 +95,8 @@
 #
 #     def test_ignore_future_events(self):
 #         """
-#         Test if events occuring after the forecast time are ignored as expected
+#         Test if events occuring after the forecast time are ignored as
+#         expected
 #
 #         """
 #         run_data = self.create_run_data(2)
@@ -108,8 +109,8 @@
 #         self.model.prepare_run(run_data)
 #         self.model.run()
 #
-#         # Deliver signals manually and check if the 'finished' signal has been
-#         # emitted as expected
+#         # Deliver signals manually and check if the 'finished' signal has
+#         # been emitted as expected
 #         self.app.processEvents()
 #         self.assertIsNotNone(self.run_results)
 #
