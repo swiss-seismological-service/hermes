@@ -64,37 +64,3 @@ class ModelClient(QtCore.QObject):
             self.finished.emit(self)
         else:
             QtCore.QTimer.singleShot(self.poll_interval, self._get_results)
-
-        # headers = {'content-type': 'application/json'}
-        # params = {'q': json.dumps({
-        #     'filters': [{'name': 'id', 'op': '==', 'val': self.job_id}]
-        # })}
-        # r = requests.get(self.url_database, params=params, headers=headers)
-        # results = json.loads(r.text)
-        #
-        # # check for results
-        # objects = None
-        # if "objects" in results:
-        #     items = results["objects"][0].items()
-        #     result_set = set([v for k, v in items if k != "id"])
-        #     if result_set != {None}:
-        #         objects = results["objects"]
-        #
-        # if objects:
-        #     row = objects[0]
-        #     row["t_run"] = datetime.strptime(row["t_run"], "%Y-%m-%dT%H:%M:%S")
-        #
-        #     self.model = Model()
-        #     model_result = ModelResult(row["rate"], row["b_val"], row["prob"])
-        #     model_output = ModelOutput(row["t_run"], row["dt"], self.model)
-        #     model_output.failed = row["failed"]
-        #     model_output.failure_reason = row["failure_reason"]
-        #     model_output.cum_result = model_result
-        #     self.model.output = model_output
-        #     self.model.title = self.model_info['model']
-        #
-        #     self.finished.emit(self)
-        #
-        # else:
-        #     seconds = 5
-        #     QtCore.QTimer.singleShot(seconds * 1000, self._get_results)
