@@ -191,7 +191,7 @@ class IsTabPresenter(TabPresenter):
         if is_result is None:
             return None
 
-        model_idx = self.ui.modelSelectorComboBox.currentIndex()
+        model_idx = self.ui.modelSelectorComboBox.currentIndex()  # NOQA
         # model_name = mc.active_models[model_idx]["title"]
         model_name = ''
         model_result = is_result.model_results.get(model_name)

@@ -52,5 +52,6 @@ class ModelInputTest(unittest.TestCase):
         }
         self.assertEqual(primitive_inputs, expected)
 
+
 if __name__ == '__main__':
     unittest.main()

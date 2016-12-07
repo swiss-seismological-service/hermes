@@ -193,7 +193,7 @@ class ForecastsPresenter(TimelinePresenter):
         """
         if self.history is None:
             return
-        idx = self.ui.isModelComboBox.currentIndex()
+        idx = self.ui.isModelComboBox.currentIndex()  # NOQA
         # model_name = mc.active_models[idx]["title"]
         model_name = ''
         if self.history:

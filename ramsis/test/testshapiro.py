@@ -83,5 +83,6 @@ class ShapiroTest(unittest.TestCase):
         # Compare the result with a precomputed known result for this case
         print 'shapiro returns ' + str(self.run_results)
 
+
 if __name__ == '__main__':
     unittest.main()

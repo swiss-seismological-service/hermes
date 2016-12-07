@@ -31,6 +31,7 @@ def h_get_item(item):
 def s_get_item(item):
     return seismic_events[item]
 
+
 s_config = {'return_value.__getitem__.side_effect': s_get_item}
 h_config = {'return_value.__getitem__.side_effect': h_get_item}
 s_path = 'core.data.project.SeismicCatalog'
