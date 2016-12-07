@@ -41,7 +41,7 @@ class Engine:
         # in future we may run more than one scenario
         self._forecast_job = ForecastJob(self._settings)
         self._forecast_job.forecast_job_complete.connect(self.fc_job_complete)
-        self._forecast_job.run(self._forecast)
+        self._forecast_job.run_forecast(self._forecast)
 
     def fc_job_complete(self):
         self._forecast.result = self._forecast_job.result
