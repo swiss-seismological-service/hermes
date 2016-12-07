@@ -6,6 +6,7 @@ from datetime import datetime
 from PyQt4 import QtCore
 
 from ismodels.common import Model, ModelResult, ModelOutput
+from core.data.schemas import ForecastSchema
 
 
 class ModelClient(QtCore.QObject):
@@ -32,8 +33,10 @@ class ModelClient(QtCore.QObject):
         final results stored in the remote database.
 
         """
+        forecast_schema = ForecastSchema()
+        serialized = forecast_schema.dump(forecast).data
         data = {
-            "forecast": forecast.serialize(),
+            "forecast": serialized,
             "parameters": self.model_info["parameters"]
         }
 
