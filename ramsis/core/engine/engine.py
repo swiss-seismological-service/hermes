@@ -73,13 +73,13 @@ class Engine:
         forecast_input = ForecastInput()
         scenario = Scenario()
         injection_plan = InjectionPlan()
-        injection_sample = InjectionSample()
+        injection_sample = InjectionSample(None, None, None, None, None)
 
         # relations
         forecast.input = forecast_input
-        forecast_input.scenarios = scenario
-        scenario.injection_plans = injection_plan
-        injection_plan.samples = injection_sample
+        forecast_input.scenarios = [scenario]
+        scenario.injection_plans = [injection_plan]
+        injection_plan.samples = [injection_sample]
 
         # forecast attributes
         forecast.forecast_time = forecast_time
@@ -100,6 +100,9 @@ class Engine:
             injection_sample.pr_dh = pr_dh
 
         # add copy of seismic catalog
-        forecast_input.input_catalog = self._project.seismic_catalog.copy()
+        copy = None
+        if self._project.seismic_catalog:
+            copy = self._project.seismic_catalog.copy()
+        forecast_input.input_catalog = copy
 
         return forecast
