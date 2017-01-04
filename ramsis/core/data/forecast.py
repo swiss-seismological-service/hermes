@@ -147,6 +147,7 @@ class Scenario(OrmBase):
     # region ORM declarations
     __tablename__ = 'scenarios'
     id = Column(Integer, primary_key=True)
+    name = Column(String)
     # ForecastInput relation
     forecast_inputs_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     forecast_inputs = relationship('ForecastInput', back_populates='scenarios')
