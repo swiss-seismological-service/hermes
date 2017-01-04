@@ -31,7 +31,7 @@ class Store:
         :param model: sqlalchemy data data (declarative base)
 
         """
-        self.engine = create_engine(store_url, echo=True)
+        self.engine = create_engine(store_url)
         self.model = model
         self.model.metadata.create_all(self.engine, checkfirst=True)
         session = sessionmaker(bind=self.engine,
