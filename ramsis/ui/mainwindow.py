@@ -7,20 +7,19 @@ Controller module for the main window
 import os
 import logging
 
+import numpy as np
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QWidget, QSizePolicy
 
-from forecastswindow import ForecastsWindow
-from settingswindow import SettingsWindow
-from timelinewindow import TimelineWindow
-from simulationwindow import SimulationWindow
-
-from core.tools.eventimporter import EventImporter
 import ramsisuihelpers as helpers
-from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
+from core.tools.eventimporter import EventImporter
+from settingswindow import SettingsWindow
+from simulationwindow import SimulationWindow
+from timelinewindow import TimelineWindow
+from ui.forecastwindow.window import ForecastsWindow
 from ui.views.plots import Event3DViewWidget
-import numpy as np
+from viewmodels.seismicdatamodel import SeismicDataModel
 
 ui_path = os.path.dirname(__file__)
 SETTINGS_WINDOW_PATH = os.path.join(ui_path, 'views', 'mainwindow.ui')
