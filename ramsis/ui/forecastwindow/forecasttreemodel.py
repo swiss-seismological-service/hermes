@@ -85,13 +85,13 @@ class ForecastNode(Node):
     """ Represents a forecast at a specific time """
     def __init__(self, forecast, parent_node):
         """
-        :param project: PyMap project from which catalogs will be served
-        :type project: Project
-        :param parent: Parent Node (root node)
-        :type parent: Node
+        :param Forecast forecast: Forecast object represented by this node
+        :param Node parent_node: Parent Node (root node)
+e
         """
         super(ForecastNode, self).__init__(forecast, parent_node)
-        self.children = [ScenarioNode(s, self) for s in self.item.forecasts]
+        scenarios = self.item.input.scenarios
+        self.children = [ScenarioNode(s, self) for s in scenarios]
 
     def child(self, row, column):
         return self.children[row]
@@ -102,7 +102,8 @@ class ForecastNode(Node):
     def data(self, column, role):
         default = super(ForecastNode, self).data(column, role)
         if role == Qt.DisplayRole:
-            return self.item if column == 0 else None
+            return self.item.forecast_time.strftime('%d.%m.%Y %H:%M') \
+                if column == 0 else None
         elif role == Qt.DecorationRole:
             return None #QPixmap(':/small/catalog') if column == 0 else None
         else:
@@ -147,7 +148,7 @@ class ForecastNode(Node):
 #         self.children = [GridNode(g, self) for g in self.project.grids]
 
 
-class ForecastModel(QAbstractItemModel):
+class ForecastTreeModel(QAbstractItemModel):
 
     #AUTOMATIC_SECTION = 0
     #MANUAL_SECTION = 1
@@ -158,7 +159,7 @@ class ForecastModel(QAbstractItemModel):
         :tyape project: Project
         :return:
         """
-        super(ForecastModel, self).__init__(parent=None)
+        super(ForecastTreeModel, self).__init__(parent=None)
         self.root_node = Node('Forecasts', parent_node=None)
         self.forecast_set = forecast_set
 #       self.project.catalogs_changed.connect(self.on_catalogs_changed)
@@ -172,7 +173,7 @@ class ForecastModel(QAbstractItemModel):
 
     def rowCount(self, parent):
         if not parent.isValid():
-            return len(self.sections)
+            return len(self.forecast_nodes)
         if parent.column() > 0:
             return 0
         node = parent.internalPointer()
@@ -181,7 +182,7 @@ class ForecastModel(QAbstractItemModel):
     def index(self, row, column, parent):
         if not parent.isValid():
             # we're at the root node
-            item = self.sections[row]
+            item = self.forecast_nodes[row]
         else:
             item = parent.internalPointer().child(row, column)
         return self.createIndex(row, column, item)
@@ -193,8 +194,8 @@ class ForecastModel(QAbstractItemModel):
         parent_node = node.parent_node
         if parent_node == self.root_node:
             return QModelIndex()
-        section_idx = self.sections.index(parent_node)
-        return self.createIndex(section_idx, 0, parent_node)
+        node_idx = self.forecast_nodes.index(parent_node)
+        return self.createIndex(node_idx, 0, parent_node)
 
     def data(self, index, role):
         if not index.isValid():
@@ -220,7 +221,7 @@ class ForecastModel(QAbstractItemModel):
             return None
         if role == Qt.DisplayRole:
             if column == 0:
-                return self.project.name
+                return 'Forecast'
             elif column == 1:
                 return 'Visible'
         elif role == Qt.SizeHintRole:
