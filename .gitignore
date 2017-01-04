@@ -41,3 +41,4 @@ ramsis/gdalwmscache
 
 # Vagrant
 vm/.vagrant
+*.user
