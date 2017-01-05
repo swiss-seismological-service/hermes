@@ -9,15 +9,27 @@ Provides a class to manage Ramsis project data
 from datetime import datetime
 
 from PyQt4 import QtCore
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
+from settings import Settings
 from seismics import SeismicCatalog
 from hydraulics import InjectionHistory
 from forecast import ForecastSet
 from injectionwell import InjectionWell
 from core.tools.eqstats import SeismicRateHistory
+
+
+class ProjectSettings(Settings):
+
+    def __init__(self):
+        super(ProjectSettings, self).__init__(name='project')
+        self.add('fdsnws', title='Seismic Data Source (fdsnws)')
+        self.add('hydws', title='Hydraulic Data Source (hydws)')
+        self.add('start_date', title='Start Date')
+        self.add('end_date', title='End Date')
+        self.commit()
 
 
 class Project(QtCore.QObject, OrmBase):
@@ -27,7 +39,7 @@ class Project(QtCore.QObject, OrmBase):
 
     .. pyqt4:signal:project_time_changed: emitted when the project time changes
 
-    :ivar seismic_history: The seismic history of the project
+    :ivar seismic_catalog: The seismic history of the project
     :ivar hydraulic_history: The hydraulic history of the project
 
     """
@@ -45,6 +57,8 @@ class Project(QtCore.QObject, OrmBase):
     forecast_set = relationship('ForecastSet', **args)
     seismic_catalog = relationship('SeismicCatalog',
                                    **dict(args, cascade='all'))
+    settings_id = Column(Integer, ForeignKey('settings.id'))
+    settings = relationship('Settings')
     # endregion
 
     # Signals
@@ -52,17 +66,14 @@ class Project(QtCore.QObject, OrmBase):
     project_time_changed = QtCore.pyqtSignal(datetime)
 
     def __init__(self, store, title=''):
-        """ Create a project based on the data that is contained in *store* """
         super(Project, self).__init__()
         self._store = store
-        self.seismic_history = SeismicCatalog(self._store)
-        self.seismic_history.reload_from_store()
-        self.hydraulic_history = InjectionHistory(self._store)
-        self.hydraulic_history.reload_from_store()
+        self.seismic_catalog = SeismicCatalog()
+        self.hydraulic_history = InjectionHistory()
         self.rate_history = SeismicRateHistory()
-        self.forecast_history = ForecastSet(self._store)
-        self.forecast_history.reload_from_store()
+        self.forecast_history = ForecastSet()
         self.title = title
+        self.settings = ProjectSettings()
 
         # These inform us when new IS forecasts become available
 
@@ -82,7 +93,9 @@ class Project(QtCore.QObject, OrmBase):
 
         """
         self.will_close.emit(self)
-        self._store.close()
+
+    def save(self):
+        self._store.commit()
 
     @property
     def project_time(self):
@@ -108,7 +121,7 @@ class Project(QtCore.QObject, OrmBase):
 
         """
         try:
-            es = self.seismic_history[0]
+            es = self.seismic_catalog[0]
             eh = self.hydraulic_history[0]
         except IndexError:
             return None
@@ -127,7 +140,7 @@ class Project(QtCore.QObject, OrmBase):
 
         """
         try:
-            es = self.seismic_history[-1]
+            es = self.seismic_catalog[-1]
             eh = self.hydraulic_history[-1]
         except IndexError:
             return None

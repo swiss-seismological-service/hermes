@@ -99,7 +99,7 @@ class MainWindow(QtGui.QMainWindow):
         self.update_status()
         self.update_controls()
 
-    def on_seismic_history_change(self, _):
+    def on_seismic_catalog_change(self, _):
         self.update_status()
 
     def on_hydraulic_history_change(self, _):
@@ -114,8 +114,8 @@ class MainWindow(QtGui.QMainWindow):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
-        project.seismic_history.history_changed.connect(
-            self.on_seismic_history_change)
+        project.seismic_catalog.catalog_changed.connect(
+            self.on_seismic_catalog_change)
         project.hydraulic_history.history_changed.connect(
             self.on_hydraulic_history_change)
         self.update_status()
@@ -124,8 +124,8 @@ class MainWindow(QtGui.QMainWindow):
     def on_project_will_close(self, project):
         project.will_close.disconnect(self.on_project_will_close)
         project.project_time_changed.disconnect(self.on_project_time_change)
-        project.seismic_history.history_changed.disconnect(
-            self.on_seismic_history_change)
+        project.seismic_catalog.catalog_changed.disconnect(
+            self.on_seismic_catalog_change)
         project.hydraulic_history.history_changed.disconnect(
             self.on_hydraulic_history_change)
         self.project = None
@@ -140,7 +140,7 @@ class MainWindow(QtGui.QMainWindow):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.\
             getOpenFileName(None, 'Open Project', home,
-                            'Ramsis Project Files (*.db)')
+                            'Ramsis Project Files (*.ram)')
         if path == '':
             return
         self._open_project_at_path(path)
@@ -185,8 +185,11 @@ class MainWindow(QtGui.QMainWindow):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.\
             getSaveFileName(None, 'New Project', home,
-                            'Ramsis Project Files (*.db)')
+                            'Ramsis Project Files (*.ram)')
+        if not path.endswith('.ram'):
+            path += '.ram'
         self.ramsis_core.create_project(path)
+        self._open_project_at_path(path)
 
     def action_import_seismic_data(self):
         home = os.path.expanduser("~")
@@ -195,7 +198,7 @@ class MainWindow(QtGui.QMainWindow):
                                                  home)
         if path == '':
             return
-        history = self.project.seismic_history
+        history = self.project.seismic_catalog
         if path:
             self._import_file_to_history(path, history)
 
@@ -210,12 +213,15 @@ class MainWindow(QtGui.QMainWindow):
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
 
-    @staticmethod
-    def _import_file_to_history(path, history, delimiter=' '):
+    def _import_file_to_history(self, path, history, delimiter=' '):
         """
         Import happens on the view level (instead of inside Project) because
         the process is interactive. The function checks if the file contains
         relative dates. If yes, the user is asked to provide a base date.
+
+        :param str path: Path to csv file
+        :param SeismicCatalog | HydraulicHistory: Target history
+        :param str delimiter: Delimiter used to delimit records
 
         """
         with open(path, 'rb') as csv_file:
@@ -227,7 +233,9 @@ class MainWindow(QtGui.QMainWindow):
                 importer.base_date = date
             else:
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
+            history.clear()
             history.import_events(importer)
+            self.project.save()
 
     def action_show_forecasts(self):
         if self.forecast_window is None:
@@ -259,7 +267,7 @@ class MainWindow(QtGui.QMainWindow):
     def action_view_seismic_data(self):
         if self.table_view is None:
             self.table_view = QtGui.QTableView()
-            model = SeismicDataModel(self.project.seismic_history)
+            model = SeismicDataModel(self.project.seismic_catalog)
             self.table_view.setModel(model)
             self.table_view.show()
 
@@ -333,7 +341,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.endDateLabel.setText(
                 'Ends: {}'.format(time_range[1]))
             self.ui.seismicEventCountLabel.setText(
-                '{} seismic events'.format(len(self.project.seismic_history)))
+                '{} seismic events'.format(len(self.project.seismic_catalog)))
             # TODO: show real data
             self.ui.exposureDataLabel.setText('Exposure data available '
                                               'for 10 locations')
@@ -350,7 +358,7 @@ class MainWindow(QtGui.QMainWindow):
     # Plot Helpers
 
     def _replot_3d_event_data(self, t):
-        events = self.project.seismic_history.events_before(t)
+        events = self.project.seismic_catalog.events_before(t)
         if self.event_3d_window is None or len(events) == 0:
             return
         loc = np.array([(e.x, e.y, e.z) for e in events])

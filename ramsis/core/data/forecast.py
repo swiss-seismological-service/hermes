@@ -10,6 +10,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from math import log, factorial
 
+from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
     ForeignKey
 from sqlalchemy.orm import relationship
@@ -18,14 +19,12 @@ from sqlalchemy.inspection import inspect
 from ormbase import OrmBase, DeclarativeQObjectMeta
 from skilltest import SkillTest
 
-from core.data.eventhistory import EventHistory
-
-from PyQt4 import QtCore
 
 
-class ForecastSet(EventHistory, OrmBase):
+
+class ForecastSet(QtCore.QObject, OrmBase):
     """
-    Planned and executed forecasts
+    Parent object for forecasts
 
     """
     __metaclass__ = DeclarativeQObjectMeta
@@ -40,11 +39,6 @@ class ForecastSet(EventHistory, OrmBase):
     forecasts = relationship('Forecast', back_populates='forecast_set',
                              cascade='all, delete-orphan')
     # endregion
-
-    def __init__(self, store):
-        super(ForecastSet, self).\
-            __init__(store, Forecast,
-                     date_time_attr=Forecast.forecast_time)
 
 
 class Forecast(OrmBase):
@@ -127,19 +121,6 @@ class ForecastResult(QtCore.QObject, OrmBase):
     # endregion
 
     result_changed = QtCore.pyqtSignal(object)
-
-    def commit_changes(self):
-        """
-        Commit any changes to the database
-
-        Emits the changed signal and persists changes to the database if we
-        are within a session
-
-        """
-        session = inspect(self).session
-        if session:
-            session.commit()
-        self.result_changed.emit(self)
 
 
 class Scenario(OrmBase):

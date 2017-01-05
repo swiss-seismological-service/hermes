@@ -7,12 +7,12 @@ History of seismic events
 import logging
 import traceback
 
+from PyQt4 import QtCore
 from sqlalchemy import Column, Table
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
-from core.data.eventhistory import EventHistory
 from core.data.geometry import Point
 
 _catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
@@ -21,8 +21,10 @@ _catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
                                Column('seismic_events_id', Integer,
                                       ForeignKey('seismic_events.id')))
 
+log = logging.getLogger(__name__)
 
-class SeismicCatalog(EventHistory, OrmBase):
+
+class SeismicCatalog(QtCore.QObject, OrmBase):
     """
     Provides a history of seismic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
@@ -52,18 +54,16 @@ class SeismicCatalog(EventHistory, OrmBase):
     skill_test = relationship('SkillTest',
                               back_populates='reference_catalog')
     # endregion
+    catalog_changed = QtCore.pyqtSignal()
 
-    def __init__(self, store):
-        EventHistory.__init__(self, store, SeismicEvent,
-                              date_time_attr=SeismicEvent.date_time)
-        self._logger = logging.getLogger(__name__)
-
-    def import_events(self, importer, timerange=None):
+    def import_events(self, importer):
         """
         Imports seismic events from a csv file by using an EventImporter
 
         The EventImporter must return the following fields (which must thus
-        be present in the csv file)
+        be present in the csv file). All imported events are simply added to
+        any existing one. If you want to overwrite existing events, call
+        :meth:`clear_events` first.
 
         x: x coordinate [m]
         y: y coordinate [m]
@@ -72,8 +72,6 @@ class SeismicCatalog(EventHistory, OrmBase):
 
         :param importer: an EventImporter object
         :type importer: EventImporter
-        :param timerange: limit import to specified time range
-        :type timerange: DateTime tuple
 
         """
         events = []
@@ -85,37 +83,43 @@ class SeismicCatalog(EventHistory, OrmBase):
                 event = SeismicEvent(date, float(fields['mag']), location)
                 events.append(event)
         except:
-            self._logger.error('Failed to import seismic events. Make sure '
-                               'the .csv file contains x, y, depth, and mag '
-                               'fields and that the date field has the format '
-                               'dd.mm.yyyyTHH:MM:SS. The original error was ' +
-                               traceback.format_exc())
+            log.error('Failed to import seismic events. Make sure '
+                      'the .csv file contains x, y, depth, and mag '
+                      'fields and that the date field has the format '
+                      'dd.mm.yyyyTHH:MM:SS. The original error was ' +
+                      traceback.format_exc())
         else:
-            predicate = None
-            if timerange:
-                predicate = (self.entity.date_time >= timerange[0],
-                             self.entity.date_time <= timerange[1])
-            self.store.purge_entity(self.entity, predicate)
-            self.store.add(events)
-            self._logger.info('Imported {} seismic events.'.format(
-                len(events)))
-            self.reload_from_store()
-            self._emit_change_signal({})
+            self.seismic_events.append(events)
+            log.info('Imported {} seismic events.'.format(len(events)))
+            self.catalog_changed.emit()
 
     def events_before(self, end_date, mc=0):
         """ Returns all events >mc before and including *end_date* """
         return [e for e in self._events
                 if e.date_time < end_date and e.magnitude > mc]
 
-    def clear_events(self):
+    def clear_events(self, time_range=None):
         """
         Clear all seismic events from the database
 
+        If time_range is given, only the events that fall into the time range
+
         """
-        self.store.purge_entity(self.entity)
-        self._logger.info('Cleared all seismic events.')
-        self.reload_from_store()
-        self._emit_change_signal({})
+        if time_range:
+            to_delete = (s for s in self.seismic_events
+                         if time_range[1] >= s.date_time >= time_range[0])
+            for s in to_delete:
+                self.seismic_events.remove(s)
+        else:
+            self.seismic_events = []
+            log.info('Cleared all hydraulic events.')
+        self.catalog_changed.emit()
+
+    def __len__(self):
+        return len(self.seismic_events)
+
+    def __getitem__(self, item):
+        return self.seismic_events[item] if self.seismic_events else None
 
     def copy(self):
         """ Returns a new copy of itself """
@@ -124,7 +128,7 @@ class SeismicCatalog(EventHistory, OrmBase):
         for name, column in self.__mapper__.columns.items():
             if not (column.primary_key or column.unique):
                 arguments[name] = getattr(self, name)
-        copy = self.__class__(self.store)
+        copy = self.__class__()
         for item in arguments.items():
             setattr(copy, *item)
         return copy

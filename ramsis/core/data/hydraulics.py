@@ -7,13 +7,15 @@ History of hydraulic events, i.e changes in flow or pressure
 import logging
 import traceback
 
+from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from ormbase import OrmBase, DeclarativeQObjectMeta
-from core.data.eventhistory import EventHistory
+
+log = logging.getLogger(__name__)
 
 
-class InjectionHistory(EventHistory, OrmBase):
+class InjectionHistory(QtCore.QObject, OrmBase):
     """
     Provides a history of hydraulic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
@@ -32,17 +34,16 @@ class InjectionHistory(EventHistory, OrmBase):
                            back_populates='injection_history',
                            cascade='all')
     # endregion
+    history_changed = QtCore.pyqtSignal()
 
-    def __init__(self, store):
-        EventHistory.__init__(self, store, InjectionSample)
-        self._logger = logging.getLogger(__name__)
-
-    def import_events(self, importer, timerange=None):
+    def import_events(self, importer):
         """
         Imports hydraulic events from a csv file by using an EventReporter
 
         The EventReporter must return the following fields (which must thus
-        be present in the csv file)
+        be present in the csv file). All imported events are simply added to
+        any existing one. If you want to overwrite existing events, call
+        :meth:`clear_events` first.
 
         - ``flow_dh``: flow down hole [l/min]
         - ``flow_xt``: flow @ x-mas tree (top hole) [l/min]
@@ -65,33 +66,36 @@ class InjectionHistory(EventHistory, OrmBase):
                                         pr_xt=float(fields.get('pr_xt') or 0))
                 events.append(event)
         except:
-            self._logger.error('Failed to import hydraulic events. Make sure '
-                               'the .csv file contains top and bottom hole '
-                               'flow and pressure fields and that the date '
-                               'field has the format dd.mm.yyyyTHH:MM:SS. The '
-                               'original error was ' +
-                               traceback.format_exc())
+            log.error('Failed to import hydraulic events. Make sure '
+                      'the .csv file contains top and bottom hole '
+                      'flow and pressure fields and that the date '
+                      'field has the format dd.mm.yyyyTHH:MM:SS. The '
+                      'original error was ' + traceback.format_exc())
         else:
-            predicate = None
-            if timerange:
-                predicate = (self.entity.date_time >= timerange[0],
-                             self.entity.date_time <= timerange[1])
-            self.store.purge_entity(self.entity, predicate)
-            self.store.add(events)
-            self._logger.info('Imported {} hydraulic events.'.format(
+            self.samples.append(events)
+            log.info('Imported {} hydraulic events.'.format(
                 len(events)))
-            self.reload_from_store()
-            self._emit_change_signal({})
+            self.history_changed.emit()
 
-    def clear_events(self):
+    def clear_events(self, time_range=None):
         """
         Clear all hydraulic events from the database
 
+        If time_range is given, only the events that fall into the time range
+
         """
-        self.store.purge_entity(self.entity)
-        self._logger.info('Cleared all hydraulic events.')
-        self.reload_from_store()
-        self._emit_change_signal({})
+        if time_range:
+            to_delete = (s for s in self.samples
+                         if time_range[1] >= s.date_time >= time_range[0])
+            for s in to_delete:
+                self.samples.remove(s)
+        else:
+            self.samples = []
+            log.info('Cleared all hydraulic events.')
+        self.history_changed.emit()
+
+    def __getitem__(self, item):
+        return self.samples[item] if self.samples else None
 
     def copy(self):
         """ Returns a new copy of itself """
@@ -100,7 +104,7 @@ class InjectionHistory(EventHistory, OrmBase):
         for name, column in self.__mapper__.columns.items():
             if not (column.primary_key or column.unique):
                 arguments[name] = getattr(self, name)
-        copy = self.__class__(self.store)
+        copy = self.__class__()
         for item in arguments.items():
             setattr(copy, *item)
         return copy

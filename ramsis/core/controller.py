@@ -118,7 +118,6 @@ class Controller(QtCore.QObject):
         store = Store(store_path, OrmBase)
         store.commit()
         store.close()
-        self.open_project(path)
 
     def close_project(self):
         """
@@ -208,7 +207,7 @@ class Controller(QtCore.QObject):
 
         """
         self.simulator.stop()
-        self.project.seismic_history.clear_events()
+        self.project.seismic_catalog.clear_events()
         self.project.hydraulic_history.clear_events()
         self._logger.info('Stopping simulation')
 
@@ -293,7 +292,7 @@ class Controller(QtCore.QObject):
 
     def _on_fdsnws_runner_finished(self, results):
         if results is not None:
-            self.project.seismic_history.import_events(**results)
+            self.project.seismic_catalog.import_events(**results)
 
     # HYDWS task function
 
@@ -309,7 +308,7 @@ class Controller(QtCore.QObject):
 
     def _update_rates(self, info):
         t_run = info.t_project
-        seismic_events = self.project.seismic_history.events_before(t_run)
+        seismic_events = self.project.seismic_catalog.events_before(t_run)
         data = [(e.date_time, e.magnitude) for e in seismic_events]
         if len(data) == 0:
             return
