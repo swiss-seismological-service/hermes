@@ -98,21 +98,12 @@ class Ramsis(QtCore.QObject):
 
         if self.has_gui:
             self.main_window.show()
+        # noinspection PyCallByClass
         QtCore.QTimer.singleShot(0, self._emit_app_launched)
         self._exit(self.qt_app.exec_())
 
     def on_app_launched(self):
-        # Check if we should load a project on launch
-        project = self.app_settings.value('project')
-        open_last = self.app_settings.value('open_last_project')
-        if not project and open_last:
-            self.logger.warn('open_last_project is not currently implemented')
-            pass  # TODO: implement loading the last project
-        if project:
-            path = os.path.abspath(project)
-            self.ramsis_core.open_project(path)
-        if not self.has_gui:
-            self.ramsis_core.start_simulation()
+        pass
 
     def _emit_app_launched(self):
         self.app_launched.emit()

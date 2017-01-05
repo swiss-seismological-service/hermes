@@ -27,10 +27,6 @@ known_settings = {
 
     # List of recently opened projects (paths)
     'recent_files': None,
-    # Project to load on startup (overrides open_last_project)
-    'project': None,
-    # Open the last project when the app starts
-    'open_last_project': False,
     # Enable lab mode to simulate through existing data
     'enable_lab_mode': True,
 
