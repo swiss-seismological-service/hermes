@@ -23,7 +23,7 @@ class DummyProject(QObject):
         self.forecast_set = fc_set
 
 def dummy_data():
-    fc_set = ForecastSet(store=None)
+    fc_set = ForecastSet()
 
     forecast = Forecast()
     forecast.forecast_time = datetime(2016, 11, 11, 12, 00, 00)

@@ -133,7 +133,7 @@
      <x>0</x>
      <y>0</y>
      <width>450</width>
-     <height>25</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -149,7 +149,8 @@
     <addaction name="actionOpen_Project"/>
     <addaction name="menuOpen_Recent"/>
     <addaction name="separator"/>
-    <addaction name="actionSettings"/>
+    <addaction name="actionProject_Settings"/>
+    <addaction name="actionApplication_Settings"/>
     <addaction name="separator"/>
     <addaction name="actionImport_Seismic_Data"/>
     <addaction name="actionImport_Hydraulic_Data"/>
@@ -275,12 +276,12 @@
     <string>Simulation</string>
    </property>
   </action>
-  <action name="actionSettings">
+  <action name="actionApplication_Settings">
    <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Settings...</string>
+    <string>Application Settings...</string>
    </property>
   </action>
   <action name="actionTimeline">
@@ -310,6 +311,11 @@
   <action name="actionImport_FDSNWS_Data">
    <property name="text">
     <string>Import FDSNWS Data</string>
+   </property>
+  </action>
+  <action name="actionProject_Settings">
+   <property name="text">
+    <string>Project Settings...</string>
    </property>
   </action>
  </widget>

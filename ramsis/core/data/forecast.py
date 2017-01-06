@@ -13,7 +13,7 @@ from math import log, factorial
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
     ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.inspection import inspect
 from ormbase import OrmBase, DeclarativeQObjectMeta
@@ -39,6 +39,10 @@ class ForecastSet(QtCore.QObject, OrmBase):
     forecasts = relationship('Forecast', back_populates='forecast_set',
                              cascade='all, delete-orphan')
     # endregion
+
+    @reconstructor
+    def init_on_load(self):
+        QtCore.QObject.__init__(self)
 
 
 class Forecast(OrmBase):
@@ -121,6 +125,10 @@ class ForecastResult(QtCore.QObject, OrmBase):
     # endregion
 
     result_changed = QtCore.pyqtSignal(object)
+
+    @reconstructor
+    def init_on_load(self):
+        QtCore.QObject.__init__(self)
 
 
 class Scenario(OrmBase):

@@ -92,8 +92,8 @@ class SimulationWindow(QtGui.QDialog):
         project.project_time_changed.connect(self.on_project_time_change)
         project.seismic_catalog.catalog_changed.connect(
             self.on_seismic_catalog_change)
-        project.hydraulic_history.history_changed.connect(
-            self.on_hydraulic_history_change)
+        project.injection_history.history_changed.connect(
+            self.on_injection_history_change)
         self.update_controls()
         self.update_status()
 
@@ -102,8 +102,8 @@ class SimulationWindow(QtGui.QDialog):
         project.project_time_changed.disconnect(self.on_project_time_change)
         project.seismic_catalog.catalog_changed.disconnect(
             self.on_seismic_catalog_change)
-        project.hydraulic_history.history_changed.disconnect(
-            self.on_hydraulic_history_change)
+        project.injection_history.history_changed.disconnect(
+            self.on_injection_history_change)
         self.project = None
         self.update_controls()
         self.update_status()
@@ -114,7 +114,7 @@ class SimulationWindow(QtGui.QDialog):
     def on_seismic_catalog_change(self, _):
         self.update_status()
 
-    def on_hydraulic_history_change(self, _):
+    def on_injection_history_change(self, _):
         self.update_status()
 
     # Status Updates

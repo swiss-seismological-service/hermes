@@ -14,7 +14,7 @@ from PyQt4.QtGui import QWidget, QSizePolicy
 import ramsisuihelpers as helpers
 from core.simulator import SimulatorState
 from core.tools.eventimporter import EventImporter
-from settingswindow import SettingsWindow
+from settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from simulationwindow import SimulationWindow
 from timelinewindow import TimelineWindow
 from ui.forecastwindow.window import ForecastsWindow
@@ -39,7 +39,8 @@ class MainWindow(QtGui.QMainWindow):
 
         # Other windows which are lazy-loaded
         self.forecast_window = None
-        self.settings_window = None
+        self.application_settings_window = None
+        self.project_settings_window = None
         self.event_3d_window = None
         self.simulation_window = None
         self.timeline_window = None
@@ -48,7 +49,7 @@ class MainWindow(QtGui.QMainWindow):
         # Keep a reference to the core (business logic) and the currently
         # loaded project
         self.ramsis_core = ramsis.ramsis_core
-        self.settings = ramsis.app_settings
+        self.application_settings = ramsis.app_settings
         self.project = None
 
         # Setup the user interface
@@ -71,7 +72,10 @@ class MainWindow(QtGui.QMainWindow):
             self.action_import_hydraulic_data)
         self.ui.actionView_Data.triggered.\
             connect(self.action_view_seismic_data)
-        self.ui.actionSettings.triggered.connect(self.action_show_settings)
+        self.ui.actionApplication_Settings.triggered.connect(
+            self.action_show_application_settings)
+        self.ui.actionProject_Settings.triggered.connect(
+            self.action_show_project_settings)
         # ...Simulation
         self.ui.actionStart_Simulation.triggered.\
             connect(self.action_start_simulation)
@@ -102,7 +106,7 @@ class MainWindow(QtGui.QMainWindow):
     def on_seismic_catalog_change(self, _):
         self.update_status()
 
-    def on_hydraulic_history_change(self, _):
+    def on_injection_history_change(self, _):
         self.update_status()
 
     def on_sim_state_change(self, _):
@@ -116,8 +120,8 @@ class MainWindow(QtGui.QMainWindow):
         project.project_time_changed.connect(self.on_project_time_change)
         project.seismic_catalog.catalog_changed.connect(
             self.on_seismic_catalog_change)
-        project.hydraulic_history.history_changed.connect(
-            self.on_hydraulic_history_change)
+        project.injection_history.history_changed.connect(
+            self.on_injection_history_change)
         self.update_status()
         self.update_controls()
 
@@ -126,8 +130,8 @@ class MainWindow(QtGui.QMainWindow):
         project.project_time_changed.disconnect(self.on_project_time_change)
         project.seismic_catalog.catalog_changed.disconnect(
             self.on_seismic_catalog_change)
-        project.hydraulic_history.history_changed.disconnect(
-            self.on_hydraulic_history_change)
+        project.injection_history.history_changed.disconnect(
+            self.on_injection_history_change)
         self.project = None
         self.update_controls()
 
@@ -152,7 +156,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ramsis_core.close_project()
         self.ramsis_core.open_project(str(path))
         # Update the list of recent files
-        recent_files = self.settings.value('recent_files')
+        recent_files = self.application_settings.value('recent_files')
         if recent_files is None:
             recent_files = []
         if path in recent_files:
@@ -160,11 +164,11 @@ class MainWindow(QtGui.QMainWindow):
         else:
             recent_files.insert(0, path)
         del recent_files[4:]
-        self.settings.set_value('recent_files', recent_files)
+        self.application_settings.set_value('recent_files', recent_files)
         self._refresh_recent_files_menu()
 
     def _refresh_recent_files_menu(self):
-        files = self.settings.value('recent_files')
+        files = self.application_settings.value('recent_files')
         self.ui.menuOpen_Recent.clear()
         if files is None:
             return
@@ -209,7 +213,7 @@ class MainWindow(QtGui.QMainWindow):
                                                  home)
         if path == '':
             return
-        history = self.project.hydraulic_history
+        history = self.project.injection_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
 
@@ -259,10 +263,17 @@ class MainWindow(QtGui.QMainWindow):
         self.event_3d_window = Event3DViewWidget()
         self.event_3d_window.show()
 
-    def action_show_settings(self):
-        if self.settings_window is None:
-            self.settings_window = SettingsWindow(settings=self.settings)
-        self.settings_window.show()
+    def action_show_application_settings(self):
+        if self.application_settings_window is None:
+            self.application_settings_window = \
+                ApplicationSettingsWindow(settings=self.application_settings)
+        self.application_settings_window.show()
+
+    def action_show_project_settings(self):
+        if self.project_settings_window is None:
+            self.project_settings_window = \
+                ProjectSettingsWindow(project=self.project)
+        self.project_settings_window.show()
 
     def action_view_seismic_data(self):
         if self.table_view is None:
@@ -297,6 +308,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionSimulation.setEnabled(enable)
         self.ui.actionScenario.setEnabled(enable)
         self.ui.actionView_Data.setEnabled(enable)
+        self.ui.actionProject_Settings.setEnabled(enable)
 
         if not self.ramsis_core.project:
             self.ui.actionStart_Simulation.setEnabled(False)

@@ -334,7 +334,7 @@ class TimelineWindow(QtGui.QDialog):
             self.forecasts_presenter.history = None
             self.forecasts_presenter.rate_history = None
         else:
-            self.hydraulics_presenter.history = project.hydraulic_history
+            self.hydraulics_presenter.history = project.injection_history
             self.seismicity_presenter.history = project.seismic_catalog
             self.forecasts_presenter.history = project.forecast_history
             self.forecasts_presenter.rate_history = project.rate_history

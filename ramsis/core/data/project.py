@@ -10,26 +10,15 @@ from datetime import datetime
 
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, reconstructor
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
-from settings import Settings
+from settings import ProjectSettings
 from seismics import SeismicCatalog
 from hydraulics import InjectionHistory
 from forecast import ForecastSet
 from injectionwell import InjectionWell
 from core.tools.eqstats import SeismicRateHistory
-
-
-class ProjectSettings(Settings):
-
-    def __init__(self):
-        super(ProjectSettings, self).__init__(name='project')
-        self.add('fdsnws', title='Seismic Data Source (fdsnws)')
-        self.add('hydws', title='Hydraulic Data Source (hydws)')
-        self.add('start_date', title='Start Date')
-        self.add('end_date', title='End Date')
-        self.commit()
 
 
 class Project(QtCore.QObject, OrmBase):
@@ -40,7 +29,7 @@ class Project(QtCore.QObject, OrmBase):
     .. pyqt4:signal:project_time_changed: emitted when the project time changes
 
     :ivar seismic_catalog: The seismic history of the project
-    :ivar hydraulic_history: The hydraulic history of the project
+    :ivar injection_history: The hydraulic history of the project
 
     """
     __metaclass__ = DeclarativeQObjectMeta
@@ -65,11 +54,11 @@ class Project(QtCore.QObject, OrmBase):
     will_close = QtCore.pyqtSignal(object)
     project_time_changed = QtCore.pyqtSignal(datetime)
 
-    def __init__(self, store, title=''):
+    def __init__(self, store=None, title=''):
         super(Project, self).__init__()
-        self._store = store
+        self.store = store
         self.seismic_catalog = SeismicCatalog()
-        self.hydraulic_history = InjectionHistory()
+        self.injection_history = InjectionHistory()
         self.rate_history = SeismicRateHistory()
         self.forecast_history = ForecastSet()
         self.title = title
@@ -81,9 +70,14 @@ class Project(QtCore.QObject, OrmBase):
         # These are the basel well tip coordinates (in CH-1903)
         self.injection_well = InjectionWell(4740.3, 270645.0, 611631.0)
 
-        # Set the project time to the time of the first event
-        event = self.earliest_event()
-        self._project_time = event.date_time if event else datetime.now()
+        self._project_time = datetime.now()
+        if self.store:
+            self.store.session.add(self)
+
+    @reconstructor
+    def init_on_load(self):
+        QtCore.QObject.__init__(self)
+        self._project_time = datetime.now()
 
     def close(self):
         """
@@ -95,7 +89,8 @@ class Project(QtCore.QObject, OrmBase):
         self.will_close.emit(self)
 
     def save(self):
-        self._store.commit()
+        if self.store:
+            self.store.commit()
 
     @property
     def project_time(self):
@@ -122,7 +117,7 @@ class Project(QtCore.QObject, OrmBase):
         """
         try:
             es = self.seismic_catalog[0]
-            eh = self.hydraulic_history[0]
+            eh = self.injection_history[0]
         except IndexError:
             return None
         if es is None and eh is None:
@@ -141,7 +136,7 @@ class Project(QtCore.QObject, OrmBase):
         """
         try:
             es = self.seismic_catalog[-1]
-            eh = self.hydraulic_history[-1]
+            eh = self.injection_history[-1]
         except IndexError:
             return None
         if es is None and eh is None:

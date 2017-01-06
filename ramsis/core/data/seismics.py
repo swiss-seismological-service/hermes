@@ -10,7 +10,7 @@ import traceback
 from PyQt4 import QtCore
 from sqlalchemy import Column, Table
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, reconstructor
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
 from core.data.geometry import Point
@@ -55,6 +55,10 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
                               back_populates='reference_catalog')
     # endregion
     catalog_changed = QtCore.pyqtSignal()
+
+    @reconstructor
+    def init_on_load(self):
+        QtCore.QObject.__init__(self)
 
     def import_events(self, importer):
         """

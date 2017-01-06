@@ -18,11 +18,12 @@ HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui \
     forecastwindow.ui \
-    settingswindow.ui \
     ../forecastswindow.ui \
     forecastswindow.ui \
     simulationwindow.ui \
-    timelinewindow.ui
+    timelinewindow.ui \
+    appsettingswindow.ui \
+    projectsettingswindow.ui
 
 OTHER_FILES +=
 

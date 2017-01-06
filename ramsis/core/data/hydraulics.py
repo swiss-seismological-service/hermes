@@ -9,7 +9,7 @@ import traceback
 
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, reconstructor
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
 log = logging.getLogger(__name__)
@@ -35,6 +35,10 @@ class InjectionHistory(QtCore.QObject, OrmBase):
                            cascade='all')
     # endregion
     history_changed = QtCore.pyqtSignal()
+
+    @reconstructor
+    def init_on_load(self):
+        QtCore.QObject.__init__(self)
 
     def import_events(self, importer):
         """

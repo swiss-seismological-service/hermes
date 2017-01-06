@@ -78,7 +78,7 @@ class ModelInput(object):
         self.t_bin = bin_size
         if project:
             self.hydraulic_events = \
-                project.hydraulic_history.events_before(t_run)
+                project.injection_history.events_before(t_run)
             self.seismic_events = \
                 project.seismic_history.events_before(t_run, mc=mc)
             self.injection_well = project.injection_well
@@ -100,7 +100,7 @@ class ModelInput(object):
 
         """
         t_end = t_run + timedelta(hours=bin_size)
-        events = project.hydraulic_history.events_between(t_run, t_end)
+        events = project.injection_history.events_between(t_run, t_end)
         if len(events) == 0:
             self.expected_flow = 0
         else:
