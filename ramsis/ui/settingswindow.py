@@ -127,7 +127,7 @@ class ApplicationSettingsWindow(SettingsWindow):
         self.register_widgets(widget_map)
 
         # Hook up buttons
-        self.ui.okButton.clicked.connect(self.action_ok)
+        self.ui.saveButton.clicked.connect(self.action_ok)
         self.ui.selectOutputDirButton.clicked.\
             connect(self.action_select_output_directory)
         self.ui.resetToDefaultButton.clicked.connect(self.action_load_defaults)
@@ -196,7 +196,7 @@ class ProjectSettingsWindow(SettingsWindow):
         self.register_widgets(widget_map)
 
         # Hook up buttons
-        self.ui.okButton.clicked.connect(self.action_ok)
+        self.ui.saveButton.clicked.connect(self.action_save)
         self.ui.cancelButton.clicked.connect(self.action_cancel)
         self.ui.selectOutputDirButton.clicked.\
             connect(self.action_select_output_directory)
@@ -216,6 +216,11 @@ class ProjectSettingsWindow(SettingsWindow):
             if widget is not None:
                 value = self.project.settings[key]
                 self._set_value_in_widget(value, widget)
+        # Project properties are shown in the settings tab too
+        self.ui.projectTitleEdit.setText(self.project.title)
+        self.ui.projectStartEdit.setDateTime(self.project.start_date)
+        self.ui.projectEndEdit.setDateTime(self.project.end_date)
+        self.ui.descriptionEdit.setPlainText(self.project.description)
 
     def action_setting_changed(self):
         widget = self.sender()
@@ -234,7 +239,13 @@ class ProjectSettingsWindow(SettingsWindow):
         self.settings.register_default_settings()
         self.load_settings(self.project.settings)
 
-    def action_ok(self):
+    def action_save(self):
         self.project.settings.commit()
+        self.project.title = self.ui.projectTitleEdit.text()
+        self.project.start_date = self.ui.projectStartEdit.dateTime().\
+            toPyDateTime()
+        self.project.end_date = self.ui.projectEndEdit.dateTime().\
+            toPyDateTime()
+        self.project.description = self.ui.descriptionEdit.toPlainText()
         self.project.save()
         self.close()
