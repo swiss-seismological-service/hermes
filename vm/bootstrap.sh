@@ -70,3 +70,6 @@ oq-engine --upgrade-db -y
 
 # set QGIS prefix path for all users
 echo "export QGIS_PREFIX_PATH=/usr" > /etc/profile.d/qgis_prefix.sh
+
+# install ramsisdata
+python /vagrant/ramsisdata/setup.py install
