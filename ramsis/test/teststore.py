@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
-from core.data.store import Store
+from ramsisdata.store import Store
 
 
 DB_FILE = 'test.db'

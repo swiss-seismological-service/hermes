@@ -4,7 +4,7 @@ import logging
 
 from PyQt4 import QtCore
 
-from core.data.schemas import ForecastSchema, ModelResultSchema
+from ramsisdata.schemas import ForecastSchema, ModelResultSchema
 
 
 class ModelClient(QtCore.QObject):

@@ -9,8 +9,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from datetime import datetime
 
-from core.data.seismics import SeismicEvent
-from core.data.geometry import Point
+from ramsisdata.seismics import SeismicEvent
+from ramsisdata.geometry import Point
 
 
 class BasicOperation(unittest.TestCase):

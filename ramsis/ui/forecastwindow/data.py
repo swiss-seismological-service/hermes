@@ -10,7 +10,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 from PyQt4.QtCore import pyqtSignal, QObject
 from datetime import datetime
-from core.data.forecast import ForecastSet, Forecast, ForecastInput,\
+from ramsisdata.forecast import ForecastSet, Forecast, ForecastInput,\
     ForecastResult, Scenario, SkillTest, ModelResult, RatePrediction
 
 

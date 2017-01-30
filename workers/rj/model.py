@@ -12,7 +12,7 @@ import logging
 from PyQt4 import QtCore
 import numpy as np
 
-from data.forecast import ModelResult, RatePrediction
+from ramsisdata.forecast import ModelResult, RatePrediction
 
 
 class Rj(QtCore.QObject):

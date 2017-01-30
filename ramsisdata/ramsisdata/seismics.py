@@ -13,7 +13,7 @@ from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
 from ormbase import OrmBase, DeclarativeQObjectMeta
 
-from core.data.geometry import Point
+from ramsisdata.geometry import Point
 
 _catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
                                Column('seismic_catalogs_id', Integer,

@@ -13,9 +13,9 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.seismics import SeismicEvent, SeismicCatalog
+from ramsisdata.seismics import SeismicEvent, SeismicCatalog
 from testeventhistory import MockStore
-from core.data.geometry import Point
+from ramsisdata.geometry import Point
 
 
 class BasicOperation(unittest.TestCase):

@@ -11,7 +11,7 @@ from datetime import timedelta, datetime
 
 from mock import MagicMock
 
-from core.data.hydraulics import InjectionSample, InjectionHistory
+from ramsisdata.hydraulics import InjectionSample, InjectionHistory
 from testeventhistory import MockStore
 
 

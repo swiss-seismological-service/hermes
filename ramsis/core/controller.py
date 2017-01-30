@@ -14,9 +14,9 @@ import os
 
 from PyQt4 import QtCore
 
-from core.data.store import Store
-from core.data.project import Project
-from core.data.ormbase import OrmBase
+from ramsisdata.store import Store
+from ramsisdata.project import Project
+from ramsisdata.ormbase import OrmBase
 from core.simulator import Simulator, SimulatorState
 from core.engine.engine import Engine
 

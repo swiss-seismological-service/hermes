@@ -13,7 +13,7 @@ from datetime import datetime
 from mock import patch, MagicMock
 from PyQt4 import QtCore
 
-from core.data.project import Project
+from ramsisdata.project import Project
 
 
 # Patch Seismic and InjectionHistory imports in project

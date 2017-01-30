@@ -3,8 +3,8 @@ import logging
 from PyQt4 import QtCore
 
 from core.engine.forecastjob import ForecastJob
-from core.data.forecast import Forecast, ForecastInput, Scenario
-from core.data.hydraulics import InjectionPlan, InjectionSample
+from ramsisdata.forecast import Forecast, ForecastInput, Scenario
+from ramsisdata.hydraulics import InjectionPlan, InjectionSample
 
 
 class Engine(QtCore.QObject):

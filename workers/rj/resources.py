@@ -4,7 +4,7 @@ import json
 from flask import request
 from flask_restful import Resource
 
-from data.schemas import ForecastSchema, ModelResultSchema
+from ramsisdata.schemas import ForecastSchema, ModelResultSchema
 from model import Rj
 
 

@@ -5,7 +5,7 @@ from PyQt4 import QtCore
 from job import Job, Stage
 from modelclient import ModelClient
 
-from core.data.forecast import ForecastResult
+from ramsisdata.forecast import ForecastResult
 
 
 class ISForecastStage(Stage):
