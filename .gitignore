@@ -40,5 +40,5 @@ model_inputs.mat
 ramsis/gdalwmscache
 
 # Vagrant
-vm/.vagrant
+.vagrant
 *.user
