@@ -144,7 +144,7 @@ class MainWindow(QtGui.QMainWindow):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.\
             getOpenFileName(None, 'Open Project', home,
-                            'Ramsis Project Files (*.ram)')
+                            'Ramsis Project Files (*.db)')
         if path == '':
             return
         self._open_project_at_path(path)
@@ -189,9 +189,9 @@ class MainWindow(QtGui.QMainWindow):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.\
             getSaveFileName(None, 'New Project', home,
-                            'Ramsis Project Files (*.ram)')
-        if not path.endswith('.ram'):
-            path += '.ram'
+                            'Ramsis Project Files (*.db)')
+        if not path.endswith('.db'):
+            path += '.db'
         self.ramsis_core.create_project(path)
         self._open_project_at_path(path)
 
