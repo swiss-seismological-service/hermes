@@ -263,6 +263,16 @@ class ModelResult(OrmBase):
         #                                         self.t_run,
         #                                         self.result.score.LL))
 
+    def get_rates(self):
+        rates = self._get_rates(self.rate_prediction)
+        return None if not rates else rates
+
+    def _get_rates(self, rates):
+        if rates is not None:
+            r = rates.vol_predictions
+            return [r] + self._get_rates(r)
+        return []
+
 
 class RatePrediction(OrmBase):
     """

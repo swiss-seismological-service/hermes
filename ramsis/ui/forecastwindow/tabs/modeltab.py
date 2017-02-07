@@ -63,9 +63,13 @@ class ModelTabPresenter(TabPresenter):
             self.ui.predRateLabel.setText('-')
             self.ui.scoreLabel.setText('-')
         else:
-            self.ui.fcTimeLabel.setText(model_result.t_run.ctime())
-            rate = '{:.1f}'.format(model_result.cum_result.rate) \
-                if not model_result.failed else 'No Results'
+            fc_time = model_result.forecast_result.forecast.forecast_time \
+                .ctime()
+            self.ui.fcTimeLabel.setText(fc_time)
+            if not model_result.failed and model_result.rate_prediction:
+                rate = '{:.1f}'.format(model_result.rate_prediction.rate)
+            else:
+                rate = 'No Results'
             self.ui.predRateLabel.setText(rate)
 
     def _show_is_score(self, model_result):
@@ -76,12 +80,18 @@ class ModelTabPresenter(TabPresenter):
         :type model_result: ISModelResult or None
 
         """
-        if model_result is None or model_result.cum_result.score is None:
+        try:
+            score = model_result.rate_prediction.score
+        except AttributeError:
+            score = None
+        if model_result is None or score is None:
             ll = 'N/A'
             t = ''
         else:
-            ll = '{:.1f}'.format(model_result.cum_result.score.LL)
-            t = '@ {}'.format(model_result.t_run.ctime())
+            ll = '{:.1f}'.format(score.LL)
+            fc_time = model_result.forecast_result.forecast.forecast_time \
+                .ctime()
+            t = '@ {}'.format(fc_time)
         self.ui.scoreLabel.setText(ll)
         self.ui.scoreTimeLabel.setText(t)
 
@@ -95,11 +105,14 @@ class ModelTabPresenter(TabPresenter):
 
         """
         mr = model_result
-        if mr is None or mr.failed or not mr.vol_results:
+        try:
+            vol_rates = mr.get_rates()
+        except AttributeError:
+            vol_rates = None
+        if mr is None or mr.failed or not vol_rates:
             self.ui.voxelPlot.set_voxel_data(None)
             self.logger.debug('No spatial results available to plot')
         else:
-            vol_rates = [r.rate for r in mr.vol_results]
             self.logger.debug('Max voxel rate is {:.1f}'.
                               format(np.amax(vol_rates)))
             self.ui.voxelPlot.set_voxel_data(vol_rates)
