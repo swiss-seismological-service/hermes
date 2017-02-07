@@ -27,6 +27,14 @@ def dummy_data():
 
     forecast = Forecast()
     forecast.forecast_time = datetime(2016, 11, 11, 12, 00, 00)
+    forecast_result = ForecastResult()
+    forecast.result.append(forecast_result)
+    model_result = ModelResult()
+    model_result.model_name = 'rj'
+    forecast.result[0].model_results[model_result.model_name] = model_result
+    model_result = ModelResult()
+    model_result.model_name = 'etas'
+    forecast.result[0].model_results[model_result.model_name] = model_result
     forecast.input = ForecastInput()
     scenario = Scenario()
     scenario.name = 'Scenario 1'

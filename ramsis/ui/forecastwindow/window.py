@@ -111,9 +111,11 @@ class ForecastsWindow(QtGui.QDialog):
 
     def on_fc_selection_change(self, selection):
         idx = selection.indexes()
-        if len(idx) != 1:
+        try:
+            fc_set = self.fc_tree_model.forecast_set
+            row = idx[0].row()
+            fc = fc_set.forecasts[0].result[row]
+        except IndexError:
             fc = None
-        else:
-            fc = self.fc_tree_model.event_history[idx[0].row()]
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_forecast_result(fc)

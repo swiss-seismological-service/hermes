@@ -10,7 +10,6 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 import numpy as np
 from tabs import TabPresenter
-from core.engine import ismodelcontrol as mc
 
 
 class ModelTabPresenter(TabPresenter):
@@ -25,18 +24,15 @@ class ModelTabPresenter(TabPresenter):
 
         """
         super(ModelTabPresenter, self).__init__(ui)
-
-        # Populate the models chooser combo box
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
-        for model in mc.active_models:
-            self.ui.modelSelectorComboBox.addItem(model["title"])
 
     def refresh(self):
         """
         Refresh everything
 
         """
+        self._update_models_list(self.presented_forecast)
         model_result = self._get_selected_model_result(self.presented_forecast)
         self._present_model_result(model_result)
 
@@ -113,15 +109,29 @@ class ModelTabPresenter(TabPresenter):
     def _get_selected_model_result(self, fc_result):
         if fc_result is None:
             return None
-        is_result = fc_result.is_forecast_result
-        if is_result is None:
-            return None
 
-        model_idx = self.ui.modelSelectorComboBox.currentIndex()
-        model_name = mc.active_models[model_idx]["title"]
-        model_result = is_result.model_results.get(model_name)
+        model_name = self.ui.modelSelectorComboBox.currentText()
+        model_result = fc_result.model_results[model_name]
 
         return model_result
+
+    def _update_models_list(self, fc_result):
+        """
+        Update the list of models from the forecast results.
+
+        :param fc_result: forecast result or None
+        :type fc_result: ForecastResult or None
+
+        """
+        if fc_result is None:
+            return
+        self.ui.modelSelectorComboBox.currentIndexChanged.disconnect(
+            self.action_model_selection_changed)
+        self.ui.modelSelectorComboBox.clear()
+        for i, m in enumerate(fc_result.model_results.values()):
+            self.ui.modelSelectorComboBox.insertItem(i, m.model_name)
+        self.ui.modelSelectorComboBox.currentIndexChanged.connect(
+            self.action_model_selection_changed)
 
     # Button Actions
 
