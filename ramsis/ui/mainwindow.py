@@ -118,7 +118,7 @@ class MainWindow(QtGui.QMainWindow):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
-        project.seismic_catalog.catalog_changed.connect(
+        project.seismic_catalog.history_changed.connect(
             self.on_seismic_catalog_change)
         project.injection_history.history_changed.connect(
             self.on_injection_history_change)
@@ -128,7 +128,7 @@ class MainWindow(QtGui.QMainWindow):
     def on_project_will_close(self, project):
         project.will_close.disconnect(self.on_project_will_close)
         project.project_time_changed.disconnect(self.on_project_time_change)
-        project.seismic_catalog.catalog_changed.disconnect(
+        project.seismic_catalog.history_changed.disconnect(
             self.on_seismic_catalog_change)
         project.injection_history.history_changed.disconnect(
             self.on_injection_history_change)

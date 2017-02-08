@@ -54,7 +54,7 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
     skill_test = relationship('SkillTest',
                               back_populates='reference_catalog')
     # endregion
-    catalog_changed = QtCore.pyqtSignal()
+    history_changed = QtCore.pyqtSignal()
 
     @reconstructor
     def init_on_load(self):
@@ -95,11 +95,11 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
         else:
             self.seismic_events.append(events)
             log.info('Imported {} seismic events.'.format(len(events)))
-            self.catalog_changed.emit()
+            self.history_changed.emit()
 
     def events_before(self, end_date, mc=0):
         """ Returns all events >mc before and including *end_date* """
-        return [e for e in self._events
+        return [e for e in self.seismic_events
                 if e.date_time < end_date and e.magnitude > mc]
 
     def clear_events(self, time_range=None):
@@ -117,7 +117,7 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
         else:
             self.seismic_events = []
             log.info('Cleared all hydraulic events.')
-        self.catalog_changed.emit()
+        self.history_changed.emit()
 
     def __len__(self):
         return len(self.seismic_events)

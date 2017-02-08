@@ -80,7 +80,7 @@ class SeismicityPresenter(TimelinePresenter):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.history.all_events()
+        events = self.history.seismic_events
         if max_time:
             data = [((e.date_time - epoch).total_seconds(), e.magnitude)
                     for e in events if e.date_time < max_time]
@@ -117,7 +117,7 @@ class HydraulicsPresenter(TimelinePresenter):
 
         """
         epoch = datetime(1970, 1, 1)
-        events = self.history.all_events()
+        events = self.history.samples
         if max_time is None:
             max_time = datetime.max
 
@@ -332,12 +332,12 @@ class TimelineWindow(QtGui.QDialog):
             self.hydraulics_presenter.history = None
             self.seismicity_presenter.history = None
             self.forecasts_presenter.history = None
-            self.forecasts_presenter.rate_history = None
+            # self.forecasts_presenter.rate_history = None
         else:
             self.hydraulics_presenter.history = project.injection_history
             self.seismicity_presenter.history = project.seismic_catalog
-            self.forecasts_presenter.history = project.forecast_history
-            self.forecasts_presenter.rate_history = project.rate_history
+            self.forecasts_presenter.history = project.seismic_catalog
+            # self.forecasts_presenter.rate_history = project.rate_history
 
     def _zoom_to_markers(self):
         # We need to do this on only one since the plots are linked

@@ -366,7 +366,7 @@ class ForecastsWindow(QtGui.QDialog):
         roles = {
             Qt.DisplayRole: date_display
         }
-        self.fc_history_model = EventListModel(project.forecast_history, roles)
+        self.fc_history_model = EventListModel(project.seismic_catalog, roles)
         self.ui.forecastListView.setModel(self.fc_history_model)
 
         # observe selection changes
