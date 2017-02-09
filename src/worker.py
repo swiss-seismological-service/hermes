@@ -1,6 +1,9 @@
+import os
 import sys
 
-from workers.rj.main import main as run_rj
+sys.path.append(os.path.abspath('workers/rj'))
+
+from workers.rj.main import main as run_rj  # NOQA
 
 
 def main():
