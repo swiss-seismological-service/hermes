@@ -16,7 +16,7 @@ def validate(commands):
     valid = True
     if len(sys.argv) != 2:
         valid = False
-    if sys.argv[1] not in commands:
+    elif sys.argv[1] not in commands:
         valid = False
     if not valid:
         print 'usage: worker.py [{}]'.format('|'.join(commands))
