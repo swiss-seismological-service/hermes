@@ -16,7 +16,7 @@ from data import dummy_data
 
 
 ui_path = os.path.dirname(__file__)
-FC_WINDOW_PATH = os.path.join('ui', 'views', 'forecastswindow.ui')
+FC_WINDOW_PATH = os.path.join('ramsis', 'ui', 'views', 'forecastswindow.ui')
 Ui_ForecastsWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
 
 
