@@ -30,11 +30,12 @@ class ScheduledTask:
 
     """
 
-    def __init__(self, task_function, dt=None, name='Task'):
+    def __init__(self, task_function, dt=None, name='Task', job_input=None):
         self.name = name
         self.dt = dt
         self.run_time = None
         self.task_function = task_function
+        self.job_input = job_input
 
     def is_pending(self, t):
         """
@@ -68,7 +69,10 @@ class ScheduledTask:
         dictionary to it.
 
         """
-        self.task_function(run_info)
+        if self.job_input:
+            self.task_function(run_info, self.job_input)
+        else:
+            self.task_function(run_info)
 
 
 class TaskScheduler:

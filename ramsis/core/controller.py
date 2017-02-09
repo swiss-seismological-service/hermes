@@ -17,6 +17,8 @@ from PyQt4 import QtCore
 from core.data.store import Store
 from core.data.project import Project
 from core.data.ormbase import OrmBase
+from core.data.forecast import Forecast, ForecastInput, Scenario
+from core.data.hydraulics import InjectionPlan, InjectionSample
 from core.simulator import Simulator, SimulatorState
 from core.engine.engine import Engine
 
@@ -227,15 +229,13 @@ class Controller(QtCore.QObject):
         """
         scheduler = TaskScheduler()
 
-        # Forecasting Task
+        # Add forecast
         dt = self._settings.value('engine/fc_interval')
-        forecast_task = ScheduledTask(
-            task_function=self.engine.run,
+        add_fc_task = ScheduledTask(
+            task_function=self._add_forecast,
             dt=timedelta(hours=dt),
-            name='Forecast')
-        scheduler.add_task(forecast_task)
-        self.engine._forecast_task =\
-            forecast_task  # keep reference for later
+            name='Add forecast')
+        scheduler.add_task(add_fc_task)
 
         # Rate computations
         dt = self._settings.value('engine/rt_interval')
@@ -260,6 +260,66 @@ class Controller(QtCore.QObject):
         scheduler.add_task(task)
 
         return scheduler
+
+    def _add_forecast(self, task_run_info):
+        """ Add a new forecasting task """
+
+        # forecast
+        dt = self._settings.value('engine/fc_interval')
+        t_run = task_run_info.t_project + timedelta(hours=dt)
+        forecast = self._create_forecast(t_run)
+        self.project.store.commit()  # commit new forecast object
+
+        # task
+        forecast_task = ScheduledTask(
+            task_function=self.engine.run,
+            name='Forecast')
+        forecast_task.job_input = forecast
+        forecast_task.run_time = t_run
+        self._scheduler.add_task(forecast_task)
+
+    def _create_forecast(self, forecast_time, flow_xt=None,
+                         pr_xt=None, flow_dh=None, pr_dh=None):
+        """ Returns a new Forecast instance """
+
+        # rows
+        forecast = Forecast()
+        forecast_input = ForecastInput()
+        scenario = Scenario()
+        injection_plan = InjectionPlan()
+        injection_sample = InjectionSample(None, None, None, None, None)
+
+        # relations
+        forecast.input = forecast_input
+        forecast_input.scenarios = [scenario]
+        scenario.injection_plans = [injection_plan]
+        injection_plan.samples = [injection_sample]
+
+        # forecast attributes
+        forecast.forecast_time = forecast_time
+        forecast.forecast_interval = self._settings.value('engine/fc_bin_size')
+        forecast.mc = 0.9
+        forecast.m_min = 0
+        forecast.m_max = 6
+
+        # injection_sample attributes
+        injection_sample.date_time = forecast_time
+        if flow_xt:
+            injection_sample.flow_xt = flow_xt
+        if pr_xt:
+            injection_sample.pr_xt = pr_xt
+        if flow_dh:
+            injection_sample.flow_dh = flow_dh
+        if pr_dh:
+            injection_sample.pr_dh = pr_dh
+
+        # add copy of seismic catalog
+        copy = None
+        if self.project.seismic_catalog:
+            copy = self.project.seismic_catalog.copy()
+        forecast_input.input_catalog = copy
+
+        return forecast
 
     def reset(self, t0):
         """

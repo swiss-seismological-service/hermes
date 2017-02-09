@@ -3,8 +3,6 @@ import logging
 from PyQt4 import QtCore
 
 from core.engine.forecastjob import ForecastJob
-from core.data.forecast import Forecast, ForecastInput, Scenario
-from core.data.hydraulics import InjectionPlan, InjectionSample
 
 
 class Engine(QtCore.QObject):
@@ -21,7 +19,7 @@ class Engine(QtCore.QObject):
         self._settings = settings
         self._logger = logging.getLogger(__name__)
 
-    def run(self, task_run_info):
+    def run(self, task_run_info, forecast):
         assert self._project
         t_run = task_run_info.t_project
 
@@ -36,7 +34,7 @@ class Engine(QtCore.QObject):
         self._logger.info(6 * '----------')
         self._logger.info('Initiating forecast')
 
-        self._forecast = self._create_forecast(t_run)
+        self._forecast = forecast
         self.busy = True
         # in future we may run more than one scenario
         self._forecast_job = ForecastJob(self._settings)
@@ -62,46 +60,3 @@ class Engine(QtCore.QObject):
     def _on_project_close(self, project):
         project.will_close.disconnect(self._on_project_close)
         self._project = None
-
-    def _create_forecast(self, forecast_time, flow_xt=None,
-                         pr_xt=None, flow_dh=None, pr_dh=None):
-        """ Returns a new Forecast instance """
-
-        # rows
-        forecast = Forecast()
-        forecast_input = ForecastInput()
-        scenario = Scenario()
-        injection_plan = InjectionPlan()
-        injection_sample = InjectionSample(None, None, None, None, None)
-
-        # relations
-        forecast.input = forecast_input
-        forecast_input.scenarios = [scenario]
-        scenario.injection_plans = [injection_plan]
-        injection_plan.samples = [injection_sample]
-
-        # forecast attributes
-        forecast.forecast_time = forecast_time
-        forecast.forecast_interval = self._settings.value('engine/fc_bin_size')
-        forecast.mc = 0.9
-        forecast.m_min = 0
-        forecast.m_max = 6
-
-        # injection_sample attributes
-        injection_sample.date_time = forecast_time
-        if flow_xt:
-            injection_sample.flow_xt = flow_xt
-        if pr_xt:
-            injection_sample.pr_xt = pr_xt
-        if flow_dh:
-            injection_sample.flow_dh = flow_dh
-        if pr_dh:
-            injection_sample.pr_dh = pr_dh
-
-        # add copy of seismic catalog
-        copy = None
-        if self._project.seismic_catalog:
-            copy = self._project.seismic_catalog.copy()
-        forecast_input.input_catalog = copy
-
-        return forecast
