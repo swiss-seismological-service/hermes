@@ -13,7 +13,7 @@ from PyQt4 import QtGui
 from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
 from qgis.gui import QgsMapCanvasLayer
 from tabs import TabPresenter
-from ui.forecastwindow.qgislayers import RamsisLossPoeLayer
+from ui.mainwindow.qgislayers import RamsisLossPoeLayer
 
 # Map service that provides the background map
 MAP_SOURCE_URL = 'http://server.arcgisonline.com/ArcGIS/rest/services/'\

@@ -19,7 +19,6 @@ HEADERS  += mainwindow.h
 FORMS    += mainwindow.ui \
     forecastwindow.ui \
     ../forecastswindow.ui \
-    forecastswindow.ui \
     simulationwindow.ui \
     timelinewindow.ui \
     appsettingswindow.ui \

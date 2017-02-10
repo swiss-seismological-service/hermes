@@ -16,7 +16,7 @@ from PyQt4 import QtGui, QtCore
 
 from qgis.core import QgsApplication
 
-from ui.mainwindow import MainWindow
+from ui.mainwindow.window import MainWindow
 from core.controller import Controller
 from ramsissettings import AppSettings
 

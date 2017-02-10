@@ -1,27 +1,21 @@
 # -*- encoding: utf-8 -*-
 """
-Controller class for the forecasts window
+Content presentation logic for the main window
 
-Copyright (C) 2014, ETH Zurich - Swiss Seismological Service SED
+Since the main window is fairly complex, we have a dedicated content presenter
+that takes care of the ui logic for the main window content (i.e. everything
+that is not menu actions etc.). It mostly coordinates between presenters for
+individual window elements.
+
+Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
-
-import logging
-import os
-from datetime import datetime
-from PyQt4 import QtGui, uic
+from ramsisdata.forecast import Forecast
 from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
     GeneralTabPresenter
 from timeline import TimeLinePresenter
-from forecasttreemodel import ForecastTreeModel
-from ramsisdata.forecast import Forecast
+from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel
 from data import dummy_data
-
-
-ui_path = os.path.dirname(__file__)
-FC_WINDOW_PATH = os.path.join('ramsis', 'ui', 'views', 'forecastswindow.ui')
-Ui_ForecastsWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
-
 
 STATUS_COLOR_PLANNED = '#0099CC'
 STATUS_COLOR_COMPLETE = '#00CC99'
@@ -29,19 +23,14 @@ STATUS_COLOR_RUNNING = '#FF470A'
 STATUS_COLOR_PENDING = '#CC0033'
 STATUS_COLOR_OTHER = '#9900CC'
 
-class ForecastsWindow(QtGui.QDialog):
 
-    def __init__(self, ramsis_core, **kwargs):
-        QtGui.QDialog.__init__(self, **kwargs)
-        self.logger = logging.getLogger(__name__)
+class ContentPresenter(object):
 
-        # References
+    def __init__(self, ramsis_core, ui):
         self.ramsis_core = ramsis_core
-        self.fc_tree_model = None
+        self.ui = ui
 
-        # Setup the user interface
-        self.ui = Ui_ForecastsWindow()
-        self.ui.setupUi(self)
+        self.fc_tree_model = None
 
         # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter,
@@ -49,33 +38,17 @@ class ForecastsWindow(QtGui.QDialog):
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
-        # Connect essential signals
-        # ... from the core
-        self.ramsis_core.project_loaded.connect(self.on_project_load)
+    # Display update methods for individual window components with
+    # increasing granularity (i.e. top level methods at the top)
 
-        # for testing only
-        #if self.ramsis_core.project is not None:
-        #    self._load_project_data(self.ramsis_core.project)
-        self._load_project_data(dummy_data())
-
-    # Helpers
-
-    def _load_project_data(self, project):
+    def present_current_project(self):
+        # project = self.core.project
+        # FIXME: remove, for testing only
+        project = dummy_data()
         self._observe_project_changes(project)
-
-        # setup view model
-
-        def date_display(x):
-            return x.t_run.ctime()
-
-        # roles = {
-        #     Qt.DisplayRole: date_display
-        # }
         self.fc_tree_model = ForecastTreeModel(project.forecast_set)
         self.ui.forecastTreeView.setModel(self.fc_tree_model)
-
         # observe selection changes
-
         fc_selection = self.ui.forecastTreeView.selectionModel()
         fc_selection.selectionChanged.connect(self.on_fc_selection_change)
 
@@ -83,9 +56,6 @@ class ForecastsWindow(QtGui.QDialog):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
-
-    # Display update methods for individual window components with
-    # increasing granularity (i.e. top level methods at the top)
 
     def _refresh_forecast_list(self):
         """
@@ -129,8 +99,7 @@ class ForecastsWindow(QtGui.QDialog):
         self.ui.statusAreaWidget.setStyleSheet('background-color: {};'
                                                .format(color))
 
-
-    # Handlers for signals from the core
+    # Handlers for signals from the UI
 
     def on_project_will_close(self, _):
         self._clear_all()
@@ -141,16 +110,6 @@ class ForecastsWindow(QtGui.QDialog):
 
     def on_project_time_change(self, t):
         pass
-
-    def on_project_load(self, project):
-        """
-        :param project: RAMSIS project
-        :type project: Project
-
-        """
-        self._load_project_data(project)
-
-    # Handlers for signals from the UI
 
     def on_fc_selection_change(self, selection):
         idx = selection.indexes()[0]

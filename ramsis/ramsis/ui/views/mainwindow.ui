@@ -6,17 +6,11 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
-    <height>300</height>
+    <width>1200</width>
+    <height>808</height>
    </rect>
   </property>
   <property name="minimumSize">
-   <size>
-    <width>450</width>
-    <height>300</height>
-   </size>
-  </property>
-  <property name="maximumSize">
    <size>
     <width>450</width>
     <height>300</height>
@@ -29,110 +23,785 @@
    <bool>true</bool>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QLabel" name="projectSummaryLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>20</y>
-      <width>131</width>
-      <height>16</height>
-     </rect>
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>0</number>
     </property>
-    <property name="font">
-     <font>
-      <weight>75</weight>
-      <bold>true</bold>
-     </font>
+    <property name="topMargin">
+     <number>0</number>
     </property>
-    <property name="text">
-     <string>Project Summary</string>
+    <property name="rightMargin">
+     <number>0</number>
     </property>
-   </widget>
-   <widget class="QLabel" name="projectNameLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>50</y>
-      <width>211</width>
-      <height>16</height>
-     </rect>
+    <property name="bottomMargin">
+     <number>0</number>
     </property>
-    <property name="text">
-     <string>No Project Loaded</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="startDateLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>70</y>
-      <width>211</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Starts: -</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="endDateLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>90</y>
-      <width>211</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Ends: -</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="seismicEventCountLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>120</y>
-      <width>261</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0 Seismic Events</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="exposureDataLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>140</y>
-      <width>261</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>No exposure data available</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="boreholeDataLabel">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>160</y>
-      <width>261</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>No borehole data available</string>
-    </property>
-   </widget>
+    <item row="0" column="0">
+     <widget class="QWidget" name="leftAreaWidget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTreeView" name="forecastTreeView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <attribute name="headerDefaultSectionSize">
+          <number>180</number>
+         </attribute>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="footerAreaWidget" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>256</width>
+           <height>40</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <property name="spacing">
+           <number>5</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QPushButton" name="pushButton_4">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="text">
+             <string>Defaults...</string>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_5">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="text">
+             <string>-</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="text">
+             <string>+</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="2">
+     <widget class="QWidget" name="bottomAreaWidget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>150</height>
+       </size>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: gray;</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_6">
+       <property name="topMargin">
+        <number>9</number>
+       </property>
+       <item>
+        <widget class="SeismicityPlotWidget" name="timeLineWidget"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QWidget" name="mainAreaWidget" native="true">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <property name="verticalSpacing">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <widget class="QTabWidget" name="resultTabWidget">
+         <property name="tabPosition">
+          <enum>QTabWidget::North</enum>
+         </property>
+         <property name="tabShape">
+          <enum>QTabWidget::Rounded</enum>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <property name="elideMode">
+          <enum>Qt::ElideRight</enum>
+         </property>
+         <property name="usesScrollButtons">
+          <bool>false</bool>
+         </property>
+         <property name="documentMode">
+          <bool>false</bool>
+         </property>
+         <widget class="QWidget" name="generalTab">
+          <attribute name="title">
+           <string>General</string>
+          </attribute>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <property name="topMargin">
+            <number>20</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="scenarioTitleLabel">
+             <property name="font">
+              <font>
+               <weight>50</weight>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="text">
+              <string>Nothing Selected</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QGroupBox" name="groupBox_2">
+             <property name="title">
+              <string>Stages</string>
+             </property>
+             <property name="checkable">
+              <bool>false</bool>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_7">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_19">
+                <property name="text">
+                 <string>Seismicity Forecast</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QLabel" name="label_20">
+                <property name="text">
+                 <string>Hazard and Risk</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QCheckBox" name="checkBox_6">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Shapiro</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QCheckBox" name="checkBox_7">
+                <property name="text">
+                 <string>ETAS</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QCheckBox" name="checkBox_8">
+                <property name="text">
+                 <string>Ollinger</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="label_21">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="font">
+                 <font>
+                  <italic>true</italic>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: gray;</string>
+                </property>
+                <property name="text">
+                 <string>complete</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QCheckBox" name="checkBox_9">
+                <property name="text">
+                 <string>Hazard Forecast</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QCheckBox" name="checkBox_10">
+                <property name="text">
+                 <string>Risk Forecast</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="3">
+               <widget class="QLabel" name="label_22">
+                <property name="font">
+                 <font>
+                  <italic>true</italic>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: gray;</string>
+                </property>
+                <property name="text">
+                 <string>waiting for seismicity forecast</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLabel" name="label_23">
+                <property name="font">
+                 <font>
+                  <italic>true</italic>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: gray;</string>
+                </property>
+                <property name="text">
+                 <string>complete</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QLabel" name="label_24">
+                <property name="font">
+                 <font>
+                  <italic>true</italic>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: gray;</string>
+                </property>
+                <property name="text">
+                 <string>running...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="3">
+               <widget class="QLabel" name="label_25">
+                <property name="font">
+                 <font>
+                  <italic>true</italic>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: gray;</string>
+                </property>
+                <property name="text">
+                 <string>waiting for hazard forecast</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <spacer name="verticalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="0">
+            <spacer name="verticalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>10</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="inputTab">
+          <attribute name="title">
+           <string>Input</string>
+          </attribute>
+         </widget>
+         <widget class="QWidget" name="seismicity">
+          <attribute name="title">
+           <string>Models</string>
+          </attribute>
+          <widget class="QComboBox" name="modelSelectorComboBox">
+           <property name="geometry">
+            <rect>
+             <x>8</x>
+             <y>20</y>
+             <width>251</width>
+             <height>26</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_26">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>120</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Predictated total rate</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_27">
+           <property name="geometry">
+            <rect>
+             <x>300</x>
+             <y>100</y>
+             <width>101</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Log Likelihood</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_28">
+           <property name="geometry">
+            <rect>
+             <x>300</x>
+             <y>70</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Model Performance</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_29">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>100</y>
+             <width>101</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Forecast time</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="scoreTimeLabel">
+           <property name="geometry">
+            <rect>
+             <x>410</x>
+             <y>120</y>
+             <width>71</width>
+             <height>20</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="predRateLabel">
+           <property name="geometry">
+            <rect>
+             <x>160</x>
+             <y>120</y>
+             <width>111</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_30">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>70</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Forecast Results</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="fcTimeLabel">
+           <property name="geometry">
+            <rect>
+             <x>160</x>
+             <y>100</y>
+             <width>111</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="scoreLabel">
+           <property name="geometry">
+            <rect>
+             <x>410</x>
+             <y>100</y>
+             <width>71</width>
+             <height>20</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+          <widget class="VoxelViewWidget" name="voxelPlot" native="true">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>200</y>
+             <width>541</width>
+             <height>301</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_31">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>170</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Spatial Seismicity</string>
+           </property>
+          </widget>
+         </widget>
+         <widget class="QWidget" name="hazard">
+          <attribute name="title">
+           <string>Hazard</string>
+          </attribute>
+          <widget class="QLabel" name="label_32">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>170</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Hazard Curves</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_33">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>40</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Summary</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_34">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>70</y>
+             <width>171</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>OpenQuake Calculation Id</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="hazCalcIdLabel">
+           <property name="geometry">
+            <rect>
+             <x>190</x>
+             <y>70</y>
+             <width>111</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+          <widget class="CurvePlotWidget" name="hazPlot" native="true">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>200</y>
+             <width>541</width>
+             <height>301</height>
+            </rect>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </widget>
+         <widget class="QWidget" name="risk">
+          <attribute name="title">
+           <string>Risk</string>
+          </attribute>
+          <widget class="QLabel" name="label_35">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>70</y>
+             <width>171</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>OpenQuake Calculation Id</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="riskCalcIdLabel">
+           <property name="geometry">
+            <rect>
+             <x>190</x>
+             <y>70</y>
+             <width>111</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_36">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>40</y>
+             <width>141</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Summary</string>
+           </property>
+          </widget>
+          <widget class="QgsMapCanvas" name="mapWidget" native="true">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>100</y>
+             <width>541</width>
+             <height>401</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QWidget" name="statusAreaWidget" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: #0099cc;</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="fcStatusLabel">
+            <property name="styleSheet">
+             <string notr="true">color: white;</string>
+            </property>
+            <property name="text">
+             <string>Forecast due in 15 minutes</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>450</width>
+     <width>1200</width>
      <height>19</height>
     </rect>
    </property>
@@ -320,6 +989,31 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>VoxelViewWidget</class>
+   <extends>QWidget</extends>
+   <header>ui.views.plots</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CurvePlotWidget</class>
+   <extends>QWidget</extends>
+   <header>ui.views.plots</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapCanvas</class>
+   <extends>QWidget</extends>
+   <header>qgis.gui</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SeismicityPlotWidget</class>
+   <extends>QGraphicsView</extends>
+   <header>ui.views.plots</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="images.qrc"/>
  </resources>

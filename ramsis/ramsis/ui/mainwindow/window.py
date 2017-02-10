@@ -1,44 +1,62 @@
 # -*- encoding: utf-8 -*-
 """
-Controller module for the main window
+Controller class for the main window
+
+Takes care of setting up the main GUI, handling any menu actions and updating
+top level controls as necessary.
+We delegate the presentation of content to a content presenter so that this
+class does not become too big.
+
+Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-import os
 import logging
-
-import numpy as np
+import os
 from PyQt4 import QtGui, uic
-from PyQt4.QtGui import QWidget, QSizePolicy
-
-import ramsisuihelpers as helpers
+from PyQt4.QtGui import QSizePolicy, QWidget, QStatusBar, QLabel
+import ui.ramsisuihelpers as helpers
+from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
+from ui.simulationwindow import SimulationWindow
+from ui.timelinewindow import TimelineWindow
+from ui.views.plots import Event3DViewWidget
+from presenter import ContentPresenter
+from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
 from core.tools.eventimporter import EventImporter
-from settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
-from simulationwindow import SimulationWindow
-from timelinewindow import TimelineWindow
-from ui.forecastwindow.window import ForecastsWindow
-from ui.views.plots import Event3DViewWidget
-from viewmodels.seismicdatamodel import SeismicDataModel
+
 
 ui_path = os.path.dirname(__file__)
-SETTINGS_WINDOW_PATH = os.path.join(ui_path, 'views', 'mainwindow.ui')
-Ui_MainWindow = uic.loadUiType(SETTINGS_WINDOW_PATH)[0]
+MAIN_WINDOW_PATH = os.path.join('ramsis', 'ui', 'views', 'mainwindow.ui')
+Ui_MainWindow = uic.loadUiType(MAIN_WINDOW_PATH)[0]
 
 
-# Create a class for our main window
+class StatusBar(QStatusBar):
+
+    def __init__(self):
+        super(StatusBar, self).__init__()
+        self.projectWidget = QLabel('No project loaded')
+        self.timeWidget = QLabel('Project Time: -')
+        self.addWidget(self.projectWidget)
+        self.addWidget(self.timeWidget)
+
+    def set_project(self, project):
+        txt = project.title if project else 'No project loaded'
+        self.projectWidget.setText(txt)
+        self.set_project_time(project.project_time if project else None)
+
+    def set_project_time(self, t):
+        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else '-'
+        self.timeWidget.setText('Project Time: {}'.format(txt))
+
+
 class MainWindow(QtGui.QMainWindow):
-    """
-    Class that manages the main application window
 
-    """
-
-    def __init__(self, ramsis):
-        QtGui.QMainWindow.__init__(self)
+    def __init__(self, ramsis, **kwargs):
+        QtGui.QDialog.__init__(self, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-        # Other windows which are lazy-loaded
-        self.forecast_window = None
+        # Other windows which we lazy-load
         self.application_settings_window = None
         self.project_settings_window = None
         self.event_3d_window = None
@@ -46,21 +64,23 @@ class MainWindow(QtGui.QMainWindow):
         self.timeline_window = None
         self.table_view = None
 
-        # Keep a reference to the core (business logic) and the currently
-        # loaded project
+        # References
         self.ramsis_core = ramsis.ramsis_core
         self.application_settings = ramsis.app_settings
-        self.project = None
 
         # Setup the user interface
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.ui.statusBar.setSizeGripEnabled(False)
         # ...additional setup
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        spacer.setVisible(True)
-        self.ui.mainToolBar.insertWidget(self.ui.actionForecasts, spacer)
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        # spacer.setVisible(True)
+        # self.ui.mainToolBar.insertWidget(self.ui.actionForecasts, spacer)
+        self.status_bar = StatusBar()
+        self.setStatusBar(self.status_bar)
+
+        # Delegate content presentation
+        self.content_presenter = ContentPresenter(self.ramsis_core, self.ui)
 
         # Hook up the menu
         # ...File
@@ -84,65 +104,23 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionStop_Simulation.triggered.\
             connect(self.action_stop_simulation)
         # ...Window
-        self.ui.actionForecasts.triggered.connect(self.action_show_forecasts)
         self.ui.actionShow_3D.triggered.connect(self.action_show_3d)
         self.ui.actionTimeline.triggered.connect(self.action_show_timeline)
         self.ui.actionSimulation.triggered.\
             connect(self.action_show_sim_controls)
 
-        # Hook up essential signals from the core and the forecast core
+        # Connect essential signals
+        # ... from the core
         ramsis.app_launched.connect(self.on_app_launch)
+        self.ramsis_core.project_loaded.connect(self.on_project_load)
         self.ramsis_core.simulator.state_changed.\
             connect(self.on_sim_state_change)
-        self.ramsis_core.project_loaded.connect(self.on_project_load)
-
-    # Qt Signal Slots
-
-    def on_app_launch(self):
-        self._refresh_recent_files_menu()
-        self.update_status()
-        self.update_controls()
-
-    def on_seismic_catalog_change(self, _):
-        self.update_status()
-
-    def on_injection_history_change(self, _):
-        self.update_status()
-
-    def on_sim_state_change(self, _):
-        self.update_controls()
-
-    def on_project_load(self, project):
-        self.project = project
-
-        # Make sure we get updated on project changes
-        project.will_close.connect(self.on_project_will_close)
-        project.project_time_changed.connect(self.on_project_time_change)
-        project.seismic_catalog.history_changed.connect(
-            self.on_seismic_catalog_change)
-        project.injection_history.history_changed.connect(
-            self.on_injection_history_change)
-        self.update_status()
-        self.update_controls()
-
-    def on_project_will_close(self, project):
-        project.will_close.disconnect(self.on_project_will_close)
-        project.project_time_changed.disconnect(self.on_project_time_change)
-        project.seismic_catalog.history_changed.disconnect(
-            self.on_seismic_catalog_change)
-        project.injection_history.history_changed.disconnect(
-            self.on_injection_history_change)
-        self.project = None
-        self.update_controls()
-
-    def on_project_time_change(self, time):
-        self._replot_3d_event_data(time)
 
     # Menu Actions
 
     def action_open_project(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.\
+        path = QtGui.QFileDialog. \
             getOpenFileName(None, 'Open Project', home,
                             'Ramsis Project Files (*.db)')
         if path == '':
@@ -160,7 +138,8 @@ class MainWindow(QtGui.QMainWindow):
         if recent_files is None:
             recent_files = []
         if path in recent_files:
-            recent_files.insert(0, recent_files.pop(recent_files.index(path)))
+            recent_files.insert(0,
+                                recent_files.pop(recent_files.index(path)))
         else:
             recent_files.insert(0, path)
         del recent_files[4:]
@@ -187,7 +166,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_new_project(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.\
+        path = QtGui.QFileDialog. \
             getSaveFileName(None, 'New Project', home,
                             'Ramsis Project Files (*.db)')
         if not path.endswith('.db'):
@@ -241,16 +220,11 @@ class MainWindow(QtGui.QMainWindow):
             history.import_events(importer)
             self.project.save()
 
-    def action_show_forecasts(self):
-        if self.forecast_window is None:
-            self.forecast_window = \
-                ForecastsWindow(ramsis_core=self.ramsis_core, parent=self)
-        self.forecast_window.show()
-
     def action_show_timeline(self):
         if self.timeline_window is None:
-            self.timeline_window = TimelineWindow(ramsis_core=self.ramsis_core,
-                                                  parent=self)
+            self.timeline_window = TimelineWindow(
+                ramsis_core=self.ramsis_core,
+                parent=self)
         self.timeline_window.show()
 
     def action_show_sim_controls(self):
@@ -266,7 +240,8 @@ class MainWindow(QtGui.QMainWindow):
     def action_show_application_settings(self):
         if self.application_settings_window is None:
             self.application_settings_window = \
-                ApplicationSettingsWindow(settings=self.application_settings)
+                ApplicationSettingsWindow(
+                    settings=self.application_settings)
         self.application_settings_window.show()
 
     def action_show_project_settings(self):
@@ -298,7 +273,7 @@ class MainWindow(QtGui.QMainWindow):
     # Menu Enabled State Updates
 
     def update_controls(self):
-        if self.project is None:
+        if self.ramsis_core.project is None:
             enable = False
         else:
             enable = True
@@ -332,50 +307,43 @@ class MainWindow(QtGui.QMainWindow):
 
     # Status Updates
 
-    def update_status(self):
+    def update_status_msg(self):
         """
         Updates the status message in the status bar.
 
         """
-        if self.project is None:
-            self.ui.projectNameLabel.setText('No project loaded')
-            self.ui.startDateLabel.setText('Starts: -')
-            self.ui.endDateLabel.setText('Ends: -')
-            self.ui.seismicEventCountLabel.setText('0 seismic events')
-            self.ui.exposureDataLabel.setText('No exposure data available')
-            self.ui.boreholeDataLabel.setText('No borehole data available')
-            return
-        else:
-            self.ui.projectNameLabel.setText(self.project.title)
-            time_range = self.project.event_time_range()
-            self.ui.startDateLabel.setText(
-                'Starts: {}'.format(time_range[0]))
-            self.ui.endDateLabel.setText(
-                'Ends: {}'.format(time_range[1]))
-            self.ui.seismicEventCountLabel.setText(
-                '{} seismic events'.format(len(self.project.seismic_catalog)))
-            # TODO: show real data
-            self.ui.exposureDataLabel.setText('Exposure data available '
-                                              'for 10 locations')
-            self.ui.boreholeDataLabel.setText('1 Borehole')
-
         state_msg = 'RAMSIS is idle'
         if self.ramsis_core.simulator.state == SimulatorState.RUNNING:
             state_msg = 'Simulating'
         elif self.ramsis_core.simulator.state == SimulatorState.PAUSED:
             state_msg = 'Simulating (paused)'
 
-        self.statusBar().showMessage(state_msg)
+        self.status_bar.showMessage(state_msg)
 
-    # Plot Helpers
+    # Handlers for signals from the core
 
-    def _replot_3d_event_data(self, t):
-        events = self.project.seismic_catalog.events_before(t)
-        if self.event_3d_window is None or len(events) == 0:
-            return
-        loc = np.array([(e.x, e.y, e.z) for e in events])
-        well = self.project.injection_well
-        center = np.array((well.well_tip_x, well.well_tip_y, well.well_tip_z))
-        loc -= center
-        size = np.array([e.magnitude for e in events])
-        self.event_3d_window.show_events(loc, size)
+    def on_app_launch(self):
+        self._refresh_recent_files_menu()
+        self.update_controls()
+
+    def on_project_will_close(self, _):
+        self.status_bar.set_project(None)
+        self.update_controls()
+
+    def on_project_time_change(self, t):
+        self.status_bar.set_project_time(t)
+        self.update_status_msg()
+
+    def on_project_load(self, project):
+        """
+        :param project: RAMSIS project
+        :type project: Project
+
+        """
+        self.content_presenter.present_current_project()
+        self.status_bar.set_project(project)
+        self.update_controls()
+
+    def on_sim_state_change(self, _):
+        self.update_controls()
+        self.update_status_msg()
