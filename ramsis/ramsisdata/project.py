@@ -6,7 +6,7 @@ Provides a class to manage Ramsis project data
 
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
@@ -65,8 +65,8 @@ class Project(QtCore.QObject, OrmBase):
         self.rate_history = SeismicRateHistory()
         self.forecast_history = ForecastSet()
         self.title = title
-        self.start_date = datetime(1970, 1, 1)
-        self.end_date = datetime(1970, 1, 1)
+        self.start_date = datetime.now()
+        self.end_date = self.start_date + timedelta(days=365)
         self.settings = ProjectSettings()
 
         # These inform us when new IS forecasts become available
@@ -82,7 +82,7 @@ class Project(QtCore.QObject, OrmBase):
     @reconstructor
     def init_on_load(self):
         QtCore.QObject.__init__(self)
-        self._project_time = datetime.now()
+        self._project_time = self.start_date
 
     def close(self):
         """
