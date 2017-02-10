@@ -17,14 +17,7 @@ Copyright (C) 2016, SED (ETH Zurich)
 """
 
 from PyQt4.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
-from PyQt4.QtGui import QPixmap, QCheckBox
-
-
-# class ProjectRole:
-#     """
-#     Additional custom roles
-#     """
-#     RepresentedItemRole = Qt.UserRole + 1
+from PyQt4.QtGui import QBrush
 
 
 class Node(object):
@@ -57,28 +50,15 @@ class ScenarioNode(Node):
 
     def data(self, column, role):
         default = super(ScenarioNode, self).data(column, role)
-        if role == Qt.DisplayRole and column == 0:
-            return self.item.name
-#        elif role == ProjectRole.RepresentedItemRole:
-#            return self.item
-        elif role == Qt.CheckStateRole and column == 1:
-            return Qt.Checked if self.visible else Qt.Unchecked
+        if role == Qt.DisplayRole:
+            if column == 0:
+                return self.item.name
+            elif column == 1:
+                return 'N/A'
+        elif role == Qt.ForegroundRole and column == 1:
+            return QBrush(Qt.gray)
         else:
             return default
-
-
-# class GridNode(Node):
-#
-#     def data(self, column, role):
-#         default = super(GridNode, self).data(column, role)
-#         if role == Qt.DisplayRole:
-#             return self.item.name if column == 0 else None
-#         elif role == ProjectRole.RepresentedItemRole:
-#             return self.item
-#         elif role == Qt.CheckStateRole and column == 1:
-#             return Qt.Checked if self.visible else Qt.Unchecked
-#         else:
-#             return default
 
 
 class ForecastNode(Node):
@@ -105,7 +85,7 @@ e
             return self.item.forecast_time.strftime('%d.%m.%Y %H:%M') \
                 if column == 0 else None
         elif role == Qt.DecorationRole:
-            return None #QPixmap(':/small/catalog') if column == 0 else None
+            return None
         else:
             return default
 
@@ -115,58 +95,14 @@ e
             self.children.insert(position + i, ScenarioNode(scenario, self))
 
 
-# class ManualSectionNode(Node):
-#     """ Section node for manually planned forecast_set """
-#     def __init__(self, project, parent_node):
-#         """
-#         :param project: PyMap project from which grids will be served
-#         :type project: Project
-#         :param parent: Parent Node (root node)
-#         :type parent: Node
-#         """
-#         super(ManualSectionNode, self).__init__('Grids', parent_node)
-#         self.project = project
-#         self.children = []
-#         self.refresh_grids()
-#
-#     def child(self, row, column):
-#         return self.children[row]
-#
-#     def child_count(self):
-#         return len(self.children)
-#
-#     def data(self, column, role):
-#         default = super(ManualSectionNode, self).data(column, role)
-#         if role == Qt.DisplayRole:
-#             return self.item if column == 0 else None
-#         elif role == Qt.DecorationRole:
-#             return QPixmap(':/small/grid') if column == 0 else None
-#         else:
-#             return default
-#
-#     def refresh_grids(self):
-#         self.children = [GridNode(g, self) for g in self.project.grids]
-
-
 class ForecastTreeModel(QAbstractItemModel):
 
-    #AUTOMATIC_SECTION = 0
-    #MANUAL_SECTION = 1
-
     def __init__(self, forecast_set):
-        """
-        :param project:
-        :tyape project: Project
-        :return:
-        """
         super(ForecastTreeModel, self).__init__(parent=None)
         self.root_node = Node('Forecasts', parent_node=None)
         self.forecast_set = forecast_set
-#       self.project.catalogs_changed.connect(self.on_catalogs_changed)
         self.forecast_nodes = [ForecastNode(f, self.root_node)
                                for f in self.forecast_set.forecasts]
-#        self.sections = [AutomaticSectionNode(forecast_set, self.root_node),
-#                         ManualSectionNode(forecast_set, self.root_node)]
 
     def columnCount(self, parent):
         return 2
@@ -223,10 +159,10 @@ class ForecastTreeModel(QAbstractItemModel):
             if column == 0:
                 return 'Forecast'
             elif column == 1:
-                return 'Visible'
+                return 'Status'
         elif role == Qt.SizeHintRole:
             if column == 0:
-                return QSize(152, 20)
+                return QSize(142, 20)
         return None
 
     def insertRows(self, position, rows, parent_idx):
@@ -235,12 +171,3 @@ class ForecastTreeModel(QAbstractItemModel):
         success = parent_node.insert_children(position, rows)
         self.endInsertRows()
         return success
-
-    # Signal slots
-    # def on_catalogs_changed(self, changes):
-    #     catalog_node = self.sections[self.CATALOG_SECTION]
-    #     parent_idx = self.createIndex(self.CATALOG_SECTION, 0, catalog_node)
-    #     inserted_catalogs = changes['inserted']
-    #     for catalog in inserted_catalogs:
-    #         position = self.project.catalogs.index(catalog)
-    #         self.insertRows(position, 1, parent_idx)
