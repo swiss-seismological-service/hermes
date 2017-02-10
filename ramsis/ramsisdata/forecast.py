@@ -139,6 +139,7 @@ class Scenario(OrmBase):
     name = Column(String)
     # ForecastInput relation
     forecast_inputs_id = Column(Integer, ForeignKey('forecast_inputs.id'))
+    # FIXME: use singular for to-one relationship
     forecast_inputs = relationship('ForecastInput', back_populates='scenarios')
     # InjectionPlan relation
     injection_plans = relationship('InjectionPlan',
@@ -146,6 +147,7 @@ class Scenario(OrmBase):
                                    back_populates='scenarios')
     # ForecastResult relation
     forecast_results_id = Column(Integer, ForeignKey('forecast_results.id'))
+    # FIXME: should be a one-to-one relationship
     forecast_results = relationship('ForecastResult',
                                     back_populates='scenarios')
     # endregion
