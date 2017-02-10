@@ -26,25 +26,20 @@ class TabPresenter(object):
 
         """
         self.ui = ui
-        self.presented_forecast = None
+        self.scenario = None
         self.logger = logging.getLogger(__name__)
 
-    def present_forecast_result(self, result):
+    def present_scenario(self, scenario):
         """
-        Set the forecast result that is to be displayed
+        Show input or results for a scenario
 
         We also listen to changes to the currently displayed result to update
         the tabs content accordingly
 
-        :param result: forecast result
-        :type result: ForecastResult or None
+        :param Scenario scenario: forecast scenario
 
         """
-        if self.presented_forecast is not None:
-            self.presented_forecast.result_changed.disconnect(self._on_change)
-        self.presented_forecast = result
-        if self.presented_forecast is not None:
-            self.presented_forecast.result_changed.connect(self._on_change)
+        self.scenario = scenario
         self.refresh()
 
     def refresh(self):

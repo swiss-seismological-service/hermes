@@ -32,9 +32,11 @@ class ModelTabPresenter(TabPresenter):
         Refresh everything
 
         """
-        self._update_models_list(self.presented_forecast)
-        model_result = self._get_selected_model_result(self.presented_forecast)
-        self._present_model_result(model_result)
+        # FIXME: use new data model
+        #self._update_models_list(self.scenario.forecast)
+        #model_result = self._get_selected_model_result(self.presented_forecast)
+        # self._present_model_result(model_result)
+        pass
 
     def _present_model_result(self, model_result):
         """

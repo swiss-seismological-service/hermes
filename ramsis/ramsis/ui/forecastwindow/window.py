@@ -8,11 +8,13 @@ Copyright (C) 2014, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 import os
+from datetime import datetime
 from PyQt4 import QtGui, uic
-from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter
+from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
+    GeneralTabPresenter
 from timeline import TimeLinePresenter
 from forecasttreemodel import ForecastTreeModel
-
+from ramsisdata.forecast import Forecast
 from data import dummy_data
 
 
@@ -20,6 +22,12 @@ ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join('ramsis', 'ui', 'views', 'forecastswindow.ui')
 Ui_ForecastsWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
 
+
+STATUS_COLOR_PLANNED = '#0099CC'
+STATUS_COLOR_COMPLETE = '#00CC99'
+STATUS_COLOR_RUNNING = '#FF470A'
+STATUS_COLOR_PENDING = '#CC0033'
+STATUS_COLOR_OTHER = '#9900CC'
 
 class ForecastsWindow(QtGui.QDialog):
 
@@ -36,7 +44,8 @@ class ForecastsWindow(QtGui.QDialog):
         self.ui.setupUi(self)
 
         # Presenters for the main window components
-        tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter]
+        tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter,
+                       GeneralTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
@@ -89,6 +98,38 @@ class ForecastsWindow(QtGui.QDialog):
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_forecast_result(None)
 
+    def _refresh_fc_status(self, fc):
+        """
+        Show the overall status of the currently selected forecast
+
+        :param Forecast fc: currently selected forecast
+
+        """
+        # FIXME: base this on fc.status once we have that
+        dt = fc.forecast_time - self.ramsis_core.project.project_time
+        if dt.total_seconds() > 0:
+            color = STATUS_COLOR_PLANNED
+            h = int(dt.total_seconds() / 3600)
+            m = int((dt.total_seconds() % 3600) / 60)
+            if h > 24:
+                msg = 'Forecast due in {} days'.format(h / 24)
+            elif h > 0:
+                msg = 'Forecast due in {} hours {} minutes'.format(h, m)
+            else:
+                msg = 'Forecast due in {} minutes'.format(m)
+        else:
+            # if fc.status == fc.STATUS_COMPLETE:
+            color = STATUS_COLOR_COMPLETE
+            msg = 'Forecast completed'
+            # elif fc.status == fc.STATUS_RUNNING:
+            #     color = STATUS_COLOR_RUNNING
+            # else:
+            #     color = STATUS_COLOR_PENDING
+        self.ui.fcStatusLabel.setText(msg)
+        self.ui.statusAreaWidget.setStyleSheet('background-color: {};'
+                                               .format(color))
+
+
     # Handlers for signals from the core
 
     def on_project_will_close(self, _):
@@ -112,12 +153,20 @@ class ForecastsWindow(QtGui.QDialog):
     # Handlers for signals from the UI
 
     def on_fc_selection_change(self, selection):
-        idx = selection.indexes()
+        idx = selection.indexes()[0]
+        if idx.parent().isValid():
+            forecast_idx = idx.parent().row()
+            scenario_idx = idx.row()
+        else:
+            forecast_idx = idx.row()
+            scenario_idx = 0
         try:
-            fc_set = self.fc_tree_model.forecast_set
-            row = idx[0].row()
-            fc = fc_set.forecasts[0].result[row]
+            forecast_set = self.fc_tree_model.forecast_set
+            forecast = forecast_set.forecasts[forecast_idx]
+            scenario = forecast.input.scenarios[scenario_idx]
         except IndexError:
-            fc = None
+            forecast = None
+            scenario = None
         for tab_presenter in self.tab_presenters:
-            tab_presenter.present_forecast_result(fc)
+            tab_presenter.present_scenario(scenario)
+        self._refresh_fc_status(forecast)

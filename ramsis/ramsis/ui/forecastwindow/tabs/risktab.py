@@ -72,15 +72,17 @@ class RiskTabPresenter(TabPresenter):
         self.ui.mapWidget.setLayerSet(canvas_layers)
 
     def refresh(self):
-        self.logger.info('refreshing risk')
-        if self.presented_forecast:
-            calc_id = self.presented_forecast.risk_oq_calc_id
-        else:
-            calc_id = None
-        if calc_id is not None:
-            self.ui.riskCalcIdLabel.setText(str(calc_id))
-        else:
-            self.ui.riskCalcIdLabel.setText('N/A')
+        # FIXME: use new data model
+        pass
+        # self.logger.info('refreshing risk')
+        # if self.presented_forecast:
+        #     calc_id = self.presented_forecast.risk_oq_calc_id
+        # else:
+        #     calc_id = None
+        # if calc_id is not None:
+        #     self.ui.riskCalcIdLabel.setText(str(calc_id))
+        # else:
+        #     self.ui.riskCalcIdLabel.setText('N/A')
 
         # outputs = oq_models.Output.objects.filter(oq_job=83)
         # mean_loss_maps = [o.loss_map for o in outputs if

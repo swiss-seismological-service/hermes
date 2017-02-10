@@ -19,15 +19,17 @@ class HazardTabPresenter(TabPresenter):
     """
 
     def refresh(self):
-        self.logger.info('refreshing hazard on thread {}'
-                         .format(QThread.currentThread().objectName()))
-        calc_id = None
-        if self.presented_forecast:
-            calc_id = self.presented_forecast.hazard_oq_calc_id
-        if calc_id is not None:
-            self.ui.hazCalcIdLabel.setText(str(calc_id))
-        else:
-            self.ui.hazCalcIdLabel.setText('N/A')
+        # FIXME: use new data model
+        pass
+        # self.logger.info('refreshing hazard on thread {}'
+        #                  .format(QThread.currentThread().objectName()))
+        # calc_id = None
+        # if self.presented_forecast:
+        #     calc_id = self.presented_forecast.hazard_oq_calc_id
+        # if calc_id is not None:
+        #     self.ui.hazCalcIdLabel.setText(str(calc_id))
+        # else:
+        #     self.ui.hazCalcIdLabel.setText('N/A')
 
         # outputs = oq_models.Output.objects.filter(oq_job=calc_id)
         #
