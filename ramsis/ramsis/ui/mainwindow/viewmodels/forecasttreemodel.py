@@ -17,7 +17,7 @@ Copyright (C) 2016, SED (ETH Zurich)
 """
 
 from PyQt4.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
-from PyQt4.QtGui import QBrush
+from PyQt4.QtGui import QBrush, QFont
 
 
 class Node(object):
@@ -50,13 +50,18 @@ class ScenarioNode(Node):
 
     def data(self, column, role):
         default = super(ScenarioNode, self).data(column, role)
-        if role == Qt.DisplayRole:
-            if column == 0:
+        if column == 0:
+            if role == Qt.DisplayRole:
                 return self.item.name
-            elif column == 1:
+        if column == 1:
+            if role == Qt.DisplayRole:
                 return 'N/A'
-        elif role == Qt.ForegroundRole and column == 1:
-            return QBrush(Qt.gray)
+            elif role == Qt.ForegroundRole:
+                return QBrush(Qt.gray)
+            elif role == Qt.FontRole:
+                font = QFont()
+                font.setItalic(True)
+                return font
         else:
             return default
 

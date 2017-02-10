@@ -36,8 +36,9 @@ class StatusBar(QStatusBar):
     def __init__(self):
         super(StatusBar, self).__init__()
         self.projectWidget = QLabel('No project loaded')
-        self.timeWidget = QLabel('Project Time: -')
+        self.timeWidget = QLabel('Project Time: N/A')
         self.addWidget(self.projectWidget)
+        self.addWidget(QLabel(' '*10))
         self.addWidget(self.timeWidget)
 
     def set_project(self, project):
@@ -46,7 +47,7 @@ class StatusBar(QStatusBar):
         self.set_project_time(project.project_time if project else None)
 
     def set_project_time(self, t):
-        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else '-'
+        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
         self.timeWidget.setText('Project Time: {}'.format(txt))
 
 
@@ -72,10 +73,10 @@ class MainWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         # ...additional setup
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        # spacer.setVisible(True)
-        # self.ui.mainToolBar.insertWidget(self.ui.actionForecasts, spacer)
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        spacer.setVisible(True)
+        self.ui.mainToolBar.insertWidget(self.ui.actionForecasts, spacer)
         self.status_bar = StatusBar()
         self.setStatusBar(self.status_bar)
 
