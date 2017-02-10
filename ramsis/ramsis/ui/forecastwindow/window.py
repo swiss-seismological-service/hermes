@@ -10,6 +10,7 @@ import logging
 import os
 from PyQt4 import QtGui, uic
 from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter
+from timeline import TimeLinePresenter
 from forecasttreemodel import ForecastTreeModel
 
 from data import dummy_data
@@ -34,9 +35,10 @@ class ForecastsWindow(QtGui.QDialog):
         self.ui = Ui_ForecastsWindow()
         self.ui.setupUi(self)
 
-        # Presenters for the main window components (the tabs)
+        # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
+        self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
         # Connect essential signals
         # ... from the core

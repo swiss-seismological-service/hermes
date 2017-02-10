@@ -9,9 +9,7 @@ Ramsis specific classes used in various places of the user interface
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 import numpy as np
-import logging
-from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 
 
@@ -133,7 +131,7 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.addItem(self.plot)
         self.getAxis('left').enableAutoSIPrefix(False)
         self.getAxis('bottom').enableAutoSIPrefix(False)
-        self.getAxis('left').setLabel('Magnitude', 'Mw')
+        self.getAxis('left').setLabel('Mag', 'Mw')
 
 
 class HydraulicsPlotWidget(TimePlotWidget):
