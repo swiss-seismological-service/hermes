@@ -292,7 +292,7 @@ class Controller(QtCore.QObject):
         # relations
         forecast.input = forecast_input
         forecast_input.scenarios = [scenario]
-        scenario.injection_plans = [injection_plan]
+        scenario.injection_plan = injection_plan
         injection_plan.samples = [injection_sample]
 
         # forecast attributes

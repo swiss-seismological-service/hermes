@@ -123,8 +123,8 @@ class InjectionPlan(OrmBase):
     samples = relationship('InjectionSample',
                            back_populates='injection_plan')
     # Scenario relation
-    scenarios_id = Column(Integer, ForeignKey('scenarios.id'))
-    scenarios = relationship('Scenario', back_populates='injection_plans')
+    scenario_id = Column(Integer, ForeignKey('scenarios.id'))
+    scenario = relationship('Scenario', back_populates='injection_plan')
     # endregion
 
 

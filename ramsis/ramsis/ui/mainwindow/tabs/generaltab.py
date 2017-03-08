@@ -20,7 +20,7 @@ class GeneralTabPresenter(TabPresenter):
 
     def refresh(self):
         if self.scenario:
-            t = self.scenario.forecast_inputs.forecast\
+            t = self.scenario.forecast_input.forecast\
                 .forecast_time.strftime('%d.%m.%Y %H:%M')
             title = 'Forecast {}    {}'.format(t, self.scenario.name)
         else:

@@ -84,7 +84,7 @@ class ForecastInput(OrmBase):
                                  back_populates='forecast_input',
                                  cascade='all, delete-orphan')
     # Scenario relation
-    scenarios = relationship('Scenario', back_populates='forecast_inputs',
+    scenarios = relationship('Scenario', back_populates='forecast_input',
                              cascade='all, delete-orphan')
     # endregion
 
@@ -120,8 +120,8 @@ class ForecastResult(QtCore.QObject, OrmBase):
                                  collection_class=attribute_mapped_collection(
                                      'model_name'))
     # Scenario relation
-    scenarios = relationship('Scenario', back_populates='forecast_results',
-                             uselist=False)
+    scenario = relationship('Scenario', back_populates='forecast_result',
+                            uselist=False)
     # endregion
 
     result_changed = QtCore.pyqtSignal(object)
@@ -138,18 +138,17 @@ class Scenario(OrmBase):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     # ForecastInput relation
-    forecast_inputs_id = Column(Integer, ForeignKey('forecast_inputs.id'))
-    # FIXME: use singular for to-one relationship
-    forecast_inputs = relationship('ForecastInput', back_populates='scenarios')
+    forecast_input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
+    forecast_input = relationship('ForecastInput', back_populates='scenarios')
     # InjectionPlan relation
-    injection_plans = relationship('InjectionPlan',
-                                   cascade='all, delete-orphan',
-                                   back_populates='scenarios')
+    injection_plan = relationship('InjectionPlan',
+                                  cascade='all, delete-orphan',
+                                  back_populates='scenario',
+                                  uselist=False)
     # ForecastResult relation
-    forecast_results_id = Column(Integer, ForeignKey('forecast_results.id'))
-    # FIXME: should be a one-to-one relationship
-    forecast_results = relationship('ForecastResult',
-                                    back_populates='scenarios')
+    forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
+    forecast_result = relationship('ForecastResult',
+                                   back_populates='scenario')
     # endregion
 
 
