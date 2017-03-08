@@ -182,7 +182,7 @@ class MainWindow(QtGui.QMainWindow):
                                                  home)
         if path == '':
             return
-        history = self.project.seismic_catalog
+        history = self.ramsis_core.project.seismic_catalog
         if path:
             self._import_file_to_history(path, history)
 
@@ -193,7 +193,7 @@ class MainWindow(QtGui.QMainWindow):
                                                  home)
         if path == '':
             return
-        history = self.project.injection_history
+        history = self.ramsis_core.project.injection_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
 
@@ -219,7 +219,7 @@ class MainWindow(QtGui.QMainWindow):
                 importer.date_format = '%d.%m.%YT%H:%M:%S'
             history.clear()
             history.import_events(importer)
-            self.project.save()
+            self.ramsis_core.project.save()
 
     def action_show_timeline(self):
         if self.timeline_window is None:
@@ -248,13 +248,13 @@ class MainWindow(QtGui.QMainWindow):
     def action_show_project_settings(self):
         if self.project_settings_window is None:
             self.project_settings_window = \
-                ProjectSettingsWindow(project=self.project)
+                ProjectSettingsWindow(project=self.ramsis_core.project)
         self.project_settings_window.show()
 
     def action_view_seismic_data(self):
         if self.table_view is None:
             self.table_view = QtGui.QTableView()
-            model = SeismicDataModel(self.project.seismic_catalog)
+            model = SeismicDataModel(self.ramsis_core.project.seismic_catalog)
             self.table_view.setModel(model)
             self.table_view.show()
 
