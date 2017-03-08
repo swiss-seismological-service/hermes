@@ -19,9 +19,6 @@
   <property name="windowTitle">
    <string>RAMSIS</string>
   </property>
-  <property name="unifiedTitleAndToolBarOnMac">
-   <bool>true</bool>
-  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
     <property name="leftMargin">
@@ -818,13 +815,9 @@
     <addaction name="actionOpen_Project"/>
     <addaction name="menuOpen_Recent"/>
     <addaction name="separator"/>
-    <addaction name="actionProject_Settings"/>
     <addaction name="actionApplication_Settings"/>
     <addaction name="separator"/>
-    <addaction name="actionImport_Seismic_Data"/>
-    <addaction name="actionImport_Hydraulic_Data"/>
     <addaction name="separator"/>
-    <addaction name="actionView_Data"/>
    </widget>
    <widget class="QMenu" name="menuSimulation">
     <property name="title">
@@ -841,7 +834,23 @@
     <addaction name="actionShow_3D"/>
     <addaction name="actionForecasts"/>
    </widget>
+   <widget class="QMenu" name="menuProject">
+    <property name="title">
+     <string>Project</string>
+    </property>
+    <addaction name="actionProject_Settings"/>
+    <addaction name="separator"/>
+    <addaction name="actionSeismic_Data"/>
+    <addaction name="actionFetch_from_fdsnws"/>
+    <addaction name="actionImport_Seismic_Data"/>
+    <addaction name="actionView_Data"/>
+    <addaction name="separator"/>
+    <addaction name="actionHydraulic_Data"/>
+    <addaction name="actionFetch_Hydraulic_Data_from_HYDWS"/>
+    <addaction name="actionImport_Hydraulic_Data"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menuProject"/>
    <addaction name="menuSimulation"/>
    <addaction name="menuWindow"/>
   </widget>
@@ -880,12 +889,12 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionImport_Seismic_Data">
    <property name="text">
-    <string>&amp;Import Seismic Data...</string>
+    <string>&amp;Import  from CSV...</string>
    </property>
   </action>
   <action name="actionView_Data">
    <property name="text">
-    <string>View Data</string>
+    <string>View as Table</string>
    </property>
   </action>
   <action name="actionStart_Simulation">
@@ -914,7 +923,7 @@
   </action>
   <action name="actionImport_Hydraulic_Data">
    <property name="text">
-    <string>Import Hydraulic Data...</string>
+    <string>Import from CSV...</string>
    </property>
   </action>
   <action name="actionOpen_Project">
@@ -985,6 +994,32 @@
   <action name="actionProject_Settings">
    <property name="text">
     <string>Project Settings...</string>
+   </property>
+  </action>
+  <action name="actionFetch_from_fdsnws">
+   <property name="text">
+    <string>&amp;Fetch from FDSNWS</string>
+   </property>
+  </action>
+  <action name="actionFetch_Hydraulic_Data_from_HYDWS">
+   <property name="text">
+    <string>Fetch from HYDWS</string>
+   </property>
+  </action>
+  <action name="actionSeismic_Data">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Seismic Data</string>
+   </property>
+  </action>
+  <action name="actionHydraulic_Data">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Hydraulic Data</string>
    </property>
   </action>
  </widget>

@@ -278,13 +278,12 @@ class MainWindow(QtGui.QMainWindow):
             enable = False
         else:
             enable = True
+        self.ui.menuProject.setEnabled(enable)
         self.ui.actionTimeline.setEnabled(enable)
         self.ui.actionShow_3D.setEnabled(enable)
         self.ui.actionForecasts.setEnabled(enable)
         self.ui.actionSimulation.setEnabled(enable)
         self.ui.actionScenario.setEnabled(enable)
-        self.ui.actionView_Data.setEnabled(enable)
-        self.ui.actionProject_Settings.setEnabled(enable)
 
         if not self.ramsis_core.project:
             self.ui.actionStart_Simulation.setEnabled(False)
