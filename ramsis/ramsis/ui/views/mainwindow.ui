@@ -121,7 +121,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_5">
+           <widget class="QPushButton" name="removeForecastButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -143,7 +143,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_6">
+           <widget class="QPushButton" name="addForecastButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -846,7 +846,7 @@
     <addaction name="actionView_Data"/>
     <addaction name="separator"/>
     <addaction name="actionHydraulic_Data"/>
-    <addaction name="actionFetch_Hydraulic_Data_from_HYDWS"/>
+    <addaction name="actionFetch_from_hydws"/>
     <addaction name="actionImport_Hydraulic_Data"/>
    </widget>
    <addaction name="menu_File"/>
@@ -1001,7 +1001,7 @@
     <string>&amp;Fetch from FDSNWS</string>
    </property>
   </action>
-  <action name="actionFetch_Hydraulic_Data_from_HYDWS">
+  <action name="actionFetch_from_hydws">
    <property name="text">
     <string>Fetch from HYDWS</string>
    </property>

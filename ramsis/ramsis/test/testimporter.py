@@ -9,7 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import unittest
 from datetime import timedelta, datetime
 
-from core.tools.eventimporter import EventImporter
+from core.datasources import CsvEventImporter
 
 
 class Import(unittest.TestCase):
@@ -34,7 +34,7 @@ class Import(unittest.TestCase):
 
         with open('test/resources/test_hydr.csv', 'rb') as f:
             # Create unit under test
-            importer = EventImporter(f, delimiter='\t')
+            importer = CsvEventImporter(f, delimiter='\t')
             importer.date_format = '%Y-%m-%dT%H:%M:%S'
 
             # Since dates are absolute, the importer should not
@@ -70,7 +70,7 @@ class Import(unittest.TestCase):
 
         with open('test/resources/test_catalog.csv', 'rb') as f:
             # Create unit under test
-            importer = EventImporter(f)
+            importer = CsvEventImporter(f)
             importer.base_date = base_date
 
             # Since dates are relative, the importer should expect a base date

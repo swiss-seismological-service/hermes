@@ -240,12 +240,16 @@ class ProjectSettingsWindow(SettingsWindow):
         self.load_settings(self.project.settings)
 
     def action_save(self):
-        self.project.settings.commit()
-        self.project.title = self.ui.projectTitleEdit.text()
-        self.project.start_date = self.ui.projectStartEdit.dateTime().\
-            toPyDateTime()
-        self.project.end_date = self.ui.projectEndEdit.dateTime().\
-            toPyDateTime()
-        self.project.description = self.ui.descriptionEdit.toPlainText()
-        self.project.save()
+        p = self.project
+        p.title = self.ui.projectTitleEdit.text()
+        start_date = self.ui.projectStartEdit.dateTime().toPyDateTime()
+        end_date = self.ui.projectEndEdit.dateTime().toPyDateTime()
+        if start_date != p.start_date or end_date != p.end_date:
+            p.start_date = start_date
+            p.end_date = end_date
+            p.settings['forecast_start'] = p.start_date
+            p.update_project_time(p.start_date)
+        p.description = self.ui.descriptionEdit.toPlainText()
+        p.settings.commit()
+        p.save()
         self.close()

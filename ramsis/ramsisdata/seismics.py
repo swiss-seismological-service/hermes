@@ -6,7 +6,7 @@ History of seismic events
 
 import logging
 import traceback
-
+from datetime import datetime
 from PyQt4 import QtCore
 from sqlalchemy import Column, Table
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
@@ -62,12 +62,11 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
 
     def import_events(self, importer):
         """
-        Imports seismic events from a csv file by using an EventImporter
+        Imports seismic events from a data source by using an EventImporter
 
-        The EventImporter must return the following fields (which must thus
-        be present in the csv file). All imported events are simply added to
-        any existing one. If you want to overwrite existing events, call
-        :meth:`clear_events` first.
+        The EventImporter must return the following fields. All imported events
+        are simply added to any existing ones. If you want to overwrite
+        existing events, call :meth:`clear_events` first.
 
         x: x coordinate [m]
         y: y coordinate [m]
@@ -88,12 +87,12 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
                 events.append(event)
         except:
             log.error('Failed to import seismic events. Make sure '
-                      'the .csv file contains x, y, depth, and mag '
+                      'the data contains x, y, depth, and mag '
                       'fields and that the date field has the format '
                       'dd.mm.yyyyTHH:MM:SS. The original error was ' +
                       traceback.format_exc())
         else:
-            self.seismic_events.append(events)
+            self.seismic_events.extend(events)
             log.info('Imported {} seismic events.'.format(len(events)))
             self.history_changed.emit()
 
@@ -102,21 +101,24 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
         return [e for e in self.seismic_events
                 if e.date_time < end_date and e.magnitude > mc]
 
-    def clear_events(self, time_range=None):
+    def clear_events(self, time_range=(None, None)):
         """
         Clear all seismic events from the database
 
         If time_range is given, only the events that fall into the time range
+        are cleared.
 
         """
-        if time_range:
-            to_delete = (s for s in self.seismic_events
-                         if time_range[1] >= s.date_time >= time_range[0])
-            for s in to_delete:
-                self.seismic_events.remove(s)
-        else:
-            self.seismic_events = []
-            log.info('Cleared all hydraulic events.')
+        time_range = (time_range[0] or datetime.min,
+                      time_range[1] or datetime.max)
+
+        to_delete = (s for s in self.seismic_events
+                     if time_range[1] >= s.date_time >= time_range[0])
+        count = 0
+        for s in to_delete:
+            self.seismic_events.remove(s)
+            count += 1
+        log.info('Cleared {} seismic events.'.format(count))
         self.history_changed.emit()
 
     def __len__(self):

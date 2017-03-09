@@ -24,7 +24,7 @@ from core.engine.engine import Engine
 
 from core.scheduler import TaskScheduler, ScheduledTask
 
-from importers.runners import FDSNWSRunner, HYDWSRunner
+from core.datasources import FDSNWSDataSource, HYDWSDataSource
 
 # from core.tools.tools import Profiler
 
@@ -62,8 +62,8 @@ class Controller(QtCore.QObject):
         self.engine = Engine(settings)
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None
-        self.fdsnws_runner = None
-        self.hydws_runner = None
+        self.seismics_data_source = None
+        self.hydraulics_data_source = None
 
         # Initialize simulator
         self.simulator = Simulator(self._simulation_handler)
@@ -96,14 +96,13 @@ class Controller(QtCore.QObject):
         self.project = store.session.query(Project).first()
         self.project.store = store
         self.project.project_time_changed.connect(self._on_project_time_change)
+        self.project.settings.settings_changed.connect(
+            self._on_project_settings_changed
+        )
         self.engine.observe_project(self.project)
         self.project_loaded.emit(self.project)
-        self._logger.info('... initializing runners...')
-        self.fdsnws_runner = FDSNWSRunner(self._settings)
-        self.hydws_runner = HYDWSRunner(self._settings)
-        self.fdsnws_runner.finished.connect(self._on_fdsnws_runner_finished)
-        self.hydws_runner.finished.connect(self._on_hydws_runner_finished)
-        self._logger.info('...done')
+        self._update_data_sources()
+        self._logger.info('... done loading project')
 
     def create_project(self, path):
         """
@@ -131,6 +130,26 @@ class Controller(QtCore.QObject):
         self.project.project_time_changed.disconnect(
             self._on_project_time_change)
         self.project = None
+
+    # Other user actions
+
+    def fetch_seismic_events(self):
+        """
+        Reload seismic catalog by fetching all events from the
+        seismic data source.
+
+        """
+        self._logger.info('Re-fetching seismic data from data source')
+        self.seismics_data_source.fetch()
+
+    def fetch_hydraulic_events(self):
+        """
+        Reload hydraulic history by fetching all events from the
+        hydraulic data source.
+
+        """
+        self._logger.info('Re-fetching hydraulic data from data source')
+        self.hydraulics_data_source.fetch()
 
     # Running
 
@@ -247,14 +266,14 @@ class Controller(QtCore.QObject):
 
         # Fetching seismic data over fdsnws
         minutes = self._settings.value('data_acquisition/fdsnws_interval')
-        task = ScheduledTask(task_function=self._import_fdsnws_data,
+        task = ScheduledTask(task_function=self.update_seismic_event_data,
                              dt=timedelta(minutes=minutes),
                              name='FDSNWS')
         scheduler.add_task(task)
 
         # Fetching hydraulic data
         minutes = self._settings.value('data_acquisition/hydws_interval')
-        task = ScheduledTask(task_function=self._import_hydws_data,
+        task = ScheduledTask(task_function=self.update_hydraulic_event_data,
                              dt=timedelta(minutes=minutes),
                              name='HYDWS')
         scheduler.add_task(task)
@@ -345,25 +364,70 @@ class Controller(QtCore.QObject):
             self._logger.debug('Run pending tasks')
             self._scheduler.run_pending_tasks(t_project, info)
 
+    def _on_project_settings_changed(self, _):
+        self._update_data_sources()
+
+    def _update_data_sources(self):
+        # Seismic
+        new_url = self.project.settings['fdsnws_url']
+        if new_url is None:
+            self.seismics_data_source = None
+        elif self.seismics_data_source:
+            self.seismics_data_source.url = new_url
+            self._logger.info('Seismic data source changed to {}'
+                              .format(new_url))
+        else:
+            self.seismics_data_source = FDSNWSDataSource(new_url)
+            self.seismics_data_source.data_received.connect(
+                self._on_seismic_data_received)
+        # Hydraulic
+        new_url = self.project.settings['hydws_url']
+        if new_url is None:
+            self.hydraulics_data_source = None
+        elif self.hydraulics_data_source:
+            self.hydraulics_data_source.url = new_url
+            self._logger.info('Hydraulic data source changed to {}'
+                              .format(new_url))
+        else:
+            self.hydraulics_data_source = HYDWSDataSource(new_url)
+            self.hydraulics_data_source.data_received.connect(
+                self._on_hydraulic_data_received)
+
     # FDSNWS task function
 
-    def _import_fdsnws_data(self, run_info):
+    def update_seismic_event_data(self, run_info):
         if self.project:
-            self.fdsnws_runner.start(self.project.project_time)
+            dt = self._settings.value('data_acquisition/fdsnws_interval')
+            end = self.project.project_time
+            # FIXME: we should have an overlap in our data fetches to catch updated events
+            start = self.project.project_time - dt
+            self.seismics_data_source.fetch(starttime=start, endtime=end)
 
-    def _on_fdsnws_runner_finished(self, results):
-        if results is not None:
-            self.project.seismic_catalog.import_events(**results)
+    def _on_seismic_data_received(self, result):
+        if result is not None:
+            tr = result['time_range']
+            importer = result['importer']
+            self.project.seismic_catalog.clear_events(tr)
+            self.project.seismic_catalog.import_events(importer)
+            self.project.store.commit()
 
     # HYDWS task function
 
-    def _import_hydws_data(self, run_info):
+    def update_hydraulic_event_data(self, run_info):
         if self.project:
-            self.hydws_runner.start(self.project.project_time)
+            dt = self._settings.value('data_acquisition/hydws_interval')
+            end = self.project.project_time
+            # FIXME: we should have an overlap in our data fetches to catch updated events
+            start = self.project.project_time - dt
+            self.hydraulics_data_source.fetch(starttime=start, endtime=end)
 
-    def _on_hydws_runner_finished(self, results):
-        if results is not None:
-            self.project.injection_history.import_events(**results)
+    def _on_hydraulic_data_received(self, result):
+        if result is not None:
+            tr = result['time_range']
+            importer = result['importer']
+            self.project.injection_history.clear_events(tr)
+            self.project.injection_history.import_events(importer)
+            self.project.store.commit()
 
     # Rate computation task function
 

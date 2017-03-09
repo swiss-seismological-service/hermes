@@ -63,7 +63,7 @@ class Project(QtCore.QObject, OrmBase):
         self.seismic_catalog = SeismicCatalog()
         self.injection_history = InjectionHistory()
         self.rate_history = SeismicRateHistory()
-        self.forecast_history = ForecastSet()
+        self.forecast_set = ForecastSet()
         self.title = title
         self.start_date = datetime.now()
         self.end_date = self.start_date + timedelta(days=365)
@@ -75,7 +75,8 @@ class Project(QtCore.QObject, OrmBase):
         # These are the basel well tip coordinates (in CH-1903)
         self.injection_well = InjectionWell(4740.3, 270645.0, 611631.0)
 
-        self._project_time = datetime.now()
+        self._project_time = self.start_date
+        self.settings['forecast_start'] = self.start_date
         if self.store:
             self.store.session.add(self)
 

@@ -32,20 +32,17 @@
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabProjectInfo">
       <attribute name="title">
        <string>Project Info</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="1">
-        <widget class="QDateTimeEdit" name="projectStartEdit">
-         <property name="displayFormat">
-          <string>dd.MM.yyyy HH:mm</string>
-         </property>
-         <property name="calendarPopup">
-          <bool>true</bool>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Project Start Date</string>
          </property>
         </widget>
        </item>
@@ -56,20 +53,23 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="projectTitleEdit"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Project Start Date</string>
-         </property>
-        </widget>
+       <item row="3" column="1">
+        <widget class="QPlainTextEdit" name="descriptionEdit"/>
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="label">
          <property name="text">
           <string>Project End Date</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDateTimeEdit" name="projectStartEdit">
+         <property name="displayFormat">
+          <string>dd.MM.yyyy HH:mm</string>
+         </property>
+         <property name="calendarPopup">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -83,8 +83,8 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
-        <widget class="QPlainTextEdit" name="descriptionEdit"/>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="projectTitleEdit"/>
        </item>
        <item row="2" column="1">
         <widget class="QDateTimeEdit" name="projectEndEdit">
@@ -96,7 +96,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
+       <item row="3" column="2">
         <spacer name="horizontalSpacer_4">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -108,6 +108,28 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="1" column="2" rowspan="2">
+        <widget class="QLabel" name="label_8">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Changing the projects start or end date will also reset the project time and forecast start date</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <property name="indent">
+          <number>0</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

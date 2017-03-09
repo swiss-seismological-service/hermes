@@ -42,9 +42,7 @@ class ContentPresenter(object):
     # increasing granularity (i.e. top level methods at the top)
 
     def present_current_project(self):
-        # project = self.core.project
-        # FIXME: remove, for testing only
-        project = dummy_data()
+        project = self.ramsis_core.project
         self._observe_project_changes(project)
         self.fc_tree_model = ForecastTreeModel(project.forecast_set)
         self.ui.forecastTreeView.setModel(self.fc_tree_model)

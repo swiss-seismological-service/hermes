@@ -8,7 +8,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from PyQt4 import QtCore
 
 log = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class TimeLinePresenter(QtCore.QObject):
         super(TimeLinePresenter, self).__init__()
         self.ui = ui
         self.core = core
-        self.displayed_project_time = datetime.now()
+        self.displayed_project_time = datetime(1970, 1, 1)
 
         # configure time line widget (use time_line as shortcut)
         self.time_line = self.ui.timeLineWidget
@@ -35,6 +35,10 @@ class TimeLinePresenter(QtCore.QObject):
 
         if core.project:
             self.present_time_line_for_project(core.project)
+        else:
+            end = (datetime.now() - datetime(1970, 1, 1)).total_seconds()
+            start = end - 2 * 356 * 24 * 3600
+            self.time_line.setRange(xRange=(start, end))
 
     def present_time_line_for_project(self, project):
         """
@@ -65,13 +69,6 @@ class TimeLinePresenter(QtCore.QObject):
     def zoom(self, display_range):
         self.time_line.zoom(display_range=display_range)
 
-    def _on_history_changed(self, change):
-        t = change.get('simulation_time')
-        if t is None:
-            self.replot()
-        else:
-            self.replot(max_time=t)
-
     def replot(self, max_time=None):
         """
         Plot the data in the time line
@@ -94,10 +91,20 @@ class TimeLinePresenter(QtCore.QObject):
     def on_project_loaded(self, project):
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_changed)
+        project.settings.settings_changed.connect(self.on_settings_changed)
+        project.seismic_catalog.history_changed.connect(
+            self.on_catalog_changed)
         self.present_time_line_for_project(project)
+        self.replot()
 
     def on_project_will_close(self, project):
         self.present_time_line_for_project(None)
 
     def on_project_time_changed(self, project_time):
         self.show_current_time(project_time)
+
+    def on_settings_changed(self, settings):
+        self.present_time_line_for_project(self.core.project)
+
+    def on_catalog_changed(self):
+        self.replot()

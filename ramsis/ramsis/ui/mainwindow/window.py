@@ -23,7 +23,7 @@ from ui.views.plots import Event3DViewWidget
 from presenter import ContentPresenter
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
-from core.tools.eventimporter import EventImporter
+from core.datasources import CsvEventImporter
 
 
 ui_path = os.path.dirname(__file__)
@@ -87,6 +87,10 @@ class MainWindow(QtGui.QMainWindow):
         # ...File
         self.ui.actionNew_Project.triggered.connect(self.action_new_project)
         self.ui.actionOpen_Project.triggered.connect(self.action_open_project)
+        self.ui.actionFetch_from_fdsnws.triggered.connect(
+            self.ramsis_core.fetch_seismic_events)
+        self.ui.actionFetch_from_hydws.triggered.connect(
+            self.ramsis_core.fetch_hydraulic_events)
         self.ui.actionImport_Seismic_Data.triggered.connect(
             self.action_import_seismic_data)
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
@@ -97,6 +101,9 @@ class MainWindow(QtGui.QMainWindow):
             self.action_show_application_settings)
         self.ui.actionProject_Settings.triggered.connect(
             self.action_show_project_settings)
+        # ...Forecast planning
+        self.ui.addForecastButton.clicked.connect(
+            self.on_add_forecast_clicked)
         # ...Simulation
         self.ui.actionStart_Simulation.triggered.\
             connect(self.action_start_simulation)
@@ -209,7 +216,7 @@ class MainWindow(QtGui.QMainWindow):
 
         """
         with open(path, 'rb') as csv_file:
-            importer = EventImporter(csv_file, delimiter=delimiter)
+            importer = CsvEventImporter(csv_file, delimiter=delimiter)
             if importer.expects_base_date:
                 date, accepted = helpers.DateDialog.get_date_time()
                 if not accepted:
@@ -285,7 +292,8 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionSimulation.setEnabled(enable)
         self.ui.actionScenario.setEnabled(enable)
 
-        if not self.ramsis_core.project:
+        project = self.ramsis_core.project
+        if not project:
             self.ui.actionStart_Simulation.setEnabled(False)
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
@@ -305,6 +313,14 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
 
+        en = (project.settings['fdsnws_enable'] is True and
+              project.settings['fdsnws_url'] is not None)
+        self.ui.actionFetch_from_fdsnws.setEnabled(en)
+
+        en = (project.settings['hydws_enable'] is True and
+              project.settings['hydws_url'] is not None)
+        self.ui.actionFetch_from_hydws.setEnabled(en)
+
     # Status Updates
 
     def update_status_msg(self):
@@ -319,6 +335,11 @@ class MainWindow(QtGui.QMainWindow):
             state_msg = 'Simulating (paused)'
 
         self.status_bar.showMessage(state_msg)
+
+    # UI signals
+
+    def on_add_forecast_clicked(self):
+        self.ramsis_core.add_next_forecast()
 
     # Handlers for signals from the core
 
@@ -342,8 +363,14 @@ class MainWindow(QtGui.QMainWindow):
         """
         self.content_presenter.present_current_project()
         self.status_bar.set_project(project)
+        project.settings.settings_changed.connect(
+            self.on_project_settings_changed)
         self.update_controls()
 
     def on_sim_state_change(self, _):
         self.update_controls()
         self.update_status_msg()
+
+    def on_project_settings_changed(self, settings):
+        self.update_controls()
+        self.status_bar.set_project(self.ramsis_core.project)

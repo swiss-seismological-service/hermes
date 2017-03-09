@@ -6,7 +6,7 @@ History of hydraulic events, i.e changes in flow or pressure
 
 import logging
 import traceback
-
+from datetime import datetime
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
@@ -76,26 +76,28 @@ class InjectionHistory(QtCore.QObject, OrmBase):
                       'field has the format dd.mm.yyyyTHH:MM:SS. The '
                       'original error was ' + traceback.format_exc())
         else:
-            self.samples.append(events)
+            self.samples.extend(events)
             log.info('Imported {} hydraulic events.'.format(
                 len(events)))
             self.history_changed.emit()
 
-    def clear_events(self, time_range=None):
+    def clear_events(self, time_range=(None, None)):
         """
         Clear all hydraulic events from the database
 
         If time_range is given, only the events that fall into the time range
 
         """
-        if time_range:
-            to_delete = (s for s in self.samples
-                         if time_range[1] >= s.date_time >= time_range[0])
-            for s in to_delete:
-                self.samples.remove(s)
-        else:
-            self.samples = []
-            log.info('Cleared all hydraulic events.')
+        time_range = (time_range[0] or datetime.min,
+                      time_range[1] or datetime.max)
+
+        to_delete = (s for s in self.samples
+                     if time_range[1] >= s.date_time >= time_range[0])
+        count = 0
+        for s in to_delete:
+            self.samples.remove(s)
+            count += 1
+        log.info('Cleared {} hydraulic events.'.format(count))
         self.history_changed.emit()
 
     def __getitem__(self, item):
