@@ -37,12 +37,20 @@ class ForecastSet(QtCore.QObject, OrmBase):
     project = relationship('Project', back_populates='forecast_set')
     # Forecast relation
     forecasts = relationship('Forecast', back_populates='forecast_set',
-                             cascade='all, delete-orphan')
+                             cascade='all, delete-orphan',
+                             order_by='Forecast.forecast_time')
     # endregion
 
     @reconstructor
     def init_on_load(self):
         QtCore.QObject.__init__(self)
+
+    def forecast_at(self, t):
+        """ Return the forecast scheduled for t """
+        try:
+            return next(f for f in self.forecasts if f.forecast_time == t)
+        except StopIteration:
+            return None
 
 
 class Forecast(OrmBase):
@@ -66,8 +74,16 @@ class Forecast(OrmBase):
     input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     input = relationship('ForecastInput', back_populates='forecast')
     # ForecastResult relation
-    result = relationship('ForecastResult', back_populates='forecast')
+    results = relationship('ForecastResult', back_populates='forecast')
     # endregion
+
+    @property
+    def complete(self):
+        # FIXME: also check all stages are complete
+        if len(self.input.scenarios) == len(self.results):
+            return True
+        else:
+            return False
 
 
 class ForecastInput(OrmBase):
@@ -113,7 +129,7 @@ class ForecastResult(QtCore.QObject, OrmBase):
     risk_oq_calc_id = Column(Integer)
     # Forecast relation
     forecast_id = Column(Integer, ForeignKey('forecasts.id'))
-    forecast = relationship('Forecast', back_populates='result')
+    forecast = relationship('Forecast', back_populates='results')
     # ISModelResult relation
     model_results = relationship('ModelResult', cascade='all, delete-orphan',
                                  back_populates='forecast_result',

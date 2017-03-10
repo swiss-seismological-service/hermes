@@ -125,13 +125,16 @@ class ProjectSettings(Settings):
     default_settings = {
         'fdsnws_enable': False,
         'fdsnws_url': None,
+        'fdsnws_interval': 5.0,  # minutes
         'hydws_enable': False,
         'hydws_url': None,
+        'hydws_interval': 5.0,  # minutes
+        'rate_interval': 1.0,  # minutes
         'auto_schedule_enable': True,
-        'forecast_interval': 6.0,
-        'forecast_length': 6.0,
+        'forecast_interval': 6.0,  # hours
+        'forecast_length': 6.0,  # hours
         'forecast_start': datetime(1970, 1, 1, 0, 0, 0),
-        'seismic_rate_interval': 1.0,
+        'seismic_rate_interval': 1.0,  # minutes
         'active_models': ['all'],
         'write_fc_results_to_disk': False,
     }

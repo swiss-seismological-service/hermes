@@ -19,20 +19,24 @@ class Engine(QtCore.QObject):
         self._settings = settings
         self._logger = logging.getLogger(__name__)
 
-    def run(self, task_run_info, forecast):
+    def run(self, t, forecast):
         assert self._project
-        t_run = task_run_info.t_project
 
         # Skip this forecast if the core is busy
         if self.busy:
             self._logger.warning('Attempted to initiate forecast while the '
                                  'core is still busy with a previously'
                                  'started forecast. Skipping at '
-                                 't=' + str(t_run))
+                                 't=' + str(forecast.forecast_time))
             return
 
         self._logger.info(6 * '----------')
-        self._logger.info('Initiating forecast')
+        self._logger.info('Initiating forecast {} at {}'.format(
+            forecast.forecast_time, t))
+
+        # Copy the current catalog
+        copy = self.project.seismic_catalog.copy()
+        forecast.forecast_input.input_catalog = copy
 
         self._forecast = forecast
         self.busy = True

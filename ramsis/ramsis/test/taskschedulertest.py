@@ -8,10 +8,9 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import unittest
 from datetime import timedelta, datetime
-
 from mock import MagicMock
 
-from core.scheduler import TaskScheduler, ScheduledTask
+from core.tools.scheduler import TaskScheduler, ScheduledTask
 
 
 class ScheduledTaskTest(unittest.TestCase):
@@ -75,9 +74,9 @@ class ScheduledTaskTest(unittest.TestCase):
         task = ScheduledTask(self.handler)
         task.schedule(t_run)
 
-        self.assertTrue(task.is_pending(t_run))
-        self.assertTrue(task.is_pending(t_run + dt))
-        self.assertFalse(task.is_pending(t_run - dt))
+        self.assertTrue(task.is_due(t_run))
+        self.assertTrue(task.is_due(t_run + dt))
+        self.assertFalse(task.is_due(t_run - dt))
 
     def test_run(self):
         handler = MagicMock()
@@ -125,9 +124,9 @@ class TaskSchedulerTest(unittest.TestCase):
     def test_pending(self):
         """ Test inquiries about pending tasks """
         dt = timedelta(seconds=1)
-        self.assertTrue(self.scheduler.has_pending_tasks(self.t_run))
-        self.assertFalse(self.scheduler.has_pending_tasks(self.t_run - dt))
-        self.assertListEqual(self.scheduler.pending_tasks(self.t_run),
+        self.assertTrue(self.scheduler.has_due_tasks(self.t_run))
+        self.assertFalse(self.scheduler.has_due_tasks(self.t_run - dt))
+        self.assertListEqual(self.scheduler.due_tasks(self.t_run),
                              [self.task1, self.task2])
 
     def test_reset_schedule(self):
@@ -145,7 +144,7 @@ class TaskSchedulerTest(unittest.TestCase):
 
     def test_run_pending(self):
         """ Test running pending tasks and updating schedule """
-        self.scheduler.run_pending_tasks(self.t_run, None)
+        self.scheduler.run_due_tasks(self.t_run, None)
         self.assertEqual(self.handler.call_count, 2)
         self.assertEqual(self.task1.run_time, self.t_run + self.task1.dt)
         self.assertEqual(self.task5.run_time, self.t_run + self.task5.dt)
