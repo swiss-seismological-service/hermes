@@ -65,7 +65,7 @@ class Project(QtCore.QObject, OrmBase):
         self.rate_history = SeismicRateHistory()
         self.forecast_set = ForecastSet()
         self.title = title
-        self.start_date = datetime.now()
+        self.start_date = datetime.now().replace(microsecond=0)
         self.end_date = self.start_date + timedelta(days=365)
         self.settings = ProjectSettings()
 
