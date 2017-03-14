@@ -33,7 +33,7 @@ class Store:
         self.engine = create_engine(store_url)
         self.model = model
         self.model.metadata.create_all(self.engine, checkfirst=True)
-        session = sessionmaker(bind=self.engine)
+        session = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.session = session()
 
     def commit(self):
