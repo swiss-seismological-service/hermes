@@ -59,7 +59,6 @@ class ObsPyCatalogImporter:
 
         """
         for event in self.catalog:
-            # TODO: get origin lat/long and convert to cartesian coordinates
             origin = event.preferred_origin()
             magnitude = event.preferred_magnitude()
             if not (hasattr(origin, 'depth') and hasattr(magnitude, 'mag')):
@@ -67,8 +66,8 @@ class ObsPyCatalogImporter:
 
             date = origin.time.datetime
             row = {
-                'x': 1.0,
-                'y': 1.0,
+                'lat': origin.latitude,
+                'lon': origin.longitude,
                 'depth': origin.depth,
                 'mag': magnitude.mag
             }

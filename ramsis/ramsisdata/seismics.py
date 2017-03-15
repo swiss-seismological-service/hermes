@@ -68,8 +68,8 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
         are simply added to any existing ones. If you want to overwrite
         existing events, call :meth:`clear_events` first.
 
-        x: x coordinate [m]
-        y: y coordinate [m]
+        lat: latitude [degrees]
+        lon: longitude [degrees]
         depth: depth [m], positive downwards
         mag: magnitude
 
@@ -80,14 +80,14 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
         events = []
         try:
             for date, fields in importer:
-                location = Point(float(fields['x']),
-                                 float(fields['y']),
-                                 float(fields['depth']))
+                location = (float(fields['lat']),
+                            float(fields['lon']),
+                            float(fields['depth']))
                 event = SeismicEvent(date, float(fields['mag']), location)
                 events.append(event)
         except:
             log.error('Failed to import seismic events. Make sure '
-                      'the data contains x, y, depth, and mag '
+                      'the data contains lat, lon, depth, and mag '
                       'fields and that the date field has the format '
                       'dd.mm.yyyyTHH:MM:SS. The original error was ' +
                       traceback.format_exc())
@@ -97,7 +97,7 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
             self.history_changed.emit()
 
     def events_before(self, end_date, mc=0):
-        """ Returns all events >mc before and including *end_date* """
+        """ Returns all events >mc before *end_date* """
         return [e for e in self.seismic_events
                 if e.date_time < end_date and e.magnitude > mc]
 
@@ -163,9 +163,6 @@ class SeismicEvent(OrmBase):
     lat = Column(Float)
     lon = Column(Float)
     depth = Column(Float)
-    x = Column(Float)
-    y = Column(Float)
-    z = Column(Float)
     # Magnitude
     magnitude = Column(Float)
     # SeismicCatalog relation
@@ -175,7 +172,7 @@ class SeismicEvent(OrmBase):
     # endregion
 
     # Data attributes (required for flattening)
-    data_attrs = ['magnitude', 'date_time', 'x', 'y', 'z']
+    data_attrs = ['magnitude', 'date_time', 'lat', 'lon', 'depth']
 
     def in_region(self, region):
         """
@@ -195,7 +192,7 @@ class SeismicEvent(OrmBase):
             if not (column.primary_key or column.unique):
                 arguments[name] = getattr(self, name)
         copy = self.__class__(self.date_time, self.magnitude,
-                              Point(self.x, self.y, self.z))
+                              (self.lat, self.lon, self.depth))
         for item in arguments.items():
             setattr(copy, *item)
         return copy
@@ -203,9 +200,7 @@ class SeismicEvent(OrmBase):
     def __init__(self, date_time, magnitude, location):
         self.date_time = date_time
         self.magnitude = magnitude
-        self.x = location.x
-        self.y = location.y
-        self.z = location.z
+        self.lat, self.lon, self.depth = location
 
     def __str__(self):
         return "M%.1f @ %s" % (self.magnitude, self.date_time.ctime())

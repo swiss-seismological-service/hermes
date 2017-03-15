@@ -42,7 +42,8 @@ PIP_PACKAGES=""\
 " numpy==1.8.2"\
 " pymatlab==0.2.3"\
 " sphinx==1.4.1"\
-" sphinx-rtd-theme==0.1.9"
+" sphinx-rtd-theme==0.1.9"\
+" pymap3d"
 
 # install deb and pip packages
 apt-get update
