@@ -14,7 +14,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 import logging
 import os
 from PyQt4 import QtGui, uic
-from PyQt4.QtGui import QSizePolicy, QWidget, QStatusBar, QLabel
+from PyQt4.QtGui import QSizePolicy, QWidget, QStatusBar, QLabel, QProgressBar
 import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
@@ -37,9 +37,17 @@ class StatusBar(QStatusBar):
         super(StatusBar, self).__init__()
         self.projectWidget = QLabel('No project loaded')
         self.timeWidget = QLabel('Project Time: N/A')
+        self.progressBar = QProgressBar()
+        self.progressBar.setMaximumHeight(15)
+        self.progressBar.setMaximumWidth(150)
+        self.activityWidget = QLabel('Idle')
+        self.current_activity_id = None
         self.addWidget(self.projectWidget)
         self.addWidget(QLabel(' '*10))
         self.addWidget(self.timeWidget)
+        self.addPermanentWidget(self.activityWidget)
+        self.addPermanentWidget(self.progressBar)
+        self.progressBar.setHidden(True)
 
     def set_project(self, project):
         txt = project.title if project else 'No project loaded'
@@ -49,6 +57,18 @@ class StatusBar(QStatusBar):
     def set_project_time(self, t):
         txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
         self.timeWidget.setText('Project Time: {}'.format(txt))
+
+    def show_activity(self, message, id='default'):
+        self.current_activity_id = id
+        self.progressBar.setRange(0, 0)
+        self.progressBar.setHidden(False)
+        self.activityWidget.setText(message)
+
+    def dismiss_activity(self, id='default'):
+        if self.current_activity_id == id:
+            self.progressBar.setHidden(True)
+            self.activityWidget.setText('Idle')
+            self.current_activity_id = None
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -88,9 +108,9 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionNew_Project.triggered.connect(self.action_new_project)
         self.ui.actionOpen_Project.triggered.connect(self.action_open_project)
         self.ui.actionFetch_from_fdsnws.triggered.connect(
-            self.ramsis_core.fetch_seismic_events)
+            self.action_fetch_seismic_data)
         self.ui.actionFetch_from_hydws.triggered.connect(
-            self.ramsis_core.fetch_hydraulic_events)
+            self.action_fetch_hydraulic_data)
         self.ui.actionImport_Seismic_Data.triggered.connect(
             self.action_import_seismic_data)
         self.ui.actionImport_Hydraulic_Data.triggered.connect(
@@ -182,6 +202,11 @@ class MainWindow(QtGui.QMainWindow):
         self.ramsis_core.create_project(path)
         self._open_project_at_path(path)
 
+    def action_fetch_seismic_data(self):
+        self.status_bar.show_activity('Fetching seismic data...',
+                                      id='fdsn_fetch')
+        self.ramsis_core.fetch_seismic_events()
+
     def action_import_seismic_data(self):
         home = os.path.expanduser("~")
         path = QtGui.QFileDialog.getOpenFileName(None,
@@ -192,6 +217,11 @@ class MainWindow(QtGui.QMainWindow):
         history = self.ramsis_core.project.seismic_catalog
         if path:
             self._import_file_to_history(path, history)
+
+    def action_fetch_hydraulic_data(self):
+        self.status_bar.show_activity('Fetching hydraulic data...',
+                                      id='hydws_fetch')
+        self.ramsis_core.fetch_hydraulic_events()
 
     def action_import_hydraulic_data(self):
         home = os.path.expanduser("~")
@@ -365,7 +395,12 @@ class MainWindow(QtGui.QMainWindow):
         self.status_bar.set_project(project)
         project.settings.settings_changed.connect(
             self.on_project_settings_changed)
+        project.seismic_catalog.history_changed.connect(
+            self.on_catalog_changed)
         self.update_controls()
+
+    def on_catalog_changed(self):
+        self.status_bar.dismiss_activity('fdsn_fetch')
 
     def on_sim_state_change(self, _):
         self.update_controls()
