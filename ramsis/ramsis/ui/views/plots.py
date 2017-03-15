@@ -273,6 +273,11 @@ class Event3DViewWidget(gl.GLViewWidget):
         y_grid.scale(40, 20, 20)
         z_grid.scale(20, 40, 20)
 
+    def clear(self):
+        if self._events_item is not None:
+            self.removeItem(self._events_item)
+            self._events_item = None
+
     def show_events(self, pos, size):
         """
         Show events
@@ -281,10 +286,7 @@ class Event3DViewWidget(gl.GLViewWidget):
         :param size: 1d array of event magnitudes
 
         """
-        if self._events_item is not None:
-            self.removeItem(self._events_item)
-            self._events_item = None
-
+        self.clear()
         self._events_item = gl.GLScatterPlotItem()
         self._events_item.setData(pos=pos, size=10*size)
         self.addItem(self._events_item)

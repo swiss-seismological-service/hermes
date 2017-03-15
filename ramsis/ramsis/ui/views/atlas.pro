@@ -22,7 +22,8 @@ FORMS    += mainwindow.ui \
     simulationwindow.ui \
     timelinewindow.ui \
     appsettingswindow.ui \
-    projectsettingswindow.ui
+    projectsettingswindow.ui \
+    reservoirwindow.ui
 
 OTHER_FILES +=
 

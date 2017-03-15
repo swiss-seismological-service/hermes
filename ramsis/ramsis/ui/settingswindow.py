@@ -221,6 +221,10 @@ class ProjectSettingsWindow(SettingsWindow):
         self.ui.projectStartEdit.setDateTime(self.project.start_date)
         self.ui.projectEndEdit.setDateTime(self.project.end_date)
         self.ui.descriptionEdit.setPlainText(self.project.description)
+        ref = self.project.reference_point
+        self.ui.refLatEdit.setText('{:.6f}'.format(ref['lat']))
+        self.ui.refLonEdit.setText('{:.6f}'.format(ref['lon']))
+        self.ui.refHEdit.setText('{:.1f}'.format(ref['h']))
 
     def action_setting_changed(self):
         widget = self.sender()
@@ -250,6 +254,12 @@ class ProjectSettingsWindow(SettingsWindow):
             p.settings['forecast_start'] = p.start_date
             p.update_project_time(p.start_date)
         p.description = self.ui.descriptionEdit.toPlainText()
+        try:
+            p.reference_point = {'lat': float(self.ui.refLatEdit.text()),
+                                 'lon': float(self.ui.refLonEdit.text()),
+                                 'h': float(self.ui.refHEdit.text())}
+        except TypeError, e:
+            self.logger.error('Invalid reference point: {}'.format(e))
         p.settings.commit()
         p.save()
         self.close()

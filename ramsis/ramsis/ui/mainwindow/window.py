@@ -19,7 +19,7 @@ import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
 from ui.timelinewindow import TimelineWindow
-from ui.views.plots import Event3DViewWidget
+from ui.reservoirwindow import ReservoirWindow
 from presenter import ContentPresenter
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
@@ -80,7 +80,7 @@ class MainWindow(QtGui.QMainWindow):
         # Other windows which we lazy-load
         self.application_settings_window = None
         self.project_settings_window = None
-        self.event_3d_window = None
+        self.reservoir_window = None
         self.simulation_window = None
         self.timeline_window = None
         self.table_view = None
@@ -272,8 +272,9 @@ class MainWindow(QtGui.QMainWindow):
         self.simulation_window.show()
 
     def action_show_3d(self):
-        self.event_3d_window = Event3DViewWidget()
-        self.event_3d_window.show()
+        self.reservoir_window = ReservoirWindow(self.ramsis_core)
+        self.reservoir_window.show()
+        self.reservoir_window.draw_catalog()
 
     def action_show_application_settings(self):
         if self.application_settings_window is None:
