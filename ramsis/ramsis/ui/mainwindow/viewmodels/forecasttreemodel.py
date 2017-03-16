@@ -109,6 +109,11 @@ class ForecastTreeModel(QAbstractItemModel):
         self.forecast_nodes = [ForecastNode(f, self.root_node)
                                for f in self.forecast_set.forecasts]
 
+    def refresh(self):
+        self.forecast_nodes = [ForecastNode(f, self.root_node)
+                               for f in self.forecast_set.forecasts]
+        self.reset()
+
     def columnCount(self, parent):
         return 2
 

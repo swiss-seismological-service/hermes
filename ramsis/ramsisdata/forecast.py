@@ -41,9 +41,16 @@ class ForecastSet(QtCore.QObject, OrmBase):
                              order_by='Forecast.forecast_time')
     # endregion
 
+    forecasts_changed = QtCore.pyqtSignal()
+
     @reconstructor
     def init_on_load(self):
         QtCore.QObject.__init__(self)
+
+    def add_forecast(self, forecast):
+        """ Appends a new forecast and fires the changed signal """
+        self.forecasts.append(forecast)
+        self.forecasts_changed.emit()
 
     def forecast_at(self, t):
         """ Return the forecast scheduled for t """

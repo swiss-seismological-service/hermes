@@ -53,6 +53,8 @@ class ContentPresenter(object):
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         project.project_time_changed.connect(self.on_project_time_change)
+        project.forecast_set.forecasts_changed.connect(
+            self.on_forecasts_change)
 
     def _refresh_forecast_list(self):
         """
@@ -107,6 +109,9 @@ class ContentPresenter(object):
 
     def on_project_time_change(self, t):
         pass
+
+    def on_forecasts_change(self):
+        self._refresh_forecast_list()
 
     def on_fc_selection_change(self, selection):
         idx = selection.indexes()[0]

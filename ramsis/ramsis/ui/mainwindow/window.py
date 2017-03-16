@@ -124,6 +124,9 @@ class MainWindow(QtGui.QMainWindow):
         # ...Forecast planning
         self.ui.addForecastButton.clicked.connect(
             self.on_add_forecast_clicked)
+        self.ui.planNextButton.clicked.connect(
+            self.on_plan_next_forecast_clicked
+        )
         # ...Simulation
         self.ui.actionStart_Simulation.triggered.\
             connect(self.action_start_simulation)
@@ -312,16 +315,15 @@ class MainWindow(QtGui.QMainWindow):
     # Menu Enabled State Updates
 
     def update_controls(self):
-        if self.ramsis_core.project is None:
-            enable = False
-        else:
-            enable = True
-        self.ui.menuProject.setEnabled(enable)
-        self.ui.actionTimeline.setEnabled(enable)
-        self.ui.actionShow_3D.setEnabled(enable)
-        self.ui.actionForecasts.setEnabled(enable)
-        self.ui.actionSimulation.setEnabled(enable)
-        self.ui.actionScenario.setEnabled(enable)
+        enable_with_project = [
+            'menuProject', 'actionTimeline',
+            'actionShow_3D', 'actionForecasts', 'actionSimulation',
+            'actionScenario', 'planNextButton', 'addForecastButton',
+            'removeForecastButton',
+        ]
+        enable = True if self.ramsis_core.project is not None else False
+        for ui_element in enable_with_project:
+            getattr(self.ui, ui_element).setEnabled(enable)
 
         project = self.ramsis_core.project
         if not project:
@@ -371,6 +373,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def on_add_forecast_clicked(self):
         self.ramsis_core.add_next_forecast()
+
+    def on_plan_next_forecast_clicked(self):
+        self.ramsis_core.create_next_future_forecast()
 
     # Handlers for signals from the core
 

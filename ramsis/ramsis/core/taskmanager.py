@@ -61,7 +61,6 @@ class TaskManager:
                 task.t0 = project.start_date
                 dt_setting = self.periodic_tasks[task.name]['dt_setting']
                 task.dt = timedelta(minutes=project.settings[dt_setting])
-        self._add_next_forecast()
         self.scheduler.reset(project.project_time)
         project.project_time_changed.connect(self.on_project_time_change)
 
@@ -125,8 +124,8 @@ class TaskManager:
         next_forecast = p.forecast_set.forecast_at(t_next)
         if next_forecast is None:
             next_forecast = self.core.create_forecast(t_next)
-            p.forecast_set.forecasts.append(next_forecast)
-            p.store.commit()
+            p.forecast_set.add_forecast(next_forecast)
+            p.commit()
 
 
 class ForecastTask(Task):
