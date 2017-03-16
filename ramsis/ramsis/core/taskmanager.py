@@ -66,8 +66,7 @@ class TaskManager:
 
     def on_project_time_change(self, t_project):
         if self.scheduler.has_due_tasks(t_project):
-            self.logger.debug('Scheduler has pending tasks. Executing')
-            self.logger.debug('Run pending tasks')
+            self.logger.debug('Scheduler has due tasks. Executing.')
             self.scheduler.run_due_tasks(t_project)
 
     # Task Methods
@@ -110,6 +109,7 @@ class TaskManager:
         pass
 
     def run_forecast(self, t):
+        self.logger.info('Forecast initiated at {}'.format(t))
         self.core.engine.run(t, self.forecast_task.next_forecast)
         # prepare the next regular forecast
         self._add_next_forecast()
@@ -138,6 +138,7 @@ class ForecastTask(Task):
         super(ForecastTask, self).__init__(task_function, name='ForecastTask')
         self.next_forecast = None
         self.run_time = None
+        self.one_off = False
         self.core = core
 
     def schedule(self, t):

@@ -147,23 +147,35 @@ class Controller(QtCore.QObject):
 
     # Running
 
-    def start(self, time_range):
-        if self._settings.value('enable_lab_mode'):
-            self.start_simulation(time_range)
+    def start(self, time_range=None, speed=1):
+        """
+        Start the core
+
+        This essentially enables the task manager and with it any scheduled
+        operations. If a time_range is given, the simulator will be started
+        to simulate the passing of time through the time range at the speed
+        given in the speed paramenter.
+
+        :param time_range: datetime tuple indicating simulation start / end
+        :param speed: simulation speed, -1 for as fast as possible
+
+        """
+        if time_range:
+            self.start_simulation(time_range, speed)
         else:
-            self._logger.notice('RAMSIS only works in lab mode at the moment')
+            self._logger.notice('RAMSIS only works in sim mode at the moment')
 
     def pause(self):
-        if self._settings.value('enable_lab_mode'):
+        if self.simulator.state == SimulatorState.RUNNING:
             self.pause_simulation()
 
     def stop(self):
-        if self._settings.value('enable_lab_mode'):
+        if self.simulator.state == SimulatorState.RUNNING:
             self.stop_simulation()
 
     # Simulation
 
-    def start_simulation(self, time_range):
+    def start_simulation(self, time_range, speed):
         """
         Starts the simulation.
 
@@ -185,11 +197,11 @@ class Controller(QtCore.QObject):
             return
         self._logger.info('Starting simulation')
         if self.simulator.state == SimulatorState.STOPPED:
-            self._init_simulation(time_range)
+            self._init_simulation(time_range, speed)
         # Start simulator
         self.simulator.start()
 
-    def _init_simulation(self, time_range):
+    def _init_simulation(self, time_range, speed):
         """
         (Re)initialize simulator and scheduler for a new simulation
 
@@ -197,15 +209,14 @@ class Controller(QtCore.QObject):
         # self._logger.info(
         #     'Deleting any forecasting results from previous runs')
         # self.project.seismic_catalog.clear()
-        inf_speed = self._settings.value('lab_mode/infinite_speed')
+        inf_speed = True if speed == -1 else False
         if inf_speed:
             self._logger.info('Simulating at maximum speed')
-            dt_h = self._settings.value('engine/fc_interval')
+            dt_h = self.project.setting['forecast_interval']
             dt = timedelta(hours=dt_h)
             step_signal = self.engine.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)
         else:
-            speed = self._settings.value('lab_mode/speed')
             self._logger.info('Simulating at {:.0f}x'.format(speed))
             self.simulator.configure(time_range, speed=speed)
         self.task_manager.reset(time_range[0])
@@ -222,10 +233,8 @@ class Controller(QtCore.QObject):
         All seismic and hydraulic events are cleared from the database.
 
         """
-        self.simulator.stop()
-        self.project.seismic_catalog.clear_events()
-        self.project.injection_history.clear_events()
         self._logger.info('Stopping simulation')
+        self.simulator.stop()
 
     # Simulation handling
 

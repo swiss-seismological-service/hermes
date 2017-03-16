@@ -361,13 +361,14 @@ class MainWindow(QtGui.QMainWindow):
         Updates the status message in the status bar.
 
         """
-        state_msg = 'RAMSIS is idle'
         if self.ramsis_core.simulator.state == SimulatorState.RUNNING:
             state_msg = 'Simulating'
         elif self.ramsis_core.simulator.state == SimulatorState.PAUSED:
             state_msg = 'Simulating (paused)'
+        else:
+            self.status_bar.dismiss_activity('simulator_state')
 
-        self.status_bar.showMessage(state_msg)
+        self.status_bar.show_activity(state_msg, 'simulator_state')
 
     # UI signals
 
@@ -389,7 +390,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def on_project_time_change(self, t):
         self.status_bar.set_project_time(t)
-        self.update_status_msg()
 
     def on_project_load(self, project):
         """
@@ -403,6 +403,7 @@ class MainWindow(QtGui.QMainWindow):
             self.on_project_settings_changed)
         project.seismic_catalog.history_changed.connect(
             self.on_catalog_changed)
+        project.project_time_changed.connect(self.on_project_time_change)
         self.update_controls()
 
     def on_catalog_changed(self):
