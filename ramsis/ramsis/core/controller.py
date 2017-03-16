@@ -233,6 +233,18 @@ class Controller(QtCore.QObject):
         """ Invoked by the simulation whenever the project time changes """
         self.project.update_project_time(simulation_time)
 
+    def create_next_future_forecast(self):
+        """ Adds the next regular forecast to the list of future forecasts """
+        p = self.project
+        dt = timedelta(hours=p.settings['forecast_interval'])
+        if len(p.forecast_set.forecasts) > 0:
+            t_last = p.forecast_set.forecasts[-1].forecast_time
+        else:
+            t_last = self.project.settings['forecast_start'] - dt
+        forecast = self.create_forecast(t_last + dt)
+        p.forecast_set.add_forecast(forecast)
+        p.store.commit()
+
     def create_forecast(self, forecast_time):
         """ Returns a new Forecast instance """
 

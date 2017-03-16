@@ -80,6 +80,7 @@ class Project(QtCore.QObject, OrmBase):
 
         self._project_time = self.start_date
         self.settings['forecast_start'] = self.start_date
+        self.settings.commit()
         if self.store:
             self.store.session.add(self)
 
