@@ -56,7 +56,7 @@ class Controller(QtCore.QObject):
         super(Controller, self).__init__()
         self._settings = settings
         self.project = None
-        self.engine = Engine(settings)
+        self.engine = Engine(self)
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None
         self.seismics_data_source = None

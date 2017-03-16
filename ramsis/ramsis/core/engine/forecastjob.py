@@ -19,13 +19,13 @@ class ISForecastStage(Stage):
 
     def stage_fun(self):
         forecast = self.inputs['forecast']
-        settings = self.inputs['settings']
+        model_config = self.inputs['model_config']
 
         t_run = forecast.forecast_time
         self._logger.info('Invoking IS forecast stage at t={}.'.format(t_run))
 
-        self.load_models(settings)
-        self.clients = [ModelClient(m, settings) for m in self.active_models]
+        self._load_models(model_config)
+        self.clients = [ModelClient(m) for m in self.active_models]
 
         for client in self.clients:
             client.finished.connect(self._on_client_run_finished)
@@ -33,38 +33,12 @@ class ISForecastStage(Stage):
         for client in self.clients:
             client.run(forecast)
 
-    def load_models(self, settings):
-        model_ids = settings.value('ISHA/models')
-        load_all = True if 'all' in model_ids else False
+    def _load_models(self, model_config):
 
-        # Reasenberg Jones
-        if load_all or 'rj' in model_ids:
-            model = {
-                'model': 'rj',
-                'title': 'Reasenberg-Jones',
-                'parameters': {'a': -1.6, 'b': 1.58, 'p': 1.2, 'c': 0.05}
-            }
-            self.active_models.append(model)
-
-        # ETAS
-        if load_all or 'etas' in model_ids:
-            model = {
-                'model': 'etas',
-                'title': 'ETAS',
-                'parameters': {'alpha': 0.8, 'k': 8.66, 'p': 1.2, 'c': 0.01,
-                               'mu': 12.7, 'cf': 1.98}
-            }
-            self.active_models.append(model)
-
-        # Shapiro
-        # TODO: Re-enable. Temp. disabled bc matlab is not installed on vagrant
-        # if load_all or 'shapiro' in model_ids:
-        #     model = {
-        #         'model': 'shapiro',
-        #         'title': 'Shapiro (spatial)',
-        #         'parameters': None
-        #     }
-        #     self.active_models.append(model)
+        for model_id, config in model_config.items():
+            if config['enabled'] is True:
+                self.active_models.append({'model': model_id,
+                                           'config': config})
 
     def _on_client_run_finished(self, client):
         self.results.append(client.model_result)
@@ -92,16 +66,16 @@ class ForecastJob(Job):
     # Signals
     forecast_job_complete = QtCore.pyqtSignal()
 
-    def __init__(self, settings):
+    def __init__(self, model_config):
         super(ForecastJob, self).__init__()
         self.result = None
-        self._settings = settings
+        self.model_config = model_config
         self._logger = logging.getLogger(__name__)
 
     def run_forecast(self, forecast):
         job_input = {
             'forecast': forecast,
-            'settings': self._settings
+            'model_config': self.model_config
         }
         self.stage_completed.connect(self.fc_stage_complete)
         self.result = ForecastResult()
