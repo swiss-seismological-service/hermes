@@ -15,7 +15,6 @@ from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
     GeneralTabPresenter
 from timeline import TimeLinePresenter
 from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel
-from data import dummy_data
 
 STATUS_COLOR_PLANNED = '#0099CC'
 STATUS_COLOR_COMPLETE = '#00CC99'
