@@ -9,18 +9,17 @@ class Engine(QtCore.QObject):
     # Signals
     forecast_complete = QtCore.pyqtSignal()
 
-    def __init__(self, settings):
+    def __init__(self, core):
         super(Engine, self).__init__()
         self.busy = False
-        self._project = None
+        self.core = core
         self._forecast = None
         self._forecast_job = None
         self._forecast_task = None
-        self._settings = settings
         self._logger = logging.getLogger(__name__)
 
     def run(self, t, forecast):
-        assert self._project
+        assert self.core.project
 
         # Skip this forecast if the core is busy
         if self.busy:
@@ -41,7 +40,8 @@ class Engine(QtCore.QObject):
         self._forecast = forecast
         self.busy = True
         # in future we may run more than one scenario
-        self._forecast_job = ForecastJob(self._settings)
+        model_config = self.core.project.settings['forecast_models']
+        self._forecast_job = ForecastJob(model_config)
         self._forecast_job.forecast_job_complete.connect(self.fc_job_complete)
         self._forecast_job.run_forecast(self._forecast)
 

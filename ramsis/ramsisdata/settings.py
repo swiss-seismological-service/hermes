@@ -135,7 +135,27 @@ class ProjectSettings(Settings):
         'forecast_length': 6.0,  # hours
         'forecast_start': datetime(1970, 1, 1, 0, 0, 0),
         'seismic_rate_interval': 1.0,  # minutes
-        'active_models': ['all'],
+        'forecast_models': {
+            'rj': {
+                'enabled': True,
+                'url': 'http://localhost:5000/run',
+                'title': 'Reasenberg-Jones',
+                'parameters': {'a': -1.6, 'b': 1.58, 'p': 1.2, 'c': 0.05}
+            },
+            'etas': {
+                'enabled': True,
+                'url': 'http://localhost:5001/run',
+                'title': 'ETAS',
+                'parameters': {'alpha': 0.8, 'k': 8.66, 'p': 1.2, 'c': 0.01,
+                               'mu': 12.7, 'cf': 1.98}
+            },
+            'shapiro': {
+                'enabled': False,
+                'url': 'http://localhost:5002/run',
+                'title': 'Shapiro (spatial)',
+                'parameters': None
+            },
+        },
         'write_fc_results_to_disk': False,
     }
 
