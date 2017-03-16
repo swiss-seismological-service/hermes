@@ -138,20 +138,20 @@ class ProjectSettings(Settings):
         'forecast_models': {
             'rj': {
                 'enabled': True,
-                'url': 'http://localhost:5000/run',
+                'url': 'http://localhost:5000',
                 'title': 'Reasenberg-Jones',
                 'parameters': {'a': -1.6, 'b': 1.58, 'p': 1.2, 'c': 0.05}
             },
             'etas': {
                 'enabled': True,
-                'url': 'http://localhost:5001/run',
+                'url': 'http://localhost:5001',
                 'title': 'ETAS',
                 'parameters': {'alpha': 0.8, 'k': 8.66, 'p': 1.2, 'c': 0.01,
                                'mu': 12.7, 'cf': 1.98}
             },
             'shapiro': {
                 'enabled': False,
-                'url': 'http://localhost:5002/run',
+                'url': 'http://localhost:5002',
                 'title': 'Shapiro (spatial)',
                 'parameters': None
             },
