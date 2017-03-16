@@ -1,6 +1,7 @@
 import json
 import requests
 import logging
+import urlparse
 
 from PyQt4 import QtCore
 
@@ -15,7 +16,7 @@ class ModelClient(QtCore.QObject):
         super(ModelClient, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.model_info = model_info
-        self.url = model_info['url']
+        self.url = urlparse.urljoin(model_info['url'], '/run')
         self.poll_interval = 5000  # ms
         self.job_id = None
         self.model = None
