@@ -103,7 +103,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="removeForecastButton">
+           <widget class="QPushButton" name="removeScenarioButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -125,7 +125,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="addForecastButton">
+           <widget class="QPushButton" name="addScenarioButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
