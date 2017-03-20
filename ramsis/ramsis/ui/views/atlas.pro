@@ -23,7 +23,8 @@ FORMS    += mainwindow.ui \
     timelinewindow.ui \
     appsettingswindow.ui \
     projectsettingswindow.ui \
-    reservoirwindow.ui
+    reservoirwindow.ui \
+    stagestatus.ui
 
 OTHER_FILES +=
 
