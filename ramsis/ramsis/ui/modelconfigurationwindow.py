@@ -27,6 +27,9 @@ class ModelConfigurationWindow(QtGui.QDialog):
         self.ui = Ui_ModelConfigurationWindow()
         self.ui.setupUi(self)
 
+        # Set title
+        self.setWindowTitle("{} model configuration".format(self.model))
+
         # Show current settings
         settings = self.project.settings['forecast_models'][self.model]
         self.ui.titleLineEdit.clear()
