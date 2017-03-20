@@ -69,19 +69,39 @@
      </widget>
      <widget class="QWidget" name="tabSimulation">
       <attribute name="title">
-       <string>Lab Mode</string>
+       <string>Task Manager</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <widget class="QCheckBox" name="checkBox">
+         <property name="text">
+          <string>Enable</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
-          <string>Simulation Speed</string>
+          <string>Tasks</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <widget class="QRadioButton" name="simulateAFAPRadioButton">
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="checkBox_4">
             <property name="text">
-             <string>As fast as possible</string>
+             <string>Rate Update</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="checkBox_2">
+            <property name="text">
+             <string>FDSNWS Fetch</string>
             </property>
             <property name="checked">
              <bool>true</bool>
@@ -89,35 +109,26 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QRadioButton" name="simuateAtSpeedFactorRadioButton">
+           <widget class="QCheckBox" name="checkBox_3">
             <property name="text">
-             <string>With a specific speed factor:</string>
+             <string>HYDWS Fetch</string>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="speedBox">
-            <property name="enabled">
+            <property name="checked">
              <bool>true</bool>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="checkBox_5">
+            <property name="text">
+             <string>Forecasting</string>
             </property>
-            <property name="suffix">
-             <string>x</string>
-            </property>
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-            <property name="value">
-             <number>1000</number>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
-          <item row="1" column="2">
+          <item row="0" column="1">
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
