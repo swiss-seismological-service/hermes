@@ -177,7 +177,8 @@ class ProjectSettingsWindow(SettingsWindow):
         self.project = project
 
         # Other windows
-        self.model_configuration_window = None
+        self.rj_model_configuration_window = None
+        self.etas_model_configuration_window = None
 
         # Setup the user interface
         self.ui = Ui_ProjectSettingsWindow()
@@ -206,9 +207,9 @@ class ProjectSettingsWindow(SettingsWindow):
             connect(self.action_select_output_directory)
         self.ui.resetToDefaultButton.clicked.connect(self.action_load_defaults)
         self.ui.rjConfigButton.clicked.connect(
-            self.action_show_model_configuration)
+            self.action_show_rj_model_configuration)
         self.ui.etasConfigButton.clicked.connect(
-            self.action_show_model_configuration)
+            self.action_show_etas_model_configuration)
 
         # Hook up checkboxes
         self.ui.enableRjCheckBox.clicked.connect(self.action_rj_checked)
@@ -276,10 +277,17 @@ class ProjectSettingsWindow(SettingsWindow):
         p.save()
         self.close()
 
-    def action_show_model_configuration(self):
-        if self.model_configuration_window is None:
-            self.model_configuration_window = ModelConfigurationWindow()
-        self.model_configuration_window.show()
+    def action_show_rj_model_configuration(self):
+        if self.rj_model_configuration_window is None:
+            self.rj_model_configuration_window = ModelConfigurationWindow(
+                project=self.project, model='rj')
+        self.rj_model_configuration_window.show()
+
+    def action_show_etas_model_configuration(self):
+        if self.etas_model_configuration_window is None:
+            self.etas_model_configuration_window = ModelConfigurationWindow(
+                project=self.project, model='etas')
+        self.etas_model_configuration_window.show()
 
     def action_rj_checked(self):
         state = self.ui.enableRjCheckBox.checkState()
