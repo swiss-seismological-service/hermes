@@ -10,6 +10,7 @@ import logging
 import os
 
 from PyQt4 import QtGui, uic
+from modelconfigurationwindow import ModelConfigurationWindow
 import ramsissettings
 
 ui_path = os.path.dirname(__file__)
@@ -175,6 +176,9 @@ class ProjectSettingsWindow(SettingsWindow):
         self.logger = logging.getLogger(__name__)
         self.project = project
 
+        # Other windows
+        self.model_configuration_window = None
+
         # Setup the user interface
         self.ui = Ui_ProjectSettingsWindow()
         self.ui.setupUi(self)
@@ -201,6 +205,14 @@ class ProjectSettingsWindow(SettingsWindow):
         self.ui.selectOutputDirButton.clicked.\
             connect(self.action_select_output_directory)
         self.ui.resetToDefaultButton.clicked.connect(self.action_load_defaults)
+        self.ui.rjConfigButton.clicked.connect(
+            self.action_show_model_configuration)
+        self.ui.etasConfigButton.clicked.connect(
+            self.action_show_model_configuration)
+
+        # Hook up checkboxes
+        self.ui.enableRjCheckBox.clicked.connect(self.action_rj_checked)
+        self.ui.enableEtasCheckBox.clicked.connect(self.action_etas_checked)
 
         self.start_observing_changes()
         self.load_settings()
@@ -263,3 +275,22 @@ class ProjectSettingsWindow(SettingsWindow):
         p.settings.commit()
         p.save()
         self.close()
+
+    def action_show_model_configuration(self):
+        if self.model_configuration_window is None:
+            self.model_configuration_window = ModelConfigurationWindow()
+        self.model_configuration_window.show()
+
+    def action_rj_checked(self):
+        state = self.ui.enableRjCheckBox.checkState()
+        if state:
+            self.ui.rjConfigButton.setEnabled(True)
+        else:
+            self.ui.rjConfigButton.setDisabled(True)
+
+    def action_etas_checked(self):
+        state = self.ui.enableEtasCheckBox.checkState()
+        if state:
+            self.ui.etasConfigButton.setEnabled(True)
+        else:
+            self.ui.etasConfigButton.setDisabled(True)
