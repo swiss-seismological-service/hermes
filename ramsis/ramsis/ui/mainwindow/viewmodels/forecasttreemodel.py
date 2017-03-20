@@ -156,6 +156,11 @@ class ForecastTreeModel(QAbstractItemModel):
             node.visible = value
             self.dataChanged.emit(index, index)
             return True
+        elif role == Qt.EditRole:
+            if value:
+                node = index.internalPointer()
+                node.item.name = value
+                node.item.forecast_input.forecast.forecast_set.project.save()
         return False
 
     def flags(self, index):
