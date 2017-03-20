@@ -59,6 +59,8 @@ class Ramsis(QtCore.QObject):
         # Instantiate the appropriate Qt app object
         self.has_gui = not args.no_gui
         if self.has_gui:
+            QtGui.QApplication.setStyle(
+                QtGui.QStyleFactory.create('Cleanlooks'))
             self.qt_app = QtGui.QApplication(sys.argv)
             QgsApplication.initQgis()
         else:

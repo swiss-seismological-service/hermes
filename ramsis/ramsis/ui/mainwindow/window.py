@@ -24,6 +24,7 @@ from presenter import ContentPresenter
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
 from core.datasources import CsvEventImporter
+from ramsisdata.forecast import Scenario
 
 
 ui_path = os.path.dirname(__file__)
@@ -122,8 +123,10 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.actionProject_Settings.triggered.connect(
             self.action_show_project_settings)
         # ...Forecast planning
-        self.ui.addForecastButton.clicked.connect(
-            self.on_add_forecast_clicked)
+        self.ui.addScenarioButton.clicked.connect(
+            self.on_add_scenario_clicked)
+        self.ui.removeScenarioButton.clicked.connect(
+            self.on_remove_scenario_clicked)
         self.ui.planNextButton.clicked.connect(
             self.on_plan_next_forecast_clicked
         )
@@ -318,8 +321,8 @@ class MainWindow(QtGui.QMainWindow):
         enable_with_project = [
             'menuProject', 'actionTimeline',
             'actionShow_3D', 'actionForecasts', 'actionSimulation',
-            'actionScenario', 'planNextButton', 'addForecastButton',
-            'removeForecastButton',
+            'actionScenario', 'planNextButton', 'addScenarioButton',
+            'removeScenarioButton',
         ]
         enable = True if self.ramsis_core.project is not None else False
         for ui_element in enable_with_project:
@@ -367,13 +370,46 @@ class MainWindow(QtGui.QMainWindow):
             state_msg = 'Simulating (paused)'
         else:
             self.status_bar.dismiss_activity('simulator_state')
+            return
 
         self.status_bar.show_activity(state_msg, 'simulator_state')
 
     # UI signals
 
-    def on_add_forecast_clicked(self):
-        self.ramsis_core.add_next_forecast()
+    def on_add_scenario_clicked(self):
+        fc_selection = self.ui.forecastTreeView.selectionModel()
+        idx = fc_selection.currentIndex()
+        if idx.parent().isValid():
+            forecast_idx = idx.parent().row()
+        else:
+            forecast_idx = idx.row()
+        try:
+            forecast_set = self.content_presenter.fc_tree_model.forecast_set
+            forecast = forecast_set.forecasts[forecast_idx]
+            scenario = Scenario()
+            scenario.name = 'new scenario'
+            forecast.add_scenario(scenario)
+            self.ramsis_core.project.store.commit()
+        except IndexError as e:
+            raise e
+
+    def on_remove_scenario_clicked(self):
+        fc_selection = self.ui.forecastTreeView.selectionModel()
+        idx = fc_selection.currentIndex()
+        if idx.parent().isValid():
+            forecast_idx = idx.parent().row()
+            scenario_idx = idx.row()
+        else:
+            forecast_idx = idx.row()
+            scenario_idx = 0
+        try:
+            forecast_set = self.content_presenter.fc_tree_model.forecast_set
+            forecast = forecast_set.forecasts[forecast_idx]
+            scenario = forecast.input.scenarios[scenario_idx]
+            forecast.remove_scenario(scenario)
+            self.ramsis_core.project.store.commit()
+        except IndexError:
+            pass
 
     def on_plan_next_forecast_clicked(self):
         self.ramsis_core.create_next_future_forecast()

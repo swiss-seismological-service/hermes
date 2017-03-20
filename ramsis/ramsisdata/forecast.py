@@ -92,6 +92,19 @@ class Forecast(OrmBase):
         else:
             return False
 
+    def add_scenario(self, scenario):
+        """ Appends a new scenario and fires the changed signal """
+        self.input.scenarios.append(scenario)
+        self.input.forecast.forecast_set.forecasts_changed.emit()
+
+    def remove_scenario(self, scenario):
+        """ Removes a scenario and fires the changed signal """
+        try:
+            self.input.scenarios.remove(scenario)
+            self.input.forecast.forecast_set.forecasts_changed.emit()
+        except ValueError as e:
+            raise e
+
 
 class ForecastInput(OrmBase):
 
