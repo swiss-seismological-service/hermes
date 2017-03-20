@@ -134,6 +134,43 @@ class SeismicityPlotWidget(TimePlotWidget):
         self.getAxis('left').setLabel('Mag', 'Mw')
 
 
+class TimeLinePlotWidget(TimePlotWidget):
+    """
+    pyqtgraph PlotWidget configured to display seismic data
+
+    :ivar plot: :class:`ScatterPlotItem` that holds the scatter plot data
+
+    """
+
+    def __init__(self, parent=None, **kargs):
+        super(TimeLinePlotWidget, self).__init__(parent, **kargs)
+        self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
+                                       brush=pg.mkBrush(255, 255, 255, 120))
+
+        self.symbol_view = pg.ViewBox()
+        self.plotItem.scene().addItem(self.symbol_view)
+        self.symbol_view.setXLink(self.plotItem)
+        self.symbol_view.setRange(yRange=(0, 1))
+        self.symbol_view.enableAutoRange(axis=pg.ViewBox.YAxis, enable=False)
+        fc_brush = pg.mkBrush(0, 255, 0, 255)
+        self.forecasts_plot = pg.ScatterPlotItem(pen=pg.mkPen(None),
+                                                 symbol='t',
+                                                 brush=fc_brush)
+        self.addItem(self.plot)
+        self.symbol_view.addItem(self.forecasts_plot)
+        self.getAxis('left').enableAutoSIPrefix(False)
+        self.getAxis('bottom').enableAutoSIPrefix(False)
+        self.getAxis('left').setLabel('Mag', 'Mw')
+
+        self.plotItem.vb.sigResized.connect(self._update_views)
+        self._update_views()
+
+    def _update_views(self):
+        self.symbol_view.setGeometry(self.plotItem.vb.sceneBoundingRect())
+        self.symbol_view.linkedViewChanged(self.plotItem.vb,
+                                           self.symbol_view.XAxis)
+
+
 class HydraulicsPlotWidget(TimePlotWidget):
     """
     pyqtgraph PlotWidget configured to display hydraulic data

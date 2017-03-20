@@ -86,6 +86,16 @@ class TimeLinePresenter(QtCore.QObject):
                     for e in events]
         self.time_line.plot.setData(pos=data)
 
+    def show_forecasts(self):
+        if self.core.project is None:
+            self.time_line.forecasts_plot.setData(None)
+            return
+        epoch = datetime(1970, 1, 1)
+        forecasts = self.core.project.forecast_set.forecasts
+        data = [((f.forecast_time - epoch).total_seconds(), 1.0)
+                for f in forecasts]
+        self.time_line.forecasts_plot.setData(pos=data)
+
     # signal slots
 
     def on_project_loaded(self, project):
@@ -94,14 +104,20 @@ class TimeLinePresenter(QtCore.QObject):
         project.settings.settings_changed.connect(self.on_settings_changed)
         project.seismic_catalog.history_changed.connect(
             self.on_catalog_changed)
+        project.forecast_set.forecasts_changed.connect(
+            self.on_forecasts_changed)
         self.present_time_line_for_project(project)
         self.replot()
+        self.show_forecasts()
 
     def on_project_will_close(self, project):
         self.present_time_line_for_project(None)
 
     def on_project_time_changed(self, project_time):
         self.show_current_time(project_time)
+
+    def on_forecasts_changed(self):
+        self.show_forecasts()
 
     def on_settings_changed(self, settings):
         self.present_time_line_for_project(self.core.project)

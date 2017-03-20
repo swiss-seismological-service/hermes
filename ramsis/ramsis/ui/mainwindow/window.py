@@ -370,6 +370,7 @@ class MainWindow(QtGui.QMainWindow):
             state_msg = 'Simulating (paused)'
         else:
             self.status_bar.dismiss_activity('simulator_state')
+            return
 
         self.status_bar.show_activity(state_msg, 'simulator_state')
 

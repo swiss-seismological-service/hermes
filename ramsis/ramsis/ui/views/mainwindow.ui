@@ -174,7 +174,7 @@
         <number>9</number>
        </property>
        <item>
-        <widget class="SeismicityPlotWidget" name="timeLineWidget"/>
+        <widget class="TimeLinePlotWidget" name="timeLineWidget"/>
        </item>
       </layout>
      </widget>
@@ -1072,7 +1072,7 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>SeismicityPlotWidget</class>
+   <class>TimeLinePlotWidget</class>
    <extends>QGraphicsView</extends>
    <header>ui.views.plots</header>
   </customwidget>
