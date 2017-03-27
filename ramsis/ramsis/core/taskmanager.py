@@ -75,22 +75,22 @@ class TaskManager:
         """ FDSN task function """
         p = self.core.project
         if p:
-            dt = p.settings.value('fdsnws_interval')
+            dt = p.settings['fdsnws_interval']
             end = p.project_time
             # FIXME: we should have an overlap in our data fetches to catch
             # updated events
-            start = p.project_time - dt
+            start = p.project_time - timedelta(dt)
             self.core.seismics_data_source.fetch(starttime=start, endtime=end)
 
     def fetch_hydws(self, t):
         """ HYDWS task function """
         p = self.core.project
         if p:
-            dt = p.settings.value('hydws_interval')
+            dt = p.settings['hydws_interval']
             end = p.project_time
             # FIXME: we should have an overlap in our data fetches to catch
             # updated events
-            start = p.project_time - dt
+            start = p.project_time - timedelta(minutes=dt)
             self.core.hydraulics_data_source.fetch(starttime=start,
                                                    endtime=end)
 
