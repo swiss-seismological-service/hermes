@@ -16,7 +16,7 @@ class ModelClient(QtCore.QObject):
         super(ModelClient, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.model_info = model_info
-        self.url = urlparse.urljoin(model_info['url'], '/run')
+        self.url = urlparse.urljoin(model_info['config']['url'], '/run')
         self.poll_interval = 5000  # ms
         self.job_id = None
         self.model = None
@@ -35,7 +35,7 @@ class ModelClient(QtCore.QObject):
         serialized = forecast_schema.dump(forecast).data
         data = {
             "forecast": serialized,
-            "parameters": self.model_info["parameters"]
+            "parameters": self.model_info["config"]["parameters"]
         }
 
         r = requests.post(self.url, data={"data": json.dumps(data)})

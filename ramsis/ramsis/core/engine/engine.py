@@ -34,8 +34,8 @@ class Engine(QtCore.QObject):
             forecast.forecast_time, t))
 
         # Copy the current catalog
-        copy = self.project.seismic_catalog.copy()
-        forecast.forecast_input.input_catalog = copy
+        copy = self._project.seismic_catalog.copy()
+        forecast.input.input_catalog = copy
 
         self._forecast = forecast
         self.busy = True
