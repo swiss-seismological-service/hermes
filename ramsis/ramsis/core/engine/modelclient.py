@@ -39,8 +39,8 @@ class ModelClient(QtCore.QObject):
         }
 
         r = requests.post(self.url, data={"data": json.dumps(data)})
-        response = json.loads(r.text)
         try:
+            response = json.loads(r.text)
             int(response)
             self.job_id = response
         except ValueError:
