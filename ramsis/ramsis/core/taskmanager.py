@@ -125,7 +125,7 @@ class TaskManager:
         if next_forecast is None:
             next_forecast = self.core.create_forecast(t_next)
             p.forecast_set.add_forecast(next_forecast)
-            p.commit()
+            p.store.commit()
 
 
 class ForecastTask(Task):
