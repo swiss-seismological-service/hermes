@@ -127,18 +127,6 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
     def __getitem__(self, item):
         return self.seismic_events[item] if self.seismic_events else None
 
-    def copy(self):
-        """ Returns a new copy of itself """
-
-        arguments = {}
-        for name, column in self.__mapper__.columns.items():
-            if not (column.primary_key or column.unique):
-                arguments[name] = getattr(self, name)
-        copy = self.__class__()
-        for item in arguments.items():
-            setattr(copy, *item)
-        return copy
-
 
 class SeismicEvent(OrmBase):
     """
@@ -183,19 +171,6 @@ class SeismicEvent(OrmBase):
 
         """
         return Point(self.x, self.y, self.z).in_cube(region)
-
-    def copy(self):
-        """ Returns a new copy of itself """
-
-        arguments = {}
-        for name, column in self.__mapper__.columns.items():
-            if not (column.primary_key or column.unique):
-                arguments[name] = getattr(self, name)
-        copy = self.__class__(self.date_time, self.magnitude,
-                              (self.lat, self.lon, self.depth))
-        for item in arguments.items():
-            setattr(copy, *item)
-        return copy
 
     def __init__(self, date_time, magnitude, location):
         self.date_time = date_time
