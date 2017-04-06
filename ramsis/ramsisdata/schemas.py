@@ -62,7 +62,7 @@ class SeismicEventSchema(BaseSchema):
 
 class SeismicCatalogSchema(BaseSchema):
     catalog_date = fields.DateTime()
-    seismic_events = fields.Nested(SeismicEventSchema)
+    seismic_events = fields.Nested(SeismicEventSchema, many=True)
 
     @post_load
     def make_seismic_catalog(self, data):
