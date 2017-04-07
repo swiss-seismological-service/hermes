@@ -4,6 +4,7 @@ import logging
 import urlparse
 
 from PyQt4 import QtCore
+from pymap3d import geodetic2ned
 
 from ramsisdata.schemas import ForecastSchema, ModelResultSchema
 
@@ -52,6 +53,19 @@ class ModelClient(QtCore.QObject):
             "forecast": serialized,
             "parameters": self.model_config["parameters"]
         }
+
+        # Add cartesian coordinates
+        ref = forecast.forecast_set.project.reference_point
+        for i, e in enumerate(data["forecast"]["input"]["input_catalog"] \
+                                  ["seismic_events"]):
+            x, y, z = geodetic2ned(e["lat"], e["lon"], e["depth"], ref["lat"],
+                                   ref["lon"], ref["h"])
+            data["forecast"]["input"]["input_catalog"]["seismic_events"][i] \
+                ["x"] = x
+            data["forecast"]["input"]["input_catalog"]["seismic_events"][i] \
+                ["y"] = y
+            data["forecast"]["input"]["input_catalog"]["seismic_events"][i] \
+                ["z"] = z
 
         r = requests.post(self.url, data={"data": json.dumps(data)})
         try:
