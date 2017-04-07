@@ -152,6 +152,12 @@ class ProjectSettings(Settings):
                 'title': 'Shapiro (spatial)',
                 'parameters': None
             },
+            'ollinger': {
+                'enabled': True,
+                'url': 'http://ramsiswin.ethz.ch:8080/run',
+                'title': 'Ollinger',
+                'parameters': None
+            },
         },
         'write_fc_results_to_disk': False,
     }
