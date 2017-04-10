@@ -10,7 +10,7 @@ app = Flask(__name__)
 @app.route("/run", methods=["POST"])
 def run():
     result = worker.run(json.loads(request.form["data"]))
-    return result
+    return str(result)
 
 
 if __name__ == "__main__":

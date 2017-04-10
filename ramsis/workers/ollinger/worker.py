@@ -8,9 +8,12 @@ MODEL_PATH = "C:\RAMSIS\Worker\Simulation_Test\start_simulation.bat"
 
 def run(data):
     try:
+        print 'Writing seismic catalog...'
         _write_seismic_catalog(data)
+        print 'Running model...'
         p = subprocess.Popen(MODEL_PATH, cwd=os.path.split(MODEL_PATH)[0])
         p.communicate()
+        print 'Model run complete'
     except:
         return 500
     return 200
