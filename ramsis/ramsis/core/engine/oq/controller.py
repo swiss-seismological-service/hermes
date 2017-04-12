@@ -7,16 +7,15 @@ This module replicates minor parts of openquakes engine.py
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
-import os
-import sys
 import logging
-import tempfile
+import os
 import shutil
-import utils
-
-from multiprocessing import Process, Queue
+import sys
+import tempfile
 from PyQt4 import QtCore
+from multiprocessing import Process, Queue
 
+from core.engine import utils
 from process import run_job
 
 # Debug settings
