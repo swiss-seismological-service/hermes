@@ -9,20 +9,30 @@ from ramsisdata.schemas import ForecastSchema, ModelResultSchema
 
 
 class ModelClient(QtCore.QObject):
+    """
+    Client for remote induced seismicity model
+
+    :param str model_id: unique id for the model
+    :param dict model_config: contains the model configuration
+        'url': worker url (including port)
+        'parameters': basic model parameters
+
+    """
     # Signal emitted when model results have been retrieved
     finished = QtCore.pyqtSignal(object)
 
-    def __init__(self, model_info):
+    def __init__(self, model_id, model_config):
         super(ModelClient, self).__init__()
         self.logger = logging.getLogger(__name__)
-        self.model_info = model_info
-        self.url = urlparse.urljoin(model_info['url'], '/run')
+        self.model_id = model_id
+        self.model_config = model_config
+        self.url = urlparse.urljoin(model_config['url'], '/run')
         self.poll_interval = 5000  # ms
         self.job_id = None
         self.model = None
         self.model_result = None
 
-    def run(self, forecast):
+    def run(self, scenario, run_info):
         """
         Run the model on the remote worker using the settings specified in
         model_input.
@@ -30,12 +40,17 @@ class ModelClient(QtCore.QObject):
         The worker will return a job ID corresponding to the row ID of the
         final results stored in the remote database.
 
+        :param Scenario scenario: Scenario for which to run the model
+        :param dict run_info: Supplementary info for this run:
+             'reference_point': (lat, lon, depth) reference for coord. conversion
+             'injection_point': (lat, lon, depth) of current injection point
+
         """
         forecast_schema = ForecastSchema()
         serialized = forecast_schema.dump(forecast).data
         data = {
             "forecast": serialized,
-            "parameters": self.model_info["parameters"]
+            "parameters": self.model_config["parameters"]
         }
 
         r = requests.post(self.url, data={"data": json.dumps(data)})

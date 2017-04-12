@@ -12,7 +12,7 @@ from math import log, factorial
 
 from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
-    ForeignKey
+    ForeignKey, PickleType
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.inspection import inspect
@@ -62,7 +62,15 @@ class ForecastSet(QtCore.QObject, OrmBase):
 
 class Forecast(OrmBase):
     """
-    Planned or executed forecast
+    Planned or completed forecast
+
+    The *config* dict holds the configuration for each forecast instance:
+    {
+        run_is_forecast: True / False
+        run_hazard: True / False
+        run_risk: True / False
+        disabled_models: [model_id, ...]
+    }
 
     """
     # region ORM Declarations
@@ -71,6 +79,8 @@ class Forecast(OrmBase):
     name = Column(String)
     forecast_time = Column(DateTime)
     forecast_interval = Column(Float)
+    # Configuration as python dict
+    config = Column(PickleType)
     mc = Column(Float)
     m_min = Column(Integer)
     m_max = Column(Integer)
@@ -83,6 +93,15 @@ class Forecast(OrmBase):
     # ForecastResult relation
     results = relationship('ForecastResult', back_populates='forecast')
     # endregion
+
+    def __init__(self):
+        super(Forecast, self).__init__()
+        self.config = {
+            'run_is_forecast': True,
+            'run_hazard': True,
+            'run_risk': True,
+            'disabled_models': []
+        }
 
     @property
     def complete(self):

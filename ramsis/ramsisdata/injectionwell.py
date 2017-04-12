@@ -46,6 +46,11 @@ class InjectionWell(OrmBase):
         self.well_tip_y = well_tip_y
         self.well_tip_z = well_tip_z
 
+    @property
+    def injection_point(self):
+        # TODO: implement
+        return (4740.3, 270645.0, 611631.0)
+
 
 class WellSection(OrmBase):
 

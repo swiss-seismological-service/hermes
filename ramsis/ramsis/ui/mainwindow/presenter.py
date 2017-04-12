@@ -10,11 +10,15 @@ individual window elements.
 Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
+from datetime import datetime
 from ramsisdata.forecast import Forecast
 from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
     GeneralTabPresenter
 from timeline import TimeLinePresenter
-from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel
+from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel, \
+    ForecastNode
+from PyQt4.QtGui import QMenu, QAction
+from PyQt4.QtCore import Qt
 
 STATUS_COLOR_PLANNED = '#0099CC'
 STATUS_COLOR_COMPLETE = '#00CC99'
@@ -31,6 +35,14 @@ class ContentPresenter(object):
         self.ui = ui
 
         self.fc_tree_model = None
+        self.context_menu = QMenu(self.ui.forecastTreeView)
+        self.run_action = QAction('Run now', self.context_menu)
+        self.run_action.triggered.connect(self.action_run_now)
+        self.context_menu.addAction(self.run_action)
+        self.ui.forecastTreeView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.forecastTreeView.customContextMenuRequested.connect(
+            self.on_context_menu_requested
+        )
 
         # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter,
@@ -99,6 +111,11 @@ class ContentPresenter(object):
         self.ui.statusAreaWidget.setStyleSheet('background-color: {};'
                                                .format(color))
 
+    # Context menu actions
+
+    def action_run_now(self, checked):
+        self.ramsis_core.engine.run(datetime.now(), self.run_action.data())
+
     # Handlers for signals from the UI
 
     def on_project_will_close(self, _):
@@ -132,3 +149,13 @@ class ContentPresenter(object):
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_scenario(scenario)
         self._refresh_fc_status(forecast)
+
+    def on_context_menu_requested(self, pos):
+        if self.fc_tree_model is None:
+            return
+        idx = self.ui.forecastTreeView.indexAt(pos)
+        node = idx.internalPointer()
+        if isinstance(node, ForecastNode):
+            forecast = node.item
+            self.run_action.setData(forecast)
+            self.context_menu.exec_(self.ui.forecastTreeView.mapToGlobal(pos))

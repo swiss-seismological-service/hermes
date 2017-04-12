@@ -1,99 +1,170 @@
+# -*- coding: utf-8 -*-
+"""
+Classes to execute a forecast
+
+A forecast is a complex sequence of serial and parallel stages:
+
+ForecastJob                Runs one or more scenarios, executing serially
+    ScenarioJob            Runs the stages of a scenario, serial
+        ForecastStage      Runs the induced seismicity models, parallel
+            SeismicityForecast  Runs a single induced seismicity model
+            SeismicityForecast
+            ...
+        HazardStage        Runs the hazard stage of a forecast
+        RiskStage          Runs the risk stage of a forecast
+    Scenario Job
+    ...
+
+The forecast (data model object) will be passed to the forecast job on init.
+
+Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
+
+"""
+
 import logging
-
-from PyQt4 import QtCore
-
-from job import Job, Stage
+import time
+from core.tools.job import ParallelJob, SerialJob, WorkUnit
+from ramsisdata.forecast import ForecastResult
+from oqclient import OQClient
 from modelclient import ModelClient
 
-from ramsisdata.forecast import ForecastResult
+log = logging.getLogger(__name__)
 
 
-class ISForecastStage(Stage):
-    stage_id = 'is_forecast_stage'
-
-    def __init__(self, callback):
-        super(ISForecastStage, self).__init__(callback)
-        self.active_models = []
-        self.clients = []
-        self.results = []
-
-    def stage_fun(self):
-        forecast = self.inputs['forecast']
-        model_config = self.inputs['model_config']
-
-        t_run = forecast.forecast_time
-        self._logger.info('Invoking IS forecast stage at t={}.'.format(t_run))
-
-        self._load_models(model_config)
-        self.clients = [ModelClient(m) for m in self.active_models]
-
-        for client in self.clients:
-            client.finished.connect(self._on_client_run_finished)
-
-        for client in self.clients:
-            client.run(forecast)
-
-    def _load_models(self, model_config):
-
-        for model_id, config in model_config.items():
-            if config['enabled'] is True:
-                self.active_models.append({'model': model_id,
-                                           'config': config})
-
-    def _on_client_run_finished(self, client):
-        self.results.append(client.model_result)
-        self.clients.remove(client)
-        if not self.clients:
-            self.stage_complete()
-
-
-class PshaStage(Stage):
-    stage_id = 'psha_stage'
-
-
-class RiskPoeStage(Stage):
-    stage_id = 'risk_poe_stage'
-
-
-class ForecastJob(Job):
+class ForecastJob(SerialJob):
     """
-    Defines the job of computing forecasts with its three stages
+    Serial execution of scenarios
+
+    :param Forecast forecast: Forecast to execute
 
     """
-    job_id = 'fc_job'  #: Job ID for ForecastJob
-    stages = [ISForecastStage, PshaStage, RiskPoeStage]  #: ForecastJob stages
 
-    # Signals
-    forecast_job_complete = QtCore.pyqtSignal()
+    def __init__(self, forecast):
+        super(ForecastJob, self).__init__('forecast_job')
+        self.forecast = forecast
+        # our work units are scenario jobs
+        self.work_units = [ScenarioJob(s) for s in forecast.input.scenarios]
 
-    def __init__(self, model_config):
-        super(ForecastJob, self).__init__()
-        self.result = None
-        self.model_config = model_config
-        self._logger = logging.getLogger(__name__)
+    def pre_process(self):
+        log.info('Starting forecast at {} scenarios: {}'
+                 .format(self.forecast.forecast_time,
+                         [s.name for s in self.forecast.input.scenarios]))
 
-    def run_forecast(self, forecast):
-        job_input = {
-            'forecast': forecast,
-            'model_config': self.model_config
+    def post_process(self):
+        self.forecast.forecast_set.project.save()
+        log.info('Forecast {} completed'.format(self.forecast.forecast_time))
+
+
+class ScenarioJob(SerialJob):
+    """
+    Runs forecast, hazard and risk calculation for a scenario
+
+    :param Scenario scenario: Scenario for this job
+
+    """
+
+    def __init__(self, scenario):
+        super(ScenarioJob, self).__init__(scenario.name)
+        self.scenario = scenario
+        self.forecast = scenario.forecast_input.forecast
+        cfg = self.forecast.config
+        stages = []
+        if cfg['run_is_forecast']:
+            stages.append(ForecastStage(self.scenario))
+        if cfg['run_hazard']:
+            stages.append(HazardStage(self.scenario))
+        if cfg['run_risk']:
+            stages.append(RiskStage(self.scenario))
+        self.work_units = stages
+
+    def pre_process(self):
+        log.info('Starting scenario: {}'.format(self.scenario.name))
+        self.forecast.results.append(ForecastResult())
+
+    def post_process(self):
+        self.forecast.forecast_set.project.save()
+        log.info('Scenario {} complete'.format(self.scenario.name))
+
+
+class ForecastStage(ParallelJob):
+    """
+    Executes all forecast models for a scenario
+
+    :param Scenario scenario: scenario for which to execute model forecasts
+
+    """
+
+    def __init__(self, scenario):
+        super(ForecastStage, self).__init__('forecast_model_job')
+        self.scenario = scenario
+        self.forecast = scenario.forecast_input.forecast
+
+        cfg = self.forecast.forecast_set.project.settings['forecast_models']
+        work_units = []
+        for model_id, config in cfg.items():
+            if config['enabled']:
+                wu = SeismicityForecast(self.scenario, model_id, config)
+                work_units.append(wu)
+        self.work_units = work_units
+
+    def pre_process(self):
+        log.info('Starting forecast stage for scenario {} with models {}'
+                 .format(self.scenario.name,
+                         [wu.client.model_id for wu in self.work_units]))
+
+    def post_process(self):
+        log.info('All models complete for scenario {}'
+                 .format(self.scenario.name))
+
+
+class SeismicityForecast(WorkUnit):
+
+    def __init__(self, scenario, model_id, model_config):
+        super(SeismicityForecast, self).__init__(model_id)
+        self.scenario = scenario
+        self.client = ModelClient(model_id, model_config)
+        self.client.finished.connect(self.on_client_finished)
+
+    def run(self):
+        log.info('Running forecast model {}'.format(self.client.model_id))
+        project = self.scenario.forecast_input.forecast.forecast_set.project
+        run_info = {
+            'reference_point': project.reference_point,
+            'injection_point': project.injection_well.injection_point
         }
-        self.stage_completed.connect(self.fc_stage_complete)
-        self.result = ForecastResult()
-        self.run(job_input)
+        time.sleep(2)
+        self.complete.emit(self)
+        #self.client.run(self.scenario, run_info)
 
-    def fc_stage_complete(self, stage):
-        if stage.stage_id == 'is_forecast_stage':
-            self._logger.info('IS forecast stage completed')
-            for result in stage.results:
-                self.result.model_results[result.model_name] = result
-        elif stage.stage_id == 'psha_stage':
-            self._logger.info('PSHA stage completed')
-            self.result.hazard_oq_calc_id = stage.results['job_id']
-        elif stage.stage_id == 'risk_poe_stage':
-            self._logger.info('Risk PoE stage completed')
-            self.result.risk_oq_calc_id = stage.results['job_id']
-        else:
-            raise ValueError('Unexpected stage id: {}'.format(stage.stage_id))
+    def on_client_finished(self, client):
+        log.info('Forecast model {} complete'.format(self.client.model_id))
+        self.scenario.forecast_result.model_results.append(client.model_result)
+        self.complete.emit(self)
 
-        if stage == self.stage_objects[-1]:
-            self.forecast_job_complete.emit()
+
+class HazardStage(WorkUnit):
+
+    def __init__(self, scenario):
+        super(HazardStage, self).__init__('psha_stage')
+        self.scenario = scenario
+        self.client = OQClient('http://127.0.0.1:8800')
+
+    def run(self):
+        log.info('Running psha stage on scenario: {}'\
+                 .format(self.scenario.name))
+        time.sleep(2)
+        self.complete.emit(self)
+        #self.client.run_hazard(self.scenario)
+
+
+class RiskStage(WorkUnit):
+
+    def __init__(self, scenario):
+        super(RiskStage, self).__init__('psha_stage')
+        self.scenario = scenario
+
+    def run(self):
+        log.info('Running risk stage on scenario: {}'\
+                 .format(self.scenario.name))
+        time.sleep(2)
+        self.complete.emit(self)
