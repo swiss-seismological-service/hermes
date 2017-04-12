@@ -87,7 +87,7 @@ class ModelClient(QtCore.QObject):
         r = requests.get(self.url).json()
         if r:
             model_result_schema = ModelResultSchema()
-            self.model_result = model_result_schema.load(r).data
+            self.model_result = model_result_schema.load(json.loads(r)).data
             self.finished.emit(self)
         else:
             QtCore.QTimer.singleShot(self.poll_interval, self._get_results)

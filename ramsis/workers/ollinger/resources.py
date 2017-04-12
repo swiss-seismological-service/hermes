@@ -9,7 +9,20 @@ from flask_restful import Resource
 
 
 class Run(Resource):
-    model_path = "C:\RAMSIS\Worker\Simulation_Test\start_simulation.bat"
+    model_path = "C:\RAMSIS\Worker\Simulation_Test"
+    model_filename = "start_simulation.bat"
+    seismic_catalog_filenames = [
+        "SeismicCatalog_00000.csv",
+        "SeismicCatalog_00001.csv",
+        "SeismicCatalog_00002.csv",
+        "SeismicCatalog_00003.csv",
+        "SeismicCatalog_00004.csv",
+        "SeismicCatalog_00005.csv",
+        "SeismicCatalog_00006.csv",
+        "SeismicCatalog_00007.csv",
+        "SeismicCatalog_00008.csv",
+        "SeismicCatalog_00009.csv"
+    ]
 
     def post(self):
         try:
@@ -19,12 +32,29 @@ class Run(Resource):
             self._write_seismic_catalog(data)
             print 'Running...'
             p = subprocess.Popen(self.model_path,
-                                 cwd=os.path.split(self.model_path)[0])
+                                 cwd=os.path.join(self.model_path,
+                                                  self.model_filename))
             p.communicate()
             print 'Done'
         except:
             return 500
         return 200
+
+    def get(self):
+        try:
+            for filename in self.seismic_catalog_filenames:
+                with open(os.path.join(self.model_path, filename)) as f:
+                    pass  # TODO: calculate statistics
+            model_result = json.dumps({
+                "skill_test": None,
+                "failed": False,
+                "model_name": "",
+                "rate_prediction": None,
+                "failure_reason": ""
+            })
+            return model_result
+        except:
+            return None
 
     def _write_seismic_catalog(self, data):
         with open('Simulation_Test\SeismicCatalog_Measured.csv', 'wb')\
