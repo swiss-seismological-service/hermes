@@ -11,6 +11,7 @@ import os
 
 from PyQt4 import QtGui, uic
 from modelconfigurationwindow import ModelConfigurationWindow
+from ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 import ramsissettings
 
 ui_path = os.path.dirname(__file__)
@@ -79,7 +80,7 @@ class SettingsWindow(QtGui.QDialog):
         elif widget.inherits('QDoubleSpinBox'):
             widget.setValue(value)
         elif widget.inherits('QDateTimeEdit'):
-            widget.setDateTime(value)
+            widget.setDateTime(utc_to_local(value))
         elif widget.inherits('QLineEdit'):
             widget.setText(value)
         else:
@@ -95,7 +96,7 @@ class SettingsWindow(QtGui.QDialog):
         elif widget.inherits('QDoubleSpinBox'):
             return widget.value()
         elif widget.inherits('QDateTimeEdit'):
-            return widget.dateTime().toPyDateTime()
+            return pyqt_local_to_utc_ua(widget.dateTime())
         elif widget.inherits('QLineEdit'):
             return widget.text()
         else:
@@ -231,8 +232,10 @@ class ProjectSettingsWindow(SettingsWindow):
                 self._set_value_in_widget(value, widget)
         # Project properties are shown in the settings tab too
         self.ui.projectTitleEdit.setText(self.project.title)
-        self.ui.projectStartEdit.setDateTime(self.project.start_date)
-        self.ui.projectEndEdit.setDateTime(self.project.end_date)
+        local = utc_to_local(self.project.start_date)
+        self.ui.projectStartEdit.setDateTime(local)
+        local = utc_to_local(self.project.end_date)
+        self.ui.projectEndEdit.setDateTime(local)
         self.ui.descriptionEdit.setPlainText(self.project.description)
         ref = self.project.reference_point
         self.ui.refLatEdit.setText('{:.6f}'.format(ref['lat']))
@@ -259,8 +262,8 @@ class ProjectSettingsWindow(SettingsWindow):
     def action_save(self):
         p = self.project
         p.title = self.ui.projectTitleEdit.text()
-        start_date = self.ui.projectStartEdit.dateTime().toPyDateTime()
-        end_date = self.ui.projectEndEdit.dateTime().toPyDateTime()
+        start_date = pyqt_local_to_utc_ua(self.ui.projectStartEdit.dateTime())
+        end_date = pyqt_local_to_utc_ua(self.ui.projectEndEdit.dateTime())
         if start_date != p.start_date or end_date != p.end_date:
             p.start_date = start_date
             p.end_date = end_date

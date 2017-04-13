@@ -114,7 +114,7 @@ class ContentPresenter(object):
     # Context menu actions
 
     def action_run_now(self, checked):
-        self.ramsis_core.engine.run(datetime.now(), self.run_action.data())
+        self.ramsis_core.engine.run(datetime.utcnow(), self.run_action.data())
 
     # Handlers for signals from the UI
 

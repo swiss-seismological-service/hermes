@@ -36,7 +36,7 @@ class TimeLinePresenter(QtCore.QObject):
         if core.project:
             self.present_time_line_for_project(core.project)
         else:
-            end = (datetime.now() - datetime(1970, 1, 1)).total_seconds()
+            end = (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()
             start = end - 2 * 356 * 24 * 3600
             self.time_line.setRange(xRange=(start, end))
 

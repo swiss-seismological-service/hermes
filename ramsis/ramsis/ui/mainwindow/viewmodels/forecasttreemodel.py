@@ -18,6 +18,7 @@ Copyright (C) 2016, SED (ETH Zurich)
 
 from PyQt4.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
 from PyQt4.QtGui import QBrush, QFont
+from ui.ramsisuihelpers import utc_to_local
 
 
 class Node(object):
@@ -87,8 +88,11 @@ e
     def data(self, column, role):
         default = super(ForecastNode, self).data(column, role)
         if role == Qt.DisplayRole:
-            return self.item.forecast_time.strftime('%d.%m.%Y %H:%M') \
-                if column == 0 else None
+            if column == 0:
+                local = utc_to_local(self.item.forecast_time)
+                return local.strftime('%d.%m.%Y %H:%M')
+            else:
+                return None
         elif role == Qt.DecorationRole:
             return None
         else:

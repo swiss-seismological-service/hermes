@@ -61,7 +61,7 @@ class Settings(QtCore.QObject, OrmBase):
 
     def __init__(self):
         super(Settings, self).__init__()
-        self.date = datetime.now()
+        self.date = datetime.utcnow()
         self._dict = {}
 
     @orm.reconstructor
@@ -113,7 +113,7 @@ class Settings(QtCore.QObject, OrmBase):
         Emits the settings_changed signal
 
         """
-        self.date = datetime.now()
+        self.date = datetime.utcnow()
         self.data = json.dumps(self._dict, indent=4, default=datetime_encoder)
         self.settings_changed.emit(self)
 

@@ -26,7 +26,7 @@ class TimelinePresenter(object):
         self.ui = ui
         self._history = None
         self.time_plot_widget = time_plot_widget
-        self.displayed_project_time = datetime.now()
+        self.displayed_project_time = datetime.utcnow()
         self.logger = logging.getLogger(__name__)
 
     @property

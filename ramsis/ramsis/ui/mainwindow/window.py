@@ -20,6 +20,7 @@ from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
 from ui.timelinewindow import TimelineWindow
 from ui.reservoirwindow import ReservoirWindow
+from ui.ramsisuihelpers import utc_to_local
 from presenter import ContentPresenter
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
@@ -56,7 +57,7 @@ class StatusBar(QStatusBar):
         self.set_project_time(project.project_time if project else None)
 
     def set_project_time(self, t):
-        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
+        txt = utc_to_local(t).strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
         self.timeWidget.setText('Project Time: {}'.format(txt))
 
     def show_activity(self, message, id='default'):
