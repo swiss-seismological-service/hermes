@@ -46,7 +46,7 @@ class ForecastJob(SerialJob):
         self.work_units = [ScenarioJob(s) for s in forecast.input.scenarios]
 
     def pre_process(self):
-        log.info('Starting forecast at {} scenarios: {}'
+        log.info('Starting forecast job at {} scenarios: {}'
                  .format(self.forecast.forecast_time,
                          [s.name for s in self.forecast.input.scenarios]))
 
@@ -67,7 +67,7 @@ class ScenarioJob(SerialJob):
         super(ScenarioJob, self).__init__(scenario.name)
         self.scenario = scenario
         self.forecast = scenario.forecast_input.forecast
-        cfg = self.forecast.config
+        cfg = self.scenario.config
         stages = []
         if cfg['run_is_forecast']:
             stages.append(ForecastStage(self.scenario))
@@ -78,7 +78,7 @@ class ScenarioJob(SerialJob):
         self.work_units = stages
 
     def pre_process(self):
-        log.info('Starting scenario: {}'.format(self.scenario.name))
+        log.info('Calculating scenario: {}'.format(self.scenario.name))
         self.forecast.results.append(ForecastResult())
 
     def post_process(self):
@@ -113,7 +113,7 @@ class ForecastStage(ParallelJob):
                          [wu.client.model_id for wu in self.work_units]))
 
     def post_process(self):
-        log.info('All models complete for scenario {}'
+        log.info('All models complete for scenario: {}'
                  .format(self.scenario.name))
 
 
@@ -160,7 +160,7 @@ class HazardStage(WorkUnit):
 class RiskStage(WorkUnit):
 
     def __init__(self, scenario):
-        super(RiskStage, self).__init__('psha_stage')
+        super(RiskStage, self).__init__('risk_stage')
         self.scenario = scenario
 
     def run(self):

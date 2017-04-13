@@ -61,26 +61,13 @@ class ForecastSet(QtCore.QObject, OrmBase):
 
 
 class Forecast(OrmBase):
-    """
-    Planned or completed forecast
-
-    The *config* dict holds the configuration for each forecast instance:
-    {
-        run_is_forecast: True / False
-        run_hazard: True / False
-        run_risk: True / False
-        disabled_models: [model_id, ...]
-    }
-
-    """
+    """ Planned or completed forecast """
     # region ORM Declarations
     __tablename__ = 'forecasts'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     forecast_time = Column(DateTime)
     forecast_interval = Column(Float)
-    # Configuration as python dict
-    config = Column(PickleType)
     mc = Column(Float)
     m_min = Column(Integer)
     m_max = Column(Integer)
@@ -93,15 +80,6 @@ class Forecast(OrmBase):
     # ForecastResult relation
     results = relationship('ForecastResult', back_populates='forecast')
     # endregion
-
-    def __init__(self):
-        super(Forecast, self).__init__()
-        self.config = {
-            'run_is_forecast': True,
-            'run_hazard': True,
-            'run_risk': True,
-            'disabled_models': []
-        }
 
     @property
     def complete(self):
@@ -187,11 +165,31 @@ class ForecastResult(QtCore.QObject, OrmBase):
 
 
 class Scenario(OrmBase):
+    """
+    The *config* dict holds the configuration for each scenario instance:
+    {
+        run_is_forecast: True / False
+        run_hazard: True / False
+        run_risk: True / False
+        disabled_models: [model_id, ...]
+    }
+    """
+
+    def __init__(self):
+        super(Scenario, self).__init__()
+        self.config = {
+            'run_is_forecast': True,
+            'run_hazard': True,
+            'run_risk': True,
+            'disabled_models': []
+        }
 
     # region ORM declarations
     __tablename__ = 'scenarios'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    # Configuration as python dict
+    config = Column(PickleType)
     # ForecastInput relation
     forecast_input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     forecast_input = relationship('ForecastInput', back_populates='scenarios')

@@ -15,7 +15,7 @@ import tempfile
 from PyQt4 import QtCore
 from multiprocessing import Process, Queue
 
-from core.engine import utils
+from core.engine import oqutils
 from process import run_job
 
 # Debug settings
@@ -137,7 +137,7 @@ class _OqController(QtCore.QObject):
                         self.job_dir)
         source_lt_path = os.path.join(self.job_dir,
                                       _HAZ_RESOURCES['source_lt'])
-        utils.inject_src_params(source_params, source_lt_path)
+        oqutils.inject_src_params(source_params, source_lt_path)
         # run job
         job_input = {'job_def': os.path.join(self.job_dir,
                                              _HAZ_RESOURCES['job_def'])}
