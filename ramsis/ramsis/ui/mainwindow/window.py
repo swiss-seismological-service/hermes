@@ -15,6 +15,7 @@ import logging
 import os
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QSizePolicy, QWidget, QStatusBar, QLabel, QProgressBar
+from PyQt4.QtGui import QMessageBox
 import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
@@ -123,6 +124,8 @@ class MainWindow(QtGui.QMainWindow):
             self.action_show_application_settings)
         self.ui.actionProject_Settings.triggered.connect(
             self.action_show_project_settings)
+        self.ui.actionDelete_Results.triggered.connect(
+            self.action_delete_results)
         # ...Forecast planning
         self.ui.addScenarioButton.clicked.connect(
             self.on_add_scenario_clicked)
@@ -240,6 +243,23 @@ class MainWindow(QtGui.QMainWindow):
         history = self.ramsis_core.project.injection_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
+
+    def action_delete_results(self):
+        reply = QMessageBox.question(
+            self,
+            "Delete results",
+            "Are you sure you want to delete all forecast results? This "
+            "cannot be undone!",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            project = self.ramsis_core.project
+            self.logger.info('Deleting results for {} forecasts'
+                             .format(len(project.forecast_set.forecasts)))
+            for forecast in project.forecast_set.forecasts:
+                forecast.results = []
+            project.save()
+
 
     def _import_file_to_history(self, path, history, delimiter=' '):
         """
