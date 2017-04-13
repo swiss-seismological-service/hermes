@@ -44,8 +44,10 @@ class SimulationWindow(QtGui.QDialog):
 
         project = ramsis_core.project
         if project:
-            self.ui.startTimeEdit.setDateTime(project.start_date)
-            self.ui.endTimeEdit.setDateTime(project.end_date)
+            local = utc_to_local(project.start_date)
+            self.ui.startTimeEdit.setDateTime(local)
+            local = utc_to_local(project.end_date)
+            self.ui.endTimeEdit.setDateTime(local)
 
     def update_controls(self):
         afap = self.ui.afapCheckBox.isChecked()
