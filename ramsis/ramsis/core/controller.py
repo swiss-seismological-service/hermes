@@ -289,26 +289,40 @@ class Controller(QtCore.QObject):
     def _update_data_sources(self):
         # Seismic
         new_url = self.project.settings['fdsnws_url']
+        en = self.project.settings['fdsnws_enable']
         if new_url is None:
             self.seismics_data_source = None
         elif self.seismics_data_source:
-            self.seismics_data_source.url = new_url
-            self._logger.info('Seismic data source changed to {}'
-                              .format(new_url))
+            if self.seismics_data_source.url != new_url:
+                self.seismics_data_source.url = new_url
+                self._logger.info('Seismic data source changed to {}'
+                                 .format(new_url))
+            if self.seismics_data_source.enabled != en:
+                self.seismics_data_source.enabled = en
+                self._logger.info('Seismic data source {}'
+                                  .format('enabled' if en else 'disabled'))
         else:
             self.seismics_data_source = FDSNWSDataSource(new_url)
+            self.seismics_data_source.enabled = en
             self.seismics_data_source.data_received.connect(
                 self._on_seismic_data_received)
         # Hydraulic
         new_url = self.project.settings['hydws_url']
+        en = self.project.settings['hydws_enable']
         if new_url is None:
             self.hydraulics_data_source = None
         elif self.hydraulics_data_source:
-            self.hydraulics_data_source.url = new_url
-            self._logger.info('Hydraulic data source changed to {}'
-                              .format(new_url))
+            if self.hydraulics_data_source.url != new_url:
+                self.hydraulics_data_source.url = new_url
+                self._logger.info('Hydraulic data source changed to {}'
+                                  .format(new_url))
+            if self.hydraulics_data_source.enabled != en:
+                self.hydraulics_data_source.enabled = en
+                self._logger.info('Hydraulic data source {}'
+                                  .format('enabled' if en else 'disabled'))
         else:
             self.hydraulics_data_source = HYDWSDataSource(new_url)
+            self.hydraulics_data_source.enabled = en
             self.hydraulics_data_source.data_received.connect(
                 self._on_hydraulic_data_received)
 

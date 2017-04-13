@@ -182,6 +182,7 @@ class HYDWSDataSource(QtCore.QThread):
         self._logger = logging.getLogger(__name__)
         self._args = {}
         self._logger.info('HYDWS data source: {}'.format(url))
+        self.enabled = False
 
     def fetch(self, **kwargs):
         """
@@ -195,7 +196,8 @@ class HYDWSDataSource(QtCore.QThread):
 
         """
         self._args = kwargs
-        self.start()
+        if self.enabled:
+            self.start()
 
     def run(self):
         client = core.tools.hydws.Client(self.url)
@@ -228,6 +230,7 @@ class FDSNWSDataSource(QtCore.QThread):
         self._logger = logging.getLogger(__name__)
         self._args = {}
         self._logger.info('FDSN data source: {}'.format(url))
+        self.enabled = False
 
     def fetch(self, **kwargs):
         """
@@ -241,7 +244,8 @@ class FDSNWSDataSource(QtCore.QThread):
 
         """
         self._args = kwargs
-        self.start()
+        if self.enabled:
+            self.start()
 
     def run(self):
         client = fdsn.Client(self.url)
@@ -249,13 +253,16 @@ class FDSNWSDataSource(QtCore.QThread):
         try:
             catalog = client.get_events(**args)
         except fdsn.header.FDSNException as e:
-            self._logger.error('FDSNException: ' + str(e))
+            if 'No data available' in str(e):
+                self._logger.info('No data available between {} and {}'
+                                  .format(self._args['starttime'],
+                                          self._args['endtime']))
+            else:
+                self._logger.error('FDSNException: ' + str(e))
             self.data_received.emit(None)
-            return
-
-        result = {
-            'importer': ObsPyCatalogImporter(catalog),
-            'time_range': [args.get(a) for a in ['starttime', 'endtime']]
-        }
-
-        self.data_received.emit(result)
+        else:
+            result = {
+                'importer': ObsPyCatalogImporter(catalog),
+                'time_range': [args.get(a) for a in ['starttime', 'endtime']]
+            }
+            self.data_received.emit(result)
