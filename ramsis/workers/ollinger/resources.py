@@ -31,9 +31,10 @@ class Run(Resource):
             print 'Writing seismic catalog...'
             self._write_seismic_catalog(data)
             print 'Running...'
-            p = subprocess.Popen(self.model_path,
-                                 cwd=os.path.join(self.model_path,
-                                                  self.model_filename))
+            p = subprocess.Popen(
+                os.path.join(self.model_path, self.model_filename),
+                cwd=self.model_path
+            )
             p.communicate()
             print 'Done'
         except:
