@@ -78,7 +78,8 @@ class Forecast(OrmBase):
     input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     input = relationship('ForecastInput', back_populates='forecast')
     # ForecastResult relation
-    results = relationship('ForecastResult', back_populates='forecast')
+    results = relationship('ForecastResult', back_populates='forecast',
+                           cascade='all, delete-orphan')
     # endregion
 
     @property
