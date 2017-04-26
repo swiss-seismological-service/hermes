@@ -18,10 +18,6 @@ from ramsisdata.geometry import Point
 
 log = logging.getLogger(__name__)
 
-# The signal proxy class needs to be injected into the module if
-# seismic catalog instances are expected to emit changed signals
-SignalProxy = None
-
 
 class SeismicCatalog(OrmBase):
     """
