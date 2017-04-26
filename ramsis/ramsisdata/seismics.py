@@ -7,11 +7,12 @@ History of seismic events
 import logging
 import traceback
 from datetime import datetime
-from PyQt4 import QtCore
 from sqlalchemy import Column, Table
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from ormbase import OrmBase
+
+from signal import Signal
 
 from ramsisdata.geometry import Point
 
@@ -23,14 +24,17 @@ _catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
 
 log = logging.getLogger(__name__)
 
+# The signal proxy class needs to be injected into the module if
+# seismic catalog instances are expected to emit changed signals
+SignalProxy = None
 
-class SeismicCatalog(QtCore.QObject, OrmBase):
+
+class SeismicCatalog(OrmBase):
     """
     Provides a history of seismic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'seismic_catalogs'
@@ -54,11 +58,14 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
     skill_test = relationship('SkillTest',
                               back_populates='reference_catalog')
     # endregion
-    history_changed = QtCore.pyqtSignal()
+
+    def __init__(self):
+        super(SeismicCatalog, self).__init__()
+        self.history_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.history_changed = Signal()
 
     def import_events(self, importer):
         """

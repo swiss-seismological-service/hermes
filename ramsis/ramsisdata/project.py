@@ -8,12 +8,12 @@ Provides a class to manage Ramsis project data
 
 from datetime import datetime, timedelta
 
-from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, \
     PickleType
 from sqlalchemy.orm import relationship, reconstructor
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from ormbase import OrmBase
 
+from signal import Signal
 from settings import ProjectSettings
 from seismics import SeismicCatalog
 from hydraulics import InjectionHistory
@@ -22,7 +22,7 @@ from injectionwell import InjectionWell
 from eqstats import SeismicRateHistory
 
 
-class Project(QtCore.QObject, OrmBase):
+class Project(OrmBase):
     """
     Manages persistent and non-persistent ramsis project data such as the
     seismic and hydraulic history, and project state information.
@@ -33,8 +33,6 @@ class Project(QtCore.QObject, OrmBase):
     :ivar injection_history: The hydraulic history of the project
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM Declarations
     __tablename__ = 'projects'
     id = Column(Integer, primary_key=True)
@@ -55,10 +53,6 @@ class Project(QtCore.QObject, OrmBase):
     settings = relationship('Settings')
     # endregion
 
-    # Signals
-    will_close = QtCore.pyqtSignal(object)
-    project_time_changed = QtCore.pyqtSignal(datetime)
-
     def __init__(self, store=None, title=''):
         super(Project, self).__init__()
         self.store = store
@@ -71,6 +65,10 @@ class Project(QtCore.QObject, OrmBase):
         self.end_date = self.start_date + timedelta(days=365)
         self.reference_point = {'lat': 47.379, 'lon': 8.547, 'h': 450.0}
         self.settings = ProjectSettings()
+
+        # Signals
+        self.will_close = Signal()
+        self.project_time_changed = Signal()
 
         # These inform us when new IS forecasts become available
 
@@ -86,7 +84,8 @@ class Project(QtCore.QObject, OrmBase):
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.will_close = Signal()
+        self.project_time_changed = Signal()
         self._project_time = self.start_date
 
     def close(self):

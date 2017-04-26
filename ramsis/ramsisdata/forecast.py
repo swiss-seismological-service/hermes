@@ -10,25 +10,22 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from math import log, factorial
 
-from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
     ForeignKey, PickleType
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.inspection import inspect
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from ormbase import OrmBase
+from signal import Signal
 from skilltest import SkillTest
 
 
 
 
-class ForecastSet(QtCore.QObject, OrmBase):
+class ForecastSet(OrmBase):
     """
     Parent object for forecasts
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM Declarations
     __tablename__ = 'forecast_sets'
     id = Column(Integer, primary_key=True)
@@ -41,11 +38,12 @@ class ForecastSet(QtCore.QObject, OrmBase):
                              order_by='Forecast.forecast_time')
     # endregion
 
-    forecasts_changed = QtCore.pyqtSignal()
+    def __init__(self):
+        self.forecasts_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.forecasts_changed = Signal()
 
     def add_forecast(self, forecast):
         """ Appends a new forecast and fires the changed signal """
@@ -123,7 +121,7 @@ class ForecastInput(OrmBase):
     # endregion
 
 
-class ForecastResult(QtCore.QObject, OrmBase):
+class ForecastResult(OrmBase):
     """
     Results of one forecast run
 
@@ -138,8 +136,6 @@ class ForecastResult(QtCore.QObject, OrmBase):
         the record that contains the risk computation results.
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM declarations
     __tablename__ = 'forecast_results'
     id = Column(Integer, primary_key=True)
@@ -158,11 +154,12 @@ class ForecastResult(QtCore.QObject, OrmBase):
                             uselist=False)
     # endregion
 
-    result_changed = QtCore.pyqtSignal(object)
+    def __init__(self):
+        self.result_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.result_changed = Signal()
 
 
 class Scenario(OrmBase):

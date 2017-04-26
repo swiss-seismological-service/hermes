@@ -464,7 +464,7 @@ class MainWindow(QtGui.QMainWindow):
         project.project_time_changed.connect(self.on_project_time_change)
         self.update_controls()
 
-    def on_catalog_changed(self):
+    def on_catalog_changed(self, _):
         self.status_bar.dismiss_activity('fdsn_fetch')
 
     def on_sim_state_change(self, _):

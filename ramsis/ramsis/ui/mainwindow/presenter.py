@@ -128,7 +128,7 @@ class ContentPresenter(object):
     def on_project_time_change(self, t):
         pass
 
-    def on_forecasts_change(self):
+    def on_forecasts_change(self, _):
         self._refresh_forecast_list()
 
     def on_fc_selection_change(self, selection):

@@ -57,7 +57,7 @@ class ReservoirWindow(QWidget):
     def on_project_will_unload(self):
         self.clear_events()
 
-    def on_catalog_changed(self):
+    def on_catalog_changed(self, _):
         show_all = not self.ui.limitTimeCheckBox.isChecked()
         self.draw_catalog(show_all=show_all)
 
