@@ -33,9 +33,12 @@ class Engine(QtCore.QObject):
         self._logger.info('Initiating forecast {} at {}'.format(
             forecast.forecast_time, t))
 
-        # Copy the current catalog
+        # Copy the current catalog and change the owner from the project
+        # to the forecast input
         copy = self.core.project.store.copy(self.core.project.seismic_catalog)
+        copy.project = None
         forecast.input.input_catalog = copy
+        self.core.project.save()
 
         self._forecast = forecast
         self.busy = True
