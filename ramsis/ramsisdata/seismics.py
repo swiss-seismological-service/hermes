@@ -16,12 +16,6 @@ from signal import Signal
 
 from ramsisdata.geometry import Point
 
-_catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
-                               Column('seismic_catalogs_id', Integer,
-                                      ForeignKey('seismic_catalogs.id')),
-                               Column('seismic_events_id', Integer,
-                                      ForeignKey('seismic_events.id')))
-
 log = logging.getLogger(__name__)
 
 # The signal proxy class needs to be injected into the module if
@@ -43,7 +37,6 @@ class SeismicCatalog(OrmBase):
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
                                   order_by='SeismicEvent.date_time',
-                                  secondary=_catalogs_events_table,
                                   back_populates='seismic_catalog')
     # Parents
     # ...Project relation
@@ -161,8 +154,8 @@ class SeismicEvent(OrmBase):
     # Magnitude
     magnitude = Column(Float)
     # SeismicCatalog relation
+    seismic_catalog_id = Column(ForeignKey(Integer, 'seismic_catalogs.id'))
     seismic_catalog = relationship('SeismicCatalog',
-                                   secondary=_catalogs_events_table,
                                    back_populates='seismic_events')
     # endregion
 
