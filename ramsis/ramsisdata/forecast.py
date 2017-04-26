@@ -75,8 +75,8 @@ class Forecast(OrmBase):
     forecast_set_id = Column(Integer, ForeignKey('forecast_sets.id'))
     forecast_set = relationship('ForecastSet', back_populates='forecasts')
     # ForecastInput relation
-    input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
-    input = relationship('ForecastInput', back_populates='forecast')
+    input = relationship('ForecastInput', back_populates='forecast',
+                         cascade='all, delete-orphan', uselist=False)
     # ForecastResult relation
     results = relationship('ForecastResult', back_populates='forecast',
                            cascade='all, delete-orphan')
@@ -110,8 +110,8 @@ class ForecastInput(OrmBase):
     __tablename__ = 'forecast_inputs'
     id = Column(Integer, primary_key=True)
     # Forecast relation
-    forecast = relationship('Forecast', back_populates='input',
-                            uselist=False)
+    forecast_id = Column(Integer, ForeignKey('forecasts.id'))
+    forecast = relationship('Forecast', back_populates='input')
     # SnapshotCatalog relation
     input_catalog = relationship('SeismicCatalog',
                                  uselist=False,
