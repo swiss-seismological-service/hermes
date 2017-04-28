@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, \
     PickleType
-from sqlalchemy.orm import relationship, reconstructor
+from sqlalchemy.orm import relationship, reconstructor, backref
 from ormbase import OrmBase
 
 from signal import Signal
@@ -47,6 +47,7 @@ class Project(OrmBase):
     injection_well = relationship('InjectionWell', **args)
     injection_history = relationship('InjectionHistory', **args)
     forecast_set = relationship('ForecastSet', **args)
+    # We handle delete-orphan manually for seismic catalogs
     seismic_catalog = relationship('SeismicCatalog',
                                    **dict(args, cascade='all'))
     settings_id = Column(Integer, ForeignKey('settings.id'))

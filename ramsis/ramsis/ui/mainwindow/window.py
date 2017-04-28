@@ -253,14 +253,7 @@ class MainWindow(QtGui.QMainWindow):
             QMessageBox.Yes | QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            project = self.ramsis_core.project
-            self.logger.info('Deleting results and input catalogs for {} '
-                             'forecasts'
-                             .format(len(project.forecast_set.forecasts)))
-            for forecast in project.forecast_set.forecasts:
-                forecast.results = []
-                forecast.input.input_catalog = None
-            project.save()
+            self.ramsis_core.delete_results()
 
     def _import_file_to_history(self, path, history, delimiter=' '):
         """

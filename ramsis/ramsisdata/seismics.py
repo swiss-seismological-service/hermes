@@ -7,9 +7,9 @@ History of seismic events
 import logging
 import traceback
 from datetime import datetime
-from sqlalchemy import Column, Table
+from sqlalchemy import Column, event
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship, reconstructor
+from sqlalchemy.orm import relationship, reconstructor, Session
 from ormbase import OrmBase
 
 from signal import Signal
@@ -17,6 +17,28 @@ from signal import Signal
 from ramsisdata.geometry import Point
 
 log = logging.getLogger(__name__)
+
+
+@event.listens_for(Session, 'after_flush')
+def delete_catalog_orphans(session, ctx):
+    """
+    Seismic catalog orphan deletion
+
+    Seismic catalogs can have different kinds of parents, so a simple
+    'delete-orphan' statement on the relation doesn't work. Instead we check
+    after each flush to the db if there are any orphaned catalogs and delete
+    them if necessary.
+
+    :param Session session: The current session
+
+    """
+    if any(isinstance(i, SeismicCatalog) for i in session.dirty):
+        query = session.query(SeismicCatalog).\
+                filter_by(project=None, forecast_input=None, skill_test=None)
+        orphans = query.all()
+        print('deleting orphaned catalogs: {}'.format(orphans))
+        for orphan in orphans:
+            session.delete(orphan)
 
 
 class SeismicCatalog(OrmBase):
@@ -33,7 +55,8 @@ class SeismicCatalog(OrmBase):
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
                                   order_by='SeismicEvent.date_time',
-                                  back_populates='seismic_catalog')
+                                  back_populates='seismic_catalog',
+                                  cascade='all, delete-orphan')
     # Parents
     # ...Project relation
     project_id = Column(Integer, ForeignKey('projects.id'))
@@ -117,6 +140,21 @@ class SeismicCatalog(OrmBase):
         log.info('Cleared {} seismic events.'.format(count))
         self.history_changed.emit()
 
+    def snapshot(self, t):
+        """
+        Create a snapshot of the catalog.
+
+        Deep copies the catalog with all events up to time t
+
+        :return SeismicCatalog: copy of the catalog
+
+        """
+        snapshot = SeismicCatalog()
+        snapshot.catalog_date = datetime.utcnow()
+        snapshot.seismic_events = [s.copy() for s in self.seismic_events
+                                   if s.date_time < t]
+        return snapshot
+
     def __len__(self):
         return len(self.seismic_events)
 
@@ -150,12 +188,13 @@ class SeismicEvent(OrmBase):
     # Magnitude
     magnitude = Column(Float)
     # SeismicCatalog relation
-    seismic_catalog_id = Column(ForeignKey(Integer, 'seismic_catalogs.id'))
+    seismic_catalog_id = Column(Integer, ForeignKey('seismic_catalogs.id'))
     seismic_catalog = relationship('SeismicCatalog',
                                    back_populates='seismic_events')
     # endregion
 
-    # Data attributes (required for flattening)
+    # Data attributes (required for copying, serialization to matlab)
+    copy_attrs = ['public_id', 'public_origin_id', 'public_magnitude_id']
     data_attrs = ['magnitude', 'date_time', 'lat', 'lon', 'depth']
 
     def in_region(self, region):
@@ -167,6 +206,14 @@ class SeismicEvent(OrmBase):
 
         """
         return Point(self.x, self.y, self.z).in_cube(region)
+
+    def copy(self):
+        """ Return a copy of this event """
+        copy = SeismicEvent(self.date_time, self.magnitude,
+                            (self.lat, self.lon, self.depth))
+        for attr in SeismicEvent.copy_attrs:
+            setattr(copy, attr, getattr(self, attr))
+        return copy
 
     def __init__(self, date_time, magnitude, location):
         self.date_time = date_time

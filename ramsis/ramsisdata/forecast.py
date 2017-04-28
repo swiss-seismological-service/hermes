@@ -111,10 +111,11 @@ class ForecastInput(OrmBase):
     forecast_id = Column(Integer, ForeignKey('forecasts.id'))
     forecast = relationship('Forecast', back_populates='input')
     # SnapshotCatalog relation
+    # We handle delete-orphan manually for seismic catalogs
     input_catalog = relationship('SeismicCatalog',
                                  uselist=False,
                                  back_populates='forecast_input',
-                                 cascade='all, delete-orphan')
+                                 cascade='all')
     # Scenario relation
     scenarios = relationship('Scenario', back_populates='forecast_input',
                              cascade='all, delete-orphan')

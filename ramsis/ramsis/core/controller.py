@@ -145,6 +145,14 @@ class Controller(QtCore.QObject):
         self._logger.info('Re-fetching hydraulic data from data source')
         self.hydraulics_data_source.fetch()
 
+    def delete_results(self):
+        project = self.project
+        self._logger.info('Deleting all results and input catalogs')
+        for forecast in project.forecast_set.forecasts:
+            forecast.results = []
+            forecast.input.input_catalog = None
+        project.save()
+
     # Running
 
     def start(self, time_range=None, speed=1):

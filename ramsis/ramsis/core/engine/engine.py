@@ -20,6 +20,7 @@ class Engine(QtCore.QObject):
 
     def run(self, t, forecast):
         assert self.core.project
+        project = self.core.project
 
         # Skip this forecast if the core is busy
         if self.busy:
@@ -33,12 +34,10 @@ class Engine(QtCore.QObject):
         self._logger.info('Initiating forecast {} at {}'.format(
             forecast.forecast_time, t))
 
-        # Copy the current catalog and change the owner from the project
-        # to the forecast input
-        copy = self.core.project.store.copy(self.core.project.seismic_catalog)
-        copy.project = None
+        # Snapshot the current catalog by creating a copy
+        copy = project.seismic_catalog.snapshot(forecast.forecast_time)
         forecast.input.input_catalog = copy
-        self.core.project.save()
+        project.save()
 
         self._forecast = forecast
         self.busy = True
