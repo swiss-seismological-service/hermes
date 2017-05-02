@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/toolbar-buttons">
+        <file>images/forecast-window-toolbar-button.png</file>
+        <file>images/view-3d-toolbar-button.png</file>
+        <file>images/scenario-toolbar-button.png</file>
+        <file>images/simulate-toolbar-button.png</file>
+        <file>images/timeline-window-toolbar-button.png</file>
+    </qresource>
+    <qresource prefix="/stage_images">
+        <file>images/stage_complete.png</file>
+        <file>images/stage_disabled.png</file>
+        <file>images/stage_error.png</file>
+        <file>images/stage_other.png</file>
+        <file>images/stage_planned.png</file>
+        <file>images/stage_running.png</file>
+    </qresource>
+</RCC>
