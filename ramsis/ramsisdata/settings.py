@@ -10,10 +10,10 @@ that will be stored in the project database.
 import json
 import logging
 from datetime import datetime
-from PyQt4 import QtCore
 from sqlalchemy import Column, orm
 from sqlalchemy import Integer, String, DateTime
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from ormbase import OrmBase
+from signal import Signal
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def datetime_decoder(dct):
     return dct
 
 
-class Settings(QtCore.QObject, OrmBase):
+class Settings(OrmBase):
     """
     Collection of settings
 
@@ -46,8 +46,6 @@ class Settings(QtCore.QObject, OrmBase):
     obsolete settings.
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM declarations
     __tablename__ = 'settings'
     id = Column(Integer, primary_key=True)
@@ -57,16 +55,15 @@ class Settings(QtCore.QObject, OrmBase):
     __mapper_args__ = {'polymorphic_on': name}
     # endregion
 
-    settings_changed = QtCore.pyqtSignal(object)
-
     def __init__(self):
         super(Settings, self).__init__()
-        self.date = datetime.now()
+        self.settings_changed = Signal()
+        self.date = datetime.utcnow()
         self._dict = {}
 
     @orm.reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.settings_changed = Signal()
         self._dict = json.loads(self.data, object_hook=datetime_decoder) \
             if self.data else {}
 
@@ -113,7 +110,7 @@ class Settings(QtCore.QObject, OrmBase):
         Emits the settings_changed signal
 
         """
-        self.date = datetime.now()
+        self.date = datetime.utcnow()
         self.data = json.dumps(self._dict, indent=4, default=datetime_encoder)
         self.settings_changed.emit(self)
 

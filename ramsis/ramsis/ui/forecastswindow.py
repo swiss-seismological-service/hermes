@@ -83,7 +83,7 @@ class TabPresenter(object):
     def refresh(self):
         raise NotImplementedError("Please Implement this method")
 
-    def _on_change(self):
+    def _on_change(self, _):
         self.refresh()
 
 

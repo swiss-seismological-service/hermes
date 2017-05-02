@@ -24,8 +24,9 @@ class SkillTest(OrmBase):
                                 back_populates='skill_test',
                                 uselist=False)
     # SnapshotCatalog relation
+    # We handle delete-orphan manually for seismic catalogs
     reference_catalog = relationship('SeismicCatalog',
                                      uselist=False,
                                      back_populates='skill_test',
-                                     cascade='all, delete-orphan')
+                                     cascade='all')
     # endregion

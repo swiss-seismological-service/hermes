@@ -10,25 +10,22 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from math import log, factorial
 
-from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
-    ForeignKey
+    ForeignKey, PickleType
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.inspection import inspect
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from ormbase import OrmBase
+from signal import Signal
 from skilltest import SkillTest
 
 
 
 
-class ForecastSet(QtCore.QObject, OrmBase):
+class ForecastSet(OrmBase):
     """
     Parent object for forecasts
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM Declarations
     __tablename__ = 'forecast_sets'
     id = Column(Integer, primary_key=True)
@@ -41,11 +38,12 @@ class ForecastSet(QtCore.QObject, OrmBase):
                              order_by='Forecast.forecast_time')
     # endregion
 
-    forecasts_changed = QtCore.pyqtSignal()
+    def __init__(self):
+        self.forecasts_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.forecasts_changed = Signal()
 
     def add_forecast(self, forecast):
         """ Appends a new forecast and fires the changed signal """
@@ -61,10 +59,7 @@ class ForecastSet(QtCore.QObject, OrmBase):
 
 
 class Forecast(OrmBase):
-    """
-    Planned or executed forecast
-
-    """
+    """ Planned or completed forecast """
     # region ORM Declarations
     __tablename__ = 'forecasts'
     id = Column(Integer, primary_key=True)
@@ -78,10 +73,11 @@ class Forecast(OrmBase):
     forecast_set_id = Column(Integer, ForeignKey('forecast_sets.id'))
     forecast_set = relationship('ForecastSet', back_populates='forecasts')
     # ForecastInput relation
-    input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
-    input = relationship('ForecastInput', back_populates='forecast')
+    input = relationship('ForecastInput', back_populates='forecast',
+                         cascade='all, delete-orphan', uselist=False)
     # ForecastResult relation
-    results = relationship('ForecastResult', back_populates='forecast')
+    results = relationship('ForecastResult', back_populates='forecast',
+                           cascade='all, delete-orphan')
     # endregion
 
     @property
@@ -112,20 +108,21 @@ class ForecastInput(OrmBase):
     __tablename__ = 'forecast_inputs'
     id = Column(Integer, primary_key=True)
     # Forecast relation
-    forecast = relationship('Forecast', back_populates='input',
-                            uselist=False)
+    forecast_id = Column(Integer, ForeignKey('forecasts.id'))
+    forecast = relationship('Forecast', back_populates='input')
     # SnapshotCatalog relation
+    # We handle delete-orphan manually for seismic catalogs
     input_catalog = relationship('SeismicCatalog',
                                  uselist=False,
                                  back_populates='forecast_input',
-                                 cascade='all, delete-orphan')
+                                 cascade='all')
     # Scenario relation
     scenarios = relationship('Scenario', back_populates='forecast_input',
                              cascade='all, delete-orphan')
     # endregion
 
 
-class ForecastResult(QtCore.QObject, OrmBase):
+class ForecastResult(OrmBase):
     """
     Results of one forecast run
 
@@ -140,8 +137,6 @@ class ForecastResult(QtCore.QObject, OrmBase):
         the record that contains the risk computation results.
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM declarations
     __tablename__ = 'forecast_results'
     id = Column(Integer, primary_key=True)
@@ -160,19 +155,40 @@ class ForecastResult(QtCore.QObject, OrmBase):
                             uselist=False)
     # endregion
 
-    result_changed = QtCore.pyqtSignal(object)
+    def __init__(self):
+        self.result_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.result_changed = Signal()
 
 
 class Scenario(OrmBase):
+    """
+    The *config* dict holds the configuration for each scenario instance:
+    {
+        run_is_forecast: True / False
+        run_hazard: True / False
+        run_risk: True / False
+        disabled_models: [model_id, ...]
+    }
+    """
+
+    def __init__(self):
+        super(Scenario, self).__init__()
+        self.config = {
+            'run_is_forecast': True,
+            'run_hazard': True,
+            'run_risk': True,
+            'disabled_models': []
+        }
 
     # region ORM declarations
     __tablename__ = 'scenarios'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    # Configuration as python dict
+    config = Column(PickleType)
     # ForecastInput relation
     forecast_input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     forecast_input = relationship('ForecastInput', back_populates='scenarios')

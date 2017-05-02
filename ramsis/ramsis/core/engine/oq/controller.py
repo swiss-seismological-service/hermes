@@ -7,16 +7,15 @@ This module replicates minor parts of openquakes engine.py
 Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
-import os
-import sys
 import logging
-import tempfile
+import os
 import shutil
-import utils
-
-from multiprocessing import Process, Queue
+import sys
+import tempfile
 from PyQt4 import QtCore
+from multiprocessing import Process, Queue
 
+from core.engine import oqutils
 from process import run_job
 
 # Debug settings
@@ -138,7 +137,7 @@ class _OqController(QtCore.QObject):
                         self.job_dir)
         source_lt_path = os.path.join(self.job_dir,
                                       _HAZ_RESOURCES['source_lt'])
-        utils.inject_src_params(source_params, source_lt_path)
+        oqutils.inject_src_params(source_params, source_lt_path)
         # run job
         job_input = {'job_def': os.path.join(self.job_dir,
                                              _HAZ_RESOURCES['job_def'])}

@@ -11,6 +11,7 @@ import logging
 from PyQt4 import QtGui, uic
 
 from core.simulator import SimulatorState
+from ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 
 ui_path = os.path.dirname(__file__)
 SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')
@@ -43,8 +44,10 @@ class SimulationWindow(QtGui.QDialog):
 
         project = ramsis_core.project
         if project:
-            self.ui.startTimeEdit.setDateTime(project.start_date)
-            self.ui.endTimeEdit.setDateTime(project.end_date)
+            local = utc_to_local(project.start_date)
+            self.ui.startTimeEdit.setDateTime(local)
+            local = utc_to_local(project.end_date)
+            self.ui.endTimeEdit.setDateTime(local)
 
     def update_controls(self):
         afap = self.ui.afapCheckBox.isChecked()
@@ -80,8 +83,8 @@ class SimulationWindow(QtGui.QDialog):
 
     def action_start_simulation(self):
         # Convert from QDateTime to Python datetime
-        start_time = self.ui.startTimeEdit.dateTime().toPyDateTime()
-        end_time = self.ui.endTimeEdit.dateTime().toPyDateTime()
+        start_time = pyqt_local_to_utc_ua(self.ui.startTimeEdit.dateTime())
+        end_time = pyqt_local_to_utc_ua(self.ui.endTimeEdit.dateTime())
 
         time_range = (start_time, end_time)
         speed = -1 if self.ui.afapCheckBox.isChecked() \
@@ -100,8 +103,10 @@ class SimulationWindow(QtGui.QDialog):
         self.update_controls()
 
     def on_project_load(self, project):
-        self.ui.startTimeEdit.setDateTime(project.start_date)
-        self.ui.endTimeEdit.setDateTime(project.end_date)
+        local = utc_to_local(project.start_date)
+        self.ui.startTimeEdit.setDateTime(local)
+        local = utc_to_local(project.end_date)
+        self.ui.endTimeEdit.setDateTime(local)
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         self.update_controls()

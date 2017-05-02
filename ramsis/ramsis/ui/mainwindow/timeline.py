@@ -36,7 +36,7 @@ class TimeLinePresenter(QtCore.QObject):
         if core.project:
             self.present_time_line_for_project(core.project)
         else:
-            end = (datetime.now() - datetime(1970, 1, 1)).total_seconds()
+            end = (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()
             start = end - 2 * 356 * 24 * 3600
             self.time_line.setRange(xRange=(start, end))
 
@@ -116,11 +116,11 @@ class TimeLinePresenter(QtCore.QObject):
     def on_project_time_changed(self, project_time):
         self.show_current_time(project_time)
 
-    def on_forecasts_changed(self):
+    def on_forecasts_changed(self, _):
         self.show_forecasts()
 
     def on_settings_changed(self, settings):
         self.present_time_line_for_project(self.core.project)
 
-    def on_catalog_changed(self):
+    def on_catalog_changed(self, _):
         self.replot()

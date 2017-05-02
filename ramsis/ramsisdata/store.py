@@ -43,3 +43,6 @@ class Store:
         self.session.close()
         self.session = None
 
+    def copy(self, o):
+        copy = self.session.merge(o, load=False)
+        return copy

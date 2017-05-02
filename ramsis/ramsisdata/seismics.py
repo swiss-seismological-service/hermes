@@ -7,30 +7,46 @@ History of seismic events
 import logging
 import traceback
 from datetime import datetime
-from PyQt4 import QtCore
-from sqlalchemy import Column, Table
+from sqlalchemy import Column, event
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship, reconstructor
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from sqlalchemy.orm import relationship, reconstructor, Session
+from ormbase import OrmBase
+
+from signal import Signal
 
 from ramsisdata.geometry import Point
-
-_catalogs_events_table = Table('catalogs_events', OrmBase.metadata,
-                               Column('seismic_catalogs_id', Integer,
-                                      ForeignKey('seismic_catalogs.id')),
-                               Column('seismic_events_id', Integer,
-                                      ForeignKey('seismic_events.id')))
 
 log = logging.getLogger(__name__)
 
 
-class SeismicCatalog(QtCore.QObject, OrmBase):
+@event.listens_for(Session, 'after_flush')
+def delete_catalog_orphans(session, ctx):
+    """
+    Seismic catalog orphan deletion
+
+    Seismic catalogs can have different kinds of parents, so a simple
+    'delete-orphan' statement on the relation doesn't work. Instead we check
+    after each flush to the db if there are any orphaned catalogs and delete
+    them if necessary.
+
+    :param Session session: The current session
+
+    """
+    if any(isinstance(i, SeismicCatalog) for i in session.dirty):
+        query = session.query(SeismicCatalog).\
+                filter_by(project=None, forecast_input=None, skill_test=None)
+        orphans = query.all()
+        print('deleting orphaned catalogs: {}'.format(orphans))
+        for orphan in orphans:
+            session.delete(orphan)
+
+
+class SeismicCatalog(OrmBase):
     """
     Provides a history of seismic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
 
     # region ORM Declarations
     __tablename__ = 'seismic_catalogs'
@@ -39,8 +55,8 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
     # SeismicEvent relation (we own them)
     seismic_events = relationship('SeismicEvent',
                                   order_by='SeismicEvent.date_time',
-                                  secondary=_catalogs_events_table,
-                                  back_populates='seismic_catalog')
+                                  back_populates='seismic_catalog',
+                                  cascade='all, delete-orphan')
     # Parents
     # ...Project relation
     project_id = Column(Integer, ForeignKey('projects.id'))
@@ -54,11 +70,14 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
     skill_test = relationship('SkillTest',
                               back_populates='reference_catalog')
     # endregion
-    history_changed = QtCore.pyqtSignal()
+
+    def __init__(self):
+        super(SeismicCatalog, self).__init__()
+        self.history_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.history_changed = Signal()
 
     def import_events(self, importer):
         """
@@ -121,23 +140,26 @@ class SeismicCatalog(QtCore.QObject, OrmBase):
         log.info('Cleared {} seismic events.'.format(count))
         self.history_changed.emit()
 
+    def snapshot(self, t):
+        """
+        Create a snapshot of the catalog.
+
+        Deep copies the catalog with all events up to time t
+
+        :return SeismicCatalog: copy of the catalog
+
+        """
+        snapshot = SeismicCatalog()
+        snapshot.catalog_date = datetime.utcnow()
+        snapshot.seismic_events = [s.copy() for s in self.seismic_events
+                                   if s.date_time < t]
+        return snapshot
+
     def __len__(self):
         return len(self.seismic_events)
 
     def __getitem__(self, item):
         return self.seismic_events[item] if self.seismic_events else None
-
-    def copy(self):
-        """ Returns a new copy of itself """
-
-        arguments = {}
-        for name, column in self.__mapper__.columns.items():
-            if not (column.primary_key or column.unique):
-                arguments[name] = getattr(self, name)
-        copy = self.__class__()
-        for item in arguments.items():
-            setattr(copy, *item)
-        return copy
 
 
 class SeismicEvent(OrmBase):
@@ -166,12 +188,13 @@ class SeismicEvent(OrmBase):
     # Magnitude
     magnitude = Column(Float)
     # SeismicCatalog relation
+    seismic_catalog_id = Column(Integer, ForeignKey('seismic_catalogs.id'))
     seismic_catalog = relationship('SeismicCatalog',
-                                   secondary=_catalogs_events_table,
                                    back_populates='seismic_events')
     # endregion
 
-    # Data attributes (required for flattening)
+    # Data attributes (required for copying, serialization to matlab)
+    copy_attrs = ['public_id', 'public_origin_id', 'public_magnitude_id']
     data_attrs = ['magnitude', 'date_time', 'lat', 'lon', 'depth']
 
     def in_region(self, region):
@@ -185,16 +208,11 @@ class SeismicEvent(OrmBase):
         return Point(self.x, self.y, self.z).in_cube(region)
 
     def copy(self):
-        """ Returns a new copy of itself """
-
-        arguments = {}
-        for name, column in self.__mapper__.columns.items():
-            if not (column.primary_key or column.unique):
-                arguments[name] = getattr(self, name)
-        copy = self.__class__(self.date_time, self.magnitude,
-                              (self.lat, self.lon, self.depth))
-        for item in arguments.items():
-            setattr(copy, *item)
+        """ Return a copy of this event """
+        copy = SeismicEvent(self.date_time, self.magnitude,
+                            (self.lat, self.lon, self.depth))
+        for attr in SeismicEvent.copy_attrs:
+            setattr(copy, attr, getattr(self, attr))
         return copy
 
     def __init__(self, date_time, magnitude, location):

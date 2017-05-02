@@ -7,22 +7,20 @@ History of hydraulic events, i.e changes in flow or pressure
 import logging
 import traceback
 from datetime import datetime
-from PyQt4 import QtCore
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
-from ormbase import OrmBase, DeclarativeQObjectMeta
+from ormbase import OrmBase
+from signal import Signal
 
 log = logging.getLogger(__name__)
 
 
-class InjectionHistory(QtCore.QObject, OrmBase):
+class InjectionHistory(OrmBase):
     """
     Provides a history of hydraulic events and functions to read and write them
     from/to a persistent store. The class uses Qt signals to signal changes.
 
     """
-    __metaclass__ = DeclarativeQObjectMeta
-
     # region ORM Declarations
     __tablename__ = 'injection_histories'
     id = Column(Integer, primary_key=True)
@@ -34,11 +32,13 @@ class InjectionHistory(QtCore.QObject, OrmBase):
                            back_populates='injection_history',
                            cascade='all')
     # endregion
-    history_changed = QtCore.pyqtSignal()
+
+    def __init__(self):
+        self.history_changed = Signal()
 
     @reconstructor
     def init_on_load(self):
-        QtCore.QObject.__init__(self)
+        self.history_changed = Signal()
 
     def import_events(self, importer):
         """
@@ -103,18 +103,6 @@ class InjectionHistory(QtCore.QObject, OrmBase):
     def __getitem__(self, item):
         return self.samples[item] if self.samples else None
 
-    def copy(self):
-        """ Returns a new copy of itself """
-
-        arguments = {}
-        for name, column in self.__mapper__.columns.items():
-            if not (column.primary_key or column.unique):
-                arguments[name] = getattr(self, name)
-        copy = self.__class__()
-        for item in arguments.items():
-            setattr(copy, *item)
-        return copy
-
 
 class InjectionPlan(OrmBase):
 
@@ -164,19 +152,6 @@ class InjectionSample(OrmBase):
 
     # Data attributes (required for flattening)
     data_attrs = ['date_time', 'flow_dh', 'flow_xt', 'pr_dh', 'pr_xt']
-
-    def copy(self):
-        """ Returns a new copy of itself """
-
-        arguments = {}
-        for name, column in self.__mapper__.columns.items():
-            if not (column.primary_key or column.unique):
-                arguments[name] = getattr(self, name)
-        copy = self.__class__(self.date_time, self.flow_dh, self.flow_xt,
-                              self.pr_dh, self.pr_xt)
-        for item in arguments.items():
-            setattr(copy, *item)
-        return copy
 
     def __init__(self, date_time, flow_dh, flow_xt, pr_dh, pr_xt):
         """

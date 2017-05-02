@@ -836,6 +836,8 @@
     <addaction name="actionHydraulic_Data"/>
     <addaction name="actionFetch_from_hydws"/>
     <addaction name="actionImport_Hydraulic_Data"/>
+    <addaction name="separator"/>
+    <addaction name="actionDelete_Results"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menuProject"/>
@@ -1008,6 +1010,11 @@
    </property>
    <property name="text">
     <string>Hydraulic Data</string>
+   </property>
+  </action>
+  <action name="actionDelete_Results">
+   <property name="text">
+    <string>Delete all forecast results...</string>
    </property>
   </action>
  </widget>

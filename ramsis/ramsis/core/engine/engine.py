@@ -20,6 +20,7 @@ class Engine(QtCore.QObject):
 
     def run(self, t, forecast):
         assert self.core.project
+        project = self.core.project
 
         # Skip this forecast if the core is busy
         if self.busy:
@@ -33,21 +34,18 @@ class Engine(QtCore.QObject):
         self._logger.info('Initiating forecast {} at {}'.format(
             forecast.forecast_time, t))
 
-        # Copy the current catalog
-        copy = self._project.seismic_catalog.copy()
+        # Snapshot the current catalog by creating a copy
+        copy = project.seismic_catalog.snapshot(forecast.forecast_time)
         forecast.input.input_catalog = copy
+        project.save()
 
         self._forecast = forecast
         self.busy = True
-        # in future we may run more than one scenario
-        model_config = self.core.project.settings['forecast_models']
-        self._forecast_job = ForecastJob(model_config)
-        self._forecast_job.forecast_job_complete.connect(self.fc_job_complete)
-        self._forecast_job.run_forecast(self._forecast)
+        self._forecast_job = ForecastJob(forecast)
+        self._forecast_job.complete.connect(self.fc_job_complete)
+        self._forecast_job.run()
 
     def fc_job_complete(self):
-        self._forecast.result = [self._forecast_job.result]
-        self._project.store.commit()
         self.busy = False
         self.forecast_complete.emit()
 

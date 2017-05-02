@@ -15,11 +15,13 @@ import logging
 import os
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QSizePolicy, QWidget, QStatusBar, QLabel, QProgressBar
+from PyQt4.QtGui import QMessageBox
 import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
 from ui.timelinewindow import TimelineWindow
 from ui.reservoirwindow import ReservoirWindow
+from ui.ramsisuihelpers import utc_to_local
 from presenter import ContentPresenter
 from viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
@@ -56,7 +58,7 @@ class StatusBar(QStatusBar):
         self.set_project_time(project.project_time if project else None)
 
     def set_project_time(self, t):
-        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
+        txt = utc_to_local(t).strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
         self.timeWidget.setText('Project Time: {}'.format(txt))
 
     def show_activity(self, message, id='default'):
@@ -122,6 +124,8 @@ class MainWindow(QtGui.QMainWindow):
             self.action_show_application_settings)
         self.ui.actionProject_Settings.triggered.connect(
             self.action_show_project_settings)
+        self.ui.actionDelete_Results.triggered.connect(
+            self.action_delete_results)
         # ...Forecast planning
         self.ui.addScenarioButton.clicked.connect(
             self.on_add_scenario_clicked)
@@ -239,6 +243,17 @@ class MainWindow(QtGui.QMainWindow):
         history = self.ramsis_core.project.injection_history
         if path:
             self._import_file_to_history(path, history, delimiter='\t')
+
+    def action_delete_results(self):
+        reply = QMessageBox.question(
+            self,
+            "Delete results",
+            "Are you sure you want to delete all forecast results? This "
+            "cannot be undone!",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.ramsis_core.delete_results()
 
     def _import_file_to_history(self, path, history, delimiter=' '):
         """
@@ -442,7 +457,7 @@ class MainWindow(QtGui.QMainWindow):
         project.project_time_changed.connect(self.on_project_time_change)
         self.update_controls()
 
-    def on_catalog_changed(self):
+    def on_catalog_changed(self, _):
         self.status_bar.dismiss_activity('fdsn_fetch')
 
     def on_sim_state_change(self, _):
