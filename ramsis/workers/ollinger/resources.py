@@ -26,17 +26,17 @@ class Run(Resource):
 
     def post(self):
         try:
-            print 'Model run started'
+            print('Model run started')
             data = json.loads(request.form["data"])
-            print 'Writing seismic catalog...'
+            print('Writing seismic catalog...')
             self._write_seismic_catalog(data)
-            print 'Running...'
+            print('Running...')
             p = subprocess.Popen(
                 os.path.join(self.model_path, self.model_filename),
                 cwd=self.model_path
             )
             p.communicate()
-            print 'Done'
+            print('Done')
         except:
             return 500
         return 200
@@ -65,9 +65,14 @@ class Run(Resource):
                              "Offset-Z(m)", "Local magnitude"])
             events = data["forecast"]["input"]["input_catalog"]
             events = events["seismic_events"]
-            for e in events:
-                d = datetime.strptime(e["date_time"], '%Y-%m-%dT%H:%M:%S+00:00')
-                e["date_time"] = d.strftime('%d.%m.%Y %H:%M:%S.0000')
-                row = [e[key] for key in ["date_time", "x", "y", "z",
-                                          "magnitude"]]
-                writer.writerow(row)
+            try:
+                for e in events:
+                    d = datetime.strptime(e["date_time"],
+                                          '%Y-%m-%dT%H:%M:%S+00:00')
+                    e["date_time"] = d.strftime('%d.%m.%Y %H:%M:%S.0000')
+                    row = [e[key] for key in ["date_time", "x", "y", "z",
+                                              "magnitude"]]
+                    writer.writerow(row)
+            except TypeError:
+                print('Could not write catalog: no seismic events')
+                return
