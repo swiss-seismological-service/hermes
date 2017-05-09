@@ -47,11 +47,13 @@ class ModelClient(QtCore.QObject):
              'injection_point': (lat, lon, depth) of current injection point
 
         """
+        forecast = scenario.forecast_input.forecast
         forecast_schema = ForecastSchema()
         serialized = forecast_schema.dump(forecast).data
         data = {
             "forecast": serialized,
-            "parameters": self.model_config["parameters"]
+            "parameters": self.model_config["parameters"],
+            "scenario id": scenario.id
         }
 
         # Add cartesian coordinates
