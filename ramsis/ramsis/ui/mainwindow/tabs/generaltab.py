@@ -36,7 +36,7 @@ class GeneralTabPresenter(TabPresenter):
 
 class StageStatusPresenter(QObject):
     """
-    A base class for presenting time lines
+    Handles the presentation of the forecasts current status
 
     """
 
@@ -60,3 +60,23 @@ class StageStatusPresenter(QObject):
             ('Ollinger-Gischig', 'running...')
         ])
         self.widgets[0].set_status('running')
+
+    def present_status(self, status):
+        """
+        Show the updated status of an ongoing calculation
+
+        :param CalculationStatus status: 
+
+        """
+        if status is None:
+            return
+        # determine the stage
+        if status.model_result:
+            widget = self.widgets[0]
+        elif status.hazard_result:
+            widget = self.widgets[1]
+        else:
+            widget = self.widgets[2]
+        widget.set_status(status.state)
+
+

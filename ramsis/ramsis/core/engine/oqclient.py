@@ -11,6 +11,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 """
 import logging
 from urlparse import urljoin
+import json
 import requests
 from PyQt4.QtCore import QObject, pyqtSignal, QTimer
 import oqutils
@@ -20,6 +21,42 @@ API_V = 'v1'
 log = logging.getLogger(__name__)
 
 
+class OQClientNotification(object):
+    RUNNING = 'Running'
+    COMPLETE = 'Complete'
+    ERROR = 'Error'
+    OTHER = 'Other'
+
+    def __init__(self, state, calc_id=None, response=None):
+        self.calc_id = calc_id
+        self.state = state
+        self.response = response
+
+
+class RunningNotification(OQClientNotification):
+    def __init__(self, calc_id, response=None):
+        super(RunningNotification, self).\
+            __init__(self.RUNNING, calc_id, response)
+
+
+class ErrorNotification(OQClientNotification):
+    def __init__(self, calc_id=None, response=None):
+        super(ErrorNotification, self).\
+            __init__(self.ERROR, calc_id, response)
+
+
+class CompleteNotification(OQClientNotification):
+    def __init__(self, calc_id, response=None):
+        super(CompleteNotification, self).\
+            __init__(self.COMPLETE, calc_id, response)
+
+
+class OtherNotification(OQClientNotification):
+    def __init__(self, calc_id=None, response=None):
+        super(OtherNotification, self).\
+            __init__(self.OTHER, calc_id, response)
+
+
 class OQClient(QObject):
     """
     OQClient connects to the openquake instance and runs hazard and risk
@@ -27,47 +64,74 @@ class OQClient(QObject):
 
     After starting an openquake calculation it will periodically check the
     status of the calculation and report the results back by firing the
-    status_changed signal.
-
+    status_changed signal
+    
+    :ivar calc_id: OQ id of current calculation
+    
     """
-    # Signal emitted when the calculation status changes (passes self)
-    status_changed = pyqtSignal(object)
+    # Signal emitted when the calculation status changes
+    client_notification = pyqtSignal(object)
 
-    POLL_INTERVAL = 3  # Poll interval for status polling
+    POLL_INTERVAL = 3000  # Poll interval for status polling [ms]
 
     def __init__(self, url):
         super(OQClient, self).__init__()
         self.url = url
-        self.forecast = None
-        self.scenario = None
         self.calc_id = None
 
-    def run_hazard(self, scenario):
+    def run_hazard(self, files):
         """
-        Runs a specific scenario from a specific forecast
+        Starts a classical psha calculation with the input files passed in
+        files.
 
-        :param Scenario scenario: Specific scenario in forecast to run
+        :param list files: Input files for hazard calculation
+        :return: response
 
         """
-        self.forecast = scenario.forecast_input.forecast
-        self.scenario = scenario
-        # get the source parameters from the model results
-        model_results = scenario.forecast_result.model_results
-        weight = 1.0/len(model_results)
-        params = {}
-        for result in model_results:
-            pred = result.rate_prediction
-            params[result.model_name] = [pred.rate, pred.b_value, weight]
-        # prepare source model logic tree and job config
-        job_config = oqutils.hazard_job_ini()
-        input_models = oqutils.hazard_input_models(params)
+        if self.calc_id:
+            raise RuntimeError('Cannot run more than one job at a time')
         # start hazard calculation
-        r = self.post_job(job_config=job_config, input_models=input_models)
-        QTimer.singleShot(OQClient.POLL_INTERVAL, self.poll_status())
+        r = self.post_job(files=files)
+        if r.status_code == 200:
+            content = json.loads(r.content)
+            self.calc_id = content['job_id']
+            notification = RunningNotification(self.calc_id, response=r)
+            QTimer.singleShot(OQClient.POLL_INTERVAL, self.poll_status)
+            log.info('Hazard job with id {} started'.format(self.calc_id))
+        else:
+            notification = ErrorNotification(response=r)
+            log.error('Failed to start hazard stage: [{}] {}'
+                      .format(r.status_code, r.content).strip('\n'))
+        self.client_notification.emit(notification)
 
     def poll_status(self):
         r = self.get_status()
-        QTimer.singleShot(OQClient.POLL_INTERVAL, self.poll_status())
+        if r.status_code == 200:
+            content = json.loads(r.content)
+            if content['status'] == 'executing':
+                QTimer.singleShot(OQClient.POLL_INTERVAL, self.poll_status)
+                return
+            elif content['status'] == 'failed':
+                log.error('Calculation failed: [{}] {}'
+                          .format(r.status_code, r.content).strip('\n'))
+                notification = ErrorNotification(self.calc_id, response=r)
+                self.calc_id = None
+            elif content['status'] == 'complete':
+                log.info('Hazard calculation {} complete'.format(self.calc_id))
+                notification = CompleteNotification(self.calc_id, response=r)
+                self.calc_id = None
+        elif r.status_code == 500:
+            log.error('Calculation failed: [{}] {}'
+                      .format(r.status_code, r.content).strip('\n'))
+            notification = ErrorNotification(self.calc_id, response=r)
+            self.calc_id = None
+        else:  # other (e.g. not reachable), we keep polling
+            log.warn('Unexpected OQ response: [{}] {}'
+                     .format(r.status_code, r.content).strip('\n'))
+            notification = OtherNotification(self.calc_id, response=r)
+            # TODO: define timeout?
+            QTimer.singleShot(OQClient.POLL_INTERVAL, self.poll_status)
+        self.client_notification.emit(notification)
 
     # REST Client Methods
 
@@ -90,11 +154,8 @@ class OQClient(QObject):
         log.debug('get result response: {}'.format(r))
         return r
 
-    def post_job(self, job_config, input_models):
-        end_point = '{}/calc/run'
-        files = {'job_config': job_config}
-        for i, model in enumerate(input_models):
-            files['input_model_{}'.format(i)] = model
+    def post_job(self, files):
+        end_point = '{}/calc/run'.format(API_V)
         r = requests.post(urljoin(self.url, end_point), files=files)
         log.debug('post job response: {}'.format(r))
         return r

@@ -10,15 +10,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from math import log, factorial
 
-from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
+from sqlalchemy import Column, Integer, Float, DateTime, String, \
     ForeignKey, PickleType
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from ormbase import OrmBase
 from signal import Signal
 from skilltest import SkillTest
-
-
+from calculationstatus import CalculationStatus
 
 
 class ForecastSet(OrmBase):
@@ -129,19 +128,18 @@ class ForecastResult(OrmBase):
     `ForecastResult` holds the results of all `Stages <Stage>` from the
     execution of a `ForecastJob`.
 
-    :ivar ISForecastResult is_forecast_result: Result of the induced seismicity
-        forecast stage.
-    :ivar int hazard_oq_calc_id: Calculation id in the OpenQuake database for
-        the record that contains the hazard computation results.
-    :ivar int risk_oq_calc_id: Calculation id in the OpenQuake database for
-        the record that contains the risk computation results.
-
     """
+
     # region ORM declarations
     __tablename__ = 'forecast_results'
     id = Column(Integer, primary_key=True)
-    hazard_oq_calc_id = Column(Integer)
-    risk_oq_calc_id = Column(Integer)
+    # hazard stage
+    hazard_result = relationship('HazardResult', uselist=False,
+                                 back_populates='forecast_result',
+                                 cascade='all, delete-orphan')
+    # risk stage
+    risk_result = relationship('RiskResult', back_populates='forecast_result',
+                               cascade='all, delete-orphan', uselist=False)
     # Forecast relation
     forecast_id = Column(Integer, ForeignKey('forecasts.id'))
     forecast = relationship('Forecast', back_populates='results')
@@ -161,6 +159,32 @@ class ForecastResult(OrmBase):
     @reconstructor
     def init_on_load(self):
         self.result_changed = Signal()
+
+
+class HazardResult(OrmBase):
+    # region ORM declarations
+    __tablename__ = 'hazard_results'
+    id = Column(Integer, primary_key=True)
+    # relationships
+    forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
+    forecast_result = relationship('ForecastResult',
+                                   back_populates='hazard_result')
+    status = relationship('CalculationStatus', back_populates='hazard_result',
+                          cascade='all', uselist=False)
+    # endregion
+
+
+class RiskResult(OrmBase):
+    # region ORM declarations
+    __tablename__ = 'risk_results'
+    id = Column(Integer, primary_key=True)
+    # relationships
+    forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
+    forecast_result = relationship('ForecastResult',
+                                   back_populates='risk_result')
+    status = relationship('CalculationStatus', back_populates='risk_result',
+                          cascade='all', uselist=False)
+    # endregion
 
 
 class Scenario(OrmBase):
@@ -250,9 +274,9 @@ class ModelResult(OrmBase):
     # region ORM declarations
     __tablename__ = 'model_results'
     id = Column(Integer, primary_key=True)
-    model_name = Column(String)
-    failed = Column(Boolean)
-    failure_reason = Column(String)
+    status = relationship('CalculationStatus',
+                          back_populates='model_result',
+                          cascade='all')
     # ForecastResult relation
     forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',

@@ -23,12 +23,33 @@ Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
 
 import logging
 import time
-from core.tools.job import ParallelJob, SerialJob, WorkUnit
-from ramsisdata.forecast import ForecastResult
-from oqclient import OQClient
+import json
+from datetime import datetime
+from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
+from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
+    Scenario, Forecast
+from ramsisdata.calculationstatus import CalculationStatus
+from oqclient import OQClient, OQClientNotification
+import oqutils
 from modelclient import ModelClient
 
 log = logging.getLogger(__name__)
+
+STATE_MAP = {
+    OQClientNotification.RUNNING: CalculationStatus.RUNNING,
+    OQClientNotification.COMPLETE: CalculationStatus.COMPLETE,
+    OQClientNotification.ERROR: CalculationStatus.ERROR,
+}
+
+
+def save(model_obj):
+    """ Convenience function to save changes on a scenario """
+    if isinstance(model_obj, Scenario):
+        forecast = model_obj.forecast_input.forecast
+    elif isinstance(model_obj, Forecast):
+        forecats = model_obj
+    project = forecast.forecast_set.project
+    project.save()
 
 
 class ForecastJob(SerialJob):
@@ -79,10 +100,13 @@ class ScenarioJob(SerialJob):
 
     def pre_process(self):
         log.info('Calculating scenario: {}'.format(self.scenario.name))
-        self.forecast.results.append(ForecastResult())
+        result = ForecastResult()
+        self.forecast.results.append(result)
+        self.scenario.forecast_result = result
+        save(self.scenario)
 
     def post_process(self):
-        self.forecast.forecast_set.project.save()
+        save(self.scenario)
         log.info('Scenario {} complete'.format(self.scenario.name))
 
 
@@ -137,22 +161,62 @@ class SeismicityForecast(WorkUnit):
     def on_client_finished(self, client):
         log.info('Forecast model {} complete'.format(self.client.model_id))
         self.scenario.forecast_result.model_results.append(client.model_result)
-        self.complete.emit(self)
+        self.status_changed.emit(JobStatus(self, finished=True))
 
 
 class HazardStage(WorkUnit):
 
     def __init__(self, scenario):
         super(HazardStage, self).__init__('psha_stage')
+        # shortcuts
         self.scenario = scenario
+        self.hazard_result = None
+        # client reference
         self.client = OQClient('http://127.0.0.1:8800')
+        self.client.client_notification.connect(self._on_client_notification)
 
     def run(self):
         log.info('Running psha stage on scenario: {}'\
                  .format(self.scenario.name))
-        time.sleep(2)
-        self.complete.emit(self)
-        #self.client.run_hazard(self.scenario)
+        # create the result object
+        self.hazard_result = HazardResult()
+        self.scenario.forecast_result.hazard_result = self.hazard_result
+        # get the source parameters from the model results
+        #model_results = self.scenario.forecast_result.model_results
+        #weights = len(model_results) * [round(1.0/len(model_results), 2)]
+        #weights[-1] = 1.0 - sum(weights[:-1])  # make sure sum is exactly 1.0
+        #params = {}
+        #for i, result in enumerate(model_results):
+        #    pred = result.rate_prediction
+        #    params[result.model_name] = [pred.rate, pred.b_value, weights[i]]
+        # FIXME: take params from previous stage
+        params = {
+            'etas': [4, 1.5, 0.3],
+            'shapiro': [8, 1.6, 0.3],
+            'ollinger': [9, 1.3, 0.4]
+        }
+        # prepare source model logic tree and job config
+        files = oqutils.hazard_input_files(params, copy_to='/home/ramsis/Desktop/oq')
+        self.client.run_hazard(files)
+
+    def _on_client_notification(self, notification):
+        # convert the client status into a calculation status and attach
+        # it to the model object
+        calc_id = notification.calc_id
+        state = STATE_MAP.get(notification.state)
+        if notification.response:
+            response = {'code': notification.response.status_code,
+                        'text': notification.response.text}
+        else:
+            response = None
+        info = {'last_response': response}
+        calc_status = CalculationStatus(calc_id, state, info)
+        self.hazard_result.status = calc_status
+        save(self.scenario)
+        # set the job status and forward it up the job chain
+        job_status = JobStatus(self, finished=calc_status.finished,
+                               info=calc_status)
+        self.status_changed.emit(job_status)
 
 
 class RiskStage(WorkUnit):
@@ -165,4 +229,4 @@ class RiskStage(WorkUnit):
         log.info('Running risk stage on scenario: {}'\
                  .format(self.scenario.name))
         time.sleep(2)
-        self.complete.emit(self)
+        self.status_changed.emit(JobStatus(self, finished=True))

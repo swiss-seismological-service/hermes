@@ -29,6 +29,11 @@ STATUS_COLOR_OTHER = '#F8E81C'
 
 
 class ContentPresenter(object):
+    """
+    UI Logic for main window
+    
+    :param Controller ramsis_core: Ramsis core
+    """
 
     def __init__(self, ramsis_core, ui):
         self.ramsis_core = ramsis_core
@@ -49,6 +54,10 @@ class ContentPresenter(object):
                        GeneralTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
+
+        # Essential signals from the core
+        self.ramsis_core.engine.job_status_update.\
+            connect(self.on_job_status_update)
 
     # Display update methods for individual window components with
     # increasing granularity (i.e. top level methods at the top)
@@ -159,3 +168,11 @@ class ContentPresenter(object):
             forecast = node.item
             self.run_action.setData(forecast)
             self.context_menu.exec_(self.ui.forecastTreeView.mapToGlobal(pos))
+
+    # Signals from the core
+
+    def on_job_status_update(self, status):
+        general_tab = next(t for t in self.tab_presenters
+                           if isinstance(t, GeneralTabPresenter))
+        general_tab.status_presenter.present_status(status.info)
+

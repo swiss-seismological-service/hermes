@@ -47,7 +47,8 @@ class StageWidget(QtGui.QWidget):
                 item.widget().setParent(None)
 
     def set_status(self, status):
-        if status == 'running':
-            self.ui.imageLabel.setPixmap(QtGui.QPixmap(':/stage_images/images/stage_running.png'))
-            self.ui.statusLabel.setText('Running')
+        self.ui.statusLabel.setText(status)
+        #if status == 'running':
+        #    self.ui.imageLabel.setPixmap(QtGui.QPixmap(':/stage_images/images/stage_running.png'))
+        #    self.ui.statusLabel.setText('Running')
 
