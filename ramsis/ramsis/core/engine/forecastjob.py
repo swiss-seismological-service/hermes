@@ -23,15 +23,17 @@ Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
 
 import logging
 import time
-import json
-from datetime import datetime
 from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
-    Scenario, Forecast
+    ModelResult, Scenario, Forecast
 from ramsisdata.calculationstatus import CalculationStatus
 from oqclient import OQClient, OQClientNotification
 import oqutils
 from modelclient import ModelClient
+
+#FIXME: remove, for debugging only
+import random
+from PyQt4.QtGui import QApplication
 
 log = logging.getLogger(__name__)
 
@@ -146,17 +148,25 @@ class SeismicityForecast(WorkUnit):
     def __init__(self, scenario, model_id, model_config):
         super(SeismicityForecast, self).__init__(model_id)
         self.scenario = scenario
+        self.model_result = None
         self.client = ModelClient(model_id, model_config)
         self.client.finished.connect(self.on_client_finished)
 
     def run(self):
         log.info('Running forecast model {}'.format(self.client.model_id))
         project = self.scenario.forecast_input.forecast.forecast_set.project
+        self.model_result = ModelResult(self.job_id)
+        forecast_result = self.scenario.forecast_result
+        forecast_result.model_results[self.job_id] = self.model_result
         run_info = {
             'reference_point': project.reference_point,
             'injection_point': project.injection_well.injection_point
         }
+
+        _fake_status(self, self.model_result, finished=False)
         self.client.run(self.scenario, run_info)
+        _fake_status(self, self.model_result, finished=True)
+
 
     def on_client_finished(self, client):
         log.info('Forecast model {} complete'.format(self.client.model_id))
@@ -224,9 +234,25 @@ class RiskStage(WorkUnit):
     def __init__(self, scenario):
         super(RiskStage, self).__init__('risk_stage')
         self.scenario = scenario
+        self.risk_result = None
 
     def run(self):
         log.info('Running risk stage on scenario: {}'\
                  .format(self.scenario.name))
+        self.risk_result = RiskResult()
+        self.scenario.forecast_result.risk_result = self.risk_result
+
+        _fake_status(self, self.risk_result, finished=False)
         time.sleep(2)
-        self.status_changed.emit(JobStatus(self, finished=True))
+        _fake_status(self, self.risk_result, finished=True)
+
+
+def _fake_status(unit, result, finished):
+    state = CalculationStatus.COMPLETE if finished \
+        else CalculationStatus.RUNNING
+    calc_status = CalculationStatus(0, state, None)
+    result.status = calc_status
+    save(unit.scenario)
+    job_status = JobStatus(unit, finished=finished, info=calc_status)
+    unit.status_changed.emit(job_status)
+    QApplication.processEvents()
