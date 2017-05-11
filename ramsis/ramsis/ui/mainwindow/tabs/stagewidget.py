@@ -9,6 +9,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 import os
 
 from PyQt4 import QtGui, uic
+from ramsisdata.calculationstatus import CalculationStatus
 
 ui_path = os.path.dirname(__file__)
 STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
@@ -26,6 +27,18 @@ class StageWidget(QtGui.QWidget):
         self.ui.setupUi(self)
         self.ui.titleLabel.setText(title)
         self.clear_substages()
+
+    def disable(self):
+        self.ui.imageLabel.setPixmap(
+            QtGui.QPixmap(':stage_images/images/stage_disabled.png')
+        )
+        self.ui.statusLabel.setText('Disabled')
+
+    def plan(self):
+        self.ui.imageLabel.setPixmap(
+            QtGui.QPixmap(':stage_images/images/stage_planned.png')
+        )
+        self.ui.statusLabel.setText('Planned')
 
     def set_substages(self, substages):
         for i, stage in enumerate(substages):
@@ -46,9 +59,26 @@ class StageWidget(QtGui.QWidget):
                     continue
                 item.widget().setParent(None)
 
-    def set_status(self, status):
-        self.ui.statusLabel.setText(status)
-        #if status == 'running':
-        #    self.ui.imageLabel.setPixmap(QtGui.QPixmap(':/stage_images/images/stage_running.png'))
-        #    self.ui.statusLabel.setText('Running')
+    def set_state(self, state):
+        """
+        Show the status of a calculation in this stage
+        
+        :param string state: Defined CalculationStatus state
+
+        """
+        if state == CalculationStatus.RUNNING:
+            image = 'stage_running.png'
+            text = 'Running'
+        elif state == CalculationStatus.COMPLETE:
+            image = 'stage_complete.png'
+            text = 'Complete'
+        elif state == CalculationStatus.ERROR:
+            image = 'stage_error.png'
+            text = 'Error'
+        else:
+            image = 'stage_other.png'
+            text = '???'
+        self.ui.imageLabel.setPixmap(
+            QtGui.QPixmap(':/stage_images/images/{}'.format(image)))
+        self.ui.statusLabel.setText(text)
 

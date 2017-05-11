@@ -174,5 +174,5 @@ class ContentPresenter(object):
     def on_job_status_update(self, status):
         general_tab = next(t for t in self.tab_presenters
                            if isinstance(t, GeneralTabPresenter))
-        general_tab.status_presenter.present_status(status.info)
+        general_tab.refresh_status()
 
