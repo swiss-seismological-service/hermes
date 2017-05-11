@@ -3,26 +3,17 @@ import csv
 import json
 import os
 import subprocess
+import glob
 
 from flask import request
 from flask_restful import Resource
 
 
 class Run(Resource):
-    model_path = 'C:\RAMSIS\Worker\Simulation_Test'
-    model_filename = 'start_simulation.bat'
-    seismic_catalog_filenames = [
-        'SeismicCatalog_00000.csv',
-        'SeismicCatalog_00001.csv',
-        'SeismicCatalog_00002.csv',
-        'SeismicCatalog_00003.csv',
-        'SeismicCatalog_00004.csv',
-        'SeismicCatalog_00005.csv',
-        'SeismicCatalog_00006.csv',
-        'SeismicCatalog_00007.csv',
-        'SeismicCatalog_00008.csv',
-        'SeismicCatalog_00009.csv'
-    ]
+    model_dir = 'C:\RAMSIS\Worker\Simulation_Test'
+    model_file = os.path.join(model_dir, 'start_simulation.bat')
+    seismic_catalog_files = glob.glob(os.path.join(
+        model_dir, 'SeismicCatalog_000[0-9][0-9].csv'))
 
     def post(self):
         try:
@@ -31,10 +22,7 @@ class Run(Resource):
             print('Writing seismic catalog...')
             self._write_seismic_catalog(data)
             print('Running...')
-            p = subprocess.Popen(
-                os.path.join(self.model_path, self.model_filename),
-                cwd=self.model_path
-            )
+            p = subprocess.Popen(self.model_file, cwd=self.model_dir)
             p.communicate()
             print('Done')
         except:
@@ -43,8 +31,8 @@ class Run(Resource):
 
     def get(self):
         try:
-            for filename in self.seismic_catalog_filenames:
-                with open(os.path.join(self.model_path, filename)) as f:
+            for catalog in self.seismic_catalog_files:
+                with open(catalog) as f:
                     pass  # TODO: calculate statistics
             model_result = json.dumps({
                 'skill_test': None,
