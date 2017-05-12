@@ -93,7 +93,7 @@ class ModelClient(QtCore.QObject):
 
         """
         r = requests.get(self.url, timeout=5)
-        if r.status_code == requests.status.ok:
+        if r.status_code == requests.codes.ok:
             data = r.json()
             if data['status'] == 'complete':
                 self.logger.info('Model run completed successfully')
