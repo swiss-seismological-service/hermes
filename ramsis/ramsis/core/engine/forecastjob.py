@@ -27,29 +27,14 @@ from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
     ModelResult, Scenario, Forecast
 from ramsisdata.calculationstatus import CalculationStatus
-from oqclient import OQClient, OQClientNotification
+from oqclient import OQClient
+from core.tools.notifications import ClientNotification
 import oqutils
 from modelclient import ModelClient
 
 from PyQt4.QtGui import QApplication
 
 log = logging.getLogger(__name__)
-
-STATE_MAP = {
-    OQClientNotification.RUNNING: CalculationStatus.RUNNING,
-    OQClientNotification.COMPLETE: CalculationStatus.COMPLETE,
-    OQClientNotification.ERROR: CalculationStatus.ERROR,
-}
-
-
-def save(model_obj):
-    """ Convenience function to save changes on a scenario """
-    if isinstance(model_obj, Scenario):
-        forecast = model_obj.forecast_input.forecast
-    elif isinstance(model_obj, Forecast):
-        forecats = model_obj
-    project = forecast.forecast_set.project
-    project.save()
 
 
 class ForecastJob(SerialJob):
@@ -148,7 +133,7 @@ class SeismicityForecast(WorkUnit):
         self.scenario = scenario
         self.model_result = None
         self.client = ModelClient(model_id, model_config)
-        self.client.finished.connect(self.on_client_finished)
+        self.client.client_notification.connect(self.on_client_notification)
 
     def run(self):
         log.info('Running forecast model {}'.format(self.client.model_id))
@@ -161,15 +146,18 @@ class SeismicityForecast(WorkUnit):
             'injection_point': project.injection_well.injection_point
         }
 
-        _fake_status(self, self.model_result, finished=False)
         self.client.run(self.scenario, run_info)
-        _fake_status(self, self.model_result, finished=True)
 
-
-    def on_client_finished(self, client):
-        log.info('Forecast model {} complete'.format(self.client.model_id))
-        self.scenario.forecast_result.model_results.append(client.model_result)
-        self.status_changed.emit(JobStatus(self, finished=True))
+    def on_client_notification(self, notification):
+        # convert the client status into a calculation status and attach
+        # it to the model object
+        calc_status = create_calculation_status(notification)
+        self.model_result.status = calc_status
+        save(self.scenario)
+        # set the job status and forward it up the job chain
+        job_status = JobStatus(self, finished=calc_status.finished,
+                               info=calc_status)
+        self.status_changed.emit(job_status)
 
 
 class HazardStage(WorkUnit):
@@ -208,17 +196,7 @@ class HazardStage(WorkUnit):
         self.client.run_hazard(files)
 
     def _on_client_notification(self, notification):
-        # convert the client status into a calculation status and attach
-        # it to the model object
-        calc_id = notification.calc_id
-        state = STATE_MAP.get(notification.state)
-        if notification.response:
-            response = {'code': notification.response.status_code,
-                        'text': notification.response.text}
-        else:
-            response = None
-        info = {'last_response': response}
-        calc_status = CalculationStatus(calc_id, state, info)
+        calc_status = create_calculation_status(notification)
         self.hazard_result.status = calc_status
         save(self.scenario)
         # set the job status and forward it up the job chain
@@ -245,6 +223,8 @@ class RiskStage(WorkUnit):
         _fake_status(self, self.risk_result, finished=True)
 
 
+# Helper Methods
+
 def _fake_status(unit, result, finished):
     state = CalculationStatus.COMPLETE if finished \
         else CalculationStatus.RUNNING
@@ -254,3 +234,35 @@ def _fake_status(unit, result, finished):
     job_status = JobStatus(unit, finished=finished, info=calc_status)
     unit.status_changed.emit(job_status)
     QApplication.processEvents()
+
+
+def save(model_obj):
+    """ Convenience function to save changes on a scenario """
+    if isinstance(model_obj, Scenario):
+        forecast = model_obj.forecast_input.forecast
+    elif isinstance(model_obj, Forecast):
+        forecast = model_obj
+    else:
+        log.error('Don''t know how to save {}'.format(model_obj))
+        return
+    project = forecast.forecast_set.project
+    project.save()
+
+
+def create_calculation_status(notification):
+    """ Create a CalculationStatus from a client notification """
+    state_map = {
+        ClientNotification.RUNNING: CalculationStatus.RUNNING,
+        ClientNotification.COMPLETE: CalculationStatus.COMPLETE,
+        ClientNotification.ERROR: CalculationStatus.ERROR,
+    }
+    calc_id = notification.calc_id
+    state = state_map.get(notification.state)
+    if notification.response:
+        response = {'code': notification.response.status_code,
+                    'text': notification.response.text}
+    else:
+        response = None
+    info = {'last_response': response}
+    calc_status = CalculationStatus(calc_id, state, info)
+    return calc_status

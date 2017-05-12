@@ -14,46 +14,12 @@ from urlparse import urljoin
 import json
 import requests
 from PyQt4.QtCore import QObject, pyqtSignal, QTimer
+from core.tools.notifications import RunningNotification, ErrorNotification, \
+    CompleteNotification, OtherNotification
 
 API_V = 'v1'
 
 log = logging.getLogger(__name__)
-
-
-class OQClientNotification(object):
-    RUNNING = 'Running'
-    COMPLETE = 'Complete'
-    ERROR = 'Error'
-    OTHER = 'Other'
-
-    def __init__(self, state, calc_id=None, response=None):
-        self.calc_id = calc_id
-        self.state = state
-        self.response = response
-
-
-class RunningNotification(OQClientNotification):
-    def __init__(self, calc_id, response=None):
-        super(RunningNotification, self).\
-            __init__(self.RUNNING, calc_id, response)
-
-
-class ErrorNotification(OQClientNotification):
-    def __init__(self, calc_id=None, response=None):
-        super(ErrorNotification, self).\
-            __init__(self.ERROR, calc_id, response)
-
-
-class CompleteNotification(OQClientNotification):
-    def __init__(self, calc_id, response=None):
-        super(CompleteNotification, self).\
-            __init__(self.COMPLETE, calc_id, response)
-
-
-class OtherNotification(OQClientNotification):
-    def __init__(self, calc_id=None, response=None):
-        super(OtherNotification, self).\
-            __init__(self.OTHER, calc_id, response)
 
 
 class OQClient(QObject):
