@@ -51,26 +51,22 @@ class ModelClient(QtCore.QObject):
         forecast_schema = ForecastSchema()
         serialized = forecast_schema.dump(forecast).data
         data = {
-            "forecast": serialized,
-            "parameters": self.model_config["parameters"],
-            "scenario id": scenario.id
+            'forecast': serialized,
+            'parameters': self.model_config['parameters'],
+            'scenario id': scenario.id
         }
 
         # Add cartesian coordinates
         ref = forecast.forecast_set.project.reference_point
         try:
-            for i, e in enumerate(data["forecast"]["input"]["input_catalog"] \
-                                      ["seismic_events"]):
-                x, y, z = geodetic2ned(e["lat"], e["lon"], e["depth"],
-                                       ref["lat"], ref["lon"], ref["h"])
-                data["forecast"]["input"]["input_catalog"]["seismic_events"] \
-                    [i]["x"] = x
-                data["forecast"]["input"]["input_catalog"]["seismic_events"] \
-                    [i]["y"] = y
-                data["forecast"]["input"]["input_catalog"]["seismic_events"] \
-                    [i]["z"] = z
+            catalog = data['forecast']['input']['input_catalog']
+            for e in catalog['seismic_events']:
+                x, y, z = geodetic2ned(e['lat'], e['lon'], e['depth'],
+                                       ref['lat'], ref['lon'], ref['h'])
+                e['x'], e['y'], e['z'] = x, y, z
+
         except TypeError:
-            self.logger.info("No seismic events")
+            self.logger.info('No seismic events')
 
         r = requests.post(self.url, json=data, timeout=5)
 
