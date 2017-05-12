@@ -43,8 +43,8 @@ class ModelClient(QtCore.QObject):
 
         :param Scenario scenario: Scenario for which to run the model
         :param dict run_info: Supplementary info for this run:
-             'reference_point': (lat, lon, depth) reference for coord. conversion
-             'injection_point': (lat, lon, depth) of current injection point
+           'reference_point': (lat, lon, depth) reference for coord. conversion
+           'injection_point': (lat, lon, depth) of current injection point
 
         """
         forecast = scenario.forecast_input.forecast

@@ -31,8 +31,6 @@ from oqclient import OQClient, OQClientNotification
 import oqutils
 from modelclient import ModelClient
 
-#FIXME: remove, for debugging only
-import random
 from PyQt4.QtGui import QApplication
 
 log = logging.getLogger(__name__)

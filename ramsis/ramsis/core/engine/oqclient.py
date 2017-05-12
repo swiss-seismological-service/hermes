@@ -14,7 +14,6 @@ from urlparse import urljoin
 import json
 import requests
 from PyQt4.QtCore import QObject, pyqtSignal, QTimer
-import oqutils
 
 API_V = 'v1'
 
