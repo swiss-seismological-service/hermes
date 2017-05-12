@@ -36,7 +36,6 @@ def delete_catalog_orphans(session, ctx):
         query = session.query(SeismicCatalog).\
                 filter_by(project=None, forecast_input=None, skill_test=None)
         orphans = query.all()
-        print('deleting orphaned catalogs: {}'.format(orphans))
         for orphan in orphans:
             session.delete(orphan)
 

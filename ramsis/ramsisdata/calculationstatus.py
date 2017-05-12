@@ -31,7 +31,6 @@ def delete_status_orphans(session, ctx):
                 filter_by(model_result=None, hazard_result=None,
                           risk_result=None)
         orphans = query.all()
-        print('deleting orphaned statuses: {}'.format(orphans))
         for orphan in orphans:
             session.delete(orphan)
 

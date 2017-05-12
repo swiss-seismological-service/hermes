@@ -114,8 +114,8 @@ class ModelClient(QObject):
                 notification = ErrorNotification(self.model_id, response=r)
                 self.logger.error('Model run failed')
         elif r.status_code == requests.codes.accepted:  # still running
-            print('no result yet for {}, trying again in {} s'
-                  .format(self.model_id, self.poll_interval/1000))
+            self.logger.debug('no result yet for {}, trying again in {} s'
+                              .format(self.model_id, self.poll_interval/1000))
             QTimer.singleShot(self.poll_interval, self._get_results)
             return
         elif r.status_code == requests.codes.no_content:
