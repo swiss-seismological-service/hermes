@@ -132,9 +132,7 @@ class SeismicityForecast(WorkUnit):
             'reference_point': project.reference_point,
             'injection_point': project.injection_well.injection_point
         }
-        time.sleep(2)
-        self.complete.emit(self)
-        #self.client.run(self.scenario, run_info)
+        self.client.run(self.scenario, run_info)
 
     def on_client_finished(self, client):
         log.info('Forecast model {} complete'.format(self.client.model_id))
