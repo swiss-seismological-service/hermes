@@ -1,4 +1,3 @@
-import json
 import requests
 import logging
 import urlparse
@@ -6,7 +5,8 @@ import urlparse
 from PyQt4 import QtCore
 from pymap3d import geodetic2ned
 
-from ramsisdata.schemas import ForecastSchema, ModelResultSchema
+from ramsisdata.forecast import ModelResult, RatePrediction
+from ramsisdata.schemas import ForecastSchema
 
 
 class ModelClient(QtCore.QObject):
@@ -72,16 +72,23 @@ class ModelClient(QtCore.QObject):
         except TypeError:
             self.logger.info("No seismic events")
 
-        r = requests.post(self.url, data={"data": json.dumps(data)})
-        try:
-            response = json.loads(r.text)
-            int(response)
-            self.job_id = response
-        except ValueError:
-            self.logger.error("Job ID not received")
-            return
+        r = requests.post(self.url, json=data, timeout=5)
 
-        QtCore.QTimer.singleShot(self.poll_interval, self._get_results)
+        if r.status_code == requests.codes.accepted:
+            self.logger.info('Model started on worker')
+            QtCore.QTimer.singleShot(self.poll_interval, self._get_results)
+        elif r.status_code == requests.codes.bad_request:
+            self.logger.error('The worker did not accept our input data: {}'
+                              .format(r.content))
+        elif r.status_code == requests.codes.server_error:
+            self.logger.error('The worker reported an error: {}'
+                              .format(r.content))
+        elif r.status_code == requests.codes.unavailable:
+            self.logger.error('The worker did not accept our job: {}'
+                              .format(r.content))
+        else:
+            self.logger.error('Unexpected response received: [{}] {}'
+                              .format(r.status_code, r.content))
 
     def _get_results(self):
         """
@@ -89,10 +96,23 @@ class ModelClient(QtCore.QObject):
         retrieved, then emit the finished signal.
 
         """
-        r = requests.get(self.url).json()
-        if r:
-            model_result_schema = ModelResultSchema()
-            self.model_result = model_result_schema.load(json.loads(r)).data
+        r = requests.get(self.url, timeout=5)
+        if r.status_code == requests.status.ok:
+            data = r.json()
+            if data['status'] == 'complete':
+                self.logger.info('Model run completed successfully')
+                rate, b_val = data['result']
+                model_result = ModelResult()
+                model_result.rate_prediction = RatePrediction(rate, b_val, 1)
+                # TODO: assign model_result to forecast
+            else:
+                self.logger.error('Model run failed')
             self.finished.emit(self)
-        else:
+        elif r.status_code == requests.codes.accepted:  # still running
             QtCore.QTimer.singleShot(self.poll_interval, self._get_results)
+        elif r.status_code == requests.codes.no_content:
+            self.logger.error('The worker has no results and no active job')
+        else:
+            self.logger.error('The worker reported an error {}'
+                              .format(r.status_code))
+            # TODO: retry a few times? indefinitely?
