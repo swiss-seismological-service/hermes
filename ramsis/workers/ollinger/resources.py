@@ -50,10 +50,12 @@ class Run(Resource):
         if current_process is None:
             app.logger.debug('No model running')
             return '', 204  # No Content
-        elif current_process.returncode is None:
+
+        return_code = current_process.poll()
+        if return_code is None:
             app.logger.debug('Still running')
             return {'status': 'running'}, 202  # Accepted
-        elif current_process.returncode == 0:
+        elif return_code == 0:
             app.logger.debug('Assembling results')
             try:
                 for catalog in self.seismic_catalog_files:
