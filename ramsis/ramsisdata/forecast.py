@@ -14,7 +14,8 @@ from sqlalchemy import Column, Integer, Float, DateTime, String, \
     ForeignKey, PickleType
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from ormbase import OrmBase
+from sqlalchemy.ext.mutable import MutableDict
+from ormbase import OrmBase, JSONEncodedDict
 from signal import Signal
 from skilltest import SkillTest
 from calculationstatus import CalculationStatus
@@ -226,7 +227,7 @@ class Scenario(OrmBase):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     # Configuration as python dict
-    config = Column(PickleType)
+    config = Column(MutableDict.as_mutable(JSONEncodedDict))
     # ForecastInput relation
     forecast_input_id = Column(Integer, ForeignKey('forecast_inputs.id'))
     forecast_input = relationship('ForecastInput', back_populates='scenarios')

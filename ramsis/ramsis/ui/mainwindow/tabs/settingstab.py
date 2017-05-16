@@ -40,8 +40,8 @@ class SettingsTabPresenter(TabPresenter):
         sender = self.sender()
         if sender not in self.config_map:
             return
-        config = self.config_map[sender]
-        self.scenario.config[config] = True if state == Qt.Checked else False
+        key = self.config_map[sender]
+        self.scenario.config[key] = True if state == Qt.Checked else False
         self.scenario.scenario_changed.emit(self.scenario.config)
         self.scenario.project.save()
 
