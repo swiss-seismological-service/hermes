@@ -270,6 +270,14 @@ class Controller(QtCore.QObject):
         forecast_input = ForecastInput()
         scenario = Scenario()
         scenario.name = 'Default Scenario'
+        model_settings = self.project.settings['forecast_models'].items()
+        scenario.config = {
+            'run_is_forecast': True,
+            'run_hazard': True,
+            'run_risk': True,
+            'disabled_models': [model_id for model_id, conf in model_settings
+                                if not conf['enabled']]
+        }
         injection_plan = InjectionPlan()
         injection_sample = InjectionSample(None, None, None, None, None)
 

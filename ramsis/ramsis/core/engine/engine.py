@@ -8,6 +8,7 @@ from core.engine.forecastjob import ForecastJob
 class Engine(QtCore.QObject):
     # Signals
     forecast_complete = QtCore.pyqtSignal()
+    job_status_update = QtCore.pyqtSignal(object)
 
     def __init__(self, core):
         super(Engine, self).__init__()
@@ -42,12 +43,15 @@ class Engine(QtCore.QObject):
         self._forecast = forecast
         self.busy = True
         self._forecast_job = ForecastJob(forecast)
-        self._forecast_job.complete.connect(self.fc_job_complete)
+        self._forecast_job.status_changed.connect(self.on_fc_status_changed)
         self._forecast_job.run()
 
-    def fc_job_complete(self):
-        self.busy = False
-        self.forecast_complete.emit()
+    def on_fc_status_changed(self, status):
+        if status.sender == self._forecast_job and status.finished:
+            self.busy = False
+            self.forecast_complete.emit()
+        else:
+            self.job_status_update.emit(status)
 
     def observe_project(self, project):
         """

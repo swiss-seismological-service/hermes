@@ -9,13 +9,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 import os
 import sys
+import shutil
 from StringIO import StringIO
 from lxml import etree
 
 
 # RAMSIS constants
 ramsis_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-OQ_RESOURCE_PATH = os.path.join(ramsis_path, 'resources', 'oq')
+OQ_RESOURCE_PATH = os.path.join(ramsis_path, 'ramsis', 'resources', 'oq')
 PSHA_PATH = os.path.join(OQ_RESOURCE_PATH, 'psha')
 # Hazard input file templates
 HAZ_JOB_INI = 'job.ini'
@@ -131,7 +132,7 @@ def hazard_source():
 
 def hazard_job_ini():
     path = os.path.join(PSHA_PATH, HAZ_JOB_INI)
-    return path_as_stream(path)
+    return {'job.ini': path_as_stream(path)}
 
 
 def hazard_input_models(source_parameters):
@@ -141,3 +142,15 @@ def hazard_input_models(source_parameters):
         HAZ_GMPE_LT: hazard_gmpe_lt()
     }
     return input_models
+
+
+def hazard_input_files(source_parameters, copy_to=None):
+    files = hazard_job_ini()
+    files.update(hazard_input_models(source_parameters))
+    if copy_to:
+        for filename, content in files.items():
+            with open(os.path.join(copy_to, filename), 'w') as dst:
+                shutil.copyfileobj(content, dst)
+            content.seek(0)
+
+    return files

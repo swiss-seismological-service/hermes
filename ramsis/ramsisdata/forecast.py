@@ -10,15 +10,14 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 from math import log, factorial
 
-from sqlalchemy import Column, Integer, Float, DateTime, String, Boolean, \
+from sqlalchemy import Column, Integer, Float, DateTime, String, \
     ForeignKey, PickleType
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from ormbase import OrmBase
 from signal import Signal
 from skilltest import SkillTest
-
-
+from calculationstatus import CalculationStatus
 
 
 class ForecastSet(OrmBase):
@@ -129,19 +128,18 @@ class ForecastResult(OrmBase):
     `ForecastResult` holds the results of all `Stages <Stage>` from the
     execution of a `ForecastJob`.
 
-    :ivar ISForecastResult is_forecast_result: Result of the induced seismicity
-        forecast stage.
-    :ivar int hazard_oq_calc_id: Calculation id in the OpenQuake database for
-        the record that contains the hazard computation results.
-    :ivar int risk_oq_calc_id: Calculation id in the OpenQuake database for
-        the record that contains the risk computation results.
-
     """
+
     # region ORM declarations
     __tablename__ = 'forecast_results'
     id = Column(Integer, primary_key=True)
-    hazard_oq_calc_id = Column(Integer)
-    risk_oq_calc_id = Column(Integer)
+    # hazard stage
+    hazard_result = relationship('HazardResult', uselist=False,
+                                 back_populates='forecast_result',
+                                 cascade='all, delete-orphan')
+    # risk stage
+    risk_result = relationship('RiskResult', back_populates='forecast_result',
+                               cascade='all, delete-orphan', uselist=False)
     # Forecast relation
     forecast_id = Column(Integer, ForeignKey('forecasts.id'))
     forecast = relationship('Forecast', back_populates='results')
@@ -149,7 +147,7 @@ class ForecastResult(OrmBase):
     model_results = relationship('ModelResult', cascade='all, delete-orphan',
                                  back_populates='forecast_result',
                                  collection_class=attribute_mapped_collection(
-                                     'model_name'))
+                                     'model_id'))
     # Scenario relation
     scenario = relationship('Scenario', back_populates='forecast_result',
                             uselist=False)
@@ -161,6 +159,32 @@ class ForecastResult(OrmBase):
     @reconstructor
     def init_on_load(self):
         self.result_changed = Signal()
+
+
+class HazardResult(OrmBase):
+    # region ORM declarations
+    __tablename__ = 'hazard_results'
+    id = Column(Integer, primary_key=True)
+    # relationships
+    forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
+    forecast_result = relationship('ForecastResult',
+                                   back_populates='hazard_result')
+    status = relationship('CalculationStatus', back_populates='hazard_result',
+                          cascade='all', uselist=False)
+    # endregion
+
+
+class RiskResult(OrmBase):
+    # region ORM declarations
+    __tablename__ = 'risk_results'
+    id = Column(Integer, primary_key=True)
+    # relationships
+    forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
+    forecast_result = relationship('ForecastResult',
+                                   back_populates='risk_result')
+    status = relationship('CalculationStatus', back_populates='risk_result',
+                          cascade='all', uselist=False)
+    # endregion
 
 
 class Scenario(OrmBase):
@@ -229,30 +253,27 @@ class ModelResult(OrmBase):
     indicates whether results are available or not.
 
     For models that compute a single value for the entire volume, the
-    `cum_result` attribute will contain that value. Some models, such as
+    `rate_prediction` attribute will contain that value. Some models, such as
     `Shapiro`, have more fine grained spatial resolution. Those store the
-    cumulative forecast in `cum_result` and the results for individual voxels
-    in `vol_results`.
+    cumulative forecast in `rate_prediction` and the results for individual 
+    voxels are linked from there.
 
-    :ivar model_name: The name of the model that created the forecast
-    :ivar datetime.datetime t_run: Time of the forecast
-    :ivar float dt: forecast period duration [hours]
-    :ivar bool failed: true if the model did not produce any results
-    :ivar str failure_reason: a reason given by the model for not producing any
-        results.
-    :ivar RatePrediction cum_result: Cumulative forecast result.
-    :ivar list[RatePrediction] vol_results: Volumetric results (per voxel)
-    :ivar bool reviewed: True if the result has been evaluated against
-        measured rates.
+    :ivar model_id: The id of the model that created the forecast
+    :ivar CalculationStatus status: The status of the calculation
+    :ivar RatePrediction rate_prediction: Forecast result (cumulative). May
+        be linked to further volumetric sub-results
+    :ivar SkillTest skill_test: Model prediction skill test. Available once the
+        result has been evaluated against measured rates.
 
     """
 
     # region ORM declarations
     __tablename__ = 'model_results'
     id = Column(Integer, primary_key=True)
-    model_name = Column(String)
-    failed = Column(Boolean)
-    failure_reason = Column(String)
+    model_id = Column(String)
+    status = relationship('CalculationStatus', uselist=False,
+                          back_populates='model_result',
+                          cascade='all')
     # ForecastResult relation
     forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',
@@ -266,6 +287,9 @@ class ModelResult(OrmBase):
                                    back_populates='model_result',
                                    cascade='all, delete-orphan')
     # endregion
+
+    def __init__(self, model_id):
+        self.model_id = model_id
 
     @property
     def reviewed(self):

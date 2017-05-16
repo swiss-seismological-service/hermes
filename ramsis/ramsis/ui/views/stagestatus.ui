@@ -69,7 +69,7 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="images.qrc">:/stage_images/images/stage_planned.png</pixmap>
+      <pixmap resource="images.qrc">:/stage_images/images/stage_disabled.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>false</bool>
@@ -82,7 +82,7 @@
    <item>
     <widget class="QLabel" name="statusLabel">
      <property name="text">
-      <string>Planned</string>
+      <string>N/A</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
