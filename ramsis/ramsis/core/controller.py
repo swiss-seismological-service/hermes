@@ -149,6 +149,11 @@ class Controller(QtCore.QObject):
         project = self.project
         self._logger.info('Deleting all results and input catalogs')
         for forecast in project.forecast_set.forecasts:
+            # As long as we have expire_on_commit=False we need to make sure
+            # we have no dangling relations in the session after a delete
+            # manually.
+            for result in forecast.results:
+                result.scenario = None
             forecast.results = []
             forecast.input.input_catalog = None
         project.save()
