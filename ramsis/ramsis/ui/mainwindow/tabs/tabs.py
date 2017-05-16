@@ -8,11 +8,10 @@ Copyright (C) 2016, SED (ETH Zurich)
 """
 
 import logging
-from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
-from qgis.gui import QgsMapCanvasLayer
+from PyQt4.QtCore import QObject
 
 
-class TabPresenter(object):
+class TabPresenter(QObject):
     """
     Handles a tabs content
 
@@ -25,6 +24,7 @@ class TabPresenter(object):
         :type ui: Ui_ForecastsWindow
 
         """
+        super(TabPresenter, self).__init__()
         self.ui = ui
         self.scenario = None
         self.logger = logging.getLogger(__name__)
@@ -39,13 +39,16 @@ class TabPresenter(object):
         :param Scenario scenario: forecast scenario
 
         """
+        if self.scenario:
+            self.scenario.scenario_changed.disconnect(self._on_change)
         self.scenario = scenario
+        self.scenario.scenario_changed.connect(self._on_change)
         self.refresh()
 
     def refresh(self):
         raise NotImplementedError("Please Implement this method")
 
-    def _on_change(self):
+    def _on_change(self, obj):
         self.refresh()
 
 

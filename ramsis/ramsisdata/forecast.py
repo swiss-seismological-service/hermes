@@ -189,6 +189,9 @@ class RiskResult(OrmBase):
 
 class Scenario(OrmBase):
     """
+    Each forecast scenario has a specific planned injection scenario and
+    model / stages configuration.
+    
     The *config* dict holds the configuration for each scenario instance:
     {
         run_is_forecast: True / False
@@ -196,6 +199,11 @@ class Scenario(OrmBase):
         run_risk: True / False
         disabled_models: [model_id, ...]
     }
+    
+    Scenario emits the *scenario_changed* signal if its configuration or
+    injection plan changes. In the former case, the signal carries the *config*
+    dict.
+    
     """
 
     def __init__(self):
@@ -206,6 +214,7 @@ class Scenario(OrmBase):
             'run_risk': True,
             'disabled_models': []
         }
+        self.scenario_changed = Signal()
 
     # region ORM declarations
     __tablename__ = 'scenarios'
@@ -226,6 +235,11 @@ class Scenario(OrmBase):
     forecast_result = relationship('ForecastResult',
                                    back_populates='scenario')
     # endregion
+
+
+    @reconstructor
+    def init_on_load(self):
+        self.scenario_changed = Signal()
 
 
 def log_likelihood(forecast, observation):

@@ -215,7 +215,7 @@
           <enum>QTabWidget::Rounded</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <property name="elideMode">
           <enum>Qt::ElideRight</enum>
@@ -338,7 +338,7 @@
                  <widget class="QDoubleSpinBox" name="pressureSpinBox"/>
                 </item>
                 <item row="0" column="0">
-                 <widget class="QCheckBox" name="checkBox_4">
+                 <widget class="QCheckBox" name="fcStageEnable">
                   <property name="text">
                    <string>Enable</string>
                   </property>
@@ -370,7 +370,7 @@
                  </widget>
                 </item>
                 <item row="0" column="0">
-                 <widget class="QCheckBox" name="checkBox_5">
+                 <widget class="QCheckBox" name="hazardStageEnable">
                   <property name="text">
                    <string>Enable</string>
                   </property>
@@ -402,7 +402,7 @@
                  </widget>
                 </item>
                 <item row="0" column="0">
-                 <widget class="QCheckBox" name="checkBox_11">
+                 <widget class="QCheckBox" name="riskStageEnable">
                   <property name="text">
                    <string>Enable</string>
                   </property>

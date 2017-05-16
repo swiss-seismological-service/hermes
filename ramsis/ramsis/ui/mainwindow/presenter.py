@@ -13,7 +13,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 from datetime import datetime
 from ramsisdata.forecast import Forecast
 from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
-    GeneralTabPresenter
+    GeneralTabPresenter, SettingsTabPresenter
 from timeline import TimeLinePresenter
 from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel, \
     ForecastNode
@@ -51,7 +51,7 @@ class ContentPresenter(object):
 
         # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter,
-                       GeneralTabPresenter]
+                       GeneralTabPresenter, SettingsTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
