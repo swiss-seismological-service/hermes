@@ -91,7 +91,7 @@ class ScenarioJob(SerialJob):
         self.scenario.project.save()
 
     def post_process(self):
-        elf.scenario.project.save()
+        self.scenario.project.save()
         log.info('Scenario {} complete'.format(self.scenario.name))
 
 
