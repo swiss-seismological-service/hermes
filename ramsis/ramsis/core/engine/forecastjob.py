@@ -22,7 +22,8 @@ Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
 """
 
 import logging
-import time
+import io
+from zipfile import ZipFile
 from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
     ModelResult, Scenario, Forecast
@@ -191,12 +192,25 @@ class HazardStage(WorkUnit):
             'ollinger': [9, 1.3, 0.4]
         }
         # prepare source model logic tree and job config
-        files = oqutils.hazard_input_files(params, copy_to='/home/ramsis/Desktop/oq')
-        self.client.run_hazard(files)
+        files = oqutils.hazard_input_files(params)
+        self.client.run_job(files)
 
     def _on_client_notification(self, notification):
         calc_status = create_calculation_status(notification)
         self.hazard_result.status = calc_status
+        if calc_status.state == CalculationStatus.RUNNING:
+            self.hazard_result.calc_id = calc_status.calc_id
+        elif calc_status.state == CalculationStatus.COMPLETE:
+            content = self.client.get_hazard_curves(calc_status.calc_id)
+            if content is None:
+                log.error('Failed to retreive hazard curves for calc {}'
+                          .format(calc_status.calc_id))
+            else:
+                with ZipFile(io.BytesIO(content)) as z:
+                    for member in z.infolist():
+
+
+
         self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
@@ -210,16 +224,27 @@ class RiskStage(WorkUnit):
         super(RiskStage, self).__init__('risk_stage')
         self.scenario = scenario
         self.risk_result = None
+        # client reference
+        self.client = OQClient('http://127.0.0.1:8800')
+        self.client.client_notification.connect(self._on_client_notification)
 
     def run(self):
         log.info('Running risk stage on scenario: {}'\
                  .format(self.scenario.name))
         self.risk_result = RiskResult()
         self.scenario.forecast_result.risk_result = self.risk_result
+        files = oqutils.risk_input_files()
+        #haz_id = self.scenario.forecast_result.hazard_result.calc_id
+        self.client.run_job(files, {'hazard_job_id': 44})
 
-        _fake_status(self, self.risk_result, finished=False)
-        time.sleep(2)
-        _fake_status(self, self.risk_result, finished=True)
+    def _on_client_notification(self, notification):
+        calc_status = create_calculation_status(notification)
+        self.risk_result.status = calc_status
+        self.scenario.project.save()
+        # set the job status and forward it up the job chain
+        job_status = JobStatus(self, finished=calc_status.finished,
+                               info=calc_status)
+        self.status_changed.emit(job_status)
 
 
 # Helper Methods

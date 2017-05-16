@@ -168,9 +168,32 @@ class ForecastResult(OrmBase):
 
 
 class HazardResult(OrmBase):
+    """ 
+    Result of the OQ hazard calculation 
+    
+    h_curves contains the computed hazard curves and looks as follows (with
+    example values):
+    
+    h_curves = {
+        'result_id':          34
+        'investigation_time': 1.0,
+        'imt':                'MMI',
+        'intensities':        [1, 1.25, 1.5, ...]
+        'mean':               [2.3, 4.2, ...]
+        'quantile 0.XX':      [1.3, 5.3, ...]   # replace XX with number
+        'quantile 0.XY':      ...
+        'realizations': {
+            ('psrc', 'etas', 'mmax37', 'FCSD010Q1800K005'): [2.3, 4.2, ...],
+            ...
+        }  # logic tree realizations
+    }
+    
+    """
     # region ORM declarations
     __tablename__ = 'hazard_results'
     id = Column(Integer, primary_key=True)
+    calc_id = Column(Integer)
+    h_curves = Column(JSONEncodedDict)
     # relationships
     forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',
@@ -179,11 +202,17 @@ class HazardResult(OrmBase):
                           cascade='all', uselist=False)
     # endregion
 
+    def read_hcurves(self, result_id, zip_file):
+        """ Read hcurves from zipped csv files """
+        pass
+
 
 class RiskResult(OrmBase):
     # region ORM declarations
     __tablename__ = 'risk_results'
     id = Column(Integer, primary_key=True)
+    calc_id = Column(Integer)
+    result_id = Column(Integer)
     # relationships
     forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',

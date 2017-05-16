@@ -17,18 +17,19 @@ from lxml import etree
 # RAMSIS constants
 ramsis_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 OQ_RESOURCE_PATH = os.path.join(ramsis_path, 'ramsis', 'resources', 'oq')
-PSHA_PATH = os.path.join(OQ_RESOURCE_PATH, 'psha')
+
 # Hazard input file templates
+PSHA_PATH = os.path.join(OQ_RESOURCE_PATH, 'psha')
 HAZ_JOB_INI = 'job.ini'
 HAZ_GMPE_LT = 'gmpe_logic_tree.xml'
 HAZ_SOURCE = 'point_source_model.xml'
 HAZ_SMLT = 'source_model_logic_tree.xml'
+
 # Risk input file templates
-RISK_POE_RESOURCES = {
-    'job_def': 'job.ini',
-    'exp_model': 'exposure_model.xml',
-    'vuln_model': 'struct_vul_model.xml'
-}
+RISK_POE_PATH = os.path.join(OQ_RESOURCE_PATH, 'risk_poe')
+RISK_POE_JOB_INI = 'job.ini'
+RISK_EXP_MODEL = 'exposure_model.xml'
+RISK_VULN_MODEL = 'struct_vul_model.xml'
 
 # OQ specific constants
 GR_BRANCH_XPATH = './/{*}logicTreeBranchSet[@uncertaintyType="abGRAbsolute"]'
@@ -95,6 +96,8 @@ def path_as_stream(path):
     return stream
 
 
+# Hazard
+
 def hazard_source_model_lt(source_params):
     """
     Return the source model logic tree with source_params injected
@@ -153,4 +156,27 @@ def hazard_input_files(source_parameters, copy_to=None):
                 shutil.copyfileobj(content, dst)
             content.seek(0)
 
+    return files
+
+
+# Risk
+
+def risk_job_ini():
+    path = os.path.join(RISK_POE_PATH, RISK_POE_JOB_INI)
+    return {'job.ini': path_as_stream(path)}
+
+
+def risk_input_models():
+    exp_path = os.path.join(RISK_POE_PATH, RISK_EXP_MODEL)
+    vuln_path = os.path.join(RISK_POE_PATH, RISK_VULN_MODEL)
+    input_models = {
+        RISK_EXP_MODEL: path_as_stream(exp_path),
+        RISK_VULN_MODEL: path_as_stream(vuln_path)
+    }
+    return input_models
+
+
+def risk_input_files():
+    files = risk_job_ini()
+    files.update(risk_input_models())
     return files
