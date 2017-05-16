@@ -87,6 +87,11 @@ class Forecast(OrmBase):
         else:
             return False
 
+    @property
+    def project(self):
+        """ Shortcut to the project """
+        return self.forecast_set.project
+
     def add_scenario(self, scenario):
         """ Appends a new scenario and fires the changed signal """
         self.input.scenarios.append(scenario)
@@ -236,6 +241,10 @@ class Scenario(OrmBase):
                                    back_populates='scenario')
     # endregion
 
+    @property
+    def project(self):
+        """ Shortcut to the project """
+        return self.forecast_input.forecast.project
 
     @reconstructor
     def init_on_load(self):

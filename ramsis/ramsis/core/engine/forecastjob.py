@@ -57,7 +57,7 @@ class ForecastJob(SerialJob):
                          [s.name for s in self.forecast.input.scenarios]))
 
     def post_process(self):
-        self.forecast.forecast_set.project.save()
+        self.forecast.project.save()
         log.info('Forecast {} completed'.format(self.forecast.forecast_time))
 
 
@@ -88,10 +88,10 @@ class ScenarioJob(SerialJob):
         result = ForecastResult()
         self.forecast.results.append(result)
         self.scenario.forecast_result = result
-        save(self.scenario)
+        self.scenario.project.save()
 
     def post_process(self):
-        save(self.scenario)
+        elf.scenario.project.save()
         log.info('Scenario {} complete'.format(self.scenario.name))
 
 
@@ -153,7 +153,7 @@ class SeismicityForecast(WorkUnit):
         # it to the model object
         calc_status = create_calculation_status(notification)
         self.model_result.status = calc_status
-        save(self.scenario)
+        elf.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
                                info=calc_status)
@@ -198,7 +198,7 @@ class HazardStage(WorkUnit):
     def _on_client_notification(self, notification):
         calc_status = create_calculation_status(notification)
         self.hazard_result.status = calc_status
-        save(self.scenario)
+        elf.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
                                info=calc_status)
@@ -230,23 +230,10 @@ def _fake_status(unit, result, finished):
         else CalculationStatus.RUNNING
     calc_status = CalculationStatus(0, state, None)
     result.status = calc_status
-    save(unit.scenario)
+    unit.scenario.project.save()
     job_status = JobStatus(unit, finished=finished, info=calc_status)
     unit.status_changed.emit(job_status)
     QApplication.processEvents()
-
-
-def save(model_obj):
-    """ Convenience function to save changes on a scenario """
-    if isinstance(model_obj, Scenario):
-        forecast = model_obj.forecast_input.forecast
-    elif isinstance(model_obj, Forecast):
-        forecast = model_obj
-    else:
-        log.error('Don''t know how to save {}'.format(model_obj))
-        return
-    project = forecast.forecast_set.project
-    project.save()
 
 
 def create_calculation_status(notification):
