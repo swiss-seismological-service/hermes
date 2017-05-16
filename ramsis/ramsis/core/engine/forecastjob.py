@@ -145,7 +145,6 @@ class SeismicityForecast(WorkUnit):
             'reference_point': project.reference_point,
             'injection_point': project.injection_well.injection_point
         }
-
         self.client.run(self.scenario, run_info)
 
     def on_client_notification(self, notification):
@@ -153,7 +152,7 @@ class SeismicityForecast(WorkUnit):
         # it to the model object
         calc_status = create_calculation_status(notification)
         self.model_result.status = calc_status
-        elf.scenario.project.save()
+        self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
                                info=calc_status)
@@ -198,7 +197,7 @@ class HazardStage(WorkUnit):
     def _on_client_notification(self, notification):
         calc_status = create_calculation_status(notification)
         self.hazard_result.status = calc_status
-        elf.scenario.project.save()
+        self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
                                info=calc_status)
