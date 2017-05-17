@@ -10,6 +10,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import os
 import sys
 import shutil
+import json
+from zipfile import ZipFile
 from StringIO import StringIO
 from lxml import etree
 
@@ -17,18 +19,19 @@ from lxml import etree
 # RAMSIS constants
 ramsis_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 OQ_RESOURCE_PATH = os.path.join(ramsis_path, 'ramsis', 'resources', 'oq')
-PSHA_PATH = os.path.join(OQ_RESOURCE_PATH, 'psha')
+
 # Hazard input file templates
+PSHA_PATH = os.path.join(OQ_RESOURCE_PATH, 'psha')
 HAZ_JOB_INI = 'job.ini'
 HAZ_GMPE_LT = 'gmpe_logic_tree.xml'
 HAZ_SOURCE = 'point_source_model.xml'
 HAZ_SMLT = 'source_model_logic_tree.xml'
+
 # Risk input file templates
-RISK_POE_RESOURCES = {
-    'job_def': 'job.ini',
-    'exp_model': 'exposure_model.xml',
-    'vuln_model': 'struct_vul_model.xml'
-}
+RISK_POE_PATH = os.path.join(OQ_RESOURCE_PATH, 'risk_poe')
+RISK_POE_JOB_INI = 'job.ini'
+RISK_EXP_MODEL = 'exposure_model.xml'
+RISK_VULN_MODEL = 'struct_vul_model.xml'
 
 # OQ specific constants
 GR_BRANCH_XPATH = './/{*}logicTreeBranchSet[@uncertaintyType="abGRAbsolute"]'
@@ -95,6 +98,8 @@ def path_as_stream(path):
     return stream
 
 
+# Hazard
+
 def hazard_source_model_lt(source_params):
     """
     Return the source model logic tree with source_params injected
@@ -153,4 +158,81 @@ def hazard_input_files(source_parameters, copy_to=None):
                 shutil.copyfileobj(content, dst)
             content.seek(0)
 
+    return files
+
+
+def extract_hazard_curves(archive):
+    """
+    Extract hazard curve set from a zip archive
+    
+    The dict it returns is a modified version of the the geojson dicts
+    created by OpenQuake with all realizations aggregated under poEs with
+    their respective tree paths as keys
+    
+    h_curves = {
+        'investigationTime':  1.0,
+        'IMT':                'MMI',
+        'IMLs':               [1, 1.25, 1.5, ...]
+        'location':           (47.2, 8.1)
+        'poEs': {
+            'mean':               [2.3, 4.2, ...]
+            'quantile 0.XX':      [1.3, 5.3, ...]   # replace XX with number
+            'quantile 0.XY':      ...
+            'psrc_etas_mmax37_FCSD010Q1800K005': [2.3, 4.2, ...],
+            ...
+        }  # logic tree realizations
+    }
+        
+    Assumptions:
+    - zip contains geojson files
+    - all curves share the same IMT, IMLs, investigation time
+    - all files contain poEs for the same single feature (point)
+    
+    :param archive: zip archive file name or file like object
+    
+    """
+    d = {'poEs': {}}
+    with ZipFile(archive) as z:
+        for member in z.infolist():
+            f = z.open(member)
+            j = json.load(f)
+            if j.get('oqtype') != 'HazardCurve':
+                continue
+            feature = j['features'][0]
+            meta = j['oqmetadata']
+            if 'IMT' not in d:
+                keys_to_copy = ['IMT', 'IMLs', 'investigationTime']
+                d.update({k: meta[k] for k in keys_to_copy})
+                d['location'] = feature['geometry']['coordinates']
+            if 'mean' in member.filename:
+                key = 'mean'
+            elif 'quantile' in member.filename:
+                key = 'quantile {}'.format(member.filename.split('-')[1]
+                                           .split('_')[0])
+            else:
+                key = meta['sourceModelTreePath'] + '_' + meta['gsimTreePath']
+            d['poEs'][key] = feature['properties']['poEs']
+    return d
+
+
+# Risk
+
+def risk_job_ini():
+    path = os.path.join(RISK_POE_PATH, RISK_POE_JOB_INI)
+    return {'job.ini': path_as_stream(path)}
+
+
+def risk_input_models():
+    exp_path = os.path.join(RISK_POE_PATH, RISK_EXP_MODEL)
+    vuln_path = os.path.join(RISK_POE_PATH, RISK_VULN_MODEL)
+    input_models = {
+        RISK_EXP_MODEL: path_as_stream(exp_path),
+        RISK_VULN_MODEL: path_as_stream(vuln_path)
+    }
+    return input_models
+
+
+def risk_input_files():
+    files = risk_job_ini()
+    files.update(risk_input_models())
     return files

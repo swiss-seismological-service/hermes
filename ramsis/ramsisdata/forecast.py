@@ -168,9 +168,19 @@ class ForecastResult(OrmBase):
 
 
 class HazardResult(OrmBase):
+    """ 
+    Result of the OQ hazard calculation 
+    
+    h_curves contains the computed hazard curves as a dict. The format is
+    specified in oqutil's *extract_hazard_curves* with the addition of 
+    result_id under the respective key.
+    
+    """
     # region ORM declarations
     __tablename__ = 'hazard_results'
     id = Column(Integer, primary_key=True)
+    calc_id = Column(Integer)
+    h_curves = Column(JSONEncodedDict)
     # relationships
     forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',
@@ -184,6 +194,8 @@ class RiskResult(OrmBase):
     # region ORM declarations
     __tablename__ = 'risk_results'
     id = Column(Integer, primary_key=True)
+    calc_id = Column(Integer)
+    result_id = Column(Integer)
     # relationships
     forecast_result_id = Column(Integer, ForeignKey('forecast_results.id'))
     forecast_result = relationship('ForecastResult',
