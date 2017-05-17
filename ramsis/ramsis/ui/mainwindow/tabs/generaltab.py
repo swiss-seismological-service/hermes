@@ -11,6 +11,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 from PyQt4.QtCore import QObject
 from tabs import TabPresenter
 from stagewidget import StageWidget
+from tlwidget import TrafficLightWidget
 from ui.ramsisuihelpers import utc_to_local
 from ramsisdata.calculationstatus import CalculationStatus as CS
 
@@ -48,13 +49,17 @@ class StageStatusPresenter(QObject):
     def __init__(self, ui):
         super(StageStatusPresenter, self).__init__()
         self.ui = ui
-        self.container_widget = self.ui.stageStatusWidget
 
+        # Add stage status widgets
+        container_widget = self.ui.stageStatusWidget
         self.widgets = [
-            StageWidget('Forecast Stage', parent=self.container_widget),
-            StageWidget('Hazard Stage', parent=self.container_widget),
-            StageWidget('Risk Stage', parent=self.container_widget)
+            StageWidget('Forecast Stage', parent=container_widget),
+            StageWidget('Hazard Stage', parent=container_widget),
+            StageWidget('Risk Stage', parent=container_widget)
         ]
+
+        # Add traffic light widget
+        self.tlWidget = TrafficLightWidget(parent=self.ui.tlWidget)
 
         for i, widget in enumerate(self.widgets):
             widget.move(i * (widget.size().width() - 18), 0)
@@ -71,6 +76,7 @@ class StageStatusPresenter(QObject):
         self._refresh_model_status(scenario)
         self._refresh_hazard_status(scenario)
         self._refresh_risk_status(scenario)
+        self._refresh_traffic_light(scenario)
 
     def _refresh_model_status(self, scenario):
         widget = self.widgets[0]
@@ -126,5 +132,17 @@ class StageStatusPresenter(QObject):
             else:
                 status = scenario.forecast_result.risk_result.status
                 widget.set_state(status.state)
+
+    def _refresh_traffic_light(self, scenario):
+        # TODO: implement
+        try:
+            status = scenario.forecast_result.risk_result.status
+        except:
+            self.tlWidget.off()
+        else:
+            if status.finished:
+                self.tlWidget.green()
+            else:
+                self.tlWidget.off()
 
 

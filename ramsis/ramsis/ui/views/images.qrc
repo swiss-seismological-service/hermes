@@ -14,4 +14,10 @@
         <file>images/stage_planned.png</file>
         <file>images/stage_running.png</file>
     </qresource>
+    <qresource prefix="/traffic_light">
+        <file>images/tl_green.png</file>
+        <file>images/tl_off.png</file>
+        <file>images/tl_red.png</file>
+        <file>images/tl_yellow.png</file>
+    </qresource>
 </RCC>

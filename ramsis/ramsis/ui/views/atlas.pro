@@ -24,7 +24,8 @@ FORMS    += mainwindow.ui \
     appsettingswindow.ui \
     projectsettingswindow.ui \
     reservoirwindow.ui \
-    stagestatus.ui
+    stagestatus.ui \
+    trafficlight.ui
 
 OTHER_FILES +=
 
