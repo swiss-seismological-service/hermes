@@ -171,22 +171,9 @@ class HazardResult(OrmBase):
     """ 
     Result of the OQ hazard calculation 
     
-    h_curves contains the computed hazard curves and looks as follows (with
-    example values):
-    
-    h_curves = {
-        'result_id':          34
-        'investigation_time': 1.0,
-        'imt':                'MMI',
-        'intensities':        [1, 1.25, 1.5, ...]
-        'mean':               [2.3, 4.2, ...]
-        'quantile 0.XX':      [1.3, 5.3, ...]   # replace XX with number
-        'quantile 0.XY':      ...
-        'realizations': {
-            ('psrc', 'etas', 'mmax37', 'FCSD010Q1800K005'): [2.3, 4.2, ...],
-            ...
-        }  # logic tree realizations
-    }
+    h_curves contains the computed hazard curves as a dict. The format is
+    specified in oqutil's *extract_hazard_curves* with the addition of 
+    result_id under the respective key.
     
     """
     # region ORM declarations
@@ -201,10 +188,6 @@ class HazardResult(OrmBase):
     status = relationship('CalculationStatus', back_populates='hazard_result',
                           cascade='all', uselist=False)
     # endregion
-
-    def read_hcurves(self, result_id, zip_file):
-        """ Read hcurves from zipped csv files """
-        pass
 
 
 class RiskResult(OrmBase):

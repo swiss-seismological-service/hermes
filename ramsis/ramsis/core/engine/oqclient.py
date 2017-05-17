@@ -102,15 +102,14 @@ class OQClient(QObject):
         self.client_notification.emit(notification)
 
     def get_hazard_curves(self, calc_id):
-        """ Return hazard curves of calc_id as zipped csv files """
-        hcurves_id = self.get_result_id('hcurves', self.calc_id)
+        """ Return hazard curves of calc_id as zipped geojson files """
+        hcurves_id = self.get_result_id('hcurves', calc_id)
         if hcurves_id is None:
             return None
-        r = self.get_result(hcurves_id, {'export_type': 'csv'})
+        r = self.get_result(hcurves_id, {'export_type': 'geojson'})
         if r is None:
             return None
-        return r.content
-
+        return r.content, hcurves_id
 
     def get_result_id(self, result_type, calc_id):
         r = self.get_result_list(calc_id)
@@ -143,7 +142,7 @@ class OQClient(QObject):
 
     def get_result(self, result_id, params=None):
         end_point = '{}/calc/result/{}'.format(API_V, result_id)
-        r = requests.get(urljoin(self.url, end_point, params=params))
+        r = requests.get(urljoin(self.url, end_point), params=params)
         log.debug('get result response: {}'.format(r))
         if r.status_code != 200:
             log.error('Failed to get result {}: [{}] {}'

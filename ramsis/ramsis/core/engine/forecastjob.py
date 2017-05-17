@@ -201,16 +201,15 @@ class HazardStage(WorkUnit):
         if calc_status.state == CalculationStatus.RUNNING:
             self.hazard_result.calc_id = calc_status.calc_id
         elif calc_status.state == CalculationStatus.COMPLETE:
-            content = self.client.get_hazard_curves(calc_status.calc_id)
+            content, id = self.client.get_hazard_curves(calc_status.calc_id)
             if content is None:
-                log.error('Failed to retreive hazard curves for calc {}'
+                log.error('Failed to retrieve hazard curves for calc {}'
                           .format(calc_status.calc_id))
             else:
-                with ZipFile(io.BytesIO(content)) as z:
-                    for member in z.infolist():
-
-
-
+                f = io.BytesIO(content)
+                h_curves = oqutils.extract_hazard_curves(f)
+                h_curves['result_id'] = id
+                self.hazard_result.h_curves = h_curves
         self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
