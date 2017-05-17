@@ -232,8 +232,8 @@ class RiskStage(WorkUnit):
         self.risk_result = RiskResult()
         self.scenario.forecast_result.risk_result = self.risk_result
         files = oqutils.risk_input_files()
-        #haz_id = self.scenario.forecast_result.hazard_result.calc_id
-        self.client.run_job(files, {'hazard_job_id': 44})
+        haz_id = self.scenario.forecast_result.hazard_result.calc_id
+        self.client.run_job(files, {'hazard_job_id': haz_id})
 
     def _on_client_notification(self, notification):
         calc_status = create_calculation_status(notification)
