@@ -23,7 +23,6 @@ Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
 
 import logging
 import io
-from zipfile import ZipFile
 from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
     ModelResult, Scenario, Forecast
