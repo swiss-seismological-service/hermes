@@ -9,6 +9,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 """
 
 from PyQt4.QtCore import QThread
+import numpy as np
 from tabs import TabPresenter
 
 
@@ -20,44 +21,27 @@ class HazardTabPresenter(TabPresenter):
 
     def refresh(self):
         # FIXME: use new data model
-        pass
-        # self.logger.info('refreshing hazard on thread {}'
-        #                  .format(QThread.currentThread().objectName()))
-        # calc_id = None
-        # if self.presented_forecast:
-        #     calc_id = self.presented_forecast.hazard_oq_calc_id
-        # if calc_id is not None:
-        #     self.ui.hazCalcIdLabel.setText(str(calc_id))
-        # else:
-        #     self.ui.hazCalcIdLabel.setText('N/A')
+        try:
+            haz_result = self.scenario.forecast_result.hazard_result
+            haz_curves = haz_result.h_curves
+        except AttributeError:
+            haz_curves = None
+            calc_id = None
+        else:
+            calc_id =  haz_result.calc_id
 
-        # outputs = oq_models.Output.objects.filter(oq_job=calc_id)
-        #
-        # hazard_curves = (o.hazard_curve for o in outputs
-        #                  if o.output_type == 'hazard_curve')
-        #
-        # imls = None
-        # for hc in hazard_curves:
-        #     if hc.imt != 'MMI':
-        #         # we only support mmi for now
-        #         # TODO: show selection box for all IMTs
-        #         continue
-        #
-        #     # extract IMLs once
-        #     if imls is None:
-        #         imls = hc.imls
-        #
-        #     # extract x, y, poes
-        #     x_y_poes = oq_models.HazardCurveData.objects.all_curves_simple(
-        #         filter_args=dict(hazard_curve=hc.id))
-        #
-        #     x, y, poes = next(x_y_poes)  # there should be only one
-        #
-        #     if hc.statistics == 'mean':
-        #         pen = QtGui.QPen(Qt.red)
-        #     elif hc.statistics == 'quantile':
-        #         pen = QtGui.QPen(Qt.green)
-        #     else:
-        #         pen = QtGui.QPen(Qt.white)
-        #
-        #     self.ui.hazPlot.plot(imls, poes, pen=pen)
+        self.ui.hazCalcIdLabel.setText(str(calc_id) if calc_id else 'N/A')
+
+        self.ui.hCurveWidget.axes.clear()
+        if haz_curves:
+            imls = haz_curves['IMLs']
+            poes = haz_curves['poEs']
+            rlz = np.array([poEs for label, poEs in poes.items()
+                           if not ('mean' in label or 'quantile' in label)])
+            mean = np.array([poEs for label, poEs in poes.items()
+                             if 'mean' in label])
+            quantile = np.array([poEs for label, poEs in poes.items()
+                                 if 'quantile' in label])
+            self.ui.hCurveWidget.plot(imls, rlz.T, '.75',
+                                      imls, mean.T, 'r',
+                                      imls, quantile.T, '-k')
