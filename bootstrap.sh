@@ -43,7 +43,8 @@ PIP_PACKAGES=""\
 " pymatlab==0.2.3"\
 " sphinx==1.4.1"\
 " sphinx-rtd-theme==0.1.9"\
-" pymap3d"
+" pymap3d"\
+" matplotlib"
 
 # install deb and pip packages
 apt-get update
