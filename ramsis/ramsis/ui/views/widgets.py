@@ -1,13 +1,13 @@
 # -*- encoding: utf-8 -*-
 """
-Additions for PyQtGraph
-
-Ramsis specific classes used in various places of the user interface
-    
+Custom QtWidgets for plotting
+   
 """
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as Canvas
+from matplotlib.figure import Figure
 import numpy as np
 from datetime import datetime
 import time
@@ -115,6 +115,7 @@ class TimePlotWidget(pg.PlotWidget):
         if xmin.minute != xmax.minute:
             return xmin.strftime('%d %B %Y').lstrip('0')
         return xmin.strftime('%d %B %Y, %H:%M').lstrip('0')
+
 
 class SeismicityPlotWidget(TimePlotWidget):
     """
@@ -327,3 +328,25 @@ class Event3DViewWidget(gl.GLViewWidget):
         self._events_item = gl.GLScatterPlotItem()
         self._events_item.setData(pos=pos, size=10*size)
         self.addItem(self._events_item)
+
+
+class HCurveWidget(Canvas):
+    """ Widget for hazard curves """
+    def __init__(self, parent=None):
+        self.figure = Figure()
+        self.figure.patch.set_facecolor('none')
+        self.figure.subplots_adjust(bottom=0.15)
+        self.axes = self.figure.add_subplot(111)
+        self._draw_labels()
+
+        Canvas.__init__(self, self.figure)
+        self.setParent(parent)
+
+    def plot(self, *args, **kwargs):
+        self.axes.plot(*args, **kwargs)
+        self._draw_labels()
+        self.draw()
+
+    def _draw_labels(self):
+        self.axes.set_xlabel('Magnitude')
+        self.axes.set_ylabel('poE')

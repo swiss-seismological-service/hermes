@@ -12,8 +12,7 @@ import time
 from datetime import datetime, timedelta
 from functools import partial
 from PyQt4 import QtGui, uic
-# import core.engine.ismodelcontrol as mc
-from ui.views.plots import DisplayRange
+from ui.views.widgets import DisplayRange
 
 ui_path = os.path.dirname(__file__)
 TIMELINE_WINDOW_PATH = os.path.join(ui_path, 'views', 'timelinewindow.ui')

@@ -155,19 +155,19 @@
   <customwidget>
    <class>SeismicityPlotWidget</class>
    <extends>QWidget</extends>
-   <header>ui.views.plots</header>
+   <header>ui.views.widgets</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>HydraulicsPlotWidget</class>
    <extends>QWidget</extends>
-   <header>ui.views.plots</header>
+   <header>ui.views.widgets</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>RateForecastPlotWidget</class>
    <extends>QWidget</extends>
-   <header>ui.views.plots</header>
+   <header>ui.views.widgets</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
