@@ -1,6 +1,5 @@
 from datetime import datetime
 import csv
-import json
 import os
 import subprocess
 import glob
@@ -8,6 +7,8 @@ import glob
 from flask import request
 from flask import current_app as app
 from flask_restful import Resource
+
+import numpy as np
 
 
 current_process = None
@@ -64,7 +65,7 @@ class Run(Resource):
                 return {
                     'status': 'complete',
                     'result': {
-                        'rate_prediction': (4, 1.5),  # TODO: Implement
+                        'rate_prediction': self._eval_results()
                     }
                 }
             except Exception as e:
@@ -74,6 +75,21 @@ class Run(Resource):
         else:
             app.logger.debug('Model failed')
             return {'status': 'error'}, 202  # Accepted
+
+    def _eval_results(self):
+        all = []
+        for catalog in self.seismic_catalog_files:
+            with open(catalog) as f:
+                reader = csv.reader(f, delimiter=';')
+                next(reader)  # skip header
+                mags = [float(row[1]) for row in reader]
+                gr = _estimate_gr_params(mags)
+                app.logger.debug('Stats (a, b, std) for {}: {}'
+                                 .format(catalog, gr))
+                all.append(gr)
+        gr = np.mean(all, 0).tolist()
+        app.logger.debug('Mean {}:'.format(gr))
+        return gr
 
 
 def _write_seismic_catalog(data):
@@ -95,3 +111,27 @@ def _write_seismic_catalog(data):
         except TypeError:
             app.logger('Could not write catalog: no seismic events')
             raise
+
+
+def _estimate_gr_params(magnitudes, mc=None):
+    """
+    Estimates the Gutenberg Richter parameters based on a list of magnitudes.
+    The magnitudes list is expected to contain no values below mc
+
+    :param mc: Magnitude of completeness. If not given, the smallest value in
+        magnitudes is used as mc
+    :param magnitudes: List of magnitudes
+    :returns: Gutenberg Richter parameter estimates as tuple (a, b, std_b)
+
+    """
+    mags = np.array(magnitudes)
+    if mc is None:
+        mc = mags.min()
+    else:
+        mags = mags[mags >= mc]
+    n = mags.size
+    m_mean = mags.mean()
+    b = 1 / (np.log(10) * (m_mean - mc))
+    a = np.log10(n) + b * mc
+    std_b = 2.3 * np.sqrt(sum((mags - m_mean) ** 2) / (n * (n - 1))) * b ** 2
+    return a, b, std_b

@@ -105,9 +105,9 @@ class ModelClient(QObject):
             data = r.json()
             if data['status'] == 'complete':
                 self.logger.info('Model run completed successfully')
-                rate, b_val = data['result']['rate_prediction']
+                rate, b_val, std = data['result']['rate_prediction']
                 model_result = ModelResult(self.model_id)
-                model_result.rate_prediction = RatePrediction(rate, b_val, 1)
+                model_result.rate_prediction = RatePrediction(rate, b_val, std)
                 # TODO: assign model_result to forecast
                 notification = CompleteNotification(self.model_id, response=r)
             else:
