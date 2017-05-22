@@ -109,7 +109,8 @@ class ModelClient(QObject):
                 model_result = ModelResult(self.model_id)
                 model_result.rate_prediction = RatePrediction(rate, b_val, std)
                 # TODO: assign model_result to forecast
-                notification = CompleteNotification(self.model_id, response=r)
+                notification = CompleteNotification(self.model_id, response=r,
+                                                    model_result=model_result)
             else:
                 notification = ErrorNotification(self.model_id, response=r)
                 self.logger.error('Model run failed')

@@ -152,6 +152,11 @@ class SeismicityForecast(WorkUnit):
         # it to the model object
         calc_status = create_calculation_status(notification)
         self.model_result.status = calc_status
+        try:
+            self.model_result.rate_prediction = \
+                notification.model_result.rate_prediction
+        except AttributeError:
+            pass
         self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
