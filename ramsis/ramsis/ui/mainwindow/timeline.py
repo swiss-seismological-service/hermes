@@ -9,7 +9,8 @@ Copyright (C) 2015, SED (ETH Zurich)
 """
 import logging
 from datetime import datetime, timedelta
-from PyQt4 import QtCore
+from PyQt4 import QtCore, QtGui
+import pyqtgraph as pg
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +31,14 @@ class TimeLinePresenter(QtCore.QObject):
         self.time_line.setBackground(None)
         self.time_line.getAxis('bottom').setPen('w')
         self.time_line.getAxis('left').setPen('w')
+
+        # timeline selector
+        self.sel = self.ui.timelineSelectionBox
+        self.sel.setStyle(
+            QtGui.QStyleFactory.create('Plastique'))
+        self.sel.insertItems(0, ('Seismicity', 'Injection'))
+        self.sel.currentIndexChanged.connect(self.on_timeline_selection)
+        self.plotter = SeismicityPlotter(self.time_line)
 
         core.project_loaded.connect(self.on_project_loaded)
 
@@ -76,15 +85,7 @@ class TimeLinePresenter(QtCore.QObject):
         :param max_time: if not None, plot up to max_time only
 
         """
-        epoch = datetime(1970, 1, 1)
-        events = self.core.project.seismic_catalog.seismic_events
-        if max_time:
-            data = [((e.date_time - epoch).total_seconds(), e.magnitude)
-                    for e in events if e.date_time < max_time]
-        else:
-            data = [((e.date_time - epoch).total_seconds(), e.magnitude)
-                    for e in events]
-        self.time_line.plot.setData(pos=data)
+        self.plotter.replot(self.core.project, max_time=max_time)
 
     def show_forecasts(self):
         if self.core.project is None:
@@ -124,3 +125,62 @@ class TimeLinePresenter(QtCore.QObject):
 
     def on_catalog_changed(self, _):
         self.replot()
+
+    def on_timeline_selection(self, index):
+        if index == 0:
+            self.plotter = SeismicityPlotter(self.time_line)
+        else:
+            self.plotter = InjectionPlotter(self.time_line)
+        self.replot()
+
+
+class SeismicityPlotter(object):
+    """ Plots the seismicity timeline on *plot* """
+    def __init__(self, widget):
+        self.widget = widget
+        self.project = None
+        plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
+                                  brush=pg.mkBrush(255, 255, 255, 120))
+        self.widget.set_plot(plot, ('Mag', 'Mw'))
+
+    def replot(self, project=None, max_time=None):
+        epoch = datetime(1970, 1, 1)
+        if project:
+            events = project.seismic_catalog.seismic_events
+            if max_time:
+                data = [((e.date_time - epoch).total_seconds(), e.magnitude)
+                        for e in events if e.date_time < max_time]
+            else:
+                data = [((e.date_time - epoch).total_seconds(), e.magnitude)
+                        for e in events]
+        else:
+            data = []
+        x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
+        self.widget.setYRange(min(y) if y else 0, max(y) if y else 4)
+        self.widget.plot.setData(x, y)
+
+
+class InjectionPlotter(object):
+    """ Plots the injection timeline on *plot* """
+    def __init__(self, widget):
+        self.widget = widget
+        self.project = None
+        plot = pg.PlotCurveItem()
+        self.widget.set_plot(plot, ('Flow', 'l/s'))
+
+    def replot(self, project=None, max_time=None):
+        epoch = datetime(1970, 1, 1)
+        if project:
+            events = project.injection_history.samples
+            if max_time:
+                data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
+                        for e in events if e.date_time < max_time]
+            else:
+                data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
+                        for e in events]
+        else:
+            data = []
+
+        x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
+        self.widget.setYRange(min(y) if y else 0, max(y) if y else 100)
+        self.widget.plot.setData(x, y)
