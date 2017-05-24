@@ -45,3 +45,5 @@ class HazardTabPresenter(TabPresenter):
             self.ui.hCurveWidget.plot(imls, rlz.T, '.75',
                                       imls, mean.T, 'r',
                                       imls, quantile.T, '-k')
+        else:
+            self.ui.hCurveWidget.draw()
