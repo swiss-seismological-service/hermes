@@ -19,7 +19,6 @@ from PyQt4.QtGui import QMessageBox
 import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
-from ui.timelinewindow import TimelineWindow
 from ui.reservoirwindow import ReservoirWindow
 from ui.ramsisuihelpers import utc_to_local
 from presenter import ContentPresenter
@@ -99,7 +98,7 @@ class MainWindow(QtGui.QMainWindow):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         spacer.setVisible(True)
-        self.ui.mainToolBar.insertWidget(self.ui.actionForecasts, spacer)
+        self.ui.mainToolBar.insertWidget(self.ui.actionShow_3D, spacer)
         self.status_bar = StatusBar()
         self.setStatusBar(self.status_bar)
 
@@ -143,7 +142,6 @@ class MainWindow(QtGui.QMainWindow):
             connect(self.action_stop_simulation)
         # ...Window
         self.ui.actionShow_3D.triggered.connect(self.action_show_3d)
-        self.ui.actionTimeline.triggered.connect(self.action_show_timeline)
         self.ui.actionSimulation.triggered.\
             connect(self.action_show_sim_controls)
 
@@ -274,17 +272,10 @@ class MainWindow(QtGui.QMainWindow):
                     return
                 importer.base_date = date
             else:
-                importer.date_format = '%d.%m.%YT%H:%M:%S'
-            history.clear()
+                importer.date_format = '%Y-%m-%dT%H:%M:%S'
+            history.clear_events()
             history.import_events(importer)
             self.ramsis_core.project.save()
-
-    def action_show_timeline(self):
-        if self.timeline_window is None:
-            self.timeline_window = TimelineWindow(
-                ramsis_core=self.ramsis_core,
-                parent=self)
-        self.timeline_window.show()
 
     def action_show_sim_controls(self):
         if self.simulation_window is None:
@@ -334,8 +325,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def update_controls(self):
         enable_with_project = [
-            'menuProject', 'actionTimeline',
-            'actionShow_3D', 'actionForecasts', 'actionSimulation',
+            'menuProject',
+            'actionShow_3D', 'actionSimulation',
             'actionScenario', 'planNextButton', 'addScenarioButton',
             'removeScenarioButton',
         ]

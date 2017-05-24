@@ -26,14 +26,6 @@ class DisplayRange(object):
     DEFAULT = WEEK
 
 
-class CurvePlotWidget(pg.PlotWidget):
-
-    def __init__(self, parent=None, **kargs):
-        super(CurvePlotWidget, self).__init__(parent, **kargs)
-        self.getPlotItem().setLogMode(y=True)
-        self.setMouseEnabled(y=False)
-
-
 class TimePlotWidget(pg.PlotWidget):
     """ A plot widget where the x-Axis is a DateAxis """
 
@@ -117,24 +109,6 @@ class TimePlotWidget(pg.PlotWidget):
         return xmin.strftime('%d %B %Y, %H:%M').lstrip('0')
 
 
-class SeismicityPlotWidget(TimePlotWidget):
-    """
-    pyqtgraph PlotWidget configured to display seismic data
-
-    :ivar plot: :class:`ScatterPlotItem` that holds the scatter plot data
-
-    """
-
-    def __init__(self, parent=None, **kargs):
-        super(SeismicityPlotWidget, self).__init__(parent, **kargs)
-        self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
-                                       brush=pg.mkBrush(255, 255, 255, 120))
-        self.addItem(self.plot)
-        self.getAxis('left').enableAutoSIPrefix(False)
-        self.getAxis('bottom').enableAutoSIPrefix(False)
-        self.getAxis('left').setLabel('Mag', 'Mw')
-
-
 class TimeLinePlotWidget(TimePlotWidget):
     """
     pyqtgraph PlotWidget configured to display seismic data
@@ -145,8 +119,7 @@ class TimeLinePlotWidget(TimePlotWidget):
 
     def __init__(self, parent=None, **kargs):
         super(TimeLinePlotWidget, self).__init__(parent, **kargs)
-        self.plot = pg.ScatterPlotItem(size=5, pen=pg.mkPen(None),
-                                       brush=pg.mkBrush(255, 255, 255, 120))
+        self.plot = None
 
         self.symbol_view = pg.ViewBox()
         self.plotItem.scene().addItem(self.symbol_view)
@@ -157,71 +130,26 @@ class TimeLinePlotWidget(TimePlotWidget):
         self.forecasts_plot = pg.ScatterPlotItem(pen=pg.mkPen(None),
                                                  symbol='t',
                                                  brush=fc_brush)
-        self.addItem(self.plot)
+
         self.symbol_view.addItem(self.forecasts_plot)
         self.getAxis('left').enableAutoSIPrefix(False)
         self.getAxis('bottom').enableAutoSIPrefix(False)
-        self.getAxis('left').setLabel('Mag', 'Mw')
+        self.getAxis('left').setLabel('N/A')
 
         self.plotItem.vb.sigResized.connect(self._update_views)
         self._update_views()
+
+    def set_plot(self, plot, y_label):
+        if self.plot:
+            self.removeItem(self.plot)
+        self.plot = plot
+        self.addItem(plot)
+        self.getAxis('left').setLabel(*y_label)
 
     def _update_views(self):
         self.symbol_view.setGeometry(self.plotItem.vb.sceneBoundingRect())
         self.symbol_view.linkedViewChanged(self.plotItem.vb,
                                            self.symbol_view.XAxis)
-
-
-class HydraulicsPlotWidget(TimePlotWidget):
-    """
-    pyqtgraph PlotWidget configured to display hydraulic data
-
-    :ivar plot: :class:`PlotCurveItem` that holds the line plot data
-
-    """
-    def __init__(self, parent=None, **kargs):
-        super(HydraulicsPlotWidget, self).__init__(parent, **kargs)
-        self.plot = pg.PlotCurveItem()
-        self.addItem(self.plot)
-        self.getAxis('left').enableAutoSIPrefix(False)
-        self.getAxis('bottom').enableAutoSIPrefix(False)
-        self.getAxis('left').setLabel('Flow rate', 'l/s')
-
-
-class RateForecastPlotWidget(TimePlotWidget):
-    """
-    pyqtgraph PlotWidget configured to display forecasted and actual seismicity
-    rates.
-
-    :ivar forecast_plot: Bar graph of forecasted _rates
-    :ivar rate_plot: Actual _rates plot
-
-    """
-    def __init__(self, parent=None, **kargs):
-        super(RateForecastPlotWidget, self).__init__(parent, **kargs)
-        self.rate_plot = pg.PlotCurveItem()
-        self.addItem(self.rate_plot)
-        self.forecast_bars = []
-        self.getAxis('left').enableAutoSIPrefix(False)
-        self.getAxis('bottom').enableAutoSIPrefix(False)
-        self.getAxis('left').setLabel('Rate of Seismicity', '6h^(-1)')
-
-    def set_forecast_data(self, x, y):
-        # FIXME: this looks like a bug in bargraphitem (the fact that it doesn't
-        # allow initialization without data
-        for bar in self.forecast_bars:
-            self.removeItem(bar)
-        self.forecast_bars = []
-        if x is None or y is None:
-            return
-        xy = sorted(zip(x, y))
-        for (bx, by) in xy:
-            brush = CUR_FC_BRUSH if bx == xy[-1][0] else PAST_FC_BRUSH
-            pen = CUR_FC_PEN if bx == xy[-1][0] else PAST_FC_PEN
-            bar = pg.BarGraphItem(x0=[bx], height=[by], width=3600*6,
-                                  brush=brush, pen=pen)
-            self.forecast_bars.append(bar)
-            self.addItem(bar)
 
 
 class VoxelViewWidget(gl.GLViewWidget):

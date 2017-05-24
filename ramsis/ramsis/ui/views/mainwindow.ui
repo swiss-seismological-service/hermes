@@ -191,7 +191,9 @@
        </size>
       </property>
       <property name="styleSheet">
-       <string notr="true">background-color: gray;</string>
+       <string notr="true">background-color: gray;
+color:white;
+</string>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <property name="topMargin">
@@ -199,6 +201,77 @@
        </property>
        <item>
         <widget class="TimeLinePlotWidget" name="timeLineWidget"/>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>10</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="styleSheet">
+          <string notr="true">color:#707070;</string>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="frame_3">
+         <property name="minimumSize">
+          <size>
+           <width>200</width>
+           <height>0</height>
+          </size>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_10">
+          <item row="0" column="0">
+           <widget class="QComboBox" name="timelineSelectionBox">
+            <property name="frame">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="showForecastsCheckBox">
+            <property name="text">
+             <string>Forecasts</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -872,7 +945,6 @@
      <string>Window</string>
     </property>
     <addaction name="actionShow_3D"/>
-    <addaction name="actionForecasts"/>
    </widget>
    <widget class="QMenu" name="menuProject">
     <property name="title">
@@ -924,9 +996,7 @@
    <addaction name="actionScenario"/>
    <addaction name="separator"/>
    <addaction name="actionSimulation"/>
-   <addaction name="actionForecasts"/>
    <addaction name="actionShow_3D"/>
-   <addaction name="actionTimeline"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionImport_Seismic_Data">
@@ -978,15 +1048,6 @@
     <string>New Project...</string>
    </property>
   </action>
-  <action name="actionForecasts">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/toolbar-buttons/images/forecast-window-toolbar-button.png</normaloff>:/toolbar-buttons/images/forecast-window-toolbar-button.png</iconset>
-   </property>
-   <property name="text">
-    <string>Forecasts</string>
-   </property>
-  </action>
   <action name="actionSimulation">
    <property name="icon">
     <iconset resource="images.qrc">
@@ -1002,18 +1063,6 @@
    </property>
    <property name="text">
     <string>Application Settings...</string>
-   </property>
-  </action>
-  <action name="actionTimeline">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/toolbar-buttons/images/timeline-window-toolbar-button.png</normaloff>:/toolbar-buttons/images/timeline-window-toolbar-button.png</iconset>
-   </property>
-   <property name="text">
-    <string>Timeline</string>
-   </property>
-   <property name="toolTip">
-    <string>Show Timeline</string>
    </property>
   </action>
   <action name="actionScenario">
@@ -1053,7 +1102,12 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Seismic Data</string>
+    <string>SEISMIC DATA</string>
+   </property>
+   <property name="font">
+    <font>
+     <italic>true</italic>
+    </font>
    </property>
   </action>
   <action name="actionHydraulic_Data">
@@ -1061,7 +1115,12 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Hydraulic Data</string>
+    <string>HYDRAULIC DATA</string>
+   </property>
+   <property name="font">
+    <font>
+     <italic>true</italic>
+    </font>
    </property>
   </action>
   <action name="actionDelete_Results">
