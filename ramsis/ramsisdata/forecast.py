@@ -18,7 +18,7 @@ from sqlalchemy.ext.mutable import MutableDict
 from ormbase import OrmBase, JSONEncodedDict
 from signal import Signal
 from skilltest import SkillTest
-from calculationstatus import CalculationStatus
+from calculationstatus import CalculationStatus as CS
 
 
 class ForecastSet(OrmBase):
@@ -189,6 +189,10 @@ class HazardResult(OrmBase):
                           cascade='all', uselist=False)
     # endregion
 
+    @property
+    def state(self):
+        return self.status.state
+
 
 class RiskResult(OrmBase):
     # region ORM declarations
@@ -203,6 +207,10 @@ class RiskResult(OrmBase):
     status = relationship('CalculationStatus', back_populates='risk_result',
                           cascade='all', uselist=False)
     # endregion
+
+    @property
+    def state(self):
+        return self.status.state
 
 
 class Scenario(OrmBase):
@@ -223,17 +231,6 @@ class Scenario(OrmBase):
     dict.
     
     """
-
-    def __init__(self):
-        super(Scenario, self).__init__()
-        self.config = {
-            'run_is_forecast': True,
-            'run_hazard': True,
-            'run_risk': True,
-            'disabled_models': []
-        }
-        self.scenario_changed = Signal()
-
     # region ORM declarations
     __tablename__ = 'scenarios'
     id = Column(Integer, primary_key=True)
@@ -254,10 +251,64 @@ class Scenario(OrmBase):
                                    back_populates='scenario')
     # endregion
 
+    # Summary status
+    # These are only informational only (for the user) and are computed from
+    # individual calculation statuses and stage configurations.
+    PENDING = 'Pending'  # Nothing has been computed yet
+    COMPLETE = 'Complete'  # All calculations complete
+    INCOMPLETE = 'Incomplete'  # Some pending calculations
+    RUNNING = 'Running'  # Currently computing
+
+    def __init__(self):
+        super(Scenario, self).__init__()
+        self.config = {
+            'run_is_forecast': True,
+            'run_hazard': True,
+            'run_risk': True,
+            'disabled_models': []
+        }
+        self.scenario_changed = Signal()
+
     @property
     def project(self):
         """ Shortcut to the project """
         return self.forecast_input.forecast.project
+
+    @property
+    def summary_status(self):
+        fr = self.forecast_result
+        if fr is None:
+            return self.PENDING
+        all_results = fr.model_results.values() + \
+                      [fr.hazard_result, fr.risk_result]
+        if all(r.state == CS.PENDING for r in all_results if r):
+            return self.PENDING
+        if any(r.state == CS.RUNNING for r in all_results if r):
+            return self.RUNNING
+        if self.config['run_risk'] and not fr.risk_result.status.finished:
+            return self.INCOMPLETE
+        if self.config['run_hazard'] and not fr.hazard_result.status.finished:
+            return self.INCOMPLETE
+        if self.config['run_is_forecast']:
+            expected = []
+            scenario_disabled = self.config['disabled_models']
+            for id, conf in self.project.settings['forecast_models'].items():
+                if conf['enabled'] and id not in scenario_disabled:
+                    expected.append(id)
+            if any(id not in fr.model_results for id in expected):
+                return self.INCOMPLETE
+            if any(fr.model_results[id].status.finished is False
+                   for id in expected):
+                return self.INCOMPLETE
+        return self.COMPLETE
+
+    def has_errors(self):
+        fr = self.forecast_result
+        if fr is None:
+            return False
+        all_results = fr.model_results.values() + \
+                      [fr.hazard_result, fr.risk_result]
+        return any(r.state == CS.ERROR for r in all_results if r)
 
     @reconstructor
     def init_on_load(self):
@@ -335,6 +386,10 @@ class ModelResult(OrmBase):
 
         """
         return self._reviewed
+
+    @property
+    def state(self):
+        return self.status.state
 
     def compute_cumulative(self):
         """

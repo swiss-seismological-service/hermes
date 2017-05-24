@@ -56,7 +56,7 @@ class ScenarioNode(Node):
                 return self.item.name
         if column == 1:
             if role == Qt.DisplayRole:
-                return 'N/A'
+                return self.item.summary_status
             elif role == Qt.ForegroundRole:
                 return QBrush(Qt.gray)
             elif role == Qt.FontRole:
