@@ -11,21 +11,16 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 from datetime import datetime
-from ramsisdata.forecast import Forecast
+from ramsisdata.forecast import Forecast, Scenario
 from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
     GeneralTabPresenter, SettingsTabPresenter
 from timeline import TimeLinePresenter
 from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel, \
     ForecastNode
+from ui.styles import STATUS_COLOR_OTHER, STATUS_COLOR_ERROR, \
+    STATUS_COLOR_PENDING, STATUS_COLOR_RUNNING, STATUS_COLOR_COMPLETE
 from PyQt4.QtGui import QMenu, QAction
 from PyQt4.QtCore import Qt
-
-STATUS_COLOR_PLANNED = '#0099CC'
-STATUS_COLOR_COMPLETE = '#00CC99'
-STATUS_COLOR_DISABLED = '#D0D0D0'
-STATUS_COLOR_ERROR = '#FF470A'
-STATUS_COLOR_RUNNING = '#9900CC'
-STATUS_COLOR_OTHER = '#F8E81C'
 
 
 class ContentPresenter(object):
@@ -89,36 +84,55 @@ class ContentPresenter(object):
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_forecast_result(None)
 
-    def _refresh_fc_status(self, fc):
+    def _refresh_scenario_status(self, scenario):
         """
         Show the overall status of the currently selected forecast
 
         :param Forecast fc: currently selected forecast
 
         """
-        # FIXME: base this on fc.status once we have that
-        dt = fc.forecast_time - self.ramsis_core.project.project_time
-        if dt.total_seconds() > 0:
-            color = STATUS_COLOR_PLANNED
-            h = int(dt.total_seconds() / 3600)
-            m = int((dt.total_seconds() % 3600) / 60)
-            if h > 24:
-                msg = 'Forecast due in {} days'.format(h / 24)
-            elif h > 0:
-                msg = 'Forecast due in {} hours {} minutes'.format(h, m)
-            else:
-                msg = 'Forecast due in {} minutes'.format(m)
+        if scenario is None:
+            msg = 'No scenario selected'
+            color = STATUS_COLOR_OTHER
+            errors = False
         else:
-            # if fc.status == fc.STATUS_COMPLETE:
-            color = STATUS_COLOR_COMPLETE
-            msg = 'Forecast completed'
-            # elif fc.status == fc.STATUS_RUNNING:
-            #     color = STATUS_COLOR_RUNNING
-            # else:
-            #     color = STATUS_COLOR_PENDING
+            errors = scenario.has_errors()
+            status = scenario.summary_status
+            fc = scenario.forecast_input.forecast
+            dt = fc.forecast_time - self.ramsis_core.project.project_time
+            if status == Scenario.PENDING:
+                h = int(dt.total_seconds() / 3600)
+                m = int((dt.total_seconds() % 3600) / 60)
+                if dt.total_seconds > 0:
+                    pre = 'Scenario scheduled to run in '
+                    color = STATUS_COLOR_PENDING
+                else:
+                    pre = 'Scenario overdue for '
+                    color = STATUS_COLOR_OTHER
+                if h > 24:
+                    msg = pre + '{} days'.format(h / 24)
+                elif h > 0:
+                    msg = pre + '{} hours {} minutes'.format(h, m)
+                else:
+                    msg = pre + '{} minutes'.format(m)
+            elif status == Scenario.RUNNING:
+                color = STATUS_COLOR_RUNNING
+                msg = 'Scenario is currently being computed'
+            elif status == Scenario.COMPLETE:
+                color = STATUS_COLOR_COMPLETE
+                msg = 'Scenario computation complete'
+            else:
+                color = STATUS_COLOR_OTHER
+                msg = 'Scenario computation partially complete'
+
+        if errors:
+            msg += ' (with errors)'
+            color = STATUS_COLOR_ERROR
+        text_color = 'black' if color == STATUS_COLOR_OTHER else 'white'
         self.ui.fcStatusLabel.setText(msg)
         self.ui.statusAreaWidget.setStyleSheet('background-color: {};'
-                                               .format(color))
+                                               'color: {};'
+                                               .format(color, text_color))
 
     # Context menu actions
 
@@ -157,7 +171,7 @@ class ContentPresenter(object):
             scenario = None
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_scenario(scenario)
-        self._refresh_fc_status(forecast)
+        self._refresh_scenario_status(scenario)
 
     def on_context_menu_requested(self, pos):
         if self.fc_tree_model is None:

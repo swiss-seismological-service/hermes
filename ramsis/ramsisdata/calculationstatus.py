@@ -49,6 +49,7 @@ class CalculationStatus(OrmBase):
     """
 
     # Defined states
+    PENDING = 'Pending'
     RUNNING = 'Running'
     ERROR = 'Error'
     COMPLETE = 'Complete'
@@ -75,7 +76,7 @@ class CalculationStatus(OrmBase):
 
     def __init__(self, calc_id, state=None, info=None):
         self.calc_id = calc_id
-        self.state = state
+        self.state = state if state else self.PENDING
         self.info = info
         self.date = datetime.utcnow()
 

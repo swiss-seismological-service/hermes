@@ -10,6 +10,7 @@ import os
 
 from PyQt4 import QtGui, uic
 from ramsisdata.calculationstatus import CalculationStatus
+from ui.styles import STATUS_COLOR_ERROR, STATUS_COLOR_DISABLED
 
 ui_path = os.path.dirname(__file__)
 STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
@@ -38,13 +39,20 @@ class StageWidget(QtGui.QWidget):
         self.ui.imageLabel.setPixmap(
             QtGui.QPixmap(':stage_images/images/stage_planned.png')
         )
-        self.ui.statusLabel.setText('Planned')
+        self.ui.statusLabel.setText('Pending')
 
     def set_substages(self, substages):
+        colors = {
+            'Error': STATUS_COLOR_ERROR,
+            'Disabled': STATUS_COLOR_DISABLED,
+        }
         for i, stage in enumerate(substages):
             stage_label = QtGui.QLabel(stage[0])
+            stage_label.setMinimumHeight(20)
             status_label = QtGui.QLabel(stage[1])
-            status_label.setStyleSheet('color: gray;')
+            status_label.setMinimumHeight(20)
+            color = colors.get(stage[1], 'gray')
+            status_label.setStyleSheet('color: {};'.format(color))
             self.ui.substatusLayout.addWidget(stage_label, i, 0)
             self.ui.substatusLayout.addWidget(status_label, i, 1)
 
