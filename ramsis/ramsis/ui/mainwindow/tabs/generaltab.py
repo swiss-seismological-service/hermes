@@ -85,9 +85,8 @@ class StageStatusPresenter(QObject):
             widget.disable()
             return
         # substages
-        project = scenario.forecast_input.forecast.forecast_set.project
-        models = project.settings['forecast_models']
-        substages = {m: 'Planned' for m in models}
+        models = scenario.project.settings['forecast_models']
+        substages = {m: 'Pending' for m in models}
         for key in substages.keys():
             if key in scenario.config['disabled_models']:
                 substages[key] = 'Disabled'
