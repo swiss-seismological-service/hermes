@@ -186,9 +186,8 @@ class HazardStage(WorkUnit):
         #    params[result.model_name] = [pred.rate, pred.b_value, weights[i]]
         # FIXME: take params from previous stage
         params = {
-            'etas': [4, 1.5, 0.3],
-            'shapiro': [8, 1.6, 0.3],
-            'ollinger': [9, 1.3, 0.4]
+            'etas': [4.245624, 1.58, 0.5],
+            'shapiro': [4.320766, 1.58, 0.5],
         }
         # prepare source model logic tree and job config
         files = oqutils.hazard_input_files(params)
