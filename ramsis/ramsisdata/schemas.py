@@ -37,9 +37,9 @@ class InjectionWellSchema(BaseSchema):
 
 
 class SeismicEventSchema(BaseSchema):
-    public_id = fields.Str()
-    public_origin_id = fields.Str()
-    public_magnitude_id = fields.Str()
+    public_id = fields.Str(allow_none=True)
+    public_origin_id = fields.Str(allow_none=True)
+    public_magnitude_id = fields.Str(allow_none=True)
     date_time = fields.DateTime()
     lat = fields.Float()
     lon = fields.Float()
@@ -51,10 +51,12 @@ class SeismicEventSchema(BaseSchema):
 
     @post_load
     def make_seismic_event(self, data):
-        params = ('date_time', 'magnitude', 'location')
-        init = dict((k, data[k]) for k in params)
-        rest = dict((k, data[k]) for k in data if k not in params)
-        seismic_event = SeismicEvent(**init)
+        location_attrs = ('lat', 'lon', 'depth')
+        location = tuple(data[k] for k in location_attrs)
+        init = ('date_time', 'magnitude') + location_attrs
+        rest = dict((k, data[k]) for k in data if k not in init)
+        seismic_event = SeismicEvent(data['date_time'], data['magnitude'],
+                                     location)
         for key in rest:
             setattr(seismic_event, key, rest[key])
         return seismic_event
@@ -66,7 +68,7 @@ class SeismicCatalogSchema(BaseSchema):
 
     @post_load
     def make_seismic_catalog(self, data):
-        seismic_catalog = SeismicCatalog(store=None)
+        seismic_catalog = SeismicCatalog()
         for key in data:
             setattr(seismic_catalog, key, data[key])
         return seismic_catalog

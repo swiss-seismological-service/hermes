@@ -12,8 +12,6 @@ import logging
 from PyQt4 import QtCore
 import numpy as np
 
-from ramsisdata.forecast import ModelResult, RatePrediction
-
 
 class Rj(QtCore.QObject):
     """
@@ -50,12 +48,6 @@ class Rj(QtCore.QObject):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def run(self, forecast):
-        self._logger.info('Rj model run initiated')
-        self.model_result = self._do_run(forecast)
-        self._logger.info('Rj model run completed')
-        self.finished.emit(self)
-
-    def _do_run(self, forecast):
         """
         Forecast aftershocks at the times given in run data
 
@@ -75,27 +67,20 @@ class Rj(QtCore.QObject):
         .. math:: \frac{(T_2+c)^{1-p}-(T_1+c)^{1-p}}{1-p} * \
                   [10^{a+b(M_m-M_1)}-10^{a+b(M_m-M_2)}]
 
-        with is what this model returns.
+        which is what this model returns.
 
         Note that any events occurring after the start of each forecast window
         are ignored for the respective forecast.
 
         """
-
-        # validate input
-        if not self._validate(forecast):
-            model_result = ModelResult()
-            model_result.model_name = 'Rj'
-            model_result.failed = True
-            model_result.failure_reason = 'invalid data'
-            return model_result
+        self._logger.info('Rj model run initiated')
 
         # copy everything into local variables for better readability
         a = self.a
         b = self.b
         c = self.c
         p = self.p
-        events = forecast.input.input_catalog.seismic_events
+
         t_run = forecast.forecast_time
         forecast_times = [t_run]
         t_bin = forecast.forecast_interval
@@ -139,22 +124,12 @@ class Rj(QtCore.QObject):
         probabilities = 1 - np.exp(-forecast_rates)
 
         # Finish up
-        model_result = ModelResult()
-        model_result.model_name = 'Rj'
-        model_result.failed = False
-        rate_prediction = RatePrediction(rate=forecast_rates[0], b_val=b,
-                                         prob=probabilities[0])
-        model_result.rate_prediction = rate_prediction
-        return model_result
+        # model_result = ModelResult()
+        # model_result.model_name = 'Rj'
+        # model_result.failed = False
+        # rate_prediction = RatePrediction(rate=forecast_rates[0], b_val=b,
+        #                                  prob=probabilities[0])
+        # model_result.rate_prediction = rate_prediction
+        # return model_result
 
-    def _validate(self, forecast):
-        if not forecast:
-            return False
-        if not (forecast.input and forecast.forecast_time and
-                forecast.forecast_interval):
-            return False
-        if not forecast.input.input_catalog:
-            return False
-        if not forecast.input.input_catalog.seismic_events:
-            return False
-        return True
+
