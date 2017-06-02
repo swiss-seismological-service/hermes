@@ -66,9 +66,9 @@ class ModelTabPresenter(TabPresenter):
             self.ui.bValLabel.setText('-')
         else:
             try:
-                self.ui.predRateLabel.setText(str(
+                self.ui.predRateLabel.setText('{:.3f}'.format(
                     model_result.rate_prediction.rate))
-                self.ui.bValLabel.setText(str(
+                self.ui.bValLabel.setText('{:.3f}'.format(
                     model_result.rate_prediction.b_val))
             except AttributeError:
                 self.ui.predRateLabel.setText('No Results')
