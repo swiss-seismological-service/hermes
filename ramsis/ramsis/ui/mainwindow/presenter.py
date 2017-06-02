@@ -82,7 +82,7 @@ class ContentPresenter(object):
 
     def _clear_all(self):
         for tab_presenter in self.tab_presenters:
-            tab_presenter.present_forecast_result(None)
+            tab_presenter.present_scenario(None)
 
     def _refresh_scenario_status(self, scenario):
         """
@@ -143,9 +143,9 @@ class ContentPresenter(object):
 
     def on_project_will_close(self, _):
         self._clear_all()
-        fc_selection = self.ui.forecastListView.selectionModel()
+        fc_selection = self.ui.forecastTreeView.selectionModel()
         fc_selection.selectionChanged.disconnect(self.on_fc_selection_change)
-        self.ui.forecastListView.setModel(None)
+        self.ui.forecastTreeView.setModel(None)
         self.fc_tree_model = None
 
     def on_project_time_change(self, t):

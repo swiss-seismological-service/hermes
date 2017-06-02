@@ -28,10 +28,10 @@
         </logicTreeBranchingLevel>
 
         <!-- M_max value variation: 3.7, 5.0, 7.0 -->
-        <logicTreeBranchingLevel branchingLevelID="bl3">
-            <logicTreeBranchSet branchSetID="bs31" uncertaintyType="maxMagGRAbsolute">
-                <logicTreeBranch branchID="mmax37">
-                    <uncertaintyModel>3.7</uncertaintyModel>
+        <logicTreeBranchingLevel branchingLevelID="M">
+            <logicTreeBranchSet  branchSetID="bs31" uncertaintyType="maxMagGRAbsolute">
+                <logicTreeBranch branchID="mmax35">
+                    <uncertaintyModel>3.5</uncertaintyModel>
                     <uncertaintyWeight>0.3334</uncertaintyWeight>
                 </logicTreeBranch>
                 <logicTreeBranch branchID="mmax50">

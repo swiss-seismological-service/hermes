@@ -42,7 +42,8 @@ class TabPresenter(QObject):
         if self.scenario:
             self.scenario.scenario_changed.disconnect(self._on_change)
         self.scenario = scenario
-        self.scenario.scenario_changed.connect(self._on_change)
+        if self.scenario:
+            self.scenario.scenario_changed.connect(self._on_change)
         self.refresh()
 
     def refresh(self):
