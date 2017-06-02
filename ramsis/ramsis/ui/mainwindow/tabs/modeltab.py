@@ -124,10 +124,9 @@ class ModelTabPresenter(TabPresenter):
     def _get_selected_model_result(self, fc_result):
         if fc_result is None:
             return None
-
-        model_name = self.ui.modelSelectorComboBox.currentText()
-        model_result = fc_result.model_results[model_name]
-
+        idx = self.ui.modelSelectorComboBox.currentIndex()
+        model_id = self.ui.modelSelectorComboBox.itemData(idx)
+        model_result = fc_result.model_results[model_id]
         return model_result
 
     def _update_models_list(self, fc_result):
@@ -143,8 +142,10 @@ class ModelTabPresenter(TabPresenter):
             return
         self.ui.modelSelectorComboBox.currentIndexChanged.disconnect(
             self.action_model_selection_changed)
+        models = fc_result.scenario.project.settings['forecast_models']
         for i, m in enumerate(fc_result.model_results.values()):
-            self.ui.modelSelectorComboBox.insertItem(i, m.model_id)
+            title = models[m.model_id]['title']
+            self.ui.modelSelectorComboBox.insertItem(i, title, m.model_id)
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
 
