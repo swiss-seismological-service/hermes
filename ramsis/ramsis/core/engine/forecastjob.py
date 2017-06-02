@@ -25,7 +25,7 @@ import logging
 import io
 from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
-    ModelResult, Scenario, Forecast
+    ModelResult, RatePrediction, Scenario, Forecast
 from ramsisdata.calculationstatus import CalculationStatus
 from oqclient import OQClient
 from core.tools.notifications import ClientNotification
@@ -152,6 +152,10 @@ class SeismicityForecast(WorkUnit):
         # it to the model object
         calc_status = create_calculation_status(notification)
         self.model_result.status = calc_status
+        if calc_status.state == CalculationStatus.COMPLETE:
+            rate, b_val, std = self.client.results
+            self.model_result.rate_prediction = RatePrediction(rate, b_val,
+                                                               std)
         self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
@@ -177,18 +181,15 @@ class HazardStage(WorkUnit):
         self.hazard_result = HazardResult()
         self.scenario.forecast_result.hazard_result = self.hazard_result
         # get the source parameters from the model results
-        #model_results = self.scenario.forecast_result.model_results
-        #weights = len(model_results) * [round(1.0/len(model_results), 2)]
-        #weights[-1] = 1.0 - sum(weights[:-1])  # make sure sum is exactly 1.0
-        #params = {}
-        #for i, result in enumerate(model_results):
-        #    pred = result.rate_prediction
-        #    params[result.model_name] = [pred.rate, pred.b_value, weights[i]]
-        # FIXME: take params from previous stage
-        params = {
-            'etas': [4.245624, 1.58, 0.5],
-            'shapiro': [4.320766, 1.58, 0.5],
-        }
+        model_results = self.scenario.forecast_result.model_results
+        valid_results = {id: r for id, r in model_results.items()
+                         if r.rate_prediction is not None}
+        weights = len(valid_results) * [round(1.0/len(valid_results), 2)]
+        weights[-1] = 1.0 - sum(weights[:-1])  # make sure sum is exactly 1.0
+        params = {}
+        for i, result in enumerate(valid_results.values()):
+            pred = result.rate_prediction
+            params[result.model_id] = [pred.rate, pred.b_val, weights[i]]
         # prepare source model logic tree and job config
         files = oqutils.hazard_input_files(params)
         self.client.run_job(files)

@@ -28,7 +28,7 @@ class HazardTabPresenter(TabPresenter):
             haz_curves = None
             calc_id = None
         else:
-            calc_id =  haz_result.calc_id
+            calc_id = haz_result.calc_id
 
         self.ui.hazCalcIdLabel.setText(str(calc_id) if calc_id else 'N/A')
 

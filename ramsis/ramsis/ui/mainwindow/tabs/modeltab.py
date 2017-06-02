@@ -32,11 +32,10 @@ class ModelTabPresenter(TabPresenter):
         Refresh everything
 
         """
-        # FIXME: use new data model
-        #self._update_models_list(self.scenario.forecast)
-        #model_result = self._get_selected_model_result(self.presented_forecast)
-        # self._present_model_result(model_result)
-        pass
+        fc_result = self.scenario.forecast_result
+        self._update_models_list(fc_result)
+        model_result = self._get_selected_model_result(fc_result)
+        self._present_model_result(model_result)
 
     def _present_model_result(self, model_result):
         """
@@ -48,11 +47,13 @@ class ModelTabPresenter(TabPresenter):
 
         """
 
-        self._show_spatial_is(model_result)
-        self._show_is_rate(model_result)
-        self._show_is_score(model_result)
+        self._show_is_results(model_result)
 
-    def _show_is_rate(self, model_result):
+        # TODO
+        # self._show_is_score(model_result)
+        # self._show_spatial_is(model_result)
+
+    def _show_is_results(self, model_result):
         """
         Update the forecast result labels
 
@@ -61,18 +62,17 @@ class ModelTabPresenter(TabPresenter):
 
         """
         if model_result is None:
-            self.ui.fcTimeLabel.setText('-')
             self.ui.predRateLabel.setText('-')
-            self.ui.scoreLabel.setText('-')
+            self.ui.bValLabel.setText('-')
         else:
-            fc_time = model_result.forecast_result.forecast.forecast_time \
-                .ctime()
-            self.ui.fcTimeLabel.setText(fc_time)
-            if not model_result.failed and model_result.rate_prediction:
-                rate = '{:.1f}'.format(model_result.rate_prediction.rate)
-            else:
-                rate = 'No Results'
-            self.ui.predRateLabel.setText(rate)
+            try:
+                self.ui.predRateLabel.setText('{:.3f}'.format(
+                    model_result.rate_prediction.rate))
+                self.ui.bValLabel.setText('{:.3f}'.format(
+                    model_result.rate_prediction.b_val))
+            except AttributeError:
+                self.ui.predRateLabel.setText('No Results')
+                self.ui.bValLabel.setText('No Results')
 
     def _show_is_score(self, model_result):
         """
@@ -124,10 +124,9 @@ class ModelTabPresenter(TabPresenter):
     def _get_selected_model_result(self, fc_result):
         if fc_result is None:
             return None
-
-        model_name = self.ui.modelSelectorComboBox.currentText()
-        model_result = fc_result.model_results[model_name]
-
+        idx = self.ui.modelSelectorComboBox.currentIndex()
+        model_id = self.ui.modelSelectorComboBox.itemData(idx)
+        model_result = fc_result.model_results[model_id]
         return model_result
 
     def _update_models_list(self, fc_result):
@@ -138,18 +137,21 @@ class ModelTabPresenter(TabPresenter):
         :type fc_result: ForecastResult or None
 
         """
+        self.ui.modelSelectorComboBox.clear()
         if fc_result is None:
             return
         self.ui.modelSelectorComboBox.currentIndexChanged.disconnect(
             self.action_model_selection_changed)
-        self.ui.modelSelectorComboBox.clear()
+        models = fc_result.scenario.project.settings['forecast_models']
         for i, m in enumerate(fc_result.model_results.values()):
-            self.ui.modelSelectorComboBox.insertItem(i, m.model_name)
+            title = models[m.model_id]['title']
+            self.ui.modelSelectorComboBox.insertItem(i, title, m.model_id)
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
 
     # Button Actions
 
     def action_model_selection_changed(self, _):
-        model_result = self._get_selected_model_result(self.presented_forecast)
+        fc_result = self.scenario.forecast_result
+        model_result = self._get_selected_model_result(fc_result)
         self._present_model_result(model_result)

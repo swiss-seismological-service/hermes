@@ -7,7 +7,6 @@ from pymap3d import geodetic2ned
 
 from core.tools.notifications import RunningNotification, ErrorNotification, \
     CompleteNotification, OtherNotification
-from ramsisdata.forecast import ModelResult, RatePrediction
 from ramsisdata.schemas import ForecastSchema
 from requests.exceptions import ConnectionError, Timeout
 
@@ -30,6 +29,7 @@ class ModelClient(QObject):
         self.logger = logging.getLogger(__name__)
         self.model_id = model_id
         self.model_config = model_config
+        self.results = None
         self.url = urlparse.urljoin(model_config['url'], '/run')
         self.poll_interval = 5000  # ms
 
@@ -69,6 +69,7 @@ class ModelClient(QObject):
             self.logger.info('No seismic events')
 
         # Request model run
+        self.results = None
         self.logger.info('Starting remote worker for {}'.format(self.model_id))
         notification = ErrorNotification(calc_id=self.model_id)
         try:
@@ -106,9 +107,7 @@ class ModelClient(QObject):
             if data['status'] == 'complete':
                 self.logger.info('Model run completed successfully')
                 rate, b_val, std = data['result']['rate_prediction']
-                model_result = ModelResult(self.model_id)
-                model_result.rate_prediction = RatePrediction(rate, b_val, std)
-                # TODO: assign model_result to forecast
+                self.results = (rate, b_val, std)
                 notification = CompleteNotification(self.model_id, response=r)
             else:
                 notification = ErrorNotification(self.model_id, response=r)
