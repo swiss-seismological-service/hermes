@@ -25,7 +25,7 @@ import logging
 import io
 from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
-    ModelResult, Scenario, Forecast
+    ModelResult, RatePrediction, Scenario, Forecast
 from ramsisdata.calculationstatus import CalculationStatus
 from oqclient import OQClient
 from core.tools.notifications import ClientNotification
@@ -152,11 +152,10 @@ class SeismicityForecast(WorkUnit):
         # it to the model object
         calc_status = create_calculation_status(notification)
         self.model_result.status = calc_status
-        try:
-            self.model_result.rate_prediction = \
-                notification.model_result.rate_prediction
-        except AttributeError:
-            pass
+        if calc_status.state == CalculationStatus.COMPLETE:
+            rate, b_val, std = self.client.results
+            self.model_result.rate_prediction = RatePrediction(rate, b_val,
+                                                               std)
         self.scenario.project.save()
         # set the job status and forward it up the job chain
         job_status = JobStatus(self, finished=calc_status.finished,
