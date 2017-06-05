@@ -184,6 +184,11 @@ class HazardStage(WorkUnit):
         model_results = self.scenario.forecast_result.model_results
         valid_results = {id: r for id, r in model_results.items()
                          if r.rate_prediction is not None}
+        if len(valid_results) == 0:
+            log.error('Cannot run hazard: no valid inputs.')
+            job_status = JobStatus(self, finished=True, info=None)
+            self.status_changed.emit(job_status)
+            return
         weights = len(valid_results) * [round(1.0/len(valid_results), 2)]
         weights[-1] = 1.0 - sum(weights[:-1])  # make sure sum is exactly 1.0
         params = {}

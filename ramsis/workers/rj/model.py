@@ -80,7 +80,7 @@ class Rj(QtCore.QObject):
         b = self.b
         c = self.c
         p = self.p
-
+        events = forecast.input.input_catalog.seismic_events
         t_run = forecast.forecast_time
         forecast_times = [t_run]
         t_bin = forecast.forecast_interval
@@ -122,6 +122,8 @@ class Rj(QtCore.QObject):
 
         # Compute the resulting probabilities of one or more events occurring
         probabilities = 1 - np.exp(-forecast_rates)
+
+        return (forecast_rates[0], b, probabilities[0])
 
         # Finish up
         # model_result = ModelResult()
