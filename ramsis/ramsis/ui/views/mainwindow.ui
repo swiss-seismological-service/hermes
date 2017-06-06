@@ -289,14 +289,37 @@
                 <bool>false</bool>
                </property>
                <layout class="QGridLayout" name="gridLayout_3">
-                <item row="3" column="0">
-                 <widget class="QLabel" name="label">
+                <item row="1" column="2">
+                 <widget class="QRadioButton" name="radioButton">
                   <property name="text">
-                   <string>Planned injection pressure in forecast period</string>
+                   <string>Keep x-tree pressure constant</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
                 <item row="3" column="2">
+                 <widget class="QRadioButton" name="radioButton_2">
+                  <property name="text">
+                   <string>Use absolute pressure</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="fcStageEnable">
+                  <property name="text">
+                   <string>Enable</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QDoubleSpinBox" name="pressureSpinBox"/>
+                </item>
+                <item row="3" column="4">
                  <spacer name="horizontalSpacer_3">
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
@@ -309,23 +332,37 @@
                   </property>
                  </spacer>
                 </item>
-                <item row="1" column="0">
-                 <widget class="QCheckBox" name="checkBox">
+                <item row="0" column="2">
+                 <widget class="QLabel" name="label_2">
                   <property name="text">
-                   <string>Forecast with measured pressure (constant)</string>
+                   <string>Injection Strategy:</string>
                   </property>
                  </widget>
                 </item>
-                <item row="3" column="1">
-                 <widget class="QDoubleSpinBox" name="pressureSpinBox"/>
-                </item>
-                <item row="0" column="0">
-                 <widget class="QCheckBox" name="fcStageEnable">
-                  <property name="text">
-                   <string>Enable</string>
+                <item row="0" column="1">
+                 <spacer name="horizontalSpacer_8">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
                   </property>
-                  <property name="checked">
-                   <bool>true</bool>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QRadioButton" name="radioButton_3">
+                  <property name="text">
+                   <string>Shut-In</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QRadioButton" name="radioButton_4">
+                  <property name="text">
+                   <string>Bleed-Off</string>
                   </property>
                  </widget>
                 </item>
