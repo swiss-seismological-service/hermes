@@ -43,6 +43,7 @@ class ContentPresenter(object):
         self.ui.forecastTreeView.customContextMenuRequested.connect(
             self.on_context_menu_requested
         )
+        self.current_scenario = None
 
         # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter, RiskTabPresenter,
@@ -84,13 +85,12 @@ class ContentPresenter(object):
         for tab_presenter in self.tab_presenters:
             tab_presenter.present_scenario(None)
 
-    def _refresh_scenario_status(self, scenario):
+    def _refresh_scenario_status(self):
         """
         Show the overall status of the currently selected forecast
 
-        :param Forecast fc: currently selected forecast
-
         """
+        scenario = self.current_scenario
         if scenario is None:
             msg = 'No scenario selected'
             color = STATUS_COLOR_OTHER
@@ -165,13 +165,12 @@ class ContentPresenter(object):
         try:
             forecast_set = self.fc_tree_model.forecast_set
             forecast = forecast_set.forecasts[forecast_idx]
-            scenario = forecast.input.scenarios[scenario_idx]
+            self.current_scenario = forecast.input.scenarios[scenario_idx]
         except IndexError:
-            forecast = None
-            scenario = None
+            self.current_scenario = None
         for tab_presenter in self.tab_presenters:
-            tab_presenter.present_scenario(scenario)
-        self._refresh_scenario_status(scenario)
+            tab_presenter.present_scenario(self.current_scenario)
+        self._refresh_scenario_status()
 
     def on_context_menu_requested(self, pos):
         if self.fc_tree_model is None:
@@ -189,4 +188,4 @@ class ContentPresenter(object):
         general_tab = next(t for t in self.tab_presenters
                            if isinstance(t, GeneralTabPresenter))
         general_tab.refresh_status()
-
+        self._refresh_scenario_status()
