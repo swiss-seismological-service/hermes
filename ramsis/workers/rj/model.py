@@ -29,8 +29,6 @@ class Rj(QtCore.QObject):
              law
     :ivar c: Sequence specific empirical parameter for the Omori-Utsu (1961)
              law
-    :ivar m_max: Maximum magnitude
-    :ivar m_c: Magnitude of completeness
 
     """
 
@@ -123,7 +121,7 @@ class Rj(QtCore.QObject):
         # Compute the resulting probabilities of one or more events occurring
         probabilities = 1 - np.exp(-forecast_rates)
 
-        return (forecast_rates[0], b, probabilities[0])
+        return forecast_rates[0], b, probabilities[0]
 
         # Finish up
         # model_result = ModelResult()

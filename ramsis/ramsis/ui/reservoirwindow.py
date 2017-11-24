@@ -9,7 +9,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 import os
 from datetime import datetime
 from pymap3d import geodetic2ned
-from PyQt5 import QtGui, uic
+from PyQt5 import uic
 import numpy as np
 
 ui_path = os.path.dirname(__file__)

@@ -57,8 +57,6 @@ class Etas(Model):
     :ivar k: Empirical parameter K
     :ivar p: Sequence specific empirical param for the Omori-Utsu (1961) law
     :ivar c: Sequence specific empirical param for the Omori-Utsu (1961) law
-    :ivar m_max: Maximum magnitude
-    :ivar m_c: Magnitude of completeness
 
     """
 

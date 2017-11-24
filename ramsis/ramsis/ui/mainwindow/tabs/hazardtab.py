@@ -8,7 +8,6 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 
-from PyQt5.QtCore import QThread
 import numpy as np
 from .tabs import TabPresenter
 

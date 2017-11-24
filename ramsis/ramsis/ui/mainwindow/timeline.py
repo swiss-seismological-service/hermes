@@ -8,14 +8,15 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 import logging
-from datetime import datetime, timedelta
-from PyQt5 import QtCore, QtGui
+from datetime import datetime
+from PyQt5.QtCore import QObject
+from PyQt5.QtWidgets import QStyleFactory
 import pyqtgraph as pg
 
 log = logging.getLogger(__name__)
 
 
-class TimeLinePresenter(QtCore.QObject):
+class TimeLinePresenter(QObject):
     """
     A base class for presenting time lines
 
@@ -35,7 +36,7 @@ class TimeLinePresenter(QtCore.QObject):
         # timeline selector
         self.sel = self.ui.timelineSelectionBox
         self.sel.setStyle(
-            QtGui.QStyleFactory.create('Plastique'))
+            QStyleFactory.create('Plastique'))
         self.sel.insertItems(0, ('Seismicity', 'Injection'))
         self.sel.currentIndexChanged.connect(self.on_timeline_selection)
         self.plotter = SeismicityPlotter(self.time_line)

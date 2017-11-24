@@ -119,7 +119,7 @@ class CsvEventImporter:
             self._dates_are_relative = True
             try:
                 float(date)
-            except exceptions.ValueError:
+            except ValueError:
                 self._dates_are_relative = False
             self.file.seek(0)
 

@@ -6,7 +6,7 @@ Custom QtWidgets for plotting
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as Canvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
 from matplotlib.figure import Figure
 import numpy as np
 from datetime import datetime

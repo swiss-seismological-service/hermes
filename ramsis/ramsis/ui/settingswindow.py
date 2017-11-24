@@ -9,7 +9,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import logging
 import os
 
-from PyQt5 import QtGui, uic
+from PyQt5 import uic
+from PyQt5.QtWidgets import QDialog
 from .modelconfigurationwindow import ModelConfigurationWindow
 from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 import ramsissettings
@@ -25,7 +26,7 @@ Ui_ProjectSettingsWindow = \
     uic.loadUiType(PROJECT_SETTINGS_WINDOW_PATH)[0]
 
 
-class SettingsWindow(QtGui.QDialog):
+class SettingsWindow(QDialog):
 
     def __init__(self):
         super(SettingsWindow, self).__init__()
@@ -109,7 +110,7 @@ class SettingsWindow(QtGui.QDialog):
 class ApplicationSettingsWindow(SettingsWindow):
 
     def __init__(self, settings, **kwargs):
-        QtGui.QDialog.__init__(self, **kwargs)
+        super().__init__(self, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.settings = settings
 
@@ -164,7 +165,7 @@ class ApplicationSettingsWindow(SettingsWindow):
 
     def action_load_defaults(self):
         self.settings.register_default_settings()
-        self.load_settings(self.settings)
+        self.load_settings()
 
     def action_ok(self):
         self.close()
@@ -257,7 +258,7 @@ class ProjectSettingsWindow(SettingsWindow):
 
     def action_load_defaults(self):
         self.settings.register_default_settings()
-        self.load_settings(self.project.settings)
+        self.load_settings()
 
     def action_save(self):
         p = self.project

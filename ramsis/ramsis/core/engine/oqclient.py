@@ -94,8 +94,8 @@ class OQClient(QObject):
             notification = ErrorNotification(self.calc_id, response=r)
             self.calc_id = None
         else:  # other (e.g. not reachable), we keep polling
-            log.warn('Unexpected OQ response: [{}] {}'
-                     .format(r.status_code, r.content).strip('\n'))
+            log.warning('Unexpected OQ response: [{}] {}'
+                        .format(r.status_code, r.content).strip('\n'))
             notification = OtherNotification(self.calc_id, response=r)
             # TODO: define timeout?
             QTimer.singleShot(OQClient.POLL_INTERVAL, self.poll_status)

@@ -94,4 +94,4 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
                 else:
                     return "not implemented"
             else:
-                return QtCore.QString("Event %1").arg(section)
+                return f'Event {section}'

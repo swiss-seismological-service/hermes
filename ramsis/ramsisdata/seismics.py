@@ -101,8 +101,8 @@ class SeismicCatalog(OrmBase):
                 location = (float(fields['lat']),
                             float(fields['lon']),
                             float(fields['depth']))
-                event = SeismicEvent(date, float(fields['mag']), location)
-                events.append(event)
+                se = SeismicEvent(date, float(fields['mag']), location)
+                events.append(se)
         except:
             log.error('Failed to import seismic events. Make sure '
                       'the data contains lat, lon, depth, and mag '

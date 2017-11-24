@@ -9,7 +9,8 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 import json
 import os
 
-from PyQt5 import QtGui, uic
+from PyQt5 import uic
+from PyQt5.QtWidgets import QDialog
 
 ui_path = os.path.dirname(__file__)
 MODEL_CONFIGURATION_WINDOW_PATH = os.path.join(ui_path, 'views',
@@ -17,7 +18,7 @@ MODEL_CONFIGURATION_WINDOW_PATH = os.path.join(ui_path, 'views',
 Ui_ModelConfigurationWindow = uic.loadUiType(MODEL_CONFIGURATION_WINDOW_PATH)[0]
 
 
-class ModelConfigurationWindow(QtGui.QDialog):
+class ModelConfigurationWindow(QDialog):
     def __init__(self, project, model):
         super(ModelConfigurationWindow, self).__init__()
         self.project = project

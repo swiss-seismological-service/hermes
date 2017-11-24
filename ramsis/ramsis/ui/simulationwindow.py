@@ -8,7 +8,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import os
 import logging
-from PyQt4 import QtGui, uic
+from PyQt5 import uic
+from PyQt5.QtWidgets import QDialog
 
 from core.simulator import SimulatorState
 from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
@@ -18,10 +19,10 @@ SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')
 Ui_SimulationWindow = uic.loadUiType(SIM_WINDOW_PATH)[0]
 
 
-class SimulationWindow(QtGui.QDialog):
+class SimulationWindow(QDialog):
 
     def __init__(self, ramsis_core, **kwargs):
-        QtGui.QMainWindow.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
 
         # References

@@ -18,7 +18,7 @@ from ramsisdata.eventhistory import EventHistory
 NUM_TEST_EVENTS = 10
 
 
-class Event():
+class Event:
     """ A dummy event class for testing """
 
     date_time = Column(DateTime)  # required for predicate definitions

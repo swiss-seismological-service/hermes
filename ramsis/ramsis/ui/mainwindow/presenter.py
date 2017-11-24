@@ -103,7 +103,7 @@ class ContentPresenter(object):
             if status == Scenario.PENDING:
                 h = int(dt.total_seconds() / 3600)
                 m = int((dt.total_seconds() % 3600) / 60)
-                if dt.total_seconds > 0:
+                if dt.total_seconds() > 0:
                     pre = 'Scenario scheduled to run in '
                     color = STATUS_COLOR_PENDING
                 else:

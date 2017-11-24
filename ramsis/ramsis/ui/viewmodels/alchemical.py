@@ -14,7 +14,6 @@ with their respective python types.
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QVariant, Qt
-import logging  # noqa
 
 
 class AlchemicalListModel(QAbstractListModel):
@@ -83,9 +82,9 @@ class AlchemicalTableModel(QAbstractTableModel):
             return QVariant(self.fields[col][0])
         return QVariant()
 
-    def setFilter(self, filter):
+    def setFilter(self, flt):
         """Sets or clears the filter, clear the filter by setting to None"""
-        self.filter = filter
+        self.filter = flt
         self.refresh()
 
     def refresh(self):

@@ -77,7 +77,7 @@ class Run(Resource):
             return {'status': 'error'}, 202  # Accepted
 
     def _eval_results(self):
-        all = []
+        all_results = []
         for catalog in self.seismic_catalog_files:
             with open(catalog) as f:
                 reader = csv.reader(f, delimiter=';')
@@ -86,8 +86,8 @@ class Run(Resource):
                 gr = _estimate_gr_params(mags)
                 app.logger.debug('Stats (a, b, std) for {}: {}'
                                  .format(catalog, gr))
-                all.append(gr)
-        gr = np.mean(all, 0).tolist()
+                all_results.append(gr)
+        gr = np.mean(all_results, 0).tolist()
         app.logger.debug('Mean {}:'.format(gr))
         return gr
 

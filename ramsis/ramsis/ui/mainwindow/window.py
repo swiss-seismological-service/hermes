@@ -13,9 +13,9 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 import os
-from PyQt5 import QtGui, uic
-from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel
-from PyQt5.QtWidgets import QMessageBox, QProgressBar
+from PyQt5 import uic
+from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
+    QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView
 import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
@@ -29,7 +29,7 @@ from ramsisdata.forecast import Scenario
 
 
 ui_path = os.path.dirname(__file__)
-MAIN_WINDOW_PATH = os.path.join('ramsis', 'ui', 'views', 'mainwindow.ui')
+MAIN_WINDOW_PATH = os.path.join(ui_path, '..', 'views', 'mainwindow.ui')
 Ui_MainWindow = uic.loadUiType(MAIN_WINDOW_PATH)[0]
 
 
@@ -73,10 +73,11 @@ class StatusBar(QStatusBar):
             self.current_activity_id = None
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QMainWindow):
 
-    def __init__(self, ramsis, **kwargs):
-        QtGui.QDialog.__init__(self, **kwargs)
+    def __init__(self, ramsis, *args, **kwargs):
+        print(MainWindow.__mro__)
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
         # Other windows which we lazy-load
@@ -156,9 +157,8 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_open_project(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog. \
-            getOpenFileName(None, 'Open Project', home,
-                            'Ramsis Project Files (*.db)')
+        path = QFileDialog.getOpenFileName(None, 'Open Project', home,
+                                           'Ramsis Project Files (*.db)')[0]
         if path == '':
             return
         self._open_project_at_path(path)
@@ -190,7 +190,7 @@ class MainWindow(QtGui.QMainWindow):
         for path in files:
             path = str(path)
             file_name = os.path.basename(path)
-            file_action = QtGui.QAction(file_name, self)
+            file_action = QAction(file_name, self)
             file_action.setData(path)
             file_action.triggered.connect(self.action_open_recent)
             self.ui.menuOpen_Recent.addAction(file_action)
@@ -202,7 +202,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_new_project(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog. \
+        path = QFileDialog. \
             getSaveFileName(None, 'New Project', home,
                             'Ramsis Project Files (*.db)')
         if not path.endswith('.db'):
@@ -217,9 +217,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_import_seismic_data(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.getOpenFileName(None,
-                                                 'Open seismic data file',
-                                                 home)
+        path = QFileDialog.getOpenFileName(None,
+                                           'Open seismic data file',
+                                           home)
         if path == '':
             return
         history = self.ramsis_core.project.seismic_catalog
@@ -233,9 +233,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_import_hydraulic_data(self):
         home = os.path.expanduser("~")
-        path = QtGui.QFileDialog.getOpenFileName(None,
-                                                 'Open hydraulic data file',
-                                                 home)
+        path = QFileDialog.getOpenFileName(None,
+                                           'Open hydraulic data file',
+                                           home)
         if path == '':
             return
         history = self.ramsis_core.project.injection_history
@@ -303,7 +303,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def action_view_seismic_data(self):
         if self.table_view is None:
-            self.table_view = QtGui.QTableView()
+            self.table_view = QTableView()
             model = SeismicDataModel(self.ramsis_core.project.seismic_catalog)
             self.table_view.setModel(model)
             self.table_view.show()

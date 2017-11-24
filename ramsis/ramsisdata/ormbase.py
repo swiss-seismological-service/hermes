@@ -16,7 +16,7 @@ OrmBase = declarative_base()
 
 
 class JSONEncodedDict(TypeDecorator):
-    "Represents an immutable structure as a json-encoded string."
+    """ Represents an immutable structure as a json-encoded string."""
 
     impl = VARCHAR
 

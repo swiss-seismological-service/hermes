@@ -188,3 +188,6 @@ class InjectionSample(OrmBase):
             return result
         else:
             return not result
+
+    def __hash__(self):
+        return id(self)

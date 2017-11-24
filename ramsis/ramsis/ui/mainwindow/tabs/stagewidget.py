@@ -8,7 +8,9 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import os
 
-from PyQt5 import QtGui, uic
+from PyQt5 import uic
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget, QLabel
 from ramsisdata.calculationstatus import CalculationStatus
 from ui.styles import STATUS_COLOR_ERROR, STATUS_COLOR_DISABLED
 
@@ -18,7 +20,7 @@ STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
 Ui_StageWidget = uic.loadUiType(STAGE_WIDGET_PATH)[0]
 
 
-class StageWidget(QtGui.QWidget):
+class StageWidget(QWidget):
 
     def __init__(self, title, **kwargs):
         super(StageWidget, self).__init__(**kwargs)
@@ -31,13 +33,13 @@ class StageWidget(QtGui.QWidget):
 
     def disable(self):
         self.ui.imageLabel.setPixmap(
-            QtGui.QPixmap(':stage_images/images/stage_disabled.png')
+            QPixmap(':stage_images/images/stage_disabled.png')
         )
         self.ui.statusLabel.setText('Disabled')
 
     def plan(self):
         self.ui.imageLabel.setPixmap(
-            QtGui.QPixmap(':stage_images/images/stage_planned.png')
+            QPixmap(':stage_images/images/stage_planned.png')
         )
         self.ui.statusLabel.setText('Pending')
 
@@ -47,9 +49,9 @@ class StageWidget(QtGui.QWidget):
             'Disabled': STATUS_COLOR_DISABLED,
         }
         for i, stage in enumerate(substages):
-            stage_label = QtGui.QLabel(stage[0])
+            stage_label = QLabel(stage[0])
             stage_label.setMinimumHeight(20)
-            status_label = QtGui.QLabel(stage[1])
+            status_label = QLabel(stage[1])
             status_label.setMinimumHeight(20)
             color = colors.get(stage[1], 'gray')
             status_label.setStyleSheet('color: {};'.format(color))
@@ -87,6 +89,6 @@ class StageWidget(QtGui.QWidget):
             image = 'stage_other.png'
             text = '???'
         self.ui.imageLabel.setPixmap(
-            QtGui.QPixmap(':/stage_images/images/{}'.format(image)))
+            QPixmap(':/stage_images/images/{}'.format(image)))
         self.ui.statusLabel.setText(text)
 

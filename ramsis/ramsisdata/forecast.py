@@ -11,7 +11,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 from math import log, factorial
 
 from sqlalchemy import Column, Integer, Float, DateTime, String, \
-    ForeignKey, PickleType
+    ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.mutable import MutableDict
@@ -279,7 +279,7 @@ class Scenario(OrmBase):
         fr = self.forecast_result
         if fr is None:
             return self.PENDING
-        all_results = fr.model_results.values() + \
+        all_results = list(fr.model_results.values()) + \
                       [fr.hazard_result, fr.risk_result]
         if all(r.state == CS.PENDING for r in all_results if r):
             return self.PENDING
@@ -306,7 +306,7 @@ class Scenario(OrmBase):
         fr = self.forecast_result
         if fr is None:
             return False
-        all_results = fr.model_results.values() + \
+        all_results = list(fr.model_results.values()) + \
                       [fr.hazard_result, fr.risk_result]
         return any(r.state == CS.ERROR for r in all_results if r)
 

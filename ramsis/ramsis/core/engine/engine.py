@@ -1,14 +1,14 @@
 import logging
 
-from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal, QObject
 
 from core.engine.forecastjob import ForecastJob
 
 
-class Engine(QtCore.QObject):
+class Engine(QObject):
     # Signals
-    forecast_complete = QtCore.pyqtSignal()
-    job_status_update = QtCore.pyqtSignal(object)
+    forecast_complete = pyqtSignal()
+    job_status_update = pyqtSignal(object)
 
     def __init__(self, core):
         super(Engine, self).__init__()

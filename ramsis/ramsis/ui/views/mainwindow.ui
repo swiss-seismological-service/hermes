@@ -53,6 +53,9 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <attribute name="headerDefaultSectionSize">
           <number>180</number>
          </attribute>
@@ -90,20 +93,8 @@
           </property>
           <item>
            <widget class="QPushButton" name="planNextButton">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>22</height>
-             </size>
-            </property>
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
-            </property>
             <property name="text">
              <string>Plan Next</string>
-            </property>
-            <property name="flat">
-             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -121,46 +112,16 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="removeScenarioButton">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>40</width>
-              <height>22</height>
-             </size>
-            </property>
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
-            </property>
+           <widget class="QPushButton" name="addScenarioButton">
             <property name="text">
-             <string>-</string>
+             <string>+</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="addScenarioButton">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>40</width>
-              <height>22</height>
-             </size>
-            </property>
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
-            </property>
+           <widget class="QPushButton" name="removeScenarioButton">
             <property name="text">
-             <string>+</string>
+             <string>––</string>
             </property>
            </widget>
           </item>
@@ -749,7 +710,7 @@
             </layout>
            </item>
            <item>
-            <widget class="QgsMapCanvas" name="mapWidget" native="true">
+            <widget class="QWidget" name="mapWidget" native="true">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                <horstretch>0</horstretch>
@@ -861,11 +822,7 @@ color:white;
          </property>
          <layout class="QGridLayout" name="gridLayout_10">
           <item row="0" column="0">
-           <widget class="QComboBox" name="timelineSelectionBox">
-            <property name="frame">
-             <bool>true</bool>
-            </property>
-           </widget>
+           <widget class="QComboBox" name="timelineSelectionBox"/>
           </item>
           <item row="2" column="0">
            <spacer name="verticalSpacer_2">
@@ -904,7 +861,7 @@ color:white;
      <x>0</x>
      <y>0</y>
      <width>1300</width>
-     <height>19</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -1127,12 +1084,6 @@ color:white;
    <class>VoxelViewWidget</class>
    <extends>QWidget</extends>
    <header>ui.views.widgets</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QgsMapCanvas</class>
-   <extends>QWidget</extends>
-   <header>qgis.gui</header>
    <container>1</container>
   </customwidget>
   <customwidget>

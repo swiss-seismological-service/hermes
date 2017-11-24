@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, \
     PickleType
-from sqlalchemy.orm import relationship, reconstructor, backref
+from sqlalchemy.orm import relationship, reconstructor
 from .ormbase import OrmBase
 
 from .signal import Signal

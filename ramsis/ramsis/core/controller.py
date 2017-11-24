@@ -176,7 +176,7 @@ class Controller(QtCore.QObject):
         if time_range:
             self.start_simulation(time_range, speed)
         else:
-            self._logger.notice('RAMSIS only works in sim mode at the moment')
+            self._logger.info('RAMSIS only works in sim mode at the moment')
 
     def pause(self):
         if self.simulator.state == SimulatorState.RUNNING:

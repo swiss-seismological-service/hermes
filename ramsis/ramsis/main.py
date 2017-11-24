@@ -9,10 +9,8 @@ The Main file sets up the user interface and bootstraps the application
 import argparse
 import logging
 
-import sip
 
-
-from .ramsis import Ramsis  # NOQA
+from ramsis import Ramsis
 
 
 def main():

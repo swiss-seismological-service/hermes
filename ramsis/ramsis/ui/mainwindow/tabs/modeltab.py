@@ -122,7 +122,7 @@ class ModelTabPresenter(TabPresenter):
     # Helpers
 
     def _get_selected_model_result(self, fc_result):
-        if fc_result is None:
+        if fc_result is None or len(fc_result.model_results) == 0:
             return None
         idx = self.ui.modelSelectorComboBox.currentIndex()
         model_id = self.ui.modelSelectorComboBox.itemData(idx)

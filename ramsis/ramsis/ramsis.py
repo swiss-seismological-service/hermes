@@ -12,22 +12,23 @@ import os
 import logging
 import signal
 
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication, QStyleFactory
 
 from qgis.core import QgsApplication
 
-from .ui.mainwindow.window import MainWindow
-from .core.controller import Controller
-from .ramsissettings import AppSettings
+from ui.mainwindow.window import MainWindow
+from core.controller import Controller
+from ramsissettings import AppSettings
 
 
 VERSION = '0.1 "Bug Infested Alpha"'
 
 # Initialize QGIS
-prefix_path = os.environ.get('QGIS_PREFIX_PATH')
-if not prefix_path:
-    logging.getLogger(__name__).warn('QGIS prefix path is not set')
-QgsApplication.setPrefixPath(prefix_path, True)
+# prefix_path = os.environ.get('QGIS_PREFIX_PATH')
+# if not prefix_path:
+#     logging.getLogger(__name__).warning('QGIS prefix path is not set')
+# QgsApplication.setPrefixPath(prefix_path, True)
 
 
 class Ramsis(QtCore.QObject):
@@ -48,10 +49,9 @@ class Ramsis(QtCore.QObject):
         wires the GUI.
 
         :param args: command line arguments that were provided by the user
-        :type args: dict
 
         """
-        super(Ramsis, self).__init__()
+        super().__init__()
         self.thread().setObjectName('Main')
         # Setup the logger
         self.logger = logging.getLogger(__name__)
