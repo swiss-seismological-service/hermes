@@ -182,6 +182,6 @@ class AppSettings:
 
         """
         self._logger.info('Loading default settings')
-        for key, value in known_settings.iteritems():
+        for key, value in known_settings.items():
             self._settings.setValue(key, value)
         self._settings.sync()
