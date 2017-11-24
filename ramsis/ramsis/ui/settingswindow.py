@@ -9,7 +9,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 import logging
 import os
 
-from PyQt4 import QtGui, uic
+from PyQt5 import QtGui, uic
 from .modelconfigurationwindow import ModelConfigurationWindow
 from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 import ramsissettings

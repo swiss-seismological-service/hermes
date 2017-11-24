@@ -7,7 +7,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 
-from PyQt4.QtCore import QAbstractListModel
+from PyQt5.QtCore import QAbstractListModel
 import logging  # noqa
 
 

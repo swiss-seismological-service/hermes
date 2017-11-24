@@ -2,7 +2,7 @@ import requests
 import logging
 import urllib.parse
 
-from PyQt4.QtCore import QObject, pyqtSignal, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from pymap3d import geodetic2ned
 
 from core.tools.notifications import RunningNotification, ErrorNotification, \

@@ -34,10 +34,9 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import csv
 import logging
-import exceptions
 from time import strptime, mktime
 from datetime import datetime, timedelta
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from obspy.clients import fdsn
 
 import core.tools.hydws

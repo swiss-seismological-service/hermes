@@ -11,7 +11,7 @@ import numpy as np
 from math import log, log10, sqrt, exp
 from datetime import timedelta
 import bisect
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 GrParams = collections.namedtuple('GrParams', 'a b std_b')
 

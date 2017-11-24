@@ -8,7 +8,7 @@ Copyright (C) 2016, SED (ETH Zurich)
 """
 
 import logging
-from PyQt4.QtCore import QObject
+from PyQt5.QtCore import QObject
 
 
 class TabPresenter(QObject):

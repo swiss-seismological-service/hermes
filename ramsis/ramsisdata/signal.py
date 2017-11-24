@@ -7,7 +7,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 """
 
 try:
-    from PyQt4.QtCore import QObject, pyqtSignal
+    from PyQt5.QtCore import QObject, pyqtSignal
 except ImportError:
 
     class Signal:

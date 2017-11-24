@@ -12,7 +12,7 @@ import unittest
 from time import sleep
 from datetime import datetime
 
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from mock import MagicMock
 
 from core.importers.runners import HYDWSRunner

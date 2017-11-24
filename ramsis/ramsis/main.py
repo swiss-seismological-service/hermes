@@ -11,16 +11,6 @@ import logging
 
 import sip
 
-# We use API v2 for Qt objects, since they make working with variants easier
-# and are more future proof (v2 is default in python 3).
-# This needs to be done before we import PyQt4
-sip.setapi('QDate', 2)
-sip.setapi('QDateTime', 2)
-sip.setapi('QString', 2)
-sip.setapi('QTextStream', 2)
-sip.setapi('QTime', 2)
-sip.setapi('QUrl', 2)
-sip.setapi('QVariant', 2)
 
 from .ramsis import Ramsis  # NOQA
 

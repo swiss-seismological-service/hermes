@@ -8,7 +8,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 from .tabs import TabPresenter
 
 

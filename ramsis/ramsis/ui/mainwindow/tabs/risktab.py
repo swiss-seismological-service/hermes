@@ -9,7 +9,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 """
 
 import os
-from PyQt4 import QtGui
+from PyQt5 import QtGui
 from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
 from qgis.gui import QgsMapCanvasLayer
 from .tabs import TabPresenter

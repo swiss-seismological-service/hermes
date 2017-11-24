@@ -8,7 +8,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import os
 
-from PyQt4 import QtGui, uic
+from PyQt5 import QtGui, uic
 from ramsisdata.calculationstatus import CalculationStatus
 from ui.styles import STATUS_COLOR_ERROR, STATUS_COLOR_DISABLED
 

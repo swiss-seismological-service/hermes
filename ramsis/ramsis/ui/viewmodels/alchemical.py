@@ -12,8 +12,8 @@ with their respective python types.
 """
 
 
-from PyQt4 import QtGui
-from PyQt4.QtCore import QAbstractListModel, QAbstractTableModel, QVariant, Qt
+from PyQt5 import QtGui
+from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QVariant, Qt
 import logging  # noqa
 
 

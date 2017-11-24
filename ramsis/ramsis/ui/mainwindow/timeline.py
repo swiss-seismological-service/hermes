@@ -9,7 +9,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 """
 import logging
 from datetime import datetime, timedelta
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 import pyqtgraph as pg
 
 log = logging.getLogger(__name__)

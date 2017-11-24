@@ -11,7 +11,7 @@ Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
 
 """
 
-from PyQt4.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
 class JobStatus:

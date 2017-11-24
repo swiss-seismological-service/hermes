@@ -16,8 +16,8 @@ Copyright (C) 2016, SED (ETH Zurich)
 
 """
 
-from PyQt4.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
-from PyQt4.QtGui import QBrush, QFont
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
+from PyQt5.QtGui import QBrush, QFont
 from ui.ramsisuihelpers import utc_to_local
 
 

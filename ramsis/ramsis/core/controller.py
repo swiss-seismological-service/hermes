@@ -9,7 +9,7 @@ central coordinator for all core components.
 
 import logging
 import os
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
 

@@ -11,7 +11,7 @@ from collections import namedtuple
 from datetime import datetime
 
 from mock import patch, MagicMock
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 from ramsisdata.project import Project
 

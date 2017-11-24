@@ -13,7 +13,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 from datetime import datetime
 import collections
 

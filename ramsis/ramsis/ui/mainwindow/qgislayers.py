@@ -8,7 +8,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from PyQt4.QtCore import QVariant, Qt
+from PyQt5.QtCore import QVariant, Qt
 from qgis.core import QgsVectorLayer, QgsField, QgsFeature, QgsGeometry, \
     QgsPoint
 

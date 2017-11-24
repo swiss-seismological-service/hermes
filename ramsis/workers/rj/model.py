@@ -9,7 +9,7 @@ in California", Science 243, 1173-1176
 
 import logging
 
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 import numpy as np
 
 

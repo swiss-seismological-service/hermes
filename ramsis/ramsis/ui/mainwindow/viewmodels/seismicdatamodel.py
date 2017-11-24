@@ -6,7 +6,7 @@ Serves up seismic catalog data for Qt
 
 """
 
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 
 class SeismicDataModel(QtCore.QAbstractTableModel):

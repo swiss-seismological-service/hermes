@@ -6,7 +6,7 @@ Simulates incoming seismic events and triggers updates on the forecast
 
 """
 
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from datetime import timedelta
 import logging
 

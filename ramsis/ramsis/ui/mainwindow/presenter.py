@@ -19,8 +19,8 @@ from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel, \
     ForecastNode
 from ui.styles import STATUS_COLOR_OTHER, STATUS_COLOR_ERROR, \
     STATUS_COLOR_PENDING, STATUS_COLOR_RUNNING, STATUS_COLOR_COMPLETE
-from PyQt4.QtGui import QMenu, QAction
-from PyQt4.QtCore import Qt
+from PyQt5.QtWidgets import QMenu, QAction
+from PyQt5.QtCore import Qt
 
 
 class ContentPresenter(object):

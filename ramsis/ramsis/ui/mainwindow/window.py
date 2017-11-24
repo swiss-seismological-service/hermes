@@ -13,9 +13,9 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 import os
-from PyQt4 import QtGui, uic
-from PyQt4.QtGui import QSizePolicy, QWidget, QStatusBar, QLabel, QProgressBar
-from PyQt4.QtGui import QMessageBox
+from PyQt5 import QtGui, uic
+from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel
+from PyQt5.QtWidgets import QMessageBox, QProgressBar
 import ui.ramsisuihelpers as helpers
 from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow

@@ -13,7 +13,7 @@ import logging
 from urllib.parse import urljoin
 import json
 import requests
-from PyQt4.QtCore import QObject, pyqtSignal, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from core.tools.notifications import RunningNotification, ErrorNotification, \
     CompleteNotification, OtherNotification
 

@@ -32,7 +32,7 @@ from core.tools.notifications import ClientNotification
 from . import oqutils
 from .modelclient import ModelClient
 
-from PyQt4.QtGui import QApplication
+from PyQt5.QtWidgets import QApplication
 
 log = logging.getLogger(__name__)
 

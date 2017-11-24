@@ -7,8 +7,8 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from dateutil.tz import tzlocal, tzutc
-from PyQt4 import QtGui
-from PyQt4.QtCore import QDateTime
+from PyQt5 import QtGui
+from PyQt5.QtCore import QDateTime
 
 
 class DateDialog(QtGui.QDialog):

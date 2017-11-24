@@ -1,6 +1,6 @@
 import logging
 
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 from core.engine.forecastjob import ForecastJob
 

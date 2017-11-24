@@ -9,14 +9,14 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 import os
 from datetime import datetime
 from pymap3d import geodetic2ned
-from PyQt4 import QtGui, uic
+from PyQt5 import QtGui, uic
 import numpy as np
 
 ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'reservoirwindow.ui')
 Ui_ReservoirWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
 
-from PyQt4.QtGui import QWidget
+from PyQt5.QtWidgets import QWidget
 
 
 class ReservoirWindow(QWidget):

@@ -8,7 +8,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 
-from PyQt4.QtCore import QObject
+from PyQt5.QtCore import QObject
 from .tabs import TabPresenter
 from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget

@@ -8,8 +8,9 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import os
 
-from PyQt4 import uic
-from PyQt4.QtGui import QPixmap, QWidget
+from PyQt5 import uic
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget
 
 ui_path = os.path.dirname(__file__)
 TL_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',

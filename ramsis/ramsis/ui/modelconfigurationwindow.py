@@ -9,7 +9,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 import json
 import os
 
-from PyQt4 import QtGui, uic
+from PyQt5 import QtGui, uic
 
 ui_path = os.path.dirname(__file__)
 MODEL_CONFIGURATION_WINDOW_PATH = os.path.join(ui_path, 'views',
