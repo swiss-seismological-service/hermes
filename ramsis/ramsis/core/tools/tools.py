@@ -11,7 +11,7 @@ import sys
 import functools
 import cProfile
 import pstats
-import StringIO
+import io
 
 
 ramsis_path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -55,7 +55,7 @@ class Profiler:
 
     def stop(self):
         self.profile.disable()
-        s = StringIO.StringIO()
+        s = io.StringIO()
         sort_by = 'cumulative'
         ps = pstats.Stats(self.profile, stream=s).sort_stats(sort_by)
 
@@ -63,7 +63,7 @@ class Profiler:
             ps.dump_stats(self.file_name)
         else:
             ps.print_stats()
-            print s.getvalue()
+            print(s.getvalue())
 
 
 def profile_this(fn):

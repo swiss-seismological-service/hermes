@@ -8,7 +8,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 from sqlalchemy import Column, Integer, Float
 from sqlalchemy.orm import relationship
-from ormbase import OrmBase
+from .ormbase import OrmBase
 
 
 class SkillTest(OrmBase):

@@ -12,7 +12,7 @@ from datetime import timedelta, datetime
 from mock import MagicMock
 
 from ramsisdata.hydraulics import InjectionSample, InjectionHistory
-from testeventhistory import MockStore
+from .testeventhistory import MockStore
 
 
 class BasicOperation(unittest.TestCase):

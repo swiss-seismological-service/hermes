@@ -9,7 +9,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 from datetime import timedelta
-from tools.scheduler import Task, TaskScheduler, PeriodicTask
+from .tools.scheduler import Task, TaskScheduler, PeriodicTask
 
 
 class TaskManager:

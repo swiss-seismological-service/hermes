@@ -11,7 +11,7 @@ with their respective python types.
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function
+
 from PyQt4 import QtGui
 from PyQt4.QtCore import QAbstractListModel, QAbstractTableModel, QVariant, Qt
 import logging  # noqa
@@ -151,7 +151,7 @@ class AlchemicalTableModel(QAbstractTableModel):
         row = self.results[index.row()]
         name = self.fields[index.column()][2]
 
-        return unicode(getattr(row, name))
+        return str(getattr(row, name))
 
     def setData(self, index, value, role=None):
         row = self.results[index.row()]
@@ -161,7 +161,7 @@ class AlchemicalTableModel(QAbstractTableModel):
             setattr(row, name, value.toString())
             self.session.commit()
         except Exception as ex:
-            QtGui.QMessageBox.critical(None, 'SQL Error', unicode(ex))
+            QtGui.QMessageBox.critical(None, 'SQL Error', str(ex))
             return False
         else:
             self.dataChanged.emit(index, index)

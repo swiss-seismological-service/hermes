@@ -21,8 +21,8 @@ from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
 from ui.simulationwindow import SimulationWindow
 from ui.reservoirwindow import ReservoirWindow
 from ui.ramsisuihelpers import utc_to_local
-from presenter import ContentPresenter
-from viewmodels.seismicdatamodel import SeismicDataModel
+from .presenter import ContentPresenter
+from .viewmodels.seismicdatamodel import SeismicDataModel
 from core.simulator import SimulatorState
 from core.datasources import CsvEventImporter
 from ramsisdata.forecast import Scenario

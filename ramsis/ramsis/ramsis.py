@@ -16,9 +16,9 @@ from PyQt4 import QtGui, QtCore
 
 from qgis.core import QgsApplication
 
-from ui.mainwindow.window import MainWindow
-from core.controller import Controller
-from ramsissettings import AppSettings
+from .ui.mainwindow.window import MainWindow
+from .core.controller import Controller
+from .ramsissettings import AppSettings
 
 
 VERSION = '0.1 "Bug Infested Alpha"'

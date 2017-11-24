@@ -27,10 +27,10 @@ from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
 from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
     ModelResult, RatePrediction, Scenario, Forecast
 from ramsisdata.calculationstatus import CalculationStatus
-from oqclient import OQClient
+from .oqclient import OQClient
 from core.tools.notifications import ClientNotification
-import oqutils
-from modelclient import ModelClient
+from . import oqutils
+from .modelclient import ModelClient
 
 from PyQt4.QtGui import QApplication
 

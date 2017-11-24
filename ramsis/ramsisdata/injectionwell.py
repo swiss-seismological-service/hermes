@@ -9,7 +9,7 @@ Injection well information
 
 from sqlalchemy import Column, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from ormbase import OrmBase
+from .ormbase import OrmBase
 
 
 class InjectionWell(OrmBase):

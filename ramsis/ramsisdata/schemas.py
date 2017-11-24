@@ -1,12 +1,12 @@
 from marshmallow import Schema, fields, post_load
 
-from forecast import ForecastSet, Forecast, ForecastInput, Scenario,\
+from .forecast import ForecastSet, Forecast, ForecastInput, Scenario,\
     ForecastResult, ModelResult, RatePrediction
-from seismics import SeismicCatalog, SeismicEvent
-from hydraulics import InjectionPlan, InjectionHistory, InjectionSample
-from skilltest import SkillTest
-from project import Project
-from injectionwell import InjectionWell, WellSection
+from .seismics import SeismicCatalog, SeismicEvent
+from .hydraulics import InjectionPlan, InjectionHistory, InjectionSample
+from .skilltest import SkillTest
+from .project import Project
+from .injectionwell import InjectionWell, WellSection
 
 
 class BaseSchema(Schema):

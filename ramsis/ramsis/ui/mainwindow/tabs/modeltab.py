@@ -9,7 +9,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 """
 
 import numpy as np
-from tabs import TabPresenter
+from .tabs import TabPresenter
 
 
 class ModelTabPresenter(TabPresenter):

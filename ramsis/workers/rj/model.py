@@ -94,7 +94,7 @@ class Rj(QtCore.QObject):
         # Compute rate for each forecast time interval
         # TODO: not sure if we have to compute m_bins individually
         forecast_rates = np.zeros(num_t)
-        for t, i in zip(forecast_times, range(0, num_t)):
+        for t, i in zip(forecast_times, list(range(0, num_t))):
             # Convert event times to relative hours
             t_all = np.array([(t - e.date_time).total_seconds() / 3600.0
                              for e in events])

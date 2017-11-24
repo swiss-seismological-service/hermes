@@ -10,7 +10,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 import logging
-from urlparse import urljoin
+from urllib.parse import urljoin
 import json
 import requests
 from PyQt4.QtCore import QObject, pyqtSignal, QTimer

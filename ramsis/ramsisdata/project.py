@@ -11,15 +11,15 @@ from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, \
     PickleType
 from sqlalchemy.orm import relationship, reconstructor, backref
-from ormbase import OrmBase
+from .ormbase import OrmBase
 
-from signal import Signal
-from settings import ProjectSettings
-from seismics import SeismicCatalog
-from hydraulics import InjectionHistory
-from forecast import ForecastSet
-from injectionwell import InjectionWell
-from eqstats import SeismicRateHistory
+from .signal import Signal
+from .settings import ProjectSettings
+from .seismics import SeismicCatalog
+from .hydraulics import InjectionHistory
+from .forecast import ForecastSet
+from .injectionwell import InjectionWell
+from .eqstats import SeismicRateHistory
 
 
 class Project(OrmBase):

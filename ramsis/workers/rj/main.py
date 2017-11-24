@@ -2,7 +2,7 @@ import logging
 from flask import Flask, got_request_exception
 from flask_restful import Api
 
-from resources import Run
+from .resources import Run
 
 
 def log_exception(sender, exception, **extra):

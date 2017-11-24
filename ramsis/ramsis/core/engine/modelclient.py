@@ -1,6 +1,6 @@
 import requests
 import logging
-import urlparse
+import urllib.parse
 
 from PyQt4.QtCore import QObject, pyqtSignal, QTimer
 from pymap3d import geodetic2ned
@@ -30,7 +30,7 @@ class ModelClient(QObject):
         self.model_id = model_id
         self.model_config = model_config
         self.results = None
-        self.url = urlparse.urljoin(model_config['url'], '/run')
+        self.url = urllib.parse.urljoin(model_config['url'], '/run')
         self.poll_interval = 5000  # ms
 
     def run(self, scenario, run_info):

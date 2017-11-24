@@ -11,7 +11,7 @@ import os
 import pymatlab
 import numpy as np
 
-from common import Model, ModelOutput, ModelResult
+from .common import Model, ModelOutput, ModelResult
 
 
 class Shapiro(Model):

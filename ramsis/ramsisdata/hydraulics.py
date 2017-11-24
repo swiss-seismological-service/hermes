@@ -9,8 +9,8 @@ import traceback
 from datetime import datetime
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, reconstructor
-from ormbase import OrmBase
-from signal import Signal
+from .ormbase import OrmBase
+from .signal import Signal
 
 log = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ from flask import current_app as app
 from flask_restful import Resource
 
 from ramsisdata.schemas import ForecastSchema, ModelResultSchema
-from model import Rj
+from .model import Rj
 
 result = None
 

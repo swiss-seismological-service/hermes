@@ -10,8 +10,8 @@ import logging
 import os
 
 from PyQt4 import QtGui, uic
-from modelconfigurationwindow import ModelConfigurationWindow
-from ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
+from .modelconfigurationwindow import ModelConfigurationWindow
+from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 import ramsissettings
 
 ui_path = os.path.dirname(__file__)
@@ -274,7 +274,7 @@ class ProjectSettingsWindow(SettingsWindow):
             p.reference_point = {'lat': float(self.ui.refLatEdit.text()),
                                  'lon': float(self.ui.refLonEdit.text()),
                                  'h': float(self.ui.refHEdit.text())}
-        except TypeError, e:
+        except TypeError as e:
             self.logger.error('Invalid reference point: {}'.format(e))
         p.settings.commit()
         p.save()

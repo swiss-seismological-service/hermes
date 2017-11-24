@@ -12,7 +12,7 @@ import sys
 import shutil
 import json
 from zipfile import ZipFile
-from StringIO import StringIO
+from io import StringIO
 from lxml import etree
 
 

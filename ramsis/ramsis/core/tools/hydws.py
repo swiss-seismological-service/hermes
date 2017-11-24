@@ -1,5 +1,5 @@
 import json
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 
 class Client:
@@ -18,7 +18,7 @@ class Client:
         if args:
             url += '?' + '&'.join(args)
 
-        result = urllib2.urlopen(url)
+        result = urllib.request.urlopen(url)
         code = result.getcode()
         if code == 204:
             raise HYDWSException('No data available for request.')

@@ -40,7 +40,7 @@ from datetime import timedelta
 
 import numpy as np
 
-from common import Model, ModelOutput, ModelResult
+from .common import Model, ModelOutput, ModelResult
 
 
 class Etas(Model):
@@ -105,7 +105,7 @@ class Etas(Model):
 
         # Compute rate for each forecast time interval
         forecast_rates = np.zeros(num_t)
-        for t, i in zip(forecast_times, range(0, num_t)):
+        for t, i in zip(forecast_times, list(range(0, num_t))):
             # Convert event times to relative hours for both seismic events
             # and flow
             t_rel = np.array([(t - e.date_time).total_seconds() / 3600.0

@@ -11,7 +11,7 @@ import logging
 from PyQt4 import QtGui, uic
 
 from core.simulator import SimulatorState
-from ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
+from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 
 ui_path = os.path.dirname(__file__)
 SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')

@@ -12,9 +12,9 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 """
 from datetime import datetime
 from ramsisdata.forecast import Forecast, Scenario
-from tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
+from .tabs import ModelTabPresenter, HazardTabPresenter, RiskTabPresenter, \
     GeneralTabPresenter, SettingsTabPresenter
-from timeline import TimeLinePresenter
+from .timeline import TimeLinePresenter
 from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel, \
     ForecastNode
 from ui.styles import STATUS_COLOR_OTHER, STATUS_COLOR_ERROR, \

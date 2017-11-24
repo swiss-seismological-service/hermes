@@ -15,10 +15,10 @@ from sqlalchemy import Column, Integer, Float, DateTime, String, \
 from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.mutable import MutableDict
-from ormbase import OrmBase, JSONEncodedDict
-from signal import Signal
-from skilltest import SkillTest
-from calculationstatus import CalculationStatus as CS
+from .ormbase import OrmBase, JSONEncodedDict
+from .signal import Signal
+from .skilltest import SkillTest
+from .calculationstatus import CalculationStatus as CS
 
 
 class ForecastSet(OrmBase):

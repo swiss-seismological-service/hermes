@@ -19,7 +19,7 @@ def validate(commands):
     elif sys.argv[1] not in commands:
         valid = False
     if not valid:
-        print 'usage: worker.py [{}]'.format('|'.join(commands))
+        print('usage: worker.py [{}]'.format('|'.join(commands)))
         sys.exit()
 
 
@@ -28,10 +28,10 @@ def run(commands):
     if arg == commands[0]:
         run_rj()
     elif arg == commands[1]:
-        print 'todo'
+        print('todo')
         sys.exit()
     elif arg == commands[2]:
-        print 'todo'
+        print('todo')
         sys.exit()
 
 

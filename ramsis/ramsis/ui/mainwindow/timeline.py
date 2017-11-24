@@ -155,7 +155,7 @@ class SeismicityPlotter(object):
                         for e in events]
         else:
             data = []
-        x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
+        x, y = list(map(list, list(zip(*data)))) if len(data) > 0 else ([], [])
         self.widget.setYRange(min(y) if y else 0, max(y) if y else 4)
         self.widget.plot.setData(x, y)
 
@@ -181,6 +181,6 @@ class InjectionPlotter(object):
         else:
             data = []
 
-        x, y = map(list, zip(*data)) if len(data) > 0 else ([], [])
+        x, y = list(map(list, list(zip(*data)))) if len(data) > 0 else ([], [])
         self.widget.setYRange(min(y) if y else 0, max(y) if y else 100)
         self.widget.plot.setData(x, y)

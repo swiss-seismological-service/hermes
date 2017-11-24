@@ -115,7 +115,7 @@ class CsvEventImporter:
             reader = csv.DictReader(self.file,
                                     delimiter=self.delimiter,
                                     skipinitialspace=True)
-            first_row = reader.next()
+            first_row = next(reader)
             date = first_row[self.date_field]
             self._dates_are_relative = True
             try:

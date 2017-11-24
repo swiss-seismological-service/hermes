@@ -14,7 +14,7 @@ from datetime import timedelta, datetime
 from mock import MagicMock
 
 from ramsisdata.seismics import SeismicEvent, SeismicCatalog
-from testeventhistory import MockStore
+from .testeventhistory import MockStore
 from ramsisdata.geometry import Point
 
 

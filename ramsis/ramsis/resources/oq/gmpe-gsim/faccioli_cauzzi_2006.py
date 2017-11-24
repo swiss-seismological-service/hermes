@@ -52,7 +52,7 @@ Module exports
 :class:`FaccioliCauzzi2006SD100Q1800K040`
 :class:`FaccioliCauzzi2006SD100Q1800K060`
 """
-from __future__ import division
+
 
 import numpy as np
 from openquake.hazardlib.gsim.base import IPE

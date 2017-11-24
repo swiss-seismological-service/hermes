@@ -25,7 +25,7 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
 
     def rowCount(self, parent):
         num_rows = len(self._event_history)
-        print 'num rows: ' + str(num_rows)
+        print('num rows: ' + str(num_rows))
         return num_rows
 
     def columnCount(self, parent):
@@ -55,8 +55,8 @@ class SeismicDataModel(QtCore.QAbstractTableModel):
             row = index.row()
             column = index.column()
             event = self._event_history[row]
-            print 'loading data for row ' + str(row) + ', column: ' + \
-                  str(column)
+            print('loading data for row ' + str(row) + ', column: ' + \
+                  str(column))
 
             if column == 0:
                 return str(event.date_time)

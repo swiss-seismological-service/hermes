@@ -12,7 +12,7 @@ import os
 from PyQt4 import QtGui
 from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
 from qgis.gui import QgsMapCanvasLayer
-from tabs import TabPresenter
+from .tabs import TabPresenter
 from ui.mainwindow.qgislayers import RamsisLossPoeLayer
 
 # Map service that provides the background map

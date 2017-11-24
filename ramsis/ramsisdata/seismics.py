@@ -10,9 +10,9 @@ from datetime import datetime
 from sqlalchemy import Column, event
 from sqlalchemy import Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, reconstructor, Session
-from ormbase import OrmBase
+from .ormbase import OrmBase
 
-from signal import Signal
+from .signal import Signal
 
 from ramsisdata.geometry import Point
 

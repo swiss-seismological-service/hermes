@@ -12,8 +12,8 @@ import logging
 from datetime import datetime
 from sqlalchemy import Column, orm
 from sqlalchemy import Integer, String, DateTime
-from ormbase import OrmBase
-from signal import Signal
+from .ormbase import OrmBase
+from .signal import Signal
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def datetime_encoder(x):
 
 def datetime_decoder(dct):
     for k, v in dct.items():
-        if isinstance(v, basestring):
+        if isinstance(v, str):
             try:
                 dct[k] = datetime.strptime(v, DATE_FORMAT)
             except ValueError:

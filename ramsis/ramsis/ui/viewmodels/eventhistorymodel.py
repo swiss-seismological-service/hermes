@@ -6,7 +6,7 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function
+
 from PyQt4.QtCore import QAbstractListModel
 import logging  # noqa
 

@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, event, DateTime, String, PickleType,\
     ForeignKey
 from sqlalchemy.orm import relationship, Session
-from ormbase import OrmBase
+from .ormbase import OrmBase
 
 
 @event.listens_for(Session, 'after_flush')
