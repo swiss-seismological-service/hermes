@@ -15,7 +15,7 @@ import signal
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QStyleFactory
 
-from qgis.core import QgsApplication
+#from qgis.core import QgsApplication
 
 from ui.mainwindow.window import MainWindow
 from core.controller import Controller
@@ -59,10 +59,10 @@ class Ramsis(QtCore.QObject):
         # Instantiate the appropriate Qt app object
         self.has_gui = not args.no_gui
         if self.has_gui:
-            QtGui.QApplication.setStyle(
-                QtGui.QStyleFactory.create('Cleanlooks'))
-            self.qt_app = QtGui.QApplication(sys.argv)
-            QgsApplication.initQgis()
+            # QApplication.setStyle(
+            #     QStyleFactory.create('Cleanlooks'))
+            self.qt_app = QApplication(sys.argv)
+            # QgsApplication.initQgis()
         else:
             self.qt_app = QtCore.QCoreApplication(sys.argv)
         # Register some general app information
@@ -114,6 +114,6 @@ class Ramsis(QtCore.QObject):
         self._exit(0)
 
     def _exit(self, code):
-        if self.has_gui:
-            QgsApplication.exitQgis()
+        # if self.has_gui:
+        #     QgsApplication.exitQgis()
         sys.exit(code)
