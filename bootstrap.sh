@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-
-# This bootstrap scripts sets up the dependencies for RAMSIS development
-# on an ubuntu trusty (14.04) machine.
+# =============================================================================
+# This is <bootstrap.sh>
+# =============================================================================
+#
+# Purpose: This bootstrap scripts sets up the dependencies for RAMSIS
+# development on an ubuntu trusty (14.04) machine.
 #
 # Note that while you might use this script to set up your own machine,
 # it's original intention was to be used in combination with vagrant,
 # i.e. it mostly assumes that the target machine is empty at the time
 # the script is executed.
+#
+# REVISIONS AND CHANGES
+# 2018/01/22  V0.1    (damb): Proceeding
+#
+# =============================================================================
 
 # add OpenQuake repository
 add-apt-repository ppa:openquake/release-1.9
@@ -72,3 +80,5 @@ oq-engine --upgrade-db -y
 
 # set QGIS prefix path for all users
 echo "export QGIS_PREFIX_PATH=/usr" > /etc/profile.d/qgis_prefix.sh
+
+# ---- END OF <bootstrap.sh> ----
