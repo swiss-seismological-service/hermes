@@ -16,69 +16,112 @@
 #
 # =============================================================================
 
-# add OpenQuake repository
-add-apt-repository ppa:openquake/release-1.9
-
-# add ObsPy repository and public key
-echo "deb http://deb.obspy.org trusty main" >> /etc/apt/sources.list
-PUBLIC_KEY=https://raw.github.com/obspy/obspy/master/misc/debian/public.key
-wget --quiet -O - $PUBLIC_KEY | sudo apt-key add -
-
 # dependencies for RAMSIS
 DEB_PACKAGES=""\
-" dvipng=1.14-2"\
-" git=1:1.9.1-1ubuntu0.3"\
-" graphviz=2.36.0-0ubuntu3.1"\
-" python-epydoc=3.0.1+dfsg-4"\
-" python-lxml=3.3.3-1ubuntu0.1"\
-" python-mock=1.0.1-3"\
-" python-nose=1.3.1-2"\
-" python-obspy=1.0.2-1~trusty"\
-" python-oq-engine=2.0.1-0~trusty01"\
-" python-pip=1.5.4-1ubuntu4"\
-" python-qt4=4.10.4+dfsg-1ubuntu1"\
-" python-qt4-gl=4.10.4+dfsg-1ubuntu1"\
-" python-sqlalchemy=0.8.4-1build1"\
-" qgis=2.0.1-2build2"\
-" texlive-latex-base=2013.20140215-1"
+" dvipng=1.15-0ubuntu1"\
+" git=1:2.14.1-1ubuntu4"\
+" graphviz=2.38.0-16ubuntu2"\
+" libxml2-dev=2.9.4+dfsg1-4ubuntu1.2"\
+" libxslt1-dev=1.1.29-2.1ubuntu1"\
+" python3"\
+" python3-pip"\
+" python-virtualenv"\
+" texlive-latex-base=2017.20170818-1"\
+" zlib1g-dev=1:1.2.11.dfsg-0ubuntu2"
+
+#" python-oq-engine"\
+#" python-qt4=4.11.4+dfsg-1build4"\
+#" python-qt4-gl=4.11.4+dfsg-1build4"\
+
 PIP_PACKAGES=""\
+" epydoc==3.0.1"\
 " flask==0.11.1"\
 " flask-restful==0.3.5"\
 " flask-restless==0.17.0"\
 " flask-sqlalchemy==2.1"\
+" lxml==3.3.3"\
 " marshmallow==2.10.3"\
+" matplotlib"\
+" nose==1.3.1"\
 " numpy==1.8.2"\
+" obspy==1.0.2"\
+" PyOpenGL==3.1.1a1"\
+" PyQt5==5.9.2"\
+" pymap3d"\
 " pymatlab==0.2.3"\
 " sphinx==1.4.1"\
 " sphinx-rtd-theme==0.1.9"\
-" pymap3d"\
-" matplotlib"
+" sqlalchemy==0.8.4"
 
-# install deb and pip packages
+PATH_PYTHON3=$(which python3)
+PATH_RAMSIS=$(pwd)
+
+RAMSIS_OWNER=$(stat -c "%U" "${PATH_RAMSIS}")
+RAMSIS_GROUP=$(stat -c "%G" "${PATH_RAMSIS}")
+HOME_RAMSIS_OWNER=$( getent passwd "$RAMSIS_OWNER" | cut -d: -f6 )
+
+PATH_OPENQUAKE_INSTALL="$HOME_RAMSIS_OWNER/work/3rd/oq-engine"
+
+# -----------------------------------------------------------------------------
+print_msg() {
+  # utility function to print a message
+  echo -ne "($(basename $0)) $1\n"
+}
+
+warn() {
+  print_msg "WARNING: $1"
+}
+
+error() {
+  print_msg "ERROR: $1"
+  exit 2
+}
+
+# -----------------------------------------------------------------------------
+# install deb packages
 apt-get update
 for deb_package in $DEB_PACKAGES
 do
-    apt-get install -y $deb_package
+    apt-get install -y $deb_package || \
+      error "Installation of '$deb_package' failed (apt-get)."
 done
+
+# create virtualenv
+virtualenv -p "$PATH_PYTHON3" "${PATH_RAMSIS}/venv3"
+
+VENV_PIP="${PATH_RAMSIS}/venv3/bin/pip"
+
 for pip_package in $PIP_PACKAGES
 do
-    pip install $pip_package
+  "$VENV_PIP" install $pip_package || \
+    error "Installation of '$pip_package' failed (pip)."
 done
 
-# install pyqtgraph (custom version until this gets merged into the main repo)
-git clone https://github.com/3rdcycle/pyqtgraph.git
-cd pyqtgraph
-git checkout date-axis-item
-python setup.py install
+# install OpenQuake from sources (development version)
+mkdir -pv "$PATH_OPENQUAKE_INSTALL"
+test ! -d "$PATH_OPENQUAKE_INSTALL" && \
+  git clone https://github.com/gem/oq-engine.git \
+  "$PATH_OPENQUAKE_INSTALL" || \
+  warn "$PATH_OPENQUAKE_INSTALL already existing."
 
-# install custom GSIMs
-cp /vagrant/ramsis/resources/oq/gmpe-gsim/* \
-/usr/lib/python2.7/dist-packages/openquake/hazardlib/gsim
+PY_VERSION=$("${PATH_RAMSIS}/venv3/bin/python" --version | \
+  cut -d ' ' -f2 | cut -d '.' -f 1,2)
+
+"$VENV_PIP" install -r \
+  "$PATH_OPENQUAKE_INSTALL/requirements-py${PY_VERSION/./}-linux64.txt"
+"$VENV_PIP" install -e "${PATH_OPENQUAKE_INSTALL}"
+
+# install custom GSIMs to OpenQuake
+cp -v "${PATH_RAMSIS}"/ramsis/ramsis/resources/oq/gmpe-gsim/* \
+  "${PATH_OPENQUAKE_INSTALL}"/openquake/hazardlib/gsim
+
+# install pyqtgraph (custom version until this gets merged into the main repo)
+${PATH_RAMSIS}/venv3/bin/pip install \
+  git+https://github.com/3rdcycle/pyqtgraph.git@date-axis-item
+
+chown -R ${RAMSIS_OWNER}:${RAMSIS_GROUP} ${PATH_RAMSIS}/venv3
 
 # upgrade OpenQuake database
-oq-engine --upgrade-db -y
-
-# set QGIS prefix path for all users
-echo "export QGIS_PREFIX_PATH=/usr" > /etc/profile.d/qgis_prefix.sh
+${PATH_RAMSIS}/venv3/bin/oq engine --upgrade-db -y
 
 # ---- END OF <bootstrap.sh> ----
