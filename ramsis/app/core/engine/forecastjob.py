@@ -23,12 +23,12 @@ Copyright (c) 2017, Swiss Seismological Service, ETH Zurich
 
 import logging
 import io
-from core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
-from ramsisdata.forecast import ForecastResult, HazardResult, RiskResult, \
-    ModelResult, RatePrediction, Scenario, Forecast
-from ramsisdata.calculationstatus import CalculationStatus
+from ramsis.app.core.tools.job import ParallelJob, SerialJob, WorkUnit, JobStatus
+from ramsis.ramsisdata.forecast import (ForecastResult, HazardResult,
+    RiskResult, ModelResult, RatePrediction, Scenario, Forecast)
+from ramsis.ramsisdata.calculationstatus import CalculationStatus
 from .oqclient import OQClient
-from core.tools.notifications import ClientNotification
+from ramsis.app.core.tools.notifications import ClientNotification
 from . import oqutils
 from .modelclient import ModelClient
 

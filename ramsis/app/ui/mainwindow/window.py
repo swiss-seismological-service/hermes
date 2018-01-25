@@ -13,19 +13,24 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 import logging
 import os
+
 from PyQt5 import uic
 from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
     QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView
-import ui.ramsisuihelpers as helpers
-from ui.settingswindow import ApplicationSettingsWindow, ProjectSettingsWindow
-from ui.simulationwindow import SimulationWindow
-from ui.reservoirwindow import ReservoirWindow
-from ui.ramsisuihelpers import utc_to_local
+
+from ramsis.app.core.simulator import SimulatorState
+from ramsis.app.core.datasources import CsvEventImporter
+import ramsis.app.ui.ramsisuihelpers as helpers
+
+from ramsis.app.ui.settingswindow import (
+    ApplicationSettingsWindow, ProjectSettingsWindow)
+from ramsis.app.ui.simulationwindow import SimulationWindow
+from ramsis.app.ui.reservoirwindow import ReservoirWindow
+from ramsis.app.ui.ramsisuihelpers import utc_to_local
+
 from .presenter import ContentPresenter
 from .viewmodels.seismicdatamodel import SeismicDataModel
-from core.simulator import SimulatorState
-from core.datasources import CsvEventImporter
-from ramsisdata.forecast import Scenario
+from ramsis.ramsisdata.forecast import Scenario
 
 
 ui_path = os.path.dirname(__file__)

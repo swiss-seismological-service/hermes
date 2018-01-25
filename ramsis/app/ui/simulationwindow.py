@@ -11,7 +11,7 @@ import logging
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 
-from core.simulator import SimulatorState
+from ramsis.app.core.simulator import SimulatorState
 from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 
 ui_path = os.path.dirname(__file__)

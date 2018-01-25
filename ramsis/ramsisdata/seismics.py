@@ -14,7 +14,7 @@ from .ormbase import OrmBase
 
 from .signal import Signal
 
-from ramsisdata.geometry import Point
+from ramsis.ramsisdata.geometry import Point
 
 log = logging.getLogger(__name__)
 

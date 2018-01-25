@@ -11,17 +11,20 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 from datetime import datetime
-from ramsisdata.forecast import Scenario
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QAction, QMenu
+
 from .tabs import ModelTabPresenter, HazardTabPresenter, \
     GeneralTabPresenter, SettingsTabPresenter
 from .timeline import TimeLinePresenter
-from ui.mainwindow.viewmodels.forecasttreemodel import ForecastTreeModel, \
-    ForecastNode
-from ui.styles import STATUS_COLOR_OTHER, STATUS_COLOR_ERROR, \
-    STATUS_COLOR_PENDING, STATUS_COLOR_RUNNING, STATUS_COLOR_COMPLETE
-from PyQt5.QtWidgets import QMenu, QAction
-from PyQt5.QtCore import Qt
 
+from ramsis.app.ui.mainwindow.viewmodels.forecasttreemodel import (
+    ForecastTreeModel, ForecastNode)
+from ramsis.app.ui.styles import STATUS_COLOR_OTHER, STATUS_COLOR_ERROR, \
+    STATUS_COLOR_PENDING, STATUS_COLOR_RUNNING, STATUS_COLOR_COMPLETE
+
+from ramsis.ramsisdata.forecast import Scenario
 
 class ContentPresenter(object):
     """

@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.QtCore import pyqtSignal, QObject
 
-from core.engine.forecastjob import ForecastJob
+from ramsis.app.core.engine.forecastjob import ForecastJob
 
 
 class Engine(QObject):

@@ -11,12 +11,14 @@ import os
 from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
-from ramsisdata.calculationstatus import CalculationStatus
-from ui.styles import STATUS_COLOR_ERROR, STATUS_COLOR_DISABLED
+from ramsis.app.ui.styles import STATUS_COLOR_ERROR, STATUS_COLOR_DISABLED
+
+from ramsis.ramsisdata.calculationstatus import CalculationStatus
 
 ui_path = os.path.dirname(__file__)
 STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
                                  'stagestatus.ui')
+print(STAGE_WIDGET_PATH)
 Ui_StageWidget = uic.loadUiType(STAGE_WIDGET_PATH)[0]
 
 

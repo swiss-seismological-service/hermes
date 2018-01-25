@@ -8,9 +8,12 @@ Copyright (C) 2015, SED (ETH Zurich)
 
 """
 import logging
+
 from datetime import datetime
+
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QStyleFactory
+
 import pyqtgraph as pg
 
 log = logging.getLogger(__name__)

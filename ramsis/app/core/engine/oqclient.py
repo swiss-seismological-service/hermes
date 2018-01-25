@@ -14,8 +14,8 @@ from urllib.parse import urljoin
 import json
 import requests
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
-from core.tools.notifications import RunningNotification, ErrorNotification, \
-    CompleteNotification, OtherNotification
+from ramsis.app.core.tools.notifications import (RunningNotification,
+    ErrorNotification, CompleteNotification, OtherNotification)
 
 API_V = 'v1'
 

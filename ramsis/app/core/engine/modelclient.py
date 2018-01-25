@@ -5,9 +5,9 @@ import urllib.parse
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from pymap3d import geodetic2ned
 
-from core.tools.notifications import RunningNotification, ErrorNotification, \
-    CompleteNotification, OtherNotification
-from ramsisdata.schemas import ForecastSchema
+from ramsis.app.core.tools.notifications import (RunningNotification,
+    ErrorNotification, CompleteNotification, OtherNotification)
+from ramsis.ramsisdata.schemas import ForecastSchema
 from requests.exceptions import ConnectionError, Timeout
 
 

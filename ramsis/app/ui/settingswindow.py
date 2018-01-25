@@ -11,9 +11,11 @@ import os
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
+
 from .modelconfigurationwindow import ModelConfigurationWindow
 from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
-import ramsissettings
+
+from ramsis.app import ramsissettings
 
 ui_path = os.path.dirname(__file__)
 APPLICATION_SETTINGS_WINDOW_PATH = \

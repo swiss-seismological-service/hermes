@@ -68,7 +68,7 @@
   <customwidget>
    <class>Event3DViewWidget</class>
    <extends>QWidget</extends>
-   <header>ui.views.widgets</header>
+   <header>ramsis.app.ui.views.widgets</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

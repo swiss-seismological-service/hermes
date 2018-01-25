@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 from PyQt5 import QtCore
 from obspy.clients import fdsn
 
-import core.tools.hydws
+import ramsis.app.core.tools.hydws as hydws
 
 
 class ObsPyCatalogImporter:
@@ -199,11 +199,11 @@ class HYDWSDataSource(QtCore.QThread):
             self.start()
 
     def run(self):
-        client = core.tools.hydws.Client(self.url)
+        client = hydws.Client(self.url)
         args = self._args
         try:
             data_set = client.get_events(**args)
-        except core.tools.hydws.HYDWSException as e:
+        except hydws.HYDWSException as e:
             self._logger.error('HYDWSException: ' + str(e))
             self.data_received.emit(None)
             return

@@ -10,7 +10,7 @@ import argparse
 import logging
 
 
-from ramsis import Ramsis
+from ramsis.app.ramsis import Ramsis
 
 
 def main():

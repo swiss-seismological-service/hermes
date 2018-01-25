@@ -13,15 +13,15 @@ from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
 
-from core.datasources import FDSNWSDataSource, HYDWSDataSource
-from core.engine.engine import Engine
-from core.simulator import Simulator, SimulatorState
-from core.taskmanager import TaskManager
-from ramsisdata.forecast import Forecast, ForecastInput, Scenario
-from ramsisdata.hydraulics import InjectionPlan, InjectionSample
-from ramsisdata.ormbase import OrmBase
-from ramsisdata.project import Project
-from ramsisdata.store import Store
+from ramsis.app.core.datasources import FDSNWSDataSource, HYDWSDataSource
+from ramsis.app.core.engine.engine import Engine
+from ramsis.app.core.simulator import Simulator, SimulatorState
+from ramsis.app.core.taskmanager import TaskManager
+from ramsis.ramsisdata.forecast import Forecast, ForecastInput, Scenario
+from ramsis.ramsisdata.hydraulics import InjectionPlan, InjectionSample
+from ramsis.ramsisdata.ormbase import OrmBase
+from ramsis.ramsisdata.project import Project
+from ramsis.ramsisdata.store import Store
 
 # from core.tools.tools import Profiler
 

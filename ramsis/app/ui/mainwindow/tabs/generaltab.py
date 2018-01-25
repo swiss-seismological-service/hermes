@@ -12,8 +12,9 @@ from PyQt5.QtCore import QObject
 from .tabs import TabPresenter
 from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget
-from ui.ramsisuihelpers import utc_to_local
-from ramsisdata.calculationstatus import CalculationStatus as CS
+
+from ramsis.app.ui.ramsisuihelpers import utc_to_local
+from ramsis.ramsisdata.calculationstatus import CalculationStatus as CS
 
 
 class GeneralTabPresenter(TabPresenter):
