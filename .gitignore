@@ -43,3 +43,6 @@ ramsis/gdalwmscache
 .vagrant
 *.user
 ramsis.ini
+
+# vim
+*.swp
