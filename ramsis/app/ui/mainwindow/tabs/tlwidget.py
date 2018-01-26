@@ -14,8 +14,10 @@ from PyQt5.QtWidgets import QWidget
 
 ui_path = os.path.dirname(__file__)
 TL_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
-                                 'trafficlight.ui')
-Ui_TlWidget = uic.loadUiType(TL_WIDGET_PATH)[0]
+                              'trafficlight.ui')
+Ui_TlWidget = uic.loadUiType(
+    TL_WIDGET_PATH, import_from='ramsis.app.ui.views',
+    from_imports=True)[0]
 
 
 def _pixmap(name):

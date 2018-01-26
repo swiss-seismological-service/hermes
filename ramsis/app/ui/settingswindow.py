@@ -21,11 +21,15 @@ ui_path = os.path.dirname(__file__)
 APPLICATION_SETTINGS_WINDOW_PATH = \
     os.path.join(ui_path, 'views', 'appsettingswindow.ui')
 Ui_ApplicationSettingsWindow = \
-    uic.loadUiType(APPLICATION_SETTINGS_WINDOW_PATH)[0]
+    uic.loadUiType(
+        APPLICATION_SETTINGS_WINDOW_PATH,
+        import_from='ramsis.app.ui.views', from_imports=True)[0]
 PROJECT_SETTINGS_WINDOW_PATH = \
     os.path.join(ui_path, 'views', 'projectsettingswindow.ui')
 Ui_ProjectSettingsWindow = \
-    uic.loadUiType(PROJECT_SETTINGS_WINDOW_PATH)[0]
+    uic.loadUiType(
+        PROJECT_SETTINGS_WINDOW_PATH,
+        import_from='ramsis.app.ui.views', from_imports=True)[0]
 
 
 class SettingsWindow(QDialog):

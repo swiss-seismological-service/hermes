@@ -18,8 +18,9 @@ from ramsis.ramsisdata.calculationstatus import CalculationStatus
 ui_path = os.path.dirname(__file__)
 STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
                                  'stagestatus.ui')
-print(STAGE_WIDGET_PATH)
-Ui_StageWidget = uic.loadUiType(STAGE_WIDGET_PATH)[0]
+Ui_StageWidget = uic.loadUiType(
+    STAGE_WIDGET_PATH,
+    import_from='ramsis.app.ui.views', from_imports=True)[0]
 
 
 class StageWidget(QWidget):

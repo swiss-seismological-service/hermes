@@ -14,7 +14,9 @@ import numpy as np
 
 ui_path = os.path.dirname(__file__)
 FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'reservoirwindow.ui')
-Ui_ReservoirWindow = uic.loadUiType(FC_WINDOW_PATH)[0]
+Ui_ReservoirWindow = uic.loadUiType(
+    FC_WINDOW_PATH,
+    import_from='ramsis.app.ui.views', from_imports=True)[0]
 
 from PyQt5.QtWidgets import QWidget
 

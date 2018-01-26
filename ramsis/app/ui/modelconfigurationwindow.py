@@ -15,7 +15,9 @@ from PyQt5.QtWidgets import QDialog
 ui_path = os.path.dirname(__file__)
 MODEL_CONFIGURATION_WINDOW_PATH = os.path.join(ui_path, 'views',
                                                'modelconfigurationwindow.ui')
-Ui_ModelConfigurationWindow = uic.loadUiType(MODEL_CONFIGURATION_WINDOW_PATH)[0]
+Ui_ModelConfigurationWindow = uic.loadUiType(
+    MODEL_CONFIGURATION_WINDOW_PATH,
+    import_from='ramsis.app.ui.views', from_imports=True)[0]
 
 
 class ModelConfigurationWindow(QDialog):

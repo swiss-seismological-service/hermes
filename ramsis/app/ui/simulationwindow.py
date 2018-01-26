@@ -16,7 +16,9 @@ from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 
 ui_path = os.path.dirname(__file__)
 SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')
-Ui_SimulationWindow = uic.loadUiType(SIM_WINDOW_PATH)[0]
+Ui_SimulationWindow = uic.loadUiType(
+    SIM_WINDOW_PATH,
+    import_from='ramsis.app.ui.views', from_imports=True)[0]
 
 
 class SimulationWindow(QDialog):

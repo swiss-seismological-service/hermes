@@ -35,7 +35,9 @@ from ramsis.ramsisdata.forecast import Scenario
 
 ui_path = os.path.dirname(__file__)
 MAIN_WINDOW_PATH = os.path.join(ui_path, '..', 'views', 'mainwindow.ui')
-Ui_MainWindow = uic.loadUiType(MAIN_WINDOW_PATH)[0]
+Ui_MainWindow = uic.loadUiType(
+    MAIN_WINDOW_PATH,
+    import_from='ramsis.app.ui.views', from_imports=True)[0]
 
 
 class StatusBar(QStatusBar):
