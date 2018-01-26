@@ -29,30 +29,6 @@ DEB_PACKAGES=""\
 " texlive-latex-base=2017.20170818-1"\
 " zlib1g-dev=1:1.2.11.dfsg-0ubuntu2"
 
-#" python-oq-engine"\
-#" python-qt4=4.11.4+dfsg-1build4"\
-#" python-qt4-gl=4.11.4+dfsg-1build4"\
-
-PIP_PACKAGES=""\
-" epydoc==3.0.1"\
-" flask==0.11.1"\
-" flask-restful==0.3.5"\
-" flask-restless==0.17.0"\
-" flask-sqlalchemy==2.1"\
-" lxml==3.3.3"\
-" marshmallow==2.10.3"\
-" matplotlib"\
-" nose==1.3.1"\
-" numpy==1.8.2"\
-" obspy==1.0.2"\
-" PyOpenGL==3.1.1a1"\
-" PyQt5==5.9.2"\
-" pymap3d"\
-" pymatlab==0.2.3"\
-" sphinx==1.4.1"\
-" sphinx-rtd-theme==0.1.9"\
-" sqlalchemy==0.8.4"
-
 PATH_PYTHON3=$(which python3)
 PATH_RAMSIS=$(pwd)
 
@@ -90,34 +66,35 @@ done
 virtualenv -p "$PATH_PYTHON3" "${PATH_RAMSIS}/venv3"
 
 VENV_PIP="${PATH_RAMSIS}/venv3/bin/pip"
-
-for pip_package in $PIP_PACKAGES
-do
-  "$VENV_PIP" install $pip_package || \
-    error "Installation of '$pip_package' failed (pip)."
-done
+VENV_PY3="${PATH_RAMSIS}/venv3/bin/python3"
 
 # install OpenQuake from sources (development version)
 mkdir -pv "$PATH_OPENQUAKE_INSTALL"
-test ! -d "$PATH_OPENQUAKE_INSTALL" && \
+([ ! -d "$PATH_OPENQUAKE_INSTALL" ] || \
+  [ ! "$(ls -A $PATH_OPENQUAKE_INSTALL)" ]) && \
   git clone https://github.com/gem/oq-engine.git \
   "$PATH_OPENQUAKE_INSTALL" || \
   warn "$PATH_OPENQUAKE_INSTALL already existing."
 
-PY_VERSION=$("${PATH_RAMSIS}/venv3/bin/python" --version | \
+PY_VERSION=$("$VENV_PY3" --version | \
   cut -d ' ' -f2 | cut -d '.' -f 1,2)
 
 "$VENV_PIP" install -r \
   "$PATH_OPENQUAKE_INSTALL/requirements-py${PY_VERSION/./}-linux64.txt"
 "$VENV_PIP" install -e "${PATH_OPENQUAKE_INSTALL}"
 
+# XXX(damb): PyQt5 must be installed by means of pip since only wheel
+# distributions are available. See:
+# https://mail.python.org/pipermail/distutils-sig/2017-March/030228.html
+"$VENV_PIP" install "PyQt5==5.10"
+
+
+# install RT-RAMSIS
+make install VENV="${PATH_RAMSIS}/venv3" || error "Installation failed (make)."
+
 # install custom GSIMs to OpenQuake
 cp -v "${PATH_RAMSIS}"/ramsis/ramsis/resources/oq/gmpe-gsim/* \
   "${PATH_OPENQUAKE_INSTALL}"/openquake/hazardlib/gsim
-
-# install pyqtgraph (custom version until this gets merged into the main repo)
-${PATH_RAMSIS}/venv3/bin/pip install \
-  git+https://github.com/3rdcycle/pyqtgraph.git@date-axis-item
 
 chown -R ${RAMSIS_OWNER}:${RAMSIS_GROUP} ${PATH_RAMSIS}/venv3
 
