@@ -89,9 +89,9 @@ _entry_points_app = {
 _entry_points_workers = {}
 _entry_points = {**_entry_points_app, **_entry_points_workers}
 
-_dependency_links_app = [
-     ("git+https://gitlab.seismo.ethz.ch/indu/pyqtgraph.git"
-     "@d58e7580762767b9ed49421f62ba674e01ca380c#egg=pyqtgraph-0.10.0"), ]
+_dependency_links_app = [(
+    "git+https://gitlab.seismo.ethz.ch/indu/pyqtgraph.git"
+    "@d58e7580762767b9ed49421f62ba674e01ca380c#egg=pyqtgraph-0.10.0"), ]
 _dependency_links_workers = []
 _dependency_links = _dependency_links_app
 _dependency_links.extend(_dependency_links_workers)
