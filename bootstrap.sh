@@ -93,7 +93,7 @@ PY_VERSION=$("$VENV_PY3" --version | \
 make install VENV="${PATH_RAMSIS}/venv3" || error "Installation failed (make)."
 
 # install custom GSIMs to OpenQuake
-cp -v "${PATH_RAMSIS}"/ramsis/ramsis/resources/oq/gmpe-gsim/* \
+cp -v "${PATH_RAMSIS}"/ramsis/app/resources/oq/gmpe-gsim/* \
   "${PATH_OPENQUAKE_INSTALL}"/openquake/hazardlib/gsim
 
 chown -R ${RAMSIS_OWNER}:${RAMSIS_GROUP} ${PATH_RAMSIS}/venv3
