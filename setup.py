@@ -41,6 +41,10 @@ _extras_require = {'doc': [
     "sphinx==1.4.1",
     "sphinx-rtd-theme==0.1.9", ]}
 _install_requires_app = [
+    # XXX(damb): astropy dependency added due to AttributeError
+    # AttributeError: module 'scipy.special' has no attribute 'loggamma'
+    # while installing pymap3d
+    "astropy==2.0.3",
     "lxml==3.3.3",
     "marshmallow==2.10.3",
     "matplotlib",
