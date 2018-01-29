@@ -2,6 +2,22 @@
 
 ## Setting up a development environment
 
+The quickest way to setup a clean development environment is:
+
+```bash
+$ git clone https://gitlab.seismo.ethz.ch/indu/rt-ramsis.git
+```
+As superuser move to the *RT-RAMSIS* repository and execute
+
+```bash
+# ./bootstrap
+```
+Enter your credentials when demanded.
+
+
+**NOTE**: Setting up a development environment by means of vagrant is currently
+not supported.
+
 The quickest way to get up and running with a clean isolated development environmnent is by using [vagrant](http://vagrantup.com). Simply change to the repository directory and type
 
     vagrant up
