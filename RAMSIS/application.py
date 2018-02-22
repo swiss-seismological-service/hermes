@@ -31,7 +31,7 @@ VERSION = '0.1 "Bug Infested Alpha"'
 # QgsApplication.setPrefixPath(prefix_path, True)
 
 
-class Ramsis(QtCore.QObject):
+class Application(QtCore.QObject):
     """
     Top level application object
 

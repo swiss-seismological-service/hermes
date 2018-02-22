@@ -10,7 +10,7 @@ import argparse
 import logging
 
 
-from RAMSIS.ramsis import Ramsis
+from RAMSIS.application import Application
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
         parser.error("--no-gui requires --config")
 
     configure_logging(args.verbosity)
-    ramsis = Ramsis(args)
+    ramsis = Application(args)
     ramsis.run()
 
 
