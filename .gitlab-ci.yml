@@ -27,8 +27,8 @@ flake8:
     - cd ramsis
     - flake8
 
-nosetests:
-  stage: test
-  script:
-    - cd ramsis
-    - nosetests
+#nosetests:
+#  stage: test
+#  script:
+#    - cd ramsis
+#    - nosetests
