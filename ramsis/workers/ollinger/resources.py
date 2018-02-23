@@ -59,9 +59,10 @@ class Run(Resource):
         elif return_code == 0:
             app.logger.debug('Assembling results')
             try:
-                for catalog in self.seismic_catalog_files:
-                    with open(catalog) as f:
-                        pass  # TODO: calculate statistics
+                # TODO: calculate statistics
+                # for catalog in self.seismic_catalog_files:
+                #     with open(catalog) as f:
+                #         pass
                 return {
                     'status': 'complete',
                     'result': {

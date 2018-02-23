@@ -59,8 +59,6 @@ class Run(Resource):
         except Exception as e:
             msg = 'Failed to de-serialize data: {}'.format(repr(e))
             app.logger.error(msg)
-        parameters = data['parameters']
 
         self.model = Rj(**data['parameters'])
         result = self.model.run(forecast)
-
