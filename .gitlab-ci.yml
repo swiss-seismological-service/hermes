@@ -24,7 +24,7 @@ variables:
 flake8:
   stage: test
   script:
-    - cd ramsis
+    - cd RAMSIS
     - flake8
 
 #nosetests:
