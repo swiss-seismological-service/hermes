@@ -131,5 +131,3 @@ class Rj(QtCore.QObject):
         #                                  prob=probabilities[0])
         # model_result.rate_prediction = rate_prediction
         # return model_result
-
-
