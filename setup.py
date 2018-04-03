@@ -59,6 +59,12 @@ _dependency_links = [(
     "git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git"
     "#egg=ramsis.datamodel-0.1"), ]
 
+# TODO(damb): add doc
+_data_files = [
+    ('', ['LICENSE',
+          'Makefile']),
+    ('config', ['config/ramsis.ini']), ]
+
 setup(
     name='RAMSIS',
     # TODO(damb): Provide version string globally
@@ -89,17 +95,18 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering', ],
     platforms=['Linux', ],
-    packages=find_packages(),
+    dependency_links=_dependency_links,
     install_requires=_install_requires,
     extras_require=_extras_require,
     tests_require=_tests_require,
+    packages=find_packages(),
+    data_files=_data_files,
     include_package_data=True,
     zip_safe=False,
     # TODO(damb): test_suite=unittest.TestCase
     # TODO(damb): ramsis does not necessarily depend on doc extras flag
     entry_points={
-        'console_scripts': ['ramsis = RAMSIS.main:main', ]},
-    dependency_links=_dependency_links
+        'console_scripts': ['ramsis = RAMSIS.main:main', ]}
 )
 
 # ----- END OF setup.py -----
