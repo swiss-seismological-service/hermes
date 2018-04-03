@@ -31,9 +31,9 @@ REQUIREMENTS=requirements-py36-linux64.txt
 
 # -----------------------------------------------------------------------------
 #
-CHECK_DEP=$(strip $(shell which $(1))) 
+CHECK_DEP=$(strip $(shell which $(1)))
 CHECK_VENV_DEP=$(strip \
-							 $(shell . $(VENV)/bin/activate && which $(1) && deactivate)) 
+							 $(shell . $(VENV)/bin/activate && which $(1) && deactivate))
 OQ_CHECK:=$(call CHECK_DEP,oq)
 PYQT5_CHECK:=$(call CHECK_DEP,pyrcc5)
 ifneq ($(VENV),)
