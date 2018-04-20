@@ -11,6 +11,10 @@ from ramsis.datamodel.schemas import ForecastSchema
 from requests.exceptions import ConnectionError, Timeout
 
 
+# TODO(damb): This class somehow seems deprecated.
+#   - At least its documentation should be updated.
+#   - ModelClient.run does not use the run_info parameter
+
 class ModelClient(QObject):
     """
     Client for remote induced seismicity model
