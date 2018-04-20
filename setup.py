@@ -47,6 +47,7 @@ _install_requires = [
     "python-dateutil>=2.8.0",
     "PyYAML>=5.1.1",
     "ramsis.datamodel==0.3rc0",
+    "requests>=2.18.4",
     "transitions==0.6.9", ]
 
 _extras_require = {'doc': [
@@ -55,13 +56,15 @@ _extras_require = {'doc': [
     "sphinx-rtd-theme==0.1.9", ]}
 
 _tests_require = [
-    "sqlalchemy==0.8.4", ]
+    "sqlalchemy==1.2.0", ]
 
 _dependency_links = [(
     "git+https://gitlab.seismo.ethz.ch/indu/pyqtgraph.git"
     "@d58e7580762767b9ed49421f62ba674e01ca380c#egg=pyqtgraph-0.10.0"), (
     "git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git"
     "#egg=ramsis.datamodel-0.1"), ]
+
+_scripts = []
 
 # TODO(damb): add doc
 # TODO LH: find a good way to handle the settings file. The app looks for
@@ -108,12 +111,14 @@ setup(
     tests_require=_tests_require,
     packages=find_packages(),
     data_files=_data_files,
+    scripts=_scripts,
     include_package_data=True,
     zip_safe=False,
     # TODO(damb): test_suite=unittest.TestCase
     # TODO(damb): ramsis does not necessarily depend on doc extras flag
     entry_points={
-        'console_scripts': ['ramsis = RAMSIS.main:main', ]}
+        'console_scripts': ['ramsis = RAMSIS.main:main',
+                            'ramsis-client = RAMSIS.app.client:main', ]}
 )
 
 # ----- END OF setup.py -----
