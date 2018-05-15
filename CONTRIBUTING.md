@@ -38,8 +38,12 @@ code documentation for RT-RAMSIS as follows
 Please follow the following guidelines for documenting your code:
 
 - Be consistent with existing code documentation
-- Don't use fancy file header and function decorations like # #### Title ####
- Add `:`-style
+- Don't use fancy file headers and ascii comment decorations like [this]
+  (https://hackerboss.com/get-rid-of-templates/). Also don't include version or 
+  author or other redundant information which someone will forget to update
+  eventually (i.e. anything that can be found in the version control system, 
+  license file, etc.). Again, be consistent with existing code.
+- Add `:`-style
   [docstrings](https://www.jetbrains.com/pycharm/help/using-docstrings-to-specify-types.html)
   to methods for type hinting and to describe what each method does.
 - Link to module, method or class documentations where appropriate (see [Sphinx
