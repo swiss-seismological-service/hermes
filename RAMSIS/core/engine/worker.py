@@ -153,8 +153,9 @@ class WorkerHandleBase(object):
 
             retval = []
             for resp in self._resp:
-                if all(resp[k] == v
-                       for k, v in filter_conditions.items()):
+                if (resp is not None and
+                    all(resp[k] == v
+                       for k, v in filter_conditions.items())):
                     retval.append(resp)
 
             return self.__class__(retval)
