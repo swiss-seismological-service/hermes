@@ -20,16 +20,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /wheels
 
-# We inject deploy tokens from the command line to check out private
-# repositories. Until gitlab allows project shared deploy tokens or docker
-# allows SSH agent forwarding (both are planned features) we'll have to inject
-# one per sdependency :-(
-ARG PYQTGRAPH_USER
-ARG PYQTGRAPH_PASSWORD
-ARG DATAMODEL_USER
-ARG DATAMODEL_PASSWORD
-
-COPY requirements-docker.txt ./requirements.txt
+COPY requirements-ci.txt ./requirements.txt
 RUN pip install -U pip \
     && pip wheel -r ./requirements.txt
 
