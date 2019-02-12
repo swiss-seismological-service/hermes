@@ -31,9 +31,7 @@ build:
 
 test-pep8:
   stage: test
-  image: $TEST_IMAGE_TAG
-  before_script:
-    - pip install flake8
+  image: alpine/flake8
   script:
     - flake8
 
