@@ -1,42 +1,44 @@
+image: docker:stable
+
 variables:
-  REGISTRY: "gitlab.seismo.ethz.ch:4567"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  TEST_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  RELEASE_IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+
+services:
+  - docker/dind
 
 stages:
   - build
   - test
   - deploy
 
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
 # JOBS
 
 build:
   stage: build
-  image: docker:latest
   script:
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
-    - docker build -t $REGISTRY/indu/rt-ramsis .
-    - docker push $REGISTRY/indu/rt-ramsis
-#  Only run this on runners with the 'docker' tag
-#  tags:
-#    - docker
+    - docker build --pull -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
 
-flake8:
+test-pep8:
   stage: test
+  image: $CONTAINER_TEST_IMAGE
   before_script:
     - pip install flake8
   script:
-    - cd RAMSIS
+    - cd /ramsis
     - flake8
 
-#nosetests:
-#  stage: test
-#  script:
-#    - cd ramsis
-#    - nosetests
-
-
-deploy:
+deploy-production:
   stage: deploy
-  when: manual
   script:
-    - sleep 5
-
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+  only:
+    - master
