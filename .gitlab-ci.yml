@@ -26,7 +26,7 @@ build:
       --cache-from $RELEASE_IMAGE_TAG
       --build-arg GITLAB_USER=gitlab-ci-token
       --build-arg GITLAB_PASSWORD=$CI_JOB_TOKEN
-      --tag $TEST_IMAGE_TAG
+      --tag $TEST_IMAGE_TAG .
     - docker push $TEST_IMAGE_TAG
 
 test-pep8:
