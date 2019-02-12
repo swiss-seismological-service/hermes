@@ -22,12 +22,12 @@ before_script:
 build:
   stage: build
   script:
-    - docker build --pull -t $CONTAINER_TEST_IMAGE .
-    - docker push $CONTAINER_TEST_IMAGE
+    - docker build --pull -t $TEST_IMAGE_TAG .
+    - docker push $TEST_IMAGE_TAG
 
 test-pep8:
   stage: test
-  image: $CONTAINER_TEST_IMAGE
+  image: $TEST_IMAGE_TAG
   before_script:
     - pip install flake8
   script:
@@ -37,8 +37,8 @@ test-pep8:
 deploy-production:
   stage: deploy
   script:
-    - docker pull $CONTAINER_TEST_IMAGE
-    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
-    - docker push $CONTAINER_RELEASE_IMAGE
+    - docker pull $TEST_IMAGE_TAG
+    - docker tag $TEST_IMAGE_TAG $RELEASE_IMAGE_TAG
+    - docker push $RELEASE_IMAGE_TAG
   only:
     - master
