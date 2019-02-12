@@ -1,28 +1,28 @@
-# run our tests in a pristine docker container
-image: python:3.6-slim
-
-before_script:
-  - apt-get update
-  - apt-get install -y git
-  - pip install flake8
-
-  # The following installs ssh with a private key passed in as secret variable.
-  # This is required to gain access to other gitlab repos we to clone during
-  # requirements installation
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
-  - eval $(ssh-agent -s)
-  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-  - mkdir -p ~/.ssh && chmod 700 ~/.ssh
-  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
-
-  # now we can install our dependencies
-  - pip install -r requirements-py36-linux64-ssh.txt
-
 variables:
-  GIT_SSL_NO_VERIFY: "true"
+  REGISTRY: "gitlab.seismo.ethz.ch:4567"
+
+stages:
+  - build
+  - test
+  - deploy
+
+# JOBS
+
+build:
+  stage: build
+  image: docker:latest
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
+    - docker build -t $REGISTRY/indu/rt-ramsis .
+    - docker push $REGISTRY/indu/rt-ramsis
+#  Only run this on runners with the 'docker' tag
+#  tags:
+#    - docker
 
 flake8:
   stage: test
+  before_script:
+    - pip install flake8
   script:
     - cd RAMSIS
     - flake8
@@ -32,3 +32,11 @@ flake8:
 #  script:
 #    - cd ramsis
 #    - nosetests
+
+
+deploy:
+  stage: deploy
+  when: manual
+  script:
+    - sleep 5
+
