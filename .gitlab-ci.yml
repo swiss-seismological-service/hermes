@@ -20,11 +20,14 @@ before_script:
 build:
   stage: build
   script:
-    - docker build --pull
+    # Try to pull the latest release image to use it as a cache source
+    - docker pull RELEASE_IMAGE_TAG || true
+    - docker build
+      --cache-from RELEASE_IMAGE_TAG
       --build-arg GITLAB_USER=gitlab-ci-token
       --build-arg GITLAB_PASSWORD=$CI_JOB_TOKEN
-      -t $TEST_IMAGE_TAG .
-    - docker push $TEST_IMAGE_TAG
+      --tag TEST_IMAGE_TAG
+    - docker push TEST_IMAGE_TAG
 
 test-pep8:
   stage: test
@@ -32,7 +35,6 @@ test-pep8:
   before_script:
     - pip install flake8
   script:
-    - cd /ramsis
     - flake8
 
 deploy-production:
