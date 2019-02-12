@@ -20,7 +20,10 @@ before_script:
 build:
   stage: build
   script:
-    - docker build --pull -t $TEST_IMAGE_TAG .
+    - docker build --pull
+      --build-arg GITLAB_USER=gitlab-ci-token
+      --build-arg GITLAB_PASSWORD=$CI_JOB_TOKEN
+      -t $TEST_IMAGE_TAG .
     - docker push $TEST_IMAGE_TAG
 
 test-pep8:

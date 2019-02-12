@@ -17,11 +17,11 @@ pymap3d==1.3.0
 PyOpenGL==3.1.1a1
 pyparsing==2.2.0
 PyQt5==5.10
-git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.seismo.ethz.ch/indu/pyqtgraph.git@date-axis-item#egg=pyqtgraph
+git+https://${GITLAB_USER}:${GITLAB_PASSWORD}@gitlab.seismo.ethz.ch/indu/pyqtgraph.git@date-axis-item#egg=pyqtgraph
 pytest==3.4.0
 python-dateutil==2.6.1
 pytz==2017.3
-git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git#egg=ramsis.datamodel
+git+https://${GITLAB_USER}:${GITLAB_PASSWORD}@gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git#egg=ramsis.datamodel
 requests==2.18.4
 scipy==1.0.0
 sip==4.19.7

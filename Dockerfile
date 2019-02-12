@@ -20,7 +20,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /wheels
 
-COPY requirements-ci.txt ./requirements.txt
+COPY requirements-docker.txt ./requirements.txt
+
+ARG GITLAB_USER
+ARG GITLAB_PASSWORD
+
 RUN pip install -U pip \
     && pip wheel -r ./requirements.txt
 
