@@ -58,7 +58,7 @@ deploy-production:
       && sed -i "s|$SEARCH|//gitlab-ci-token:$CI_JOB_TOKEN@\1|g" ./requirements.txt
       && sed -i 's|^-e ||g' ./requirements.txt
     - pip install -r requirements.txt
-    - pyrcc5 -o ui/views/images_rc.py ui/views/images.qrc
+    - pyrcc5 -o RAMSIS/ui/views/images_rc.py RAMSIS/ui/views/images.qrc
     - pip install .
     - ln -s $DEPLOY_PATH $BASE_PATH/current
   tags:
