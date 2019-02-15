@@ -1,47 +1,55 @@
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
-  TEST_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-  RELEASE_IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
-
-services:
-  - docker:dind
 
 stages:
-  - build
   - test
-  - deploy
-
-before_script:
-  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  - release
 
 # JOBS
 
-build:
-  stage: build
-  script:
-    # Try to pull the latest release image to use it as a cache source
-    - docker pull $RELEASE_IMAGE_TAG || true
-    - docker build
-      --cache-from $RELEASE_IMAGE_TAG
-      --build-arg GITLAB_USER=gitlab-ci-token
-      --build-arg GITLAB_PASSWORD=$CI_JOB_TOKEN
-      --tag $TEST_IMAGE_TAG .
-    - docker push $TEST_IMAGE_TAG
-
+# Check for PEP8 issues
 test-pep8:
   stage: test
-  image: $TEST_IMAGE_TAG
-  before_script:
-    - pip install flake8
+  image: apihackers/flake8
   script:
     - flake8
+  tags:
+    - docker
 
-deploy-production:
-  stage: deploy
+# Build a docker image for an RT-RAMSIS release and push it to the registry
+release:
+  stage: release
+  services:
+    - docker:dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
-    - docker pull $TEST_IMAGE_TAG
-    - docker tag $TEST_IMAGE_TAG $RELEASE_IMAGE_TAG
-    - docker push $RELEASE_IMAGE_TAG
+    - docker build
+      --build-arg GITLAB_USER=gitlab-ci-token
+      --build-arg GITLAB_PW=$CI_JOB_TOKEN
+      --tag $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+    - docker push
+  when: manual
   only:
+    - tags
     - master
+  tags:
+    - docker
+
+# Deploy to production machine
+deploy-production:
+  stage: release
+  variables:
+    DEPLOY_PATH: /opt/ramsis/$CI_COMMIT_REF_SLUG
+  script:
+    - virtualenv $DEPLOY_PATH/venv
+    - source $DEPLOY_PATH/venv/bin/activate
+    - pip install -r requirements.txt
+    - pip install .
+    - ln -s $DEPLOY_PATH /ramsis/current
+  tags:
+    - production
