@@ -27,7 +27,7 @@ PYRCC=$(realpath $(VENV)/bin/pyrcc5)
 endif
 
 PATH_RAMSIS_SRC=RAMSIS
-REQUIREMENTS=requirements-py36-linux64.txt
+REQUIREMENTS=requirements.txt
 
 # -----------------------------------------------------------------------------
 #
