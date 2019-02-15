@@ -3,7 +3,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
 stages:
-#  - test
+  - test
   - release
 
 # JOBS
@@ -18,6 +18,8 @@ test-pep8:
     - flake8
   tags:
     - docker
+  # FIXME: remove. for testing the ci script only
+  allow_failure: true
 
 # Build a docker image for an RT-RAMSIS release and push it to the registry
 release:
