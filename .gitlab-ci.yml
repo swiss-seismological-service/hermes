@@ -48,7 +48,8 @@ release:
 deploy-production:
   stage: release
   variables:
-    DEPLOY_PATH: /opt/ramsis/$CI_COMMIT_REF_SLUG
+    BASE_PATH: /opt/ramsis
+    DEPLOY_PATH: $BASE_PATH/$CI_COMMIT_REF_SLUG
   script:
     - echo $PATH
     - virtualenv $DEPLOY_PATH/venv
@@ -58,6 +59,6 @@ deploy-production:
       && sed -i 's|^-e ||g' ./requirements.txt
     - pip install -r requirements.txt
     - pip install .
-    - ln -s $DEPLOY_PATH /ramsis/current
+    - ln -s $DEPLOY_PATH $BASE_PATH/current
   tags:
     - production
