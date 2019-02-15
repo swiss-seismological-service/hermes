@@ -50,6 +50,7 @@ deploy-production:
   variables:
     DEPLOY_PATH: /opt/ramsis/$CI_COMMIT_REF_SLUG
   script:
+    - echo $PATH
     - virtualenv $DEPLOY_PATH/venv
     - source $DEPLOY_PATH/venv/bin/activate
     - SEARCH='//\(gitlab\.seismo\.ethz\.ch\)'
