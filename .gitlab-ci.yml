@@ -57,8 +57,7 @@ deploy-production:
     - SEARCH='//\(gitlab\.seismo\.ethz\.ch\)'
       && sed -i "s|$SEARCH|//gitlab-ci-token:$CI_JOB_TOKEN@\1|g" ./requirements.txt
       && sed -i 's|^-e ||g' ./requirements.txt
-    - pip install -r requirements.txt
-    - pip install .
+    - make install VENV=$DEPLOY_PATH/venv
     - ln -s $DEPLOY_PATH $BASE_PATH/current
   tags:
     - production
