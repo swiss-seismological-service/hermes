@@ -3,7 +3,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
 stages:
-  - test
+#  - test
   - release
 
 # JOBS
@@ -50,6 +50,9 @@ deploy-production:
   script:
     - virtualenv $DEPLOY_PATH/venv
     - source $DEPLOY_PATH/venv/bin/activate
+    - SEARCH='//\(gitlab\.seismo\.ethz\.ch\)'
+      && sed -i "s|$SEARCH|//gitlab-ci-token:$CI_JOB_TOKEN@\1|g" ./requirements.txt
+      && sed -i 's|^-e ||g' ./requirements.txt
     - pip install -r requirements.txt
     - pip install .
     - ln -s $DEPLOY_PATH /ramsis/current
