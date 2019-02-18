@@ -12,6 +12,7 @@
 Worker related *RT-RAMSIS* facilities.
 """
 
+import abc
 import collections
 import logging
 import requests
@@ -41,42 +42,66 @@ class FilterSchema(Schema):
 # class FilterSchema
 
 
-# -----------------------------------------------------------------------------
-class WorkerHandleBase(object):
+class WorkerHandleBase(abc.ABC):
     """
-    Base class simplifying the communication with *RT-RAMSIS* worker
-    implementations (i.e. webservice implementations of scientific forecasting
-    models). Concrete implementations are intended to abstract the
-    communication with their corresponding worker.
-
-    .. code::
-
-        class SaSSWorkerHandle(WorkerHandleBase):
-            MODEL_ID = 'SaSS'
-            API_VERSION = 'v1'
-
-    :param str url: The worker's base URL
-    :param str model_id: Model indentifier
-    :param timeout: Timeout parameters past to the `requests
-        <http://docs.python-requests.org/en/master/>`_ library functions
-    :type timeout: float or tuple
+    Interface simplifying the communication with *RT-RAMSIS* model worker
+    implementations. Concrete implementations of :py:class:`WorkerHandleBase`
+    are intended to encapsulate scientific models.
     """
     MODEL_ID = None
-    API_VERSION = 'v1'
-    PATH_RAMSIS_WORKER_SCENARIOS = '/runs'
 
     LOGGER = 'ramsis.core.worker_handle'
 
     class WorkerHandleError(Error):
         """Base worker handle error ({})."""
 
-    class EncodingError(WorkerHandleError):
+    @property
+    @abc.abstractmethod
+    def model(self):
+        pass
+
+    @abc.abstractmethod
+    def query(self, task_ids=[]):
+        pass
+
+    @abc.abstractmethod
+    def compute(self, payload, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def delete(self, task_ids=[]):
+        pass
+
+# class WorkerHandleBase
+
+
+# -----------------------------------------------------------------------------
+class RemoteSeismicityWorkerHandle(WorkerHandleBase):
+    """
+    Base class simplifying the communication with *RT-RAMSIS* remote seismicity
+    forecast model worker implementations (i.e. webservice implementations of
+    scientific forecast models). Concrete implementations are intended to
+    abstract the communication with their corresponding worker.
+
+    .. code::
+
+        class SaSSWorkerHandle(SeismicityWorkerHandle):
+            MODEL_ID = 'SaSS'
+            API_VERSION = 'v1'
+
+    """
+    API_VERSION = 'v1'
+    PATH_RAMSIS_WORKER_SCENARIOS = '/runs'
+
+    LOGGER = 'ramsis.core.remote_seismicity_worker_handle'
+
+    class EncodingError(WorkerHandleBase.WorkerHandleError):
         """Error while encoding payload ({})."""
 
-    class DecodingError(WorkerHandleError):
+    class DecodingError(WorkerHandleBase.WorkerHandleError):
         """Error while decoding response ({})."""
 
-    class WorkerError(WorkerHandleError):
+    class WorkerError(WorkerHandleBase.WorkerHandleError):
         """Base worker error ({})."""
 
     class ConnectionError(WorkerError):
@@ -124,7 +149,7 @@ class WorkerHandleBase(object):
                 try:
                     resp_json = [r.json() for r in resp]
                 except ValueError as err:
-                    raise WorkerHandle.DecodingError(err)
+                    raise RemoteSeismicityWorkerHandle.DecodingError(err)
 
                 return list(flatten(resp_json))
 
@@ -149,7 +174,7 @@ class WorkerHandleBase(object):
             try:
                 filter_conditions = FilterSchema().load(kwargs)
             except marshmallow.exceptions.ValidationError as err:
-                raise WorkerHandle.WorkerHandleError(err)
+                raise RemoteSeismicityWorkerHandle.WorkerHandleError(err)
 
             retval = []
             for resp in self._resp:
@@ -201,7 +226,7 @@ class WorkerHandleBase(object):
             try:
                 return serializer(many=True).load(self._resp.json())
             except (ValueError, marshmallow.exceptions.ValidationError) as err:
-                raise WorkerHandle.DecodingError(err)
+                raise RemoteSeismicityWorkerHandle.DecodingError(err)
 
         # load ()
 
@@ -432,15 +457,16 @@ class WorkerHandleBase(object):
 
     # validate_ctor_args ()
 
-# class WorkerHandleBase
+# class SeismicityWorkerHandle
 
 
-class SaSSWorkerHandle(WorkerHandleBase):
+SeismicityWorkerHandle = RemoteSeismicityWorkerHandle
+WorkerHandleBase.register(SeismicityWorkerHandle)
+
+
+class SaSSWorkerHandle(SeismicityWorkerHandle):
     MODEL_ID = 'SaSS'
     API_VERSION = 'v1'
-
-
-WorkerHandle = WorkerHandleBase
 
 
 # ---- END OF <worker.py> ----
