@@ -234,6 +234,68 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
     # class QueryResult
 
+    class Payload(object):
+        """
+        Representation of the payload sent to the remote seismicity forecast
+        worker. Encapsulates data model specific facilities.
+
+        .. note::
+
+            At the time being seismicity forecasts only hanlde a single
+            injection well. As a consequence, the scenario forecasted is a
+            single injection plan. Time depended injection well geometries
+            currently are not supported (Those would be also part of the
+            scenario).
+        """
+
+        DEFAULT_SERIALIZER = WorkerInputMessageSchema
+
+        def __init__(self, seismic_catalog, well, scenario, reservoir,
+                     model_config, **kwargs):
+            """
+            :param seismic_catalog: Snapshot of a seismic catalog
+            :type seismic_catalog:
+                :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
+            :param well: Snapshot of the injection well / borehole including
+                the hydraulics.
+            :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
+            :param scenario: The scenario to be forecasted
+            :type scenario:
+                :py:class:`ramsis.datamodel.hydraulics.InjectionPlan`
+            :param str reservoir: Reservoir geometry in `WKT
+                <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
+                format
+            :param dict model_config: Model specific configuration parameters
+            :param serializer: Serializer used to serialize the payload
+            :type serializer: :py:class:`marshmallow.Schema`
+            """
+            well = self.validate_ctor_args(well)
+            self._payload = {
+                'seismic_catalog': seismic_catalog,
+                'well': well,
+                'scenario': scenario,
+                'reservoir': reservoir,
+                'model_parameters': model_config}
+
+            self._serializer = kwargs.get(
+                'serializer', self.DEFAULT_SERIALIZER)
+
+        # __init__ ()
+
+        def dump(self):
+            return self._serializer.dump(self._payload)
+
+        @staticmethod
+        def validate_ctor_args(well):
+            if len(well.hydraulics) == 1:
+                return well
+            raise ValueError(
+                "A well must have only a single hydraulics time series.")
+
+        # validate_ctor_args ()
+
+    # class Payload
+
     def __init__(self, base_url, **kwargs):
         """
         :param str base_url: The worker's base URL
@@ -351,34 +413,30 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
     # query ()
 
-    def compute(self, scenario, **kwargs):
+    def compute(self, payload, **kwargs):
         """
-        Issue a task to a worker.
+        Issue a task to a remote seismicity forecast worker.
 
-        :param serializer_transmit: Serializer used for payload serialization
-        :type serializer_transmit: :py:class:`marshmallow.Schema`
-        :param serializer_receive: Serializer used to load the response.
-        :type serializer_receive: :py:class:`marshmallow.Schema`
+        :param payload: Payload sent to the remote worker
+        :type payload: :py:class:`SeismicityWorkerHandle.Payload`
+        :param serializer: Optional serializer used to load the response
+        :type serializer: :py:class:`marshmallow.Schema`
         """
-        serializer_transmit = kwargs.get('serializer_transmit',
-                                         WorkerInputMessageSchema)
-        serializer_receive = kwargs.get('serializer_receive')
+        # TODO(damb): Howto extract the correct hydraulics catalog for the
+        # injection well?
+        # -> Something like well.snapshot(hydraulics_idx=0) might be
+        # implemented returning the current well with an hydraulics catalog
+        # snapshot.
+        #
+        # TODO (damb): Howto avoid passing the arguments explicitly without
+        # passing only the parent project; Provide an external
+        # "prepare_payload" function?
 
-        # NOTE(damb): Currently we neither transmit reservoir_geometry
-        # nor model_parameters related data
+        serializer = kwargs.get('serializer_receive')
 
-        # prepare payload
-        payload = {
-            'forecast': scenario.forecast_input.forecast,
-            'injection_history': scenario.forecast_input.forecast.
-            forecast_set.project.injection_history,
-            'injection_plan': scenario.injection_plan,
-            'injection_wells': scenario.forecast_input.forecast.
-            forecast_set.project.injection_well
-        }
-
+        # serialize payload
         try:
-            payload = serializer_transmit.dump(payload)
+            _payload = payload.dump()
         except marshmallow.exceptions.ValidationError as err:
             raise self.EncodingError(err)
 
@@ -386,15 +444,15 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             'Sending computation request (model={!r}, url={!r}).'.format(
                 self.model, self.url))
         try:
-            response = requests.post(self.url, data=payload,
+            response = requests.post(self.url, data=_payload,
                                      timeout=self._timeout)
         except requests.exceptions.RequestException as err:
             raise self.ConnectionError(err)
 
         try:
             result = response.json()
-            if serializer_receive:
-                result = serializer_receive().load(result)
+            if serializer:
+                result = serializer().load(result)
         except (ValueError, marshmallow.exceptions.ValidationError) as err:
             raise self.DecodingError(err)
 
