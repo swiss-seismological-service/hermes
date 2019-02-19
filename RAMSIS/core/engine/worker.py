@@ -282,7 +282,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         # __init__ ()
 
-        def dump(self):
+        def dumps(self):
             return self._serializer.dump(self._payload)
 
         @staticmethod
@@ -436,7 +436,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         # serialize payload
         try:
-            _payload = payload.dump()
+            _payload = payload.dumps()
         except marshmallow.exceptions.ValidationError as err:
             raise self.EncodingError(err)
 
