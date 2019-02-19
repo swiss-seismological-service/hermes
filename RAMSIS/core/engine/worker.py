@@ -111,12 +111,14 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         """
         Implementation of a query result. Partly implements the interface from
         :py:class:`sqlalchemy.orm.query.Query`.
-
-        :param resp: *RT-RAMSIS* worker responses.
-        :type resp: list or dict
         """
 
         def __init__(self, resp):
+            """
+            :param resp: *RT-RAMSIS* worker responses.
+            :type resp: list or dict
+            """
+
             if not isinstance(resp, list):
                 resp = [resp]
             self._resp = resp
@@ -233,6 +235,13 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     # class QueryResult
 
     def __init__(self, base_url, **kwargs):
+        """
+        :param str base_url: The worker's base URL
+        :param str model_id: Model indentifier
+        :param timeout: Timeout parameters past to the `requests
+            <http://docs.python-requests.org/en/master/>`_ library functions
+        :type timeout: float or tuple
+        """
         self.logger = logging.getLogger(self.LOGGER)
 
         base_url, model_id = self.validate_ctor_args(
