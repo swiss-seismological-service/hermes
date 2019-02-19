@@ -427,10 +427,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         # -> Something like well.snapshot(hydraulics_idx=0) might be
         # implemented returning the current well with an hydraulics catalog
         # snapshot.
-        #
-        # TODO (damb): Howto avoid passing the arguments explicitly without
-        # passing only the parent project; Provide an external
-        # "prepare_payload" function?
 
         serializer = kwargs.get('serializer_receive')
 
