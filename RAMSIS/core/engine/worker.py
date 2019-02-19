@@ -182,7 +182,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             for resp in self._resp:
                 if (resp is not None and
                     all(resp[k] == v
-                       for k, v in filter_conditions.items())):
+                        for k, v in filter_conditions.items())):
                     retval.append(resp)
 
             return self.__class__(retval)
