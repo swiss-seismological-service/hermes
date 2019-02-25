@@ -136,7 +136,7 @@ class WorkerClient(object):
     :param int polling_timeout: Timeout while polling for worker results.
     """
     LOGGER = 'ramsis.worker.worker_client'
-    SERIALIZER_CONTEXT = {'application': 'WORKER'}
+    SERIALIZER_CONTEXT = {'application': 'SFMWORKER'}
 
     class WorkerClientError(Error):
         """Base worker client error ({})."""
@@ -176,7 +176,8 @@ class WorkerClient(object):
 
     @property
     def payload(self):
-        serializer = WorkerInputMessageSchema(context=self.SERIALIZER_CONTEXT)
+        serializer = SFMWorkerInputMessageSchema(
+            context=self.SERIALIZER_CONTEXT)
         return serializer.dump(self.data).data
 
     # payload
@@ -498,11 +499,12 @@ class WorkerClientApp(object):
         self.logger.debug('Worker base URL: {}'.format(self.args.url_worker))
         self.logger.debug('Worker model: {}'.format(self.args.model))
 
-        worker = WorkerHandle.create(base_url=self.args.url_worker,
-                                     worker_id=self.args.model,
-                                     timeout=self.args.timeout)
+        worker = RemoteSeismicityWorkerHandle.create(
+            base_url=self.args.url_worker,
+            worker_id=self.args.model,
+            timeout=self.args.timeout)
 
-        self.logger.debug('Worker handle: {}'.format(worker))
+        self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
         filter_conditions = {}
 
@@ -536,11 +538,12 @@ class WorkerClientApp(object):
         self.logger.debug('Worker base URL: {}'.format(self.args.url_worker))
         self.logger.debug('Worker model: {}'.format(self.args.model))
 
-        worker = WorkerHandle.create(base_url=self.args.url_worker,
-                                     worker_id=self.args.model,
-                                     timeout=self.args.timeout)
+        worker = RemoteSeismicityWorkerHandle.create(
+            base_url=self.args.url_worker,
+            worker_id=self.args.model,
+            timeout=self.args.timeout)
 
-        self.logger.debug('Worker handle: {}'.format(worker))
+        self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
         resp = worker.delete(self.args.task_ids)
         self.logger.debug('Number of tasks removed: {}'.format(resp.count()))
