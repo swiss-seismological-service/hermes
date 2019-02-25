@@ -357,7 +357,7 @@ class WorkerClientApp(object):
                                           description=self.do_list.__doc__,
                                           help=('List tasks from a '
                                                 '*RT-RAMSIS* worker.'))
-        # subparser - commit: optional arguments
+        # subparser - list: optional arguments
         subparser.add_argument('--all', '-a', dest='filters',
                                action='append_const', const=None,
                                default=['status_code=200'],
@@ -367,11 +367,10 @@ class WorkerClientApp(object):
                                action='append',
                                help=('Filter tasks based on conditions '
                                      'provided. The filtering flag format '
-                                     'is a key=value pair'))
+                                     'is a key=value pair.'))
         subparser.add_argument('--quiet', '-q', dest='quiet',
                                action='store_true', default=False,
                                help='Only display task identifiers.')
-
         # subparser - list: positional arguments
         subparser.add_argument('url_worker', metavar='URL_WORKER',
                                type=url_worker,

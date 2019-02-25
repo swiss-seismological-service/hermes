@@ -25,7 +25,8 @@ from marshmallow import Schema, fields
 from marshmallow.validate import OneOf
 
 from ramsis.utils.error import Error
-from ramsis.utils.protocol import SFMWorkerInputMessageSchema, StatusCode
+from ramsis.utils.protocol import (SFMWorkerInputMessageSchema, StatusCode,
+                                   MIMETYPE)
 
 
 class FilterSchema(Schema):
