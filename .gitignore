@@ -1,49 +1,46 @@
-# External Subversion repositories
-ramsis/external/shapiro_spatial
+## Derived Files
 
-# MATLAB generated files #
-*.asv
-*.m~
-*.mex
-
-# Python Files
+# Python
 *.py[cod]
+*.egg-info
+.eggs/
+.pytest_cache/
+
+# Other
+images_rc.py
+
+
+## Development Tools
 
 # PyCharm IDE
 .idea/
+
+# Vim
+*.swp
 
 # Sphinx
 doc/manual/_build
 doc/_build
 
-# epydoc
-doc/api/_build
-
 # QT Creator
 *.autosave
 
-# OS generated files #
+# Virtual environment
+venv*
+
+
+## OS specific files
+
+# Mac
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
 Icon?
-ehthumbs.db
+thumbs.db
 Thumbs.db
 
-# Input / test data
-data/basel_hydr_1min.dat
-data/basel_hydr_1sec.dat.txt
-ramsis_run_data.csv
-model_inputs.mat
-ramsis/gdalwmscache
 
-# Vagrant
-.vagrant
-*.user
-ramsis.ini
 
-# vim
-*.swp
-images_rc.py
+
