@@ -13,9 +13,9 @@ test-pep8:
   stage: test
   image: python:3.6-alpine
   before_script:
-    - pip install flake8
+    - pip install tox
   script:
-    - flake8
+    - tox
   tags:
     - docker
 
