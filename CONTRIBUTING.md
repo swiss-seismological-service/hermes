@@ -17,6 +17,37 @@
 - Write proper commit messages that explain what changes with the commit and
   why. Use imperative present tense like [many others](https://stackoverflow.com/questions/3580013/should-i-use-past-or-present-tense-in-git-commit-messages) do.
 
+  
+## Commit Message Formatting
+
+Tag commit messages so they can be easily filtered or grepped. 
+
+**Tags**
+
+- DOC: documentation
+- MAINT: maintenance commit (refactoring, typos, etc.)
+- STY: style fix (whitespace, PEP8)
+- TST: addition or modification of tests
+- BUG: bug fix
+- WIP: work in progress
+- ENH: enhancement
+
+Tags are should be surrounded by brackets followed by a colon, i.e.:
+
+```
+[TAG]: Commit summary
+
+Detailed commit description (block) ...
+```
+
+Multiple tags may be used together, too, e.g.:
+
+```
+[ENH][WIP]: Commit summary
+
+Detailed commit description (block) ...
+```
+
 ## Environment
 
 - We target python 3.6 and PyQt 5.12 LTS. Set up a *virtualenv* to keep things 
