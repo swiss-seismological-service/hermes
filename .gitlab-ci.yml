@@ -20,7 +20,7 @@ test-pep8:
     - docker
 
 # Build a docker image for an RT-RAMSIS release and push it to the registry
-release:
+deploy-docker:
   stage: release
   services:
     - docker:dind
