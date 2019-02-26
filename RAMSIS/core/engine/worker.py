@@ -284,7 +284,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         # __init__ ()
 
         def dumps(self):
-            return self._serializer.dump(self._payload)
+            return self._serializer().dumps(self._payload)
 
         @staticmethod
         def validate_ctor_args(well):
@@ -441,7 +441,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             'Sending computation request (model={!r}, url={!r}).'.format(
                 self.model, self.url))
         try:
+            headers = {'Content-Type': MIMETYPE,
+                       'Accept': 'text/plain'}
             response = requests.post(self.url, data=_payload,
+                                     headers=headers,
                                      timeout=self._timeout)
         except requests.exceptions.RequestException as err:
             raise self.ConnectionError(err)
