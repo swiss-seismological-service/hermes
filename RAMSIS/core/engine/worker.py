@@ -429,7 +429,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         # implemented returning the current well with an hydraulics catalog
         # snapshot.
 
-        serializer = kwargs.get('serializer_receive')
+        serializer = kwargs.get('serializer')
 
         # serialize payload
         try:
