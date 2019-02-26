@@ -252,11 +252,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         DEFAULT_SERIALIZER = SFMWorkerInputMessageSchema
 
         def __init__(self, seismic_catalog, well, scenario, reservoir,
-                     model_config, **kwargs):
+                     model_parameters, **kwargs):
             """
-            :param seismic_catalog: Snapshot of a seismic catalog
-            :type seismic_catalog:
-                :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
+            :param str seismic_catalog: Snapshot of a seismic catalog in
+            `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
             :param well: Snapshot of the injection well / borehole including
                 the hydraulics.
             :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
@@ -266,17 +265,18 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             :param str reservoir: Reservoir geometry in `WKT
                 <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
                 format
-            :param dict model_config: Model specific configuration parameters
+            :param dict model_parameters: Model specific configuration
+                parameters
             :param serializer: Serializer used to serialize the payload
             :type serializer: :py:class:`marshmallow.Schema`
             """
             well = self.validate_ctor_args(well)
             self._payload = {
-                'seismic_catalog': seismic_catalog,
+                'seismic_catalog': {'quakeml': seismic_catalog},
                 'well': well,
                 'scenario': scenario,
-                'reservoir': reservoir,
-                'model_parameters': model_config}
+                'reservoir': {'geom': reservoir},
+                'model_parameters': model_parameters}
 
             self._serializer = kwargs.get(
                 'serializer', self.DEFAULT_SERIALIZER)
