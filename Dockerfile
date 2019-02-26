@@ -79,6 +79,3 @@ COPY . /build
 
 RUN pip install --no-index /build \
     && rm -rf /build
-
-RUN apt-get install -y x11-apps
-
