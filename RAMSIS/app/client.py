@@ -39,11 +39,10 @@ from ramsis.datamodel.hydraulics import InjectionPlan, InjectionSample
 from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
-from ramsis.utils.protocol import (WorkerInputMessage,
-                                   WorkerInputMessageSchema,
+from ramsis.utils.protocol import (SFMWorkerInputMessageSchema,
                                    StatusCode)
 from RAMSIS import __version__
-from RAMSIS.core.engine.worker import WorkerHandle
+from RAMSIS.core.engine.worker import RemoteSeismicityWorkerHandle
 
 # -----------------------------------------------------------------------------
 TIMEOUT_POLLING = 60
