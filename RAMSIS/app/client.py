@@ -591,47 +591,6 @@ class WorkerClientApp(object):
 
     # _setup_fallback_logger ()
 
-    @staticmethod
-    def _create_forecast(forecast_starttime, forecast_duration=21600,
-                         forecast_mc=0.9,
-                         forecast_m_min=0,
-                         forecast_m_max=6,
-                         scenario_name='TestScenario'):
-        """
-        Create a test (dummy) forcast.
-
-        :param int forecast_duration: Forecast duration in seconds
-        """
-        forecast = Forecast()
-        forecast_input = ForecastInput()
-        scenario = Scenario()
-        scenario.name = scenario_name
-        # XXX(damb): scenario.config is not used
-
-        injection_plan = InjectionPlan()
-        injection_sample_start = InjectionSample(None, None, None, None, None)
-        injection_sample_start.date_time = forecast_starttime
-        injection_sample_end = InjectionSample(None, None, None, None, None)
-        injection_sample_end.date_time = (
-            forecast_starttime + datetime.timedelta(seconds=forecast_duration))
-
-        # relations
-        forecast.input = forecast_input
-        forecast_input.scenarios = [scenario]
-        scenario.injection_plan = injection_plan
-        injection_plan.samples = [injection_sample_start, injection_sample_end]
-
-        # forecast attributes
-        forecast.forecast_time = forecast_starttime
-        forecast.forecast_interval = forecast_duration
-        forecast.mc = forecast_mc
-        forecast.m_min = forecast_m_min
-        forecast.m_max = forecast_m_max
-
-        return forecast
-
-    # _create_forecast ()
-
 # class WorkerClientApp
 
 
