@@ -18,6 +18,7 @@ implementations.
 import argparse
 import contextlib
 import datetime
+import json
 import logging
 import os
 import sys
@@ -29,6 +30,7 @@ from urllib.parse import urlparse
 
 import requests
 
+from osgeo import gdal, ogr
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
@@ -118,6 +120,40 @@ def requests_timeout(timeout):
     return timeout
 
 # requests_timeout ()
+
+
+def model_config(config_dict):
+    """
+    Validate the model parameter configration dictionary. Exclusively checks if
+    the :code:`dict` is JSON serializable.
+
+    :param str config_dict: Configuration dictionary
+    :retval: dict
+    """
+    try:
+        config_dict = json.loads(config_dict)
+    except Exception:
+        raise argparse.ArgumentTypeError(
+            'Invalid model default configuration dictionary syntax.')
+
+    return config_dict
+
+# model_config ()
+
+
+def wkt(wkt_geom):
+    gdal.UseExceptions()
+    try:
+        geom = ogr.CreateGeometryFromWkt(wkt_geom)
+        if not geom:
+            raise ValueError('Error while parsing WKT.')
+    except Exception as err:
+        raise argparse.ArgumentTypeError(
+            'Cannot create geometry from WKT: {}'.format(err))
+
+    return geom.ExportToIsoWkt()
+
+# wkt ()
 
 
 # -----------------------------------------------------------------------------
@@ -335,16 +371,31 @@ class WorkerClientApp(object):
                                           help=('Issue a new task to a '
                                                 '*RT-RAMSIS* worker.'))
         # subparser - commit: optional arguments
-        subparser.add_argument('--project', dest='project', metavar='ID',
-                               type=int, default=1,
-                               help=('Project identifier. '
-                                     '(default: %(default)s)'))
+        subparser.add_argument('--fdsnws-event', dest='url_fdsnws_event',
+                               # TODO(damb): Verify the URL
+                               type=str, metavar='URL',
+                               help=('Fetch a seismic catalog from a '
+                                     'fdsnws-event webservice specified by '
+                                     'URL directly.'))
+        subparser.add_argument('--model-parameters', metavar='DICT',
+                               type=model_config, dest='model_parameters',
+                               default='{}',
+                               help=("Model configuration parameter dict "
+                                     "(JSON syntax)."))
+        subparser.add_argument('--reservoir', metavar='WKT',
+                               type=wkt, dest='reservoir',
+                               help=("Reservoir description in WKT format "
+                                     "(srid=4326)."))
+        # subparser.add_argument('--project', dest='project', metavar='ID',
+        #                       type=int, default=1,
+        #                       help=('Project identifier. '
+        #                             '(default: %(default)s)'))
 
         # subparser: commit: positional arguments
-        subparser.add_argument('url_db', metavar='URL_DB', type=db_engine,
-                               help=('RAMSIS datamodel DB URL indicating the '
-                                     'database dialect and connection '
-                                     'arguments.'))
+        # subparser.add_argument('url_db', metavar='URL_DB', type=db_engine,
+        #                       help=('RAMSIS datamodel DB URL indicating the '
+        #                             'database dialect and connection '
+        #                             'arguments.'))
         subparser.add_argument('url_worker', metavar='URL_WORKER',
                                type=url_worker,
                                help='Base worker URL.')
@@ -467,7 +518,70 @@ class WorkerClientApp(object):
         Issue a new task to a *RT-RAMSIS* worker. The task is created from an
         already existing project from the RT-RAMSIS database.
         """
-        # TODO TODO TODO
+        def quakeml(args):
+
+            if args.url_fdsnws_event:
+                self.logger.debug(
+                    'Fetching seismic catalog from fdsnws-event: {!r}'.format(
+                        args.url_fdsnws_event))
+                resp = requests.get(args.url_fdsnws_event)
+                qml = resp.content
+                self.logger.debug('Received seismic catalog.')
+            else:
+                # TODO(damb): To be done.
+                raise NotImplementedError(
+                    'Fetching the catalog from the ramsis-core DB '
+                    'is currently not implemented.')
+
+            return qml
+
+        # quakeml ()
+
+        def model_parameters(args):
+
+            if args.model_parameters:
+                self.logger.debug(
+                    'Use user-defined model parameters: {!r}'.format(
+                        args.model_parameters))
+
+            # TODO(damb): Fetching the model configuration from the ramsis-core
+            # DB is currently not implemented.
+
+            return args.model_parameters
+
+        # model_parameters ()
+
+        def reservoir(args):
+
+            if args.reservoir:
+                self.logger.debug(
+                    'Use user-defined reservior configuration: {!r}'.format(
+                        args.reservoir))
+
+            # TODO(damb): Fetching the reservoir configuration from the
+            # ramsis-core DB is currently not implemented.
+
+            return args.reservoir
+
+        # reservoir ()
+
+        data = {
+            'seismic_catalog': quakeml(args),
+            'model_parameters': model_parameters(args),
+            'reservoir': reservoir(args)
+        }
+
+        payload = RemoteSeismicityWorkerHandle.Payload(
+            **data, well=None, scenario=None)
+
+        worker = RemoteSeismicityWorkerHandle.create(
+            base_url=self.args.url_worker,
+            worker_id=self.args.model,
+            timeout=self.args.timeout)
+
+        self.logger.debug('SeismicityWorker handle: {}'.format(worker))
+
+        worker.compute(payload)
 
     # do_commit ()
 
