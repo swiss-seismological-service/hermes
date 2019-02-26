@@ -18,8 +18,6 @@ test-pep8:
     - flake8
   tags:
     - docker
-  # FIXME: remove. for testing the ci script only
-  allow_failure: true
 
 # Build a docker image for an RT-RAMSIS release and push it to the registry
 release:
@@ -60,6 +58,9 @@ deploy-production:
     - pip install -r requirements.txt
     - pyrcc5 -o RAMSIS/ui/views/images_rc.py RAMSIS/ui/views/images.qrc
     - pip install .
-    - ln -s $DEPLOY_PATH $BASE_PATH/current
+    - ln -fs $DEPLOY_PATH $BASE_PATH/current
+  only:
+    - tags
+    - master
   tags:
     - production
