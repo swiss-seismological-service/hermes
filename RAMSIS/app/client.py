@@ -17,11 +17,9 @@ implementations.
 
 import argparse
 import contextlib
-import datetime
 import json
 import logging
 import sys
-import time
 import traceback
 import uuid
 
@@ -31,17 +29,10 @@ import requests
 
 from osgeo import gdal, ogr
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.forecast import Forecast, ForecastInput, Scenario
-from ramsis.datamodel.hydraulics import InjectionPlan, InjectionSample
 from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
-from ramsis.utils.protocol import (SFMWorkerInputMessageSchema,
-                                   StatusCode)
 from RAMSIS import __version__
 from RAMSIS.core.engine.worker import RemoteSeismicityWorkerHandle
 
