@@ -34,7 +34,7 @@ from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
-from RAMSIS.core.engine.worker import RemoteSeismicityWorkerHandle
+from RAMSIS.core.engine.worker import WorkerHandle, EWorkerHandle
 
 # -----------------------------------------------------------------------------
 TIMEOUT_POLLING = 60
@@ -429,13 +429,13 @@ class WorkerClientApp(object):
             'reservoir': reservoir(args)
         }
 
-        payload = RemoteSeismicityWorkerHandle.Payload(
-            **data, well=None, scenario=None)
+        payload = WorkerHandle.create_payload(
+            EWorkerHandle.SFM_REMOTE, **data, well=None)
 
-        worker = RemoteSeismicityWorkerHandle.create(
-            base_url=self.args.url_worker,
-            worker_id=self.args.model,
-            timeout=self.args.timeout)
+        worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
+                                     base_url=self.args.url_worker,
+                                     worker_id=self.args.model,
+                                     timeout=self.args.timeout)
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
@@ -470,10 +470,10 @@ class WorkerClientApp(object):
         self.logger.debug('Worker base URL: {}'.format(self.args.url_worker))
         self.logger.debug('Worker model: {}'.format(self.args.model))
 
-        worker = RemoteSeismicityWorkerHandle.create(
-            base_url=self.args.url_worker,
-            worker_id=self.args.model,
-            timeout=self.args.timeout)
+        worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
+                                     base_url=self.args.url_worker,
+                                     worker_id=self.args.model,
+                                     timeout=self.args.timeout)
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
@@ -509,10 +509,10 @@ class WorkerClientApp(object):
         self.logger.debug('Worker base URL: {}'.format(self.args.url_worker))
         self.logger.debug('Worker model: {}'.format(self.args.model))
 
-        worker = RemoteSeismicityWorkerHandle.create(
-            base_url=self.args.url_worker,
-            worker_id=self.args.model,
-            timeout=self.args.timeout)
+        worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
+                                     base_url=self.args.url_worker,
+                                     worker_id=self.args.model,
+                                     timeout=self.args.timeout)
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
