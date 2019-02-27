@@ -112,6 +112,22 @@ def requests_timeout(timeout):
 # requests_timeout ()
 
 
+def _validate_json(json_str, err_msg='Invalid JSON dict string.'):
+    """
+    Utility function validating JSON from a string.
+
+    :param str json_str: JSON string to be validated
+    :retruns: JSON dict
+    :rtype: dict
+
+    :raises: :py:class:`argparse.ArgumentTypeError` if loading fails
+    """
+    try:
+        return json.loads(json_str)
+    except Exception:
+        raise argparse.ArgumentTypeError(err_msg)
+
+
 def model_config(config_dict):
     """
     Validate the model parameter configration dictionary. Exclusively checks if
@@ -120,13 +136,9 @@ def model_config(config_dict):
     :param str config_dict: Configuration dictionary
     :retval: dict
     """
-    try:
-        config_dict = json.loads(config_dict)
-    except Exception:
-        raise argparse.ArgumentTypeError(
-            'Invalid model default configuration dictionary syntax.')
-
-    return config_dict
+    return _validate_json(
+        config_dict,
+        err_msg='Invalid model default configuration dictionary syntax.')
 
 # model_config ()
 
