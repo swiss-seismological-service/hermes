@@ -14,6 +14,7 @@ Worker related *RT-RAMSIS* facilities.
 
 import abc
 import collections
+import enum
 import logging
 import requests
 import uuid
@@ -43,6 +44,10 @@ class FilterSchema(Schema):
 # class FilterSchema
 
 
+class EWorkerHandle(enum.Enum):
+    SFM_REMOTE = enum.auto()
+
+
 class WorkerHandleBase(abc.ABC):
     """
     Interface simplifying the communication with *RT-RAMSIS* model worker
@@ -55,6 +60,43 @@ class WorkerHandleBase(abc.ABC):
 
     class WorkerHandleError(Error):
         """Base worker handle error ({})."""
+
+    @classmethod
+    def create(cls, handle_id, **kwargs):
+        """
+        Factory method for worker handle creation
+
+        :param handle_id: Handle identifier
+        :type: :py:class:`EWorkerHandle`
+        :param kwargs: Keyword value parameters passed to the underlying
+            worker handle constructor
+
+        :returns: Instance of a concrete implementation of
+            :py:class:`WorkerHandleBase`
+        :rtype: :py:class:`WorkerHandleBase`
+        """
+        if EWorkerHandle.SFM_REMOTE == handle_id:
+            return RemoteSeismicityWorkerHandle.create(**kwargs)
+
+        raise cls.WorkerHandleError(
+            'Invalid handle identifier: {!r}'.format(handle_id))
+
+    @classmethod
+    def create_payload(cls, handle_id, **kwargs):
+        """
+        Factory method for worker handle payload creation
+
+        :param handle_id: Handle identifier
+        :type: :py:class:`EWorkerHandle`
+        :param kwargs: Keyword value parameters passed to the underlying
+            worker handle payload constructor
+        """
+        # TODO(damb): Guarantee that that WorkerHandle.Payload is implemented.
+        if EWorkerHandle.SFM_REMOTE == handle_id:
+            return RemoteSeismicityWorkerHandle.Payload(**kwargs)
+
+        raise cls.WorkerHandleError(
+            'Invalid handle identifier: {!r}'.format(handle_id))
 
     @property
     @abc.abstractmethod
@@ -74,6 +116,9 @@ class WorkerHandleBase(abc.ABC):
         pass
 
 # class WorkerHandleBase
+
+
+WorkerHandle = WorkerHandleBase
 
 
 # -----------------------------------------------------------------------------
