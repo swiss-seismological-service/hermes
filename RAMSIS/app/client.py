@@ -136,7 +136,7 @@ def model_config(config_dict):
     the :code:`dict` is JSON serializable.
 
     :param str config_dict: Configuration dictionary
-    :retval: dict
+    :rtype: dict
     """
     return _validate_json(
         config_dict,
