@@ -25,6 +25,7 @@ import uuid
 
 from urllib.parse import urlparse
 
+import marshmallow
 import requests
 
 from osgeo import gdal, ogr
@@ -33,6 +34,7 @@ from sqlalchemy import create_engine
 from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
+from ramsis.utils.protocol import InjectionPlanSchema
 from RAMSIS import __version__
 from RAMSIS.core.engine.worker import WorkerHandle, EWorkerHandle
 
@@ -141,6 +143,25 @@ def model_config(config_dict):
         err_msg='Invalid model default configuration dictionary syntax.')
 
 # model_config ()
+
+
+def scenario(scenario_dict):
+    """
+    Validate the scenario configuration dictionary.
+
+    :param str scenario_dict: Scenario configuration dictionary
+    :rtype: dict
+    """
+    DESERIALIZER = InjectionPlanSchema
+
+    scenario_dict = _validate_json(
+        scenario_dict,
+        err_msg='Invalid scenario dict syntax.')
+
+    try:
+        return DESERIALIZER().load(scenario_dict)
+    except marshmallow.exceptions.ValidationError as err:
+        raise argparse.ArgumentTypeError(err)
 
 
 def wkt(wkt_geom):
@@ -256,6 +277,9 @@ class WorkerClientApp(object):
                                type=wkt, dest='reservoir',
                                help=("Reservoir description in WKT format "
                                      "(srid=4326)."))
+        subparser.add_argument('--scenario', metavar='JSON',
+                               type=scenario, dest='scenario',
+                               help="Scenario (injection plan) to be used.")
         # subparser.add_argument('--project', dest='project', metavar='ID',
         #                       type=int, default=1,
         #                       help=('Project identifier. '
@@ -435,10 +459,21 @@ class WorkerClientApp(object):
 
         # reservoir ()
 
+        def scenario(args):
+            if args.scenario:
+                self.logger.debug(
+                    'Use user-defined scenario configuration: {!r}'.format(
+                        args.scenario))
+
+            # TODO(damb): Fetching the reservoir configuration from the
+            # ramsis-core DB is currently not implemented.
+            return args.scenario
+
         data = {
             'seismic_catalog': quakeml(args),
             'model_parameters': model_parameters(args),
-            'reservoir': reservoir(args)
+            'reservoir': reservoir(args),
+            'scenario': scenario(args)
         }
 
         payload = WorkerHandle.create_payload(
