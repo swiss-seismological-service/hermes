@@ -33,17 +33,17 @@ _install_requires = [
     # XXX(damb): astropy dependency added due to AttributeError
     # AttributeError: module 'scipy.special' has no attribute 'loggamma'
     # while installing pymap3d
-    "astropy==2.0.3",
-    "lxml==3.3.3",
+    "astropy>=2.0.3",
+    "lxml>=3.3.3",
     "matplotlib",
     # TODO (damb): check if valid version: "numpy==1.8.2",
     "numpy>=1.8.2",
-    "obspy==1.0.2",
-    "PyOpenGL==3.1.1a1",
-    "PyQt5 >=5.8.2, <=5.10",
+    "obspy>=1.0.2",
+    "PyOpenGL>=3.1.1a1",
+    "PyQt5 >=5.12, <5.13",
     "pymap3d",
-    "pyqtgraph==0.10.0",
-    "ramsis.datamodel==0.1", ]
+    "pyqtgraph>=0.10.0",
+    "ramsis.datamodel>=0.1", ]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",
