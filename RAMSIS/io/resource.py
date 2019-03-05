@@ -111,7 +111,7 @@ class QuakeMLResource(ResourceBase):
                                                   **parse_kwargs):
 
                 if event == 'end' and len(element):
-                    yield element
+                    yield etree.tostring(element)
 
         except (RequestsError, etree.XMLSyntaxError) as err:
             raise ResourceError(err)
