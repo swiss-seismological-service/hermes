@@ -5,6 +5,7 @@ General purpose IO utilities.
 
 import abc
 import io
+import logging
 
 import requests
 
@@ -32,6 +33,10 @@ class IOBase(abc.ABC):
     """
     Abstract IO base class
     """
+    LOGGER = 'ramsis.io.io'
+
+    def __init__(self):
+        self.logger = logging.getLogger(self.LOGGER)
 
     @abc.abstractmethod
     def __iter__(self):

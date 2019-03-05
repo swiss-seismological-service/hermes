@@ -33,6 +33,8 @@ class QuakeMLDeserializer(IOBase):
     """
     RESOURCE_TYPE = EResource.QuakeML
 
+    LOGGER = 'RAMSIS.io.quakemldeserializer'
+
     def __init__(self, loader=HTTPGETStreamResourceLoader, mag_type=None,
                  **kwargs):
         """
@@ -45,6 +47,7 @@ class QuakeMLDeserializer(IOBase):
             verified (default).
         :type mag_type: str or None
         """
+        super().__init__(logger=self.LOGGER)
         try:
             self._proj = kwargs['proj']
         except KeyError as err:
@@ -53,7 +56,6 @@ class QuakeMLDeserializer(IOBase):
         self._mag_type = kwargs['mag_type']
         self._resource = Resource.create_resource(self.RESOURCE_TYPE,
                                                   loader=loader)
-
     def _deserialize(self):
         """
         Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
@@ -94,13 +96,15 @@ class QuakeMLDeserializer(IOBase):
             return io.BytesIO(
                 self.QUAKEML_HEADER + event_element + self.QUAKEML_FOOTER)
 
+        def add_prefix(prefix, d):
+            return {f"{prefix}{k}": v for k, v in d.items()}
+
         try:
             e = read_events(create_pseudo_catalog(event_element))[0]
         except Exception as err:
             raise QuakeMLError(f'While parsing QuakeML: {err}')
-
-        def add_prefix(prefix, d):
-            return {f"{prefix}{k}": v for k, v in d.items()}
+        else:
+            self.logger.debug(f"Importing seismic event: {e} ...")
 
         attr_dict = {}
         magnitude = e.preferred_magnitude
