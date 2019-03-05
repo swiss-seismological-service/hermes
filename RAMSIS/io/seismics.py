@@ -11,7 +11,7 @@ from osgeo import ogr, osr
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
 from RAMSIS.io.resource import Resource, EResource
-from RAMSIS.io.utils import IOBase, _IOError, HTTPGETStreamResourceLoader
+from RAMSIS.io.utils import IOBase, _IOError
 
 
 class QuakeMLError(_IOError):
@@ -35,10 +35,9 @@ class QuakeMLDeserializer(IOBase):
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
-    def __init__(self, loader=HTTPGETStreamResourceLoader, mag_type=None,
-                 **kwargs):
+    def __init__(self, loader, mag_type=None, **kwargs):
         """
-        :param loader: Loader in used for resource loading
+        :param loader: Loader instance used for resource loading
         :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
         :param str proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
@@ -56,6 +55,7 @@ class QuakeMLDeserializer(IOBase):
         self._mag_type = kwargs['mag_type']
         self._resource = Resource.create_resource(self.RESOURCE_TYPE,
                                                   loader=loader)
+
     def _deserialize(self):
         """
         Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an

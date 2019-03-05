@@ -10,7 +10,7 @@ import enum
 
 from lxml import etree
 
-from RAMSIS.io.utils import RequestsError, HTTPGETStreamResourceLoader
+from RAMSIS.io.utils import RequestsError
 
 from ramsis.utils.error import Error
 
@@ -79,9 +79,9 @@ class QuakeMLResource(ResourceBase):
     QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
     QUAKEML_SRS_ESPG = 4326
 
-    def __init__(self, loader=HTTPGETStreamResourceLoader, **kwargs):
+    def __init__(self, loader, **kwargs):
         """
-        :param loader: Resource loader returning a file-load object
+        :param loader: Resource loader instance returning a file-load object
         :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
         """
         self._loader = loader
