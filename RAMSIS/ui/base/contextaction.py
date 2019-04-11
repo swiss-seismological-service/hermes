@@ -1,0 +1,70 @@
+"""
+Actions installed in context menus for TableView rows
+    
+Copyright (C) 2018, SED (ETH Zurich)
+
+"""
+from PyQt5.QtWidgets import QAction, QMessageBox
+from ui.base.roles import CustomRoles
+
+
+class ContextAction(QAction):
+
+    def __init__(self, text, slot, enabler=None):
+        super().__init__(text)
+        self.triggered.connect(self._on_triggered)
+        self._enabler = enabler if enabler else lambda idx: True
+        self.slot = slot
+        self._selected_indexes = []
+
+    @property
+    def selected_indexes(self):
+        return self._selected_indexes
+
+    @selected_indexes.setter
+    def selected_indexes(self, indexes):
+        self._selected_indexes = indexes
+        self.setEnabled(self._enabler(indexes))
+
+    def confirm(self, indexes):
+        return True
+
+    def _on_triggered(self):
+        if self.confirm(self.selected_indexes):
+            self.slot(self.selected_indexes)
+
+    # Enablers
+
+    @classmethod
+    def single_only_enabler(self, idx):
+        return len(idx) == 1
+
+
+class Separator(ContextAction):
+
+    def __init__(self, parent=None):
+        super().__init__('', slot=None)
+
+    def isSeparator(self):
+        return True
+
+
+class ContextActionDelete(ContextAction):
+
+    def __init__(self, slot, parent_widget, text='Delete...', enabler=None,
+                 target='items'):
+        super().__init__(text, slot, enabler=enabler)
+        self.target = target
+        self.parent_widget = parent_widget
+
+    def confirm(self, indexes):
+        if len(indexes) > 1:
+            what = f'all selected {self.target}'
+        else:
+            what = str(indexes[0].data(CustomRoles.RepresentedItemRole))
+        reply = QMessageBox.critical(self.parent_widget,
+                                     f'Delete {self.target}',
+                                     f'Are you sure you want to delete '
+                                     f'{what}?',
+                                     QMessageBox.Yes, QMessageBox.No)
+        return reply == QMessageBox.Yes
