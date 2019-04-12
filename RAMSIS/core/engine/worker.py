@@ -131,8 +131,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
     .. code::
 
-        class SaSSWorkerHandle(SeismicityWorkerHandle):
-            MODEL_ID = 'SaSS'
+        class EM1WorkerHandle(SeismicityWorkerHandle):
+            MODEL_ID = 'EM1'
             API_VERSION = 'v1'
 
     """
@@ -385,8 +385,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         :raises WorkerHandleError: If an invalid model identifier was passed
         """
-        if 'SaSS' == worker_id:
-            return SaSSWorkerHandle(base_url, **kwargs)
+        if 'EM1' == worker_id:
+            return EM1WorkerHandle(base_url, **kwargs)
 
         raise cls.WorkerHandleError(
             'Invalid worker identifier: {!r}'.format(worker_id))
@@ -579,8 +579,8 @@ SeismicityWorkerHandle = RemoteSeismicityWorkerHandle
 WorkerHandleBase.register(SeismicityWorkerHandle)
 
 
-class SaSSWorkerHandle(SeismicityWorkerHandle):
-    MODEL_ID = 'SaSS'
+class EM1WorkerHandle(SeismicityWorkerHandle):
+    MODEL_ID = 'EM1'
     API_VERSION = 'v1'
 
 
