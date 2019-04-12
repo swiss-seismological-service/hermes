@@ -614,9 +614,6 @@ class WorkerClientApp(object):
 
 # ----------------------------------------------------------------------------
 def main():
-    """
-    Main function for SaSS model worker webservice
-    """
 
     app = WorkerClientApp(log_id='RAMSIS-CLIENT')
 
