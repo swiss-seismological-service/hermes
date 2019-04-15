@@ -89,9 +89,9 @@ class QuakeMLDeserializer(IOBase):
 
             .. note::
 
-                ObsPy does not implement parsing QuakeML events *only*. As a
-                consequence, creating a pseudo catalog with a single event is
-                necessary.
+                ObsPy does not implement parsing *plain* QuakeML events. As a
+                consequence, this workaround is in use i.e. creating a pseudo
+                catalog from a single event.
             """
             return io.BytesIO(
                 self.QUAKEML_HEADER + event_element + self.QUAKEML_FOOTER)

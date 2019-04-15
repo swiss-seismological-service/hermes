@@ -81,7 +81,7 @@ class QuakeMLResource(ResourceBase):
 
     def __init__(self, loader, **kwargs):
         """
-        :param loader: Resource loader instance returning a file-load object
+        :param loader: Resource loader instance returning a file-like object
         :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
         """
         self._loader = loader
