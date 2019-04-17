@@ -7,6 +7,7 @@ import abc
 import io
 import logging
 
+import pymap3d
 import requests
 
 from ramsis.utils.error import Error
@@ -35,7 +36,7 @@ class IOBase(abc.ABC):
     """
     LOGGER = 'ramsis.io.io'
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.logger = logging.getLogger(self.LOGGER)
 
     @abc.abstractmethod
@@ -127,3 +128,29 @@ class HTTPGETStreamResourceLoader(HTTPGETResourceLoader):
 ResourceLoader.register(FileLikeResourceLoader)
 ResourceLoader.register(HTTPGETResourceLoader)
 ResourceLoader.register(HTTPGETStreamResourceLoader)
+
+
+def _callable_or_raise(obj):
+    """
+    Makes sure an object is callable if it is not :code:`None`.
+
+    :returns: Object validated
+    :raises: ValueError: If :code:`obj` is not callable
+    """
+    if obj and not callable(obj):
+        raise ValueError(f"{obj!r} is not callable.")
+    return obj
+
+
+def pymap3d_transform(x, y, z, proj):
+    # extract observer position from proj4 string
+    origin = dict([v.split('=') for v in proj.split(' ')
+                   if (v.startswith('+x_0') or
+                       v.startswith('+y_0') or
+                       v.startswith('+z_0'))])
+
+    if len(origin) != 3:
+        raise ValueError(f"Invalid proj4 string: {proj!r}")
+
+    return pymap3d.geodetic2ned(
+        x, y, z, int(origin['+y_0']), int(origin['+x_0']), int(origin['+z_0']))

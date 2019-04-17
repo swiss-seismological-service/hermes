@@ -11,7 +11,7 @@ from osgeo import ogr, osr
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
 from RAMSIS.io.resource import Resource, EResource
-from RAMSIS.io.utils import IOBase, _IOError
+from RAMSIS.io.utils import IOBase, _IOError, _callable_or_raise
 
 
 class QuakeMLError(_IOError):
@@ -46,15 +46,21 @@ class QuakeMLDeserializer(IOBase):
             verified (default).
         :type mag_type: str or None
         """
-        super().__init__(logger=self.LOGGER)
-        try:
-            self._proj = kwargs['proj']
-        except KeyError as err:
-            raise QuakeMLError(f"Missing SRS projection: {err}")
+        super().__init__()
 
-        self._mag_type = kwargs['mag_type']
+        self._proj = kwargs.get('proj')
+        if not self._proj:
+            raise QuakeMLError("Missing SRS (PROJ4) projection.")
+
+        self._transform_callback = _callable_or_raise(
+            kwargs.get('transform_callback'))
+        self._mag_type = kwargs.get('mag_type')
         self._resource = Resource.create_resource(self.RESOURCE_TYPE,
                                                   loader=loader)
+
+    @property
+    def proj(self):
+        return self._proj
 
     def _deserialize(self):
         """
@@ -94,10 +100,16 @@ class QuakeMLDeserializer(IOBase):
                 catalog from a single event.
             """
             return io.BytesIO(
-                self.QUAKEML_HEADER + event_element + self.QUAKEML_FOOTER)
+                self._resource.QUAKEML_HEADER +
+                event_element +
+                self._resource.QUAKEML_FOOTER)
 
-        def add_prefix(prefix, d):
-            return {f"{prefix}{k}": v for k, v in d.items()}
+        def add_prefix(prefix, d, replace_args=['_', '']):
+            if not replace_args:
+                replace_args = ["", ""]
+
+            return {"{}{}".format(prefix, k.replace(*replace_args)): v
+                    for k, v in d.items()}
 
         try:
             e = read_events(create_pseudo_catalog(event_element))[0]
@@ -107,29 +119,30 @@ class QuakeMLDeserializer(IOBase):
             self.logger.debug(f"Importing seismic event: {e} ...")
 
         attr_dict = {}
-        magnitude = e.preferred_magnitude
+        magnitude = e.preferred_magnitude()
         if self._mag_type and magnitude.magnitude_type != self._mag_type:
             raise InvalidMagnitudeType(magnitude.magnitude_type)
 
-        attr_dict['magnitude'] = magnitude.mag
+        attr_dict['magnitude_value'] = magnitude.mag
         attr_dict.update(add_prefix('magnitude_', magnitude.mag_errors))
 
-        origin = e.preferred_origin
+        origin = e.preferred_origin()
         attr_dict['datetime_value'] = origin.time.datetime
         attr_dict.update(add_prefix('datetime_', origin.time_errors))
 
+        crs_transform = self._transform_callback or self._transform
         # convert origin into local CRS
         try:
-            x, y, z = self._transform(origin.longitude, origin.latitude,
-                                      origin.depth, self._proj)
+            x, y, z = crs_transform(origin.longitude, origin.latitude,
+                                    origin.depth, self.proj)
         except Exception as err:
             raise TransformationError(err)
 
-        attr_dict['x'] = x
+        attr_dict['x_value'] = x
         attr_dict.update(add_prefix('x_', origin.longitude_errors))
-        attr_dict['y'] = y
+        attr_dict['y_value'] = y
         attr_dict.update(add_prefix('y_', origin.latitude_errors))
-        attr_dict['z'] = z
+        attr_dict['z_value'] = z
         attr_dict.update(add_prefix('z_', origin.depth_errors))
 
         return SeismicEvent(**attr_dict)
@@ -141,7 +154,7 @@ class QuakeMLDeserializer(IOBase):
         for qml_event in self._resource:
             try:
                 yield self._deserialize_event(qml_event)
-            except InvalidMagnitudeType:
+            except InvalidMagnitudeType as err:
                 continue
 
     def _transform(self, x, y, z, proj):
@@ -168,6 +181,32 @@ class QuakeMLDeserializer(IOBase):
         point_z.Transform(t)
 
         return point_z.GetX(), point_z.GetY(), point_z.GetZ()
+
+    def transform_callback(self, func):
+        """
+        Decorator that registers a custom SRS transformation.
+
+        The function should receive the coordinates :code:`x`, :code:`y,
+        :code:`z`, and an optional projection. The function is required to
+        return a tuple of the transformed values.  Overrides the deserializer's
+        :code:`_transform` method.
+
+        :param callable func: The SRS transformation to be registered
+
+        The usage is illustrated bellow:
+
+        .. code::
+
+            deserializer = QuakeMLDeserializer(loader, proj=proj)
+
+            @deserializer.transform_callback
+            def crs_transform(x, y, z, proj):
+                return pymap3d_transform(x, y, z, proj)
+
+            cat = deserializer.load()
+        """
+        self._transform_callback = func
+        return func
 
     load = _deserialize
 
