@@ -31,7 +31,7 @@ class QuakeMLDeserializer(IOBase):
     Deserializes `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
     RT-RAMSIS seismic catalog.
     """
-    RESOURCE_TYPE = EResource.QuakeML
+    RESOURCE_TYPE = EResource.QUAKEML
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
