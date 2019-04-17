@@ -31,7 +31,7 @@ class ResourceBase(abc.ABC):
     loading and loading in a single step.
     """
 
-    @classmethod
+    @staticmethod
     def create_resource(resource_format, **kwargs):
 
         if resource_format == EResource.QUAKEML:
