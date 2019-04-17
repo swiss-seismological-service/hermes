@@ -104,8 +104,7 @@ class QuakeMLResource(ResourceBase):
         incrementally.
         """
         parse_kwargs = {'events': ('end',),
-                        'tag': "{ns}event".format(ns=self.NSMAP_QUAKEML['q'])}
-
+                        'tag': "{%s}event" % self.NSMAP_QUAKEML[None]}
         try:
             for event, element in etree.iterparse(self._loader(),
                                                   **parse_kwargs):
