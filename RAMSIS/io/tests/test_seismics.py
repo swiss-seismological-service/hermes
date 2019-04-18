@@ -23,14 +23,6 @@ from RAMSIS.io.utils import (FileLikeResourceLoader, HTTPGETResourceLoader,
                              pymap3d_transform)
 
 
-def patch_transform(deserializer):
-    @deserializer.transform_callback
-    def crs_transform(x, y, z, proj):
-        return pymap3d_transform(x, y, z, proj)
-
-    return crs_transform
-
-
 class QuakeMLDeserializerTestCase(unittest.TestCase):
     """
     Test for :py:class:`RAMSIS.io.seismics.QuakeMLDeserializer` class.
@@ -42,9 +34,9 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
         with open(os.path.join(self.PATH_RESOURCES, 'cat.qml'), 'rb') as ifs:
             loader = FileLikeResourceLoader(ifs)
 
-            deserializer = QuakeMLDeserializer(loader, proj=proj)
-            # override the deserializer's _transform_method
-            patch_transform(deserializer)
+            deserializer = QuakeMLDeserializer(
+                loader, proj=proj,
+                transform_callback=pymap3d_transform)
 
             cat = deserializer.load()
 
@@ -94,9 +86,9 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
         loader = HTTPGETResourceLoader(url, req_params)
 
         proj = '+x_0=0 +y_0=0 +z_0=0'
-        deserializer = QuakeMLDeserializer(loader, proj=proj)
-        # override the deserializer's _transform_method
-        patch_transform(deserializer)
+        deserializer = QuakeMLDeserializer(
+            loader, proj=proj,
+            transform_callback=pymap3d_transform)
 
         cat = deserializer.load()
 
