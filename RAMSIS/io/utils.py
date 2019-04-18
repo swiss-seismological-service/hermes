@@ -10,6 +10,8 @@ import logging
 import pymap3d
 import requests
 
+from urllib.parse import urlparse, urlunparse
+
 from ramsis.utils.error import Error
 
 
@@ -86,8 +88,7 @@ class HTTPGETResourceLoader(ResourceLoader):
     """
 
     def __init__(self, url, params={}, timeout=None):
-        self._url = url
-        self._params = params
+        self._url, self._params = self.validate_ctor_args(url, params)
         self._timeout = timeout
 
     def _load(self):
@@ -102,6 +103,15 @@ class HTTPGETResourceLoader(ResourceLoader):
             raise err
 
         return io.BytesIO(r.content)
+
+    @staticmethod
+    def validate_ctor_args(url, params):
+        _url = urlparse(url)
+
+        if _url.params or _url.query or _url.fragment:
+            raise ValueError(f"Invalid URL: {url}")
+
+        return urlunparse(_url), params
 
 
 class HTTPGETStreamResourceLoader(HTTPGETResourceLoader):
