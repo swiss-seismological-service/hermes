@@ -4,7 +4,7 @@ State machine to handle the state of UI controls and labels
 
 """
 import collections
-from transitions import Machine
+from transitions.extensions import HierarchicalMachine as Machine
 from transitions.extensions.states import add_state_features, State
 
 

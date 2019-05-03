@@ -59,6 +59,8 @@ def configure_logging(verbosity):
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
+    # Transitions is a bit noisy on the INFO level
+    logging.getLogger('transitions').setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":
