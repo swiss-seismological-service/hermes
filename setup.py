@@ -42,8 +42,8 @@ _install_requires = [
     "PyOpenGL>=3.1.1a1",
     "PyQt5 >=5.12, <5.13",
     "pymap3d",
-    "pyqtgraph>=0.10.0",
-    "ramsis.datamodel>=0.1", ]
+    "pyqtgraph==0.10.0",
+    "ramsis.datamodel==0.3rc0", ]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",
