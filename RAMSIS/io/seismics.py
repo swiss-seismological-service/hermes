@@ -45,6 +45,8 @@ class QuakeMLDeserializer(IOBase):
             configured with. If :code:`None` the magnitude type is not
             verified (default).
         :type mag_type: str or None
+        :param transform_callback: Function reference for transforming data
+            into local coordinate system
         """
         super().__init__()
 
