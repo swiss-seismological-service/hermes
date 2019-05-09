@@ -46,6 +46,9 @@ class IOBase(abc.ABC):
         while False:
             yield None
 
+    def _transform(self, x, y, z, proj):
+        return x, y, z
+
 
 # -----------------------------------------------------------------------------
 class ResourceLoader(abc.ABC):
