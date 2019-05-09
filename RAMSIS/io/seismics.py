@@ -156,7 +156,7 @@ class QuakeMLDeserializer(IOBase):
         for qml_event in self._resource:
             try:
                 yield self._deserialize_event(qml_event)
-            except InvalidMagnitudeType as err:
+            except InvalidMagnitudeType:
                 continue
 
     def _transform(self, x, y, z, proj):
