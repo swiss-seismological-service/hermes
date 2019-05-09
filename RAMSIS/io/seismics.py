@@ -161,7 +161,8 @@ class QuakeMLDeserializer(IOBase):
 
     def _transform(self, x, y, z, proj):
         """
-        Utility method performing a spatial transformation
+        Utility method performing a spatial transformation relying on `GDAL's
+        Python API <https://pypi.org/project/GDAL/>`.
 
         :param float x: X value
         :param float y: Y value
