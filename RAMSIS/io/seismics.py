@@ -1,6 +1,6 @@
 # Copyright 2019, ETH Zurich - Swiss Seismological Service SED
 """
-Utitlities for seismic data import.
+Utilities for seismic data import.
 """
 
 import datetime
