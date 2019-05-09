@@ -153,6 +153,18 @@ def _callable_or_raise(obj):
 
 
 def pymap3d_transform(x, y, z, proj):
+    """
+    Utility method performing a spatial transformation relying on `pymap3d
+    <https://github.com/scivision/pymap3d>`.
+
+    :param float x: X value
+    :param float y: Y value
+    :param float z: Z value
+    :param str proj: Target CRS description (PROJ4)
+
+    :returns: Transformed values
+    :rtype: tuple
+    """
     # extract observer position from proj4 string
     origin = dict([v.split('=') for v in proj.split(' ')
                    if (v.startswith('+x_0') or
