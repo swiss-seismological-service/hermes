@@ -27,7 +27,8 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
     """
     Test for :py:class:`RAMSIS.io.seismics.QuakeMLDeserializer` class.
     """
-    PATH_RESOURCES = 'resources'
+    PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  'resources')
 
     def test_with_filelike_loader(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
