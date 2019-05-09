@@ -31,6 +31,10 @@ class InvalidProj4(_IOError):
     """Invalid Proj4 projection specified: {}"""
 
 
+class TransformationError(_IOError):
+    """Error while performing CRS transformation: {}"""
+
+
 # -----------------------------------------------------------------------------
 class IOBase(abc.ABC):
     """
@@ -41,13 +45,78 @@ class IOBase(abc.ABC):
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(self.LOGGER)
 
+        self._transform_callback = _callable_or_raise(
+            kwargs.get('transform_callback'))
+
     @abc.abstractmethod
     def __iter__(self):
         while False:
             yield None
 
     def _transform(self, x, y, z, proj):
+        """
+        Template method implementing the default transformation rule (i.e. no
+        transformation).
+        """
         return x, y, z
+
+    def transform_callback(self, func):
+        """
+        Decorator that registers a custom SRS transformation.
+
+        The function should receive the coordinates :code:`x`, :code:`y,
+        :code:`z`, and an optional projection. The function is required to
+        return a tuple of the transformed values.  Overrides the deserializer's
+        :code:`_transform` method.
+
+        :param callable func: The SRS transformation to be registered
+
+        The usage is illustrated bellow:
+
+        .. code::
+
+            deserializer = QuakeMLDeserializer(loader, proj=proj)
+
+            @deserializer.transform_callback
+            def crs_transform(x, y, z, proj):
+                return pymap3d_transform(x, y, z, proj)
+
+            cat = deserializer.load()
+        """
+        self._transform_callback = func
+        return func
+
+
+class SerializerBase(abc.ABC):
+    """
+    Abstract base class for serializers.
+    """
+
+    @abc.abstractmethod
+    def _serialize(self):
+        pass
+
+    def dump(self):
+        """
+        Alias for :py:meth:`_serialize`.
+        """
+        return self._serialize()
+
+
+class DeserializerBase(abc.ABC):
+    """
+    Abstract base class for deserializers.
+    """
+
+    @abc.abstractmethod
+    def _deserialize(self):
+        pass
+
+    def load(self):
+        """
+        Alias for :py:meth:`_deserialize`.
+        """
+        return self._deserialize()
 
 
 # -----------------------------------------------------------------------------

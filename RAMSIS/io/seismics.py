@@ -11,7 +11,8 @@ from osgeo import ogr, osr
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
 from RAMSIS.io.resource import Resource, EResource
-from RAMSIS.io.utils import IOBase, _IOError, _callable_or_raise
+from RAMSIS.io.utils import (IOBase, DeserializerBase, _IOError,
+                             TransformationError)
 
 
 class QuakeMLError(_IOError):
@@ -22,11 +23,7 @@ class InvalidMagnitudeType(QuakeMLError):
     """Event with invalid magnitude type {!r} detected."""
 
 
-class TransformationError(QuakeMLError):
-    """Error while performing CRS transformation: {}"""
-
-
-class QuakeMLDeserializer(IOBase):
+class QuakeMLDeserializer(DeserializerBase, IOBase):
     """
     Deserializes `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
     RT-RAMSIS seismic catalog.
@@ -48,14 +45,12 @@ class QuakeMLDeserializer(IOBase):
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__()
+        super().__init__(**kwargs)
 
         self._proj = kwargs.get('proj')
         if not self._proj:
             raise QuakeMLError("Missing SRS (PROJ4) projection.")
 
-        self._transform_callback = _callable_or_raise(
-            kwargs.get('transform_callback'))
         self._mag_type = kwargs.get('mag_type')
         self._resource = Resource.create_resource(self.RESOURCE_TYPE,
                                                   loader=loader)
@@ -185,33 +180,6 @@ class QuakeMLDeserializer(IOBase):
 
         return point_z.GetX(), point_z.GetY(), point_z.GetZ()
 
-    def transform_callback(self, func):
-        """
-        Decorator that registers a custom SRS transformation.
-
-        The function should receive the coordinates :code:`x`, :code:`y,
-        :code:`z`, and an optional projection. The function is required to
-        return a tuple of the transformed values.  Overrides the deserializer's
-        :code:`_transform` method.
-
-        :param callable func: The SRS transformation to be registered
-
-        The usage is illustrated bellow:
-
-        .. code::
-
-            deserializer = QuakeMLDeserializer(loader, proj=proj)
-
-            @deserializer.transform_callback
-            def crs_transform(x, y, z, proj):
-                return pymap3d_transform(x, y, z, proj)
-
-            cat = deserializer.load()
-        """
-        self._transform_callback = func
-        return func
-
-    load = _deserialize
-
 
 IOBase.register(QuakeMLDeserializer)
+DeserializerBase.register(QuakeMLDeserializer)
