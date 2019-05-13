@@ -48,11 +48,6 @@ class IOBase(abc.ABC):
         self._transform_callback = _callable_or_raise(
             kwargs.get('transform_callback'))
 
-    @abc.abstractmethod
-    def __iter__(self):
-        while False:
-            yield None
-
     def _transform(self, x, y, z, proj):
         """
         Template method implementing the default transformation rule (i.e. no
