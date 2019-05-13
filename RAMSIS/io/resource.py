@@ -31,6 +31,8 @@ class ResourceBase(abc.ABC):
     Concrete implementations of :py:class:`Resource` implement both incremental
     loading and loading in a single step.
     """
+    DEFAULT_SRS_ESPG = 4326
+    SRS_ESPG = DEFAULT_SRS_ESPG
 
     def __init__(self, loader, **kwargs):
         """
@@ -92,7 +94,9 @@ class QuakeMLResource(ResourceBase):
         b'<eventParameters publicID="smi:scs/0.7/EventParameters">')
 
     QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
+
     QUAKEML_SRS_ESPG = 4326
+    SRS_ESPG = QUAKEML_SRS_ESPG
 
     def __iter__(self):
         """

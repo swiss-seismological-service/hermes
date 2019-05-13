@@ -168,7 +168,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         :rtype: tuple
         """
         source_srs = osr.SpatialReference()
-        source_srs.ImportFromEPSG(self._resource.QUAKEML_SRS_ESPG)
+        source_srs.ImportFromEPSG(self._resource.SRS_ESPG)
 
         target_srs = osr.SpatialReference()
         target_srs.ImportFromProj4(proj)
