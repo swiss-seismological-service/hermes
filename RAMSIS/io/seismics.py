@@ -15,11 +15,11 @@ from RAMSIS.io.utils import (IOBase, DeserializerBase, _IOError,
                              TransformationError)
 
 
-class QuakeMLError(_IOError):
+class QuakeMLIOError(_IOError):
     """QuakeML de-/serialization error ({})."""
 
 
-class InvalidMagnitudeType(QuakeMLError):
+class InvalidMagnitudeType(QuakeMLIOError):
     """Event with invalid magnitude type {!r} detected."""
 
 
@@ -49,7 +49,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
 
         self._proj = kwargs.get('proj')
         if not self._proj:
-            raise QuakeMLError("Missing SRS (PROJ4) projection.")
+            raise QuakeMLIOError("Missing SRS (PROJ4) projection.")
 
         self._mag_type = kwargs.get('mag_type')
         self._resource = Resource.create_resource(self.RESOURCE_TYPE,
@@ -111,7 +111,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         try:
             e = read_events(create_pseudo_catalog(event_element))[0]
         except Exception as err:
-            raise QuakeMLError(f'While parsing QuakeML: {err}')
+            raise QuakeMLIOError(f'While parsing QuakeML: {err}')
         else:
             self.logger.debug(f"Importing seismic event: {e} ...")
 
