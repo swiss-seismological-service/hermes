@@ -17,6 +17,7 @@ from ramsis.utils.error import Error
 
 class EResource(enum.Enum):
     QUAKEML = enum.auto()
+    JSON = enum.auto()
 
 
 class ResourceError(Error):
@@ -55,6 +56,8 @@ class ResourceBase(abc.ABC):
 
         if resource_format == EResource.QUAKEML:
             return QuakeMLResource(**kwargs)
+        elif resource_format == EResource.JSON:
+            return JSONResource(**kwargs)
 
         raise ResourceError('Unknown resource type.')
 
@@ -109,4 +112,17 @@ class QuakeMLResource(ResourceBase):
             raise ResourceError(err)
 
 
+class JSONResource(ResourceBase):
+    """
+    Dummy implementation of :py:class:`Resource` providing JSON data.
+    """
+    RESOURCE_TYPE = EResource.JSON.name
+
+    def __iter__(self):
+        # TODO(damb): Might provide iteration over the child elements using
+        # ijson.
+        raise NotImplementedError
+
+
 ResourceBase.register(QuakeMLResource)
+ResourceBase.register(JSONResource)
