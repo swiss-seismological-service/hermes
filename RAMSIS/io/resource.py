@@ -31,6 +31,25 @@ class ResourceBase(abc.ABC):
     loading and loading in a single step.
     """
 
+    def __init__(self, loader, **kwargs):
+        """
+        :param loader: Resource loader instance returning a file-like object
+        :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
+        """
+        self._loader = loader
+
+    def load(self):
+        """
+        Load a resource.
+
+        :returns: Loaded resource
+        :rtype: bytes
+        """
+        try:
+            return self._loader().read()
+        except Error as err:
+            raise ResourceError(err)
+
     @staticmethod
     def create_resource(resource_format, **kwargs):
 
@@ -38,13 +57,6 @@ class ResourceBase(abc.ABC):
             return QuakeMLResource(**kwargs)
 
         raise ResourceError('Unknown resource type.')
-
-    @abc.abstractmethod
-    def load(self, **kwargs):
-        """
-        Load the resource format.
-        """
-        return None
 
     @abc.abstractmethod
     def __iter__(self):
@@ -78,25 +90,6 @@ class QuakeMLResource(ResourceBase):
 
     QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
     QUAKEML_SRS_ESPG = 4326
-
-    def __init__(self, loader, **kwargs):
-        """
-        :param loader: Resource loader instance returning a file-like object
-        :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
-        """
-        self._loader = loader
-
-    def load(self):
-        """
-        Load a `QUAKEML <https://quake.ethz.ch/quakeml/>`_ catalog.
-
-        :returns: QuakeML catalog
-        :rtype: bytes
-        """
-        try:
-            return self._loader().read()
-        except Error as err:
-            raise ResourceError(err)
 
     def __iter__(self):
         """
