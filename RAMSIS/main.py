@@ -27,15 +27,8 @@ def main():
                         help='runs RAMSIS without a GUI')
     parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2],
                         default=1, help="output verbosity (0-2, default 0)")
-    parser.add_argument('-c', '--config', metavar='CONFIG_FILE',
-                        help='config file to read when launched with --no-gui '
-                             '(default: ramsis.ini)')
 
     args = parser.parse_args()
-
-    # Additional sanity checks
-    if args.no_gui is True and args.config is None:
-        parser.error("--no-gui requires --config")
 
     configure_logging(args.verbosity)
     ramsis = Application(args)

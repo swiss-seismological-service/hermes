@@ -13,6 +13,7 @@ import logging
 import signal
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import QStandardPaths
 from PyQt5.QtWidgets import QApplication, QStyleFactory
 
 #from qgis.core import QgsApplication
@@ -70,9 +71,12 @@ class Application(QtCore.QObject):
         self.qt_app.setOrganizationDomain('seismo.ethz.ch')
         self.qt_app.setApplicationVersion(VERSION)
         self.qt_app.setOrganizationName('SED')
-        # Load settings
-        path = args.config if args.config else 'ramsis.ini'
-        settings_file = os.path.abspath(path)
+        # Load application settings
+        locations = QStandardPaths.\
+            standardLocations(QStandardPaths.AppConfigLocation)
+        paths = (os.path.join(loc, 'settings.yml') for loc in locations)
+        settings_file = next((p for p in paths if os.path.isfile(p)),
+                             'settings.yml')
         self.app_settings = AppSettings(settings_file)
         # Enable Ctrl-C
         signal.signal(signal.SIGINT, self._on_sigint)

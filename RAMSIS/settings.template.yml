@@ -1,0 +1,15 @@
+---
+# RT-RAMSIS Application Settings Template
+#
+# These are settings that are specific to the application instance and define
+# global parameters which are independent of the currently loaded project.
+#
+# To use this file, rename it to settings.yml and copy it to an appropriate
+# location. RT-RAMSIS will look for it in the cwd as well as in all typical
+# platform specific application configuration locations (see AppConfigLocation
+# at https://doc.qt.io/qt-5/qstandardpaths.html#StandardLocation-enum).
+
+# simulation settings
+simulation:
+  max_speed: False
+  speed: 1000  # Speed up factor if max_speed is false
