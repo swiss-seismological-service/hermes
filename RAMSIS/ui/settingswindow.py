@@ -14,6 +14,7 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from RAMSIS.core.controller import LaunchMode
+from RAMSIS.ui.utils import UiForm
 from RAMSIS.ui.base.state import UiStateMachine
 
 from .modelconfigurationwindow import ModelConfigurationWindow
@@ -88,7 +89,8 @@ class DbUiStateMachine(UiStateMachine):
                            'ui_disable': ui.dbInitButton}]}])
 
 
-class ApplicationSettingsWindow(SettingsWindow):
+class ApplicationSettingsWindow(SettingsWindow,
+                                UiForm('appsettingswindow.ui')):
     """
     RAMSIS specific local application settings window
 
@@ -109,7 +111,6 @@ class ApplicationSettingsWindow(SettingsWindow):
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
         self.app = app
-        self.ui = app.gui.load_form('appsettingswindow.ui', self)
 
         # State machines for DB settings and buttons
         self._ui_state_machine_db = DbUiStateMachine(self.ui)
