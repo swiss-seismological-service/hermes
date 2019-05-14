@@ -46,7 +46,7 @@ class IOBase(abc.ABC):
         self.logger = logging.getLogger(self.LOGGER)
 
         self._transform_callback = _callable_or_raise(
-            kwargs.get('transform_callback'))
+            kwargs.get('transform_callback', self._transform))
 
     def _transform(self, x, y, z, proj):
         """
@@ -78,7 +78,7 @@ class IOBase(abc.ABC):
 
             cat = deserializer.load()
         """
-        self._transform_callback = func
+        self._transform_callback = _callable_or_raise(func)
         return func
 
 
