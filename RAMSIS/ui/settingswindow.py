@@ -16,9 +16,9 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from RAMSIS.ui.base.state import UiStateMachine
 
 from .modelconfigurationwindow import ModelConfigurationWindow
-from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
 
 from RAMSIS import ramsissettings
+from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
 
 ui_path = os.path.dirname(__file__)
 PROJECT_SETTINGS_WINDOW_PATH = \

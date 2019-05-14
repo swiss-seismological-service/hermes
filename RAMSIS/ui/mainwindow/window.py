@@ -20,13 +20,12 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
 
 from RAMSIS.core.simulator import SimulatorState
 from RAMSIS.core.datasources import CsvEventImporter
-import RAMSIS.ui.ramsisuihelpers as helpers
 
 from RAMSIS.ui.settingswindow import (
     ApplicationSettingsWindow, ProjectSettingsWindow)
 from RAMSIS.ui.simulationwindow import SimulationWindow
 from RAMSIS.ui.reservoirwindow import ReservoirWindow
-from RAMSIS.ui.ramsisuihelpers import utc_to_local
+from RAMSIS.ui.base.utils import utc_to_local
 
 from .presenter import ContentPresenter
 from .viewmodels.seismicdatamodel import SeismicDataModel
@@ -274,7 +273,7 @@ class MainWindow(QMainWindow):
         with open(path, 'rb') as csv_file:
             importer = CsvEventImporter(csv_file, delimiter=delimiter)
             if importer.expects_base_date:
-                date, accepted = helpers.DateDialog.get_date_time()
+                date, accepted = DateDialog.get_date_time()
                 if not accepted:
                     return
                 importer.base_date = date
@@ -465,3 +464,28 @@ class MainWindow(QMainWindow):
     def on_project_settings_changed(self, settings):
         self.update_controls()
         self.status_bar.set_project(self.ramsis_core.project)
+
+
+class DateDialog(QDialog):
+    def __init__(self, parent=None):
+        super(DateDialog, self).__init__(parent)
+
+        layout = QVBoxLayout(self)
+
+        # info text
+        self.label = QLabel(
+            text='The file appears to contain relative dates.\n'
+                 'Please specify a reference date.')
+        layout.addWidget(self.label)
+
+        # nice widget for editing the date
+        self.datetime = QDateTimeEdit(self)
+        self.datetime.setCalendarPopup(True)
+        self.datetime.setDisplayFormat('yyyy-MM-dd hh:mm:ss')
+        self.datetime.setDateTime(QDateTime.currentDateTime())
+        layout.addWidget(self.datetime)
+
+        # OK and Cancel buttons
+        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok |
+                                        QDialogButtonBox.Cancel)
+        self.buttons.accepted.connect(self.accept)
