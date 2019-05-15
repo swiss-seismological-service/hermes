@@ -17,6 +17,7 @@ from RAMSIS.core.controller import LaunchMode
 from RAMSIS.ui.base.state import UiStateMachine
 
 from .modelconfigurationwindow import ModelConfigurationWindow
+from RAMSIS.ui.base.controlinterface import control_interface
 from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
 
 ui_path = os.path.dirname(__file__)
@@ -49,64 +50,8 @@ class SettingsWindow(QDialog):
     def start_observing_changes(self):
         """ Observe changes on all settings widgets """
         for widget in self.widget_map.values():
-            signal = self._change_signal_for_widget(widget)
-            if signal is None:
-                continue
+            signal = control_interface(widget).change_signal()
             signal.connect(self.action_setting_changed)
-
-    # Private Helper Methods
-
-    def _change_signal_for_widget(self, widget):
-        if widget.inherits('QCheckBox'):
-            return widget.stateChanged
-        elif widget.inherits('QRadioButton'):
-            return widget.toggled
-        elif widget.inherits('QSpinBox'):
-            return widget.valueChanged
-        elif widget.inherits('QDoubleSpinBox'):
-            return widget.valueChanged
-        elif widget.inherits('QDateTimeEdit'):
-            return widget.dateTimeChanged
-        elif widget.inherits('QLineEdit'):
-            return widget.textChanged
-        else:
-            self.logger.error('Setting value for' + str(widget) +
-                              'failed because the corresponding Qt '
-                              'widget type is not yet supported.')
-        return None
-
-    def _set_value_in_widget(self, value, widget):
-        if widget.inherits('QAbstractButton'):
-            widget.setChecked(value)
-        elif widget.inherits('QSpinBox'):
-            widget.setValue(value)
-        elif widget.inherits('QDoubleSpinBox'):
-            widget.setValue(value)
-        elif widget.inherits('QDateTimeEdit'):
-            widget.setDateTime(utc_to_local(value))
-        elif widget.inherits('QLineEdit'):
-            widget.setText(value)
-        else:
-            self.logger.error('Setting value for' + str(widget) +
-                              'failed because the corresponding Qt '
-                              'widget type is not yet supported.')
-
-    def _value_for_widget(self, widget):
-        if widget.inherits('QAbstractButton'):
-            return widget.isChecked()
-        elif widget.inherits('QSpinBox'):
-            return widget.value()
-        elif widget.inherits('QDoubleSpinBox'):
-            return widget.value()
-        elif widget.inherits('QDateTimeEdit'):
-            return pyqt_local_to_utc_ua(widget.dateTime())
-        elif widget.inherits('QLineEdit'):
-            return widget.text()
-        else:
-            self.logger.error('Getting value from' + str(widget) +
-                              'failed because the corresponding Qt '
-                              'widget type is not yet supported.')
-            return None
 
 
 class DbUiStateMachine(UiStateMachine):
@@ -204,11 +149,11 @@ class ApplicationSettingsWindow(SettingsWindow):
         for key, value in self.app.app_settings.all().items():
             widget = self.widget_map.get(key)
             if widget is not None:
-                self._set_value_in_widget(value, widget)
+                control_interface(widget).set_value(value)
 
     def action_setting_changed(self):
         widget = self.sender()
-        value = self._value_for_widget(widget)
+        value = control_interface(widget).get_value()
         if value is None:
             return
         key = self.key_map[widget]
@@ -345,7 +290,7 @@ class ProjectSettingsWindow(SettingsWindow):
             widget = self.widget_map.get(key)
             if widget is not None:
                 value = self.project.settings[key]
-                self._set_value_in_widget(value, widget)
+                control_interface(widget).set_value(value)
         # Project properties are shown in the settings tab too
         self.ui.projectTitleEdit.setText(self.project.title)
         local = utc_to_local(self.project.start_date)
@@ -360,7 +305,7 @@ class ProjectSettingsWindow(SettingsWindow):
 
     def action_setting_changed(self):
         widget = self.sender()
-        value = self._value_for_widget(widget)
+        value = control_interface(widget).get_value()
         if value is None:
             return
         key = self.key_map[widget]

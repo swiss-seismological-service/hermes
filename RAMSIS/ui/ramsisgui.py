@@ -10,6 +10,7 @@ import logging
 from PyQt5.QtCore import QEvent, QObject
 from PyQt5.QtWidgets import QDateTimeEdit
 from RAMSIS.utils import call_later
+from RAMSIS.ui.base import controlinterface as QtIf
 from RAMSIS.ui.mainwindow.window import MainWindow
 
 FORM_PKG = 'RAMSIS.ui.views'
@@ -29,6 +30,12 @@ class RamsisGui(QObject):
         self.main_window = MainWindow(core)
         self._managed_windows = set()
         self._logger = logging.getLogger(__name__)
+
+        # By convention, we show local times in the GUI and work with UTC
+        # internally. We customize the default Qt control interface factory
+        # accordingly.
+        QtIf.register_interface(QDateTimeEdit,
+                                QtIf.QDateTimeEditInterfaceLocal)
 
     def show(self):
         self.main_window.show()
