@@ -9,6 +9,13 @@
 # platform specific application configuration locations (see AppConfigLocation
 # at https://doc.qt.io/qt-5/qstandardpaths.html#StandardLocation-enum).
 
+# Application DB connection information
+database:
+  name: ramsis
+  password: ramsis
+  url: postgresql://localhost:5432
+  user: ramsis
+
 # simulation settings
 simulation:
   max_speed: False

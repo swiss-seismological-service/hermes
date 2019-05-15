@@ -21,7 +21,7 @@ from ramsis.datamodel.forecast import Forecast, ForecastInput, Scenario
 from ramsis.datamodel.hydraulics import InjectionPlan, InjectionSample
 from ramsis.datamodel.ormbase import OrmBase
 from ramsis.datamodel.project import Project
-from ramsis.datamodel.store import Store
+from RAMSIS.core.store import Store
 
 # from core.tools.tools import Profiler
 
@@ -46,15 +46,20 @@ class Controller(QtCore.QObject):
     the user interface.
 
     :ivar Project project: Currently loaded project
-    :param AppSettings settings: reference to the application settings
+    :param RAMSIS.application.Application app: reference to the application
+        top level object
 
     """
 
+    #: Signal emitted after a new project has loaded. Payload has the project.
     project_loaded = QtCore.pyqtSignal(object)
+    #: Signal emitted when a data base connection is established or closed
+    store_changed = QtCore.pyqtSignal()
 
-    def __init__(self, settings):
+    def __init__(self, app):
         super(Controller, self).__init__()
-        self._settings = settings
+        self._settings = app.app_settings
+        self.store = None
         self.project = None
         self.engine = Engine(self)
         self.fdsnws_previous_end_time = None
@@ -72,58 +77,72 @@ class Controller(QtCore.QObject):
         self._logger = logging.getLogger(__name__)
         # self._logger.setLevel(logging.DEBUG)
 
+        # Signals
+        app.app_launched.connect(self._on_app_launched)
+
+    # DB handling
+
+    def connect(self, db_url):
+        """
+        Connect to a new data store
+
+        :param str db_url: Fully qualified db url to connect to (including
+            user, pw)
+        :return: True if connection is successful, False otherwise
+        :rtype: Bool
+
+        """
+        self.disconnect()
+        store = Store(db_url)
+        if store.test_connection():
+            self.store = store
+            self.store_changed.emit()
+            return True
+        return False
+
+    def disconnect(self):
+        """ Disconnect from the current data store """
+        if self.project:
+            self.close_project()
+        if self.store:
+            self.store.close()
+            self.store = None
+            self.store_changed.emit()
+
     # Project handling
 
-    def open_project(self, path):
+    def open_project(self, project):
         """
-        Open RAMSIS project file located at path
+        Open RAMSIS project
 
-        :param str path: path to the ramsis project file
+        This makes `project` the cores currently active project and
+        reconfigures tasks based on the project's timeline. In Lab Mode
+        it also resets the wall clock to the start of the project.
+
+        :param project: Project to load
+        :type project: ramsis.datamodel.project.Project
 
         """
-        if not os.path.exists(path):
-            self._logger.error('Could not find project: ' + path)
-            return
-        # We add an additional / in front of the url. So now we have 3 slashes
-        # in total, because host and db-name section are both empty for sqlite
-        store_path = 'sqlite:///' + path
-        self._logger.info('Loading project at ' + path +
-                          ' - This might take a while...')
-        store = Store(store_path, OrmBase)
-        self.project = store.session.query(Project).first()
-        self.project.store = store
-        self.project.settings.settings_changed.connect(
-            self._on_project_settings_changed
-        )
-        self.engine.observe_project(self.project)
+
+        self._logger.info(f'Loading project {project.name}')
+        if self.project:
+            self.close_project()
+        self.project = project
+        if self.launch_mode == LaunchMode.LAB:
+            self.clock.reset(project.starttime)
         self.project_loaded.emit(self.project)
         self._update_data_sources()
         self._logger.info('... done loading project')
 
-    def create_project(self, path):
-        """
-        Create a new project at path and load it.
-
-        If a project exists at path, it will be replaced.
-
-        """
-        if self.project:
-            self.close_project()
-        if os.path.exists(path):
-            os.remove(path)
-        store_path = 'sqlite:///' + path
-        self._logger.info('Creating project at ' + path)
-        store = Store(store_path, OrmBase)
-        project = Project(store=store, title='New Project')
-        project.save()
-
     def close_project(self):
         """
-        Close the current project.
+        Close the currently active project.
 
         """
+        self._logger.info(f'Closing project {self.project.name}')
         self.project.close()
         self.project = None
+        self.project_closed.emit()
 
     # Other user actions
 
@@ -249,11 +268,22 @@ class Controller(QtCore.QObject):
         self._logger.info('Stopping simulation')
         self.simulator.stop()
 
-    # Simulation handling
+    # Signal slots
 
     def _simulation_handler(self, simulation_time):
         """ Invoked by the simulation whenever the project time changes """
         self.project.update_project_time(simulation_time)
+    def _on_app_launched(self):
+        """ Invoked when the application has launched """
+        db_settings = self._settings['database']
+        if all(v for v, k in db_settings.items()):
+            protocol, address = db_settings['url'].split('://')
+            self._logger.info(f'Reconnecting to {address}/'
+                              f'{db_settings["name"]}')
+            db_url = f'{protocol}://{db_settings["user"]}:' \
+                f'{db_settings["password"]}@{address}/{db_settings["name"]}'
+            self.connect(db_url)
+
 
     def create_next_future_forecast(self):
         """ Adds the next regular forecast to the list of future forecasts """

@@ -86,7 +86,7 @@ class Application(QtCore.QObject):
         self.timer.timeout.connect(lambda: None)
         self.timer.start(500)
         # Launch core
-        self.ramsis_core = Controller(settings=self.app_settings)
+        self.ramsis_core = Controller(self)
         if self.has_gui:
             self.main_window = MainWindow(self)
         self.app_launched.connect(self.on_app_launched)
