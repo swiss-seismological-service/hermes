@@ -47,7 +47,7 @@ class TaskManager:
             task = PeriodicTask(task_function=info['function'],
                                 name=name)
             self.scheduler.add_task(task)
-
+        self.core.clock.time_changed.connect(self.on_time_changed)
         self.core.project_loaded.connect(self.on_project_loaded)
 
     def reset(self, t0=None):
@@ -62,12 +62,11 @@ class TaskManager:
                 dt_setting = self.periodic_tasks[task.name]['dt_setting']
                 task.dt = timedelta(minutes=project.settings[dt_setting])
         self.scheduler.reset(project.project_time)
-        project.project_time_changed.connect(self.on_project_time_change)
 
-    def on_project_time_change(self, t_project):
-        if self.scheduler.has_due_tasks(t_project):
+    def on_time_changed(self, time):
+        if self.scheduler.has_due_tasks(time):
             self.logger.debug('Scheduler has due tasks. Executing.')
-            self.scheduler.run_due_tasks(t_project)
+            self.scheduler.run_due_tasks(time)
 
     # Task Methods
 

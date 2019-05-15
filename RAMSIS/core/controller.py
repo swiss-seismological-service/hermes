@@ -15,6 +15,7 @@ from datetime import timedelta
 
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.core.engine.engine import Engine
+from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from ramsis.datamodel.forecast import Forecast, ForecastInput, Scenario
@@ -75,19 +76,22 @@ class Controller(QtCore.QObject):
         self._launch_mode = launch_mode
         self.store = None
         self.project = None
-        self.engine = Engine(self)
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None
         self.seismics_data_source = None
         self.hydraulics_data_source = None
 
-        # Initialize simulator
-        self.simulator = Simulator(self._simulation_handler)
+        # Core components for real time and simulation operation
+        self.engine = Engine(self)
+        self.clock = WallClock()
 
-        # Task Manager
+        def simulation_handler(time):
+            self.clock.time = time
+
+        self.simulator = Simulator(simulation_handler)
         self.task_manager = TaskManager(core=self)
 
-        # Time, state and other internals
+        # Other internals
         self._logger = logging.getLogger(__name__)
         # self._logger.setLevel(logging.DEBUG)
 
@@ -270,6 +274,9 @@ class Controller(QtCore.QObject):
             self._logger.info('Simulating at {:.0f}x'.format(speed))
             self.simulator.configure(time_range, speed=speed)
         self.task_manager.reset(time_range[0])
+        self.clock.mode = WallClockMode.MANUAL
+        self.clock.time = time_range[0]
+        self.clock.arm()
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -288,9 +295,6 @@ class Controller(QtCore.QObject):
 
     # Signal slots
 
-    def _simulation_handler(self, simulation_time):
-        """ Invoked by the simulation whenever the project time changes """
-        self.project.update_project_time(simulation_time)
     def _on_app_launched(self):
         """ Invoked when the application has launched """
         db_settings = self._settings['database']
