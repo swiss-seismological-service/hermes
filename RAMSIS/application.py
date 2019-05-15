@@ -18,8 +18,8 @@ from PyQt5.QtWidgets import QApplication, QStyleFactory
 
 #from qgis.core import QgsApplication
 
-from RAMSIS.core.controller import Controller
 from RAMSIS.ui.ramsisgui import RamsisGui
+from RAMSIS.core.controller import Controller, LaunchMode
 from RAMSIS.ramsissettings import AppSettings
 
 
@@ -91,7 +91,8 @@ class Application(QtCore.QObject):
         self.timer.timeout.connect(lambda: None)
         self.timer.start(500)
         # Launch core
-        self.ramsis_core = Controller(self)
+        launch_mode = LaunchMode(self.app_settings['launch_mode'])
+        self.ramsis_core = Controller(self, launch_mode)
         if self.has_gui:
             self.gui = RamsisGui(self)
         self.app_launched.connect(self.on_app_launched)

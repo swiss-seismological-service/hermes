@@ -13,6 +13,7 @@ from PyQt5 import uic
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
+from RAMSIS.core.controller import LaunchMode
 from RAMSIS.ui.base.state import UiStateMachine
 
 from .modelconfigurationwindow import ModelConfigurationWindow
@@ -168,6 +169,10 @@ class ApplicationSettingsWindow(SettingsWindow):
         # State machines for DB settings and buttons
         self.uism_db = DbUiStateMachine(self.ui)
 
+        for text, member in (('Real-Time Mode', LaunchMode.REAL_TIME),
+                             ('Lab Mode', LaunchMode.LAB)):
+            self.ui.launchModeComboBox.addItem(text, member.value)
+
         # Add new settings here. This maps each user editable settings key to
         # it's corresponding widget in the settings window
         settings_widget_map = {
@@ -266,6 +271,11 @@ class ApplicationSettingsWindow(SettingsWindow):
             self.uism_db.to_disconnected_valid()
         else:
             self.uism_db.to_disconnected_invalid()
+
+    @pyqtSlot(int, name='on_launchModeComboBox_currentIndexChanged')
+    def enable_lab_mode_section(self, idx):
+        mode = LaunchMode(self.ui.launchModeComboBox.currentData())
+        self.ui.labModeGroupBox.setEnabled(mode == LaunchMode.LAB)
 
     # Helpers
 

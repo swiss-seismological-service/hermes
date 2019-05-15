@@ -8,7 +8,7 @@ central coordinator for all core components.
 """
 
 import logging
-import os
+from enum import Enum, auto
 from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
@@ -31,6 +31,17 @@ Used internally to pass information to repeating tasks
 t_project is the project time at which the task is launched
 
 """
+
+
+class LaunchMode(Enum):
+    """
+    Application Mode
+
+    The application can launch in one of two modes.
+
+    """
+    REAL_TIME = 'real-time'  #: Real time operation for live applications
+    LAB = 'lab'  #: Lab mode where the user simulates through recorded data
 
 
 class Controller(QtCore.QObject):
@@ -56,9 +67,12 @@ class Controller(QtCore.QObject):
     #: Signal emitted when a data base connection is established or closed
     store_changed = QtCore.pyqtSignal()
 
-    def __init__(self, app):
+    def __init__(self, app, launch_mode):
         super(Controller, self).__init__()
         self._settings = app.app_settings
+        assert (launch_mode == LaunchMode.LAB), \
+            f'Mode {launch_mode} is not implemented'
+        self._launch_mode = launch_mode
         self.store = None
         self.project = None
         self.engine = Engine(self)
@@ -81,6 +95,10 @@ class Controller(QtCore.QObject):
         app.app_launched.connect(self._on_app_launched)
 
     # DB handling
+
+    @property
+    def launch_mode(self):
+        return self._launch_mode
 
     def connect(self, db_url):
         """

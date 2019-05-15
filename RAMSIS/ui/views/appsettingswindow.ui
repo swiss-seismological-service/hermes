@@ -255,16 +255,22 @@
         </spacer>
        </item>
        <item row="0" column="0">
-        <widget class="QCheckBox" name="enableLabModeCheckBox">
-         <property name="toolTip">
-          <string>In Simulation Mode seismic and hydraulic events are played back from an existing catalog.</string>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Launch Mode</string>
          </property>
-         <property name="text">
-          <string>Run RAMSIS in Lab Mode</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
+         <layout class="QGridLayout" name="gridLayout_6" columnstretch="0,1">
+          <item row="0" column="0">
+           <widget class="QComboBox" name="launchModeComboBox"/>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Changes to the launch mode will take effect on restart</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>

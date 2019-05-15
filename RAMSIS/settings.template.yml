@@ -9,6 +9,9 @@
 # platform specific application configuration locations (see AppConfigLocation
 # at https://doc.qt.io/qt-5/qstandardpaths.html#StandardLocation-enum).
 
+# launch mode
+launch_mode: 'lab'  # one of: 'lab', 'real-time'
+
 # Application DB connection information
 database:
   name: ramsis
