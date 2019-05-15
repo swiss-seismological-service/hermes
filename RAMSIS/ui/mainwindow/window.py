@@ -86,9 +86,8 @@ class MainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-        # Other windows which we lazy-load
-        self.application_settings_window = None
-        self.project_settings_window = None
+        # Other windows which we lazy-load and own
+        # TODO: let the toplevel gui object handle these
         self.reservoir_window = None
         self.simulation_window = None
         self.timeline_window = None
@@ -168,6 +167,17 @@ class MainWindow(QMainWindow):
         if path == '':
             return
         self._open_project_at_path(path)
+    @pyqtSlot(name='on_actionApplication_Settings_triggered')
+    def show_application_settings(self):
+        window = ApplicationSettingsWindow(self.app)
+        window.show()
+        self.app.gui.manage_window(window)
+
+    @pyqtSlot(name='on_actionProject_Settings_triggered')
+    def show_project_settings(self):
+        window = ProjectSettingsWindow(project=self.app.ramsis_core.project)
+        window.show()
+        self.app.gui.manage_window(window)
 
     def _open_project_at_path(self, path):
         if path is None:
@@ -293,19 +303,6 @@ class MainWindow(QMainWindow):
         self.reservoir_window = ReservoirWindow(self.ramsis_core)
         self.reservoir_window.show()
         self.reservoir_window.draw_catalog()
-
-    def action_show_application_settings(self):
-        if self.application_settings_window is None:
-            self.application_settings_window = \
-                ApplicationSettingsWindow(
-                    settings=self.application_settings)
-        self.application_settings_window.show()
-
-    def action_show_project_settings(self):
-        if self.project_settings_window is None:
-            self.project_settings_window = \
-                ProjectSettingsWindow(project=self.ramsis_core.project)
-        self.project_settings_window.show()
 
     def action_view_seismic_data(self):
         if self.table_view is None:

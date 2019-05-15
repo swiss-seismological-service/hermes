@@ -18,8 +18,8 @@ from PyQt5.QtWidgets import QApplication, QStyleFactory
 
 #from qgis.core import QgsApplication
 
-from RAMSIS.ui.mainwindow.window import MainWindow
 from RAMSIS.core.controller import Controller
+from RAMSIS.ui.ramsisgui import RamsisGui
 from RAMSIS.ramsissettings import AppSettings
 
 
@@ -36,12 +36,17 @@ class Application(QtCore.QObject):
     """
     Top level application object
 
-    Emits the app_launched signal as soon as the program has started (i.e.
-    as soon as the event loop becomes active)
+    Bootstraps the application and emits the app_launched signal as soon as
+    the program is ready. At that point the ui has been initialized, signals
+    are connected and the event loop has become active).
+
+    This top level application object also takes ownership of the main
+    application components, i.e. the core, settings and the application user
+    interface
 
     """
 
-    # Signals
+    #: Signal emitted after the app has completed launching
     app_launched = QtCore.pyqtSignal()
 
     def __init__(self, args):
@@ -88,7 +93,7 @@ class Application(QtCore.QObject):
         # Launch core
         self.ramsis_core = Controller(self)
         if self.has_gui:
-            self.main_window = MainWindow(self)
+            self.gui = RamsisGui(self)
         self.app_launched.connect(self.on_app_launched)
 
     def run(self):
@@ -103,7 +108,7 @@ class Application(QtCore.QObject):
         self.logger.info('RAMSIS is ready')
 
         if self.has_gui:
-            self.main_window.show()
+            self.gui.show()
         # noinspection PyCallByClass
         QtCore.QTimer.singleShot(0, self._emit_app_launched)
         self._exit(self.qt_app.exec_())
