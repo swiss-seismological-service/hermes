@@ -130,3 +130,11 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
         s1 = bh_section.hydraulics.samples[1]
         self.assertEqual(s1.datetime_value,
                          datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
+
+
+def suite():
+    return unittest.makeSuite(HYDWSBoreholeHydraulicsDeserializer, 'test')
+
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')
