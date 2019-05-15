@@ -170,8 +170,14 @@ def binary_request(request, url, params={}, timeout=None, **kwargs):
 
     :param request: Request object to be used
     :type request: :py:class:`requests.Request`
+    :param str url: URL
+    :params dict params: Dictionary of query parameters
+    :param timeout: Request timeout
+    :type timeout: None or int or tuple
 
     :rtype: io.BytesIO
+
+    :raises: :code:`ValueError` for an invalid :code:`url`
     """
     def validate_args(url, params):
         _url = urlparse(url)
@@ -206,7 +212,7 @@ def _callable_or_raise(obj):
     Makes sure an object is callable if it is not :code:`None`.
 
     :returns: Object validated
-    :raises: ValueError: If :code:`obj` is not callable
+    :raises: code:`ValueError` if :code:`obj` is not callable
     """
     if obj and not callable(obj):
         raise ValueError(f"{obj!r} is not callable.")
