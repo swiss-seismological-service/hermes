@@ -4,6 +4,7 @@ General purpose IO utilities.
 """
 
 import abc
+import contextlib
 import io
 import logging
 
@@ -17,14 +18,6 @@ from osgeo import ogr, osr
 from ramsis.utils.error import Error
 
 
-# NOTE(damb): RequestError instances carry the response, too.
-class RequestsError(requests.exceptions.RequestException, Error):
-    """Base request error ({})."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
 class _IOError(Error):
     """Base IO error ({})."""
 
@@ -35,6 +28,22 @@ class InvalidProj4(_IOError):
 
 class TransformationError(_IOError):
     """Error while performing CRS transformation: {}"""
+
+
+# NOTE(damb): RequestError instances carry the response, too.
+class RequestsError(requests.exceptions.RequestException, _IOError):
+    """Base request error ({})."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class NoContent(RequestsError):
+    """The request '{}' is returning no content ({})."""
+
+
+class ClientError(RequestsError):
+    """Response code not OK ({})."""
 
 
 # -----------------------------------------------------------------------------
@@ -65,13 +74,13 @@ class IOBase(abc.ABC):
 
         .. code::
 
-            deserializer = QuakeMLDeserializer(loader, proj=proj)
+            deserializer = QuakeMLDeserializer(proj=proj)
 
             @deserializer.transform_callback
             def crs_transform(x, y, z, proj):
                 return pymap3d_transform(x, y, z, proj)
 
-            cat = deserializer.load()
+            cat = deserializer.load(data)
         """
         self._transform_callback = _callable_or_raise(func)
         return func
@@ -123,14 +132,16 @@ class SerializerBase(abc.ABC):
     """
 
     @abc.abstractmethod
-    def _serialize(self):
+    def _serialize(self, data):
         pass
 
-    def dump(self):
+    def dump(self, data):
         """
         Alias for :py:meth:`_serialize`.
+
+        :param data: Data to be serialized.
         """
-        return self._serialize()
+        return self._serialize(data)
 
 
 class DeserializerBase(abc.ABC):
@@ -142,72 +153,27 @@ class DeserializerBase(abc.ABC):
     def _deserialize(self):
         pass
 
-    def load(self):
+    def load(self, data):
         """
         Alias for :py:meth:`_deserialize`.
+
+        :param data: Data to be deserialized.
         """
-        return self._deserialize()
+        return self._deserialize(data)
 
 
 # -----------------------------------------------------------------------------
-class ResourceLoader(abc.ABC):
+@contextlib.contextmanager
+def binary_request(request, url, params={}, timeout=None, **kwargs):
     """
-    Abstract resource loader base class. Resource loaders build an abstraction
-    layer to pretend file-like objects.
+    Make a binary request
+
+    :param request: Request object to be used
+    :type request: :py:class:`requests.Request`
+
+    :rtype: io.BytesIO
     """
-
-    @abc.abstractmethod
-    def _load(self):
-        """
-        :returns: File-like objects
-        """
-        return io.BytesIO()
-
-    def __call__(self):
-        return self._load()
-
-
-class FileLikeResourceLoader(ResourceLoader):
-    """
-    General purpose resource loader adapting the interface of any file-like
-    object.
-    """
-
-    def __init__(self, file_like_obj):
-        """
-        :param file_like_obj: File-like object to be wrapped
-        """
-        self._file_like = file_like_obj
-
-    def _load(self):
-        return self._file_like
-
-
-class HTTPGETResourceLoader(ResourceLoader):
-    """
-    Resource loader implementing loading data from an URL using the HTTP
-    **GET** request method.
-    """
-
-    def __init__(self, url, params={}, timeout=None):
-        self._url, self._params = self.validate_ctor_args(url, params)
-        self._timeout = timeout
-
-    def _load(self):
-        try:
-            r = requests.get(self._url,
-                             params=self._params,
-                             timeout=self._timeout)
-
-        except RequestsError as err:
-            # XXX(damb): Make sure that an instance of ramsis.utils.error.Error
-            # can be caught
-            raise err
-
-        return io.BytesIO(r.content)
-
-    @staticmethod
-    def validate_ctor_args(url, params):
+    def validate_args(url, params):
         _url = urlparse(url)
 
         if _url.params or _url.query or _url.fragment:
@@ -215,31 +181,24 @@ class HTTPGETResourceLoader(ResourceLoader):
 
         return urlunparse(_url), params
 
+    url, params = validate_args(url, params)
 
-class HTTPGETStreamResourceLoader(HTTPGETResourceLoader):
-    """
-    Resource loader implementing streamed loading from an URL using the HTTP
-    **GET** request method.
-    """
+    try:
+        r = request(url, params=params, timeout=timeout, **kwargs)
+        # TODO(damb): Move codes to a generic settings variable
+        if r.status_code in (204, 404):
+            raise NoContent(r.url, r.status_code, response=r)
 
-    def _load(self):
-        try:
-            r = requests.get(self._url,
-                             params=self._params,
-                             timeout=self._timeout,
-                             stream=True)
-            r.raw.decode_content = True
-        except RequestsError as err:
-            # XXX(damb): Make sure that an instance of ramsis.utils.error.Error
-            # can be caught
-            raise err
+        r.raise_for_status()
+        if r.status_code != 200:
+            raise ClientError(r.status_code, response=r)
 
-        return r.raw
+        yield io.BytesIO(r.content)
 
-
-ResourceLoader.register(FileLikeResourceLoader)
-ResourceLoader.register(HTTPGETResourceLoader)
-ResourceLoader.register(HTTPGETStreamResourceLoader)
+    except (NoContent, ClientError) as err:
+        raise err
+    except requests.exceptions.RequestException as err:
+        raise RequestsError(err, response=err.response)
 
 
 def _callable_or_raise(obj):

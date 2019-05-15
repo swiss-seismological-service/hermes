@@ -2,14 +2,15 @@
 """
 Utitlities for hydraulics data import.
 """
+
 import enum
 import functools
+import io
 
 from marshmallow import Schema, fields, post_load, ValidationError, EXCLUDE
 
 from ramsis.datamodel.hydraulics import Hydraulics, HydraulicSample
 from ramsis.datamodel.well import InjectionWell, WellSection
-from RAMSIS.io.resource import Resource, EResource
 from RAMSIS.io.utils import DeserializerBase, IOBase, _IOError
 
 
@@ -224,17 +225,15 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
     RT-RAMSIS data model.
     """
     # TODO(damb): Due to the JSON response format of HYDWS (more concretely,
-    # referring to its hierarchical structure) parsing the response iteratvely
+    # referring to its hierarchical structure) parsing the response iteratevly
     # does not appear to be adequate. That is why for the moment we simply
     # implement a *bulk* deserializer.
-    RESOURCE_TYPE = EResource.JSON
+    SRS_EPSG = 4326
 
     LOGGER = 'RAMSIS.io.hydwsboreholehydraulicsdeserializer'
 
-    def __init__(self, loader, **kwargs):
+    def __init__(self, **kwargs):
         """
-        :param loader: Loader instance used for resource loading
-        :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
         :param str proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
         :param mag_type: Describes the type of magnitude events should be
@@ -250,30 +249,32 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         if not self._proj:
             raise HYDWSJSONIOError("Missing SRS (PROJ4) projection.")
 
-        self._resource = Resource.create_resource(self.RESOURCE_TYPE,
-                                                  loader=loader)
-
     @property
     def proj(self):
         return self._proj
 
-    def _deserialize(self):
+    def _deserialize(self, data):
         """
         Deserializes borehole hydraulic data received from HYDWS to RT-RAMSIS
         ORM.
 
+        :param data: Data to be deserialized
+
         :returns: Borehole ORM representation
         :rtype: :py:class:`ramsis.datamodel.well.InjectionWell`
         """
+        if isinstance(data, io.IOBase):
+            data = data.read()
+
         # XXX(damb): Pass transformation rule/function by means of the
         # ma.Schema context
         crs_transform = self._transform_callback or self._transform
         ctx = {
             SchemaBase.EContext.ORM: True,
             'transform_callback': functools.partial(
-                crs_transform, source_proj=self._resource.SRS_ESPG,
+                crs_transform, source_proj=self.SRS_EPSG,
                 target_proj=self.proj)}
-        return InjectionWellSchema(context=ctx).loads(self._resource.load())
+        return InjectionWellSchema(context=ctx).loads(data)
 
 
 IOBase.register(HYDWSBoreholeHydraulicsDeserializer)

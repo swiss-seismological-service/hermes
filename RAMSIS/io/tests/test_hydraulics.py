@@ -9,6 +9,8 @@ import unittest
 
 from unittest import mock
 
+import requests
+
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.datamodel.seismicity import SeismicityModel  # noqa
 from ramsis.datamodel.forecast import Forecast  # noqa
@@ -19,8 +21,7 @@ from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.utils import (FileLikeResourceLoader, HTTPGETResourceLoader,
-                             pymap3d_transform)
+from RAMSIS.io.utils import binary_request, pymap3d_transform
 
 
 class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
@@ -31,16 +32,13 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
     PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   'resources')
 
-    def test_with_filelike_loader(self):
+    def test_with_ifs(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
+        deserializer = HYDWSBoreholeHydraulicsDeserializer(
+            proj=proj, transform_callback=pymap3d_transform)
+
         with open(os.path.join(self.PATH_RESOURCES, 'hyd.json'), 'rb') as ifs:
-            loader = FileLikeResourceLoader(ifs)
-
-            deserializer = HYDWSBoreholeHydraulicsDeserializer(
-                loader, proj=proj,
-                transform_callback=pymap3d_transform)
-
-            bh = deserializer.load()
+            bh = deserializer.load(ifs)
 
         self.assertEqual(len(bh.sections), 1)
         self.assertEqual(
@@ -71,7 +69,7 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
                          datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
 
     @mock.patch('requests.get')
-    def test_with_http_get_loader(self, mock_req):
+    def test_with_binary_request(self, mock_req):
 
         def create_mock_resp():
             m = mock.MagicMock()
@@ -94,14 +92,13 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
             'starttime': '2019-01-01T00:00:00',
             'endtime': '2020-01-01T00:00:00',
             'format': 'json', }
-        loader = HTTPGETResourceLoader(url, req_params)
         proj = '+x_0=0 +y_0=0 +z_0=0'
 
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            loader, proj=proj,
-            transform_callback=pymap3d_transform)
+            proj=proj, transform_callback=pymap3d_transform)
 
-        bh = deserializer.load()
+        with binary_request(requests.get, url, req_params) as ifs:
+            bh = deserializer.load(ifs)
 
         self.assertEqual(len(bh.sections), 1)
         self.assertEqual(

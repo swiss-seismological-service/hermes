@@ -7,6 +7,8 @@ import datetime
 import os
 import unittest
 
+import requests
+
 from unittest import mock
 
 from ramsis.datamodel.status import Status  # noqa
@@ -19,8 +21,7 @@ from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.seismics import QuakeMLDeserializer
-from RAMSIS.io.utils import (FileLikeResourceLoader, HTTPGETResourceLoader,
-                             pymap3d_transform)
+from RAMSIS.io.utils import binary_request, pymap3d_transform
 
 
 class QuakeMLDeserializerTestCase(unittest.TestCase):
@@ -30,16 +31,13 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
     PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   'resources')
 
-    def test_with_filelike_loader(self):
+    def test_with_ifs(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
+        deserializer = QuakeMLDeserializer(
+            proj=proj, transform_callback=pymap3d_transform)
+
         with open(os.path.join(self.PATH_RESOURCES, 'cat.qml'), 'rb') as ifs:
-            loader = FileLikeResourceLoader(ifs)
-
-            deserializer = QuakeMLDeserializer(
-                loader, proj=proj,
-                transform_callback=pymap3d_transform)
-
-            cat = deserializer.load()
+            cat = deserializer.load(ifs)
 
         self.assertEqual(len(cat), 2)
 
@@ -62,7 +60,7 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_1.z_value, 2436607.0696544466)
 
     @mock.patch('requests.get')
-    def test_with_http_get_loader(self, mock_req):
+    def test_with_binary_request(self, mock_req):
 
         def create_mock_resp():
             m = mock.MagicMock()
@@ -84,14 +82,14 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
             'endtime': '2020-01-01T00:00:00',
             'format': 'xml',
             'magnitudetype': 'ML,Mc,MS,Mw', }
-        loader = HTTPGETResourceLoader(url, req_params)
 
         proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = QuakeMLDeserializer(
-            loader, proj=proj,
+            proj=proj,
             transform_callback=pymap3d_transform)
 
-        cat = deserializer.load()
+        with binary_request(requests.get, url, req_params) as ifs:
+            cat = deserializer.load(ifs)
 
         self.assertEqual(len(cat), 2)
 
@@ -111,6 +109,7 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_1.magnitude_value, 4.5)
         self.assertEqual(e_1.x_value, 686647.2190603528)
         self.assertEqual(e_1.y_value, 4980141.7949330835)
+
         self.assertEqual(e_1.z_value, 2436607.0696544466)
 
 

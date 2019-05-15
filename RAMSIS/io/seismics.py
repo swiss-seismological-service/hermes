@@ -9,7 +9,7 @@ import io
 from obspy import read_events
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
-from RAMSIS.io.resource import Resource, EResource
+from RAMSIS.io.resource import Resource, EResource, QuakeMLResource
 from RAMSIS.io.utils import (IOBase, DeserializerBase, _IOError,
                              TransformationError)
 
@@ -31,10 +31,8 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
-    def __init__(self, loader, mag_type=None, **kwargs):
+    def __init__(self, mag_type=None, **kwargs):
         """
-        :param loader: Loader instance used for resource loading
-        :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
         :param str proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
         :param mag_type: Describes the type of magnitude events should be
@@ -51,26 +49,26 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
             raise QuakeMLIOError("Missing SRS (PROJ4) projection.")
 
         self._mag_type = kwargs.get('mag_type')
-        self._resource = Resource.create_resource(self.RESOURCE_TYPE,
-                                                  loader=loader)
 
     @property
     def proj(self):
         return self._proj
 
-    def _deserialize(self):
+    def _deserialize(self, data):
         """
         Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
         RT-RAMSIS seismic catalog.
+
+        :param data: Data to be deserialized.
 
         :returns: Seismic catalog
         :rtype: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
         """
         return SeismicCatalog(
             creationinfo_creationtime=datetime.datetime.utcnow(),
-            events=[e for e in self])
+            events=[e for e in self._get_events(data)])
 
-    def _deserialize_event(self, event_element):
+    def _deserialize_event(self, event_element, **kwargs):
         """
         Deserialize a single `QuakeML <https://quake.ethz.ch/quakeml/>`_
         event and perform *indexing*.
@@ -81,6 +79,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         :returns: Seismic event
         :rtype: :py:class:`ramsis.datamodel.seismics.Event`
         """
+        resource = kwargs.get('resource', QuakeMLResource)
 
         def create_pseudo_catalog(event_element):
             """
@@ -96,9 +95,9 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
                 catalog from a single event.
             """
             return io.BytesIO(
-                self._resource.QUAKEML_HEADER +
+                resource.QUAKEML_HEADER +
                 event_element +
-                self._resource.QUAKEML_FOOTER)
+                resource.QUAKEML_FOOTER)
 
         def add_prefix(prefix, d, replace_args=['_', '']):
             if not replace_args:
@@ -130,7 +129,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         # convert origin into local CRS
         try:
             x, y, z = crs_transform(origin.longitude, origin.latitude,
-                                    origin.depth, self._resource.SRS_ESPG,
+                                    origin.depth, resource.SRS_ESPG,
                                     self.proj)
         except Exception as err:
             raise TransformationError(err)
@@ -144,13 +143,17 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
 
         return SeismicEvent(**attr_dict)
 
-    def __iter__(self):
+    def _get_events(self, data):
         """
         Generator yielding the deserialized events of a seismic catalog.
+
+        :param data: Data events are deserialized from
         """
-        for qml_event in self._resource:
+        resource = Resource.create_resource(self.RESOURCE_TYPE, data=data)
+
+        for qml_event in resource:
             try:
-                yield self._deserialize_event(qml_event)
+                yield self._deserialize_event(qml_event, resource=resource)
             except InvalidMagnitudeType:
                 continue
 

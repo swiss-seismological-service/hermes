@@ -34,39 +34,29 @@ class ResourceBase(abc.ABC):
     DEFAULT_SRS_ESPG = 4326
     SRS_ESPG = DEFAULT_SRS_ESPG
 
-    def __init__(self, loader, **kwargs):
+    def __init__(self, data, **kwargs):
         """
-        :param loader: Resource loader instance returning a file-like object
-        :type loader: :py:class:`RAMSIS.io.utils.ResourceLoader`
+        :param data: Data the resource is created from
+        :type data: :py:class:`io.BinaryIO`
         """
-        self._loader = loader
+        self._data = data
 
-    def load(self):
-        """
-        Load a resource.
-
-        :returns: Loaded resource
-        :rtype: bytes
-        """
-        try:
-            return self._loader().read()
-        except Error as err:
-            raise ResourceError(err)
+    @property
+    def data(self):
+        return self._data
 
     @staticmethod
     def create_resource(resource_format, **kwargs):
 
         if resource_format == EResource.QUAKEML:
             return QuakeMLResource(**kwargs)
-        elif resource_format == EResource.JSON:
-            return JSONResource(**kwargs)
 
         raise ResourceError('Unknown resource type.')
 
     @abc.abstractmethod
     def __iter__(self):
         """
-        Generator allowing iteration over the resource formats' events.
+        Generator allowing iteration over the resource formats' sub-entities.
         """
         while False:
             yield None
@@ -106,7 +96,7 @@ class QuakeMLResource(ResourceBase):
         parse_kwargs = {'events': ('end',),
                         'tag': "{%s}event" % self.NSMAP_QUAKEML[None]}
         try:
-            for event, element in etree.iterparse(self._loader(),
+            for event, element in etree.iterparse(self.data,
                                                   **parse_kwargs):
 
                 if event == 'end' and len(element):
@@ -116,17 +106,4 @@ class QuakeMLResource(ResourceBase):
             raise ResourceError(err)
 
 
-class JSONResource(ResourceBase):
-    """
-    Dummy implementation of :py:class:`Resource` providing JSON data.
-    """
-    RESOURCE_TYPE = EResource.JSON.name
-
-    def __iter__(self):
-        # TODO(damb): Might provide iteration over the child elements using
-        # ijson.
-        raise NotImplementedError
-
-
 ResourceBase.register(QuakeMLResource)
-ResourceBase.register(JSONResource)
