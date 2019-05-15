@@ -6,7 +6,6 @@ import enum
 import functools
 
 from marshmallow import Schema, fields, post_load, ValidationError, EXCLUDE
-from osgeo import gdal, ogr, osr
 
 from ramsis.datamodel.hydraulics import Hydraulics, HydraulicSample
 from ramsis.datamodel.well import InjectionWell, WellSection
@@ -268,38 +267,13 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         """
         # XXX(damb): Pass transformation rule/function by means of the
         # ma.Schema context
+        crs_transform = self._transform_callback or self._transform
         ctx = {
             SchemaBase.EContext.ORM: True,
-            'transform_callback': functools.partial(self._transform_callback,
-                                                    proj=self.proj)}
+            'transform_callback': functools.partial(
+                crs_transform, source_proj=self._resource.SRS_ESPG,
+                target_proj=self.proj)}
         return InjectionWellSchema(context=ctx).loads(self._resource.load())
-
-    def _transform(self, x, y, z, proj):
-        """
-        Utility method performing a spatial transformation relying on `GDAL's
-        Python API <https://pypi.org/project/GDAL/>`.
-
-        :param float x: X value
-        :param float y: Y value
-        :param float z: Z value
-        :param str proj: Target CRS description (PROJ4)
-
-        :returns: Transformed values
-        :rtype: tuple
-        """
-        gdal.UseExceptions()
-
-        source_srs = osr.SpatialReference()
-        source_srs.ImportFromEPSG(self._resource.SRS_ESPG)
-
-        target_srs = osr.SpatialReference()
-        target_srs.ImportFromProj4(proj)
-
-        t = osr.CoordinateTransformation(source_srs, target_srs)
-        # convert to WKT
-        point_z = ogr.CreateGeometryFromWkt(f"POINT_Z ({x} {y} {z})")
-        point_z.Transform(t)
-        return point_z.GetX(), point_z.GetY(), point_z.GetZ()
 
 
 IOBase.register(HYDWSBoreholeHydraulicsDeserializer)

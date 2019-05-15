@@ -7,7 +7,6 @@ import datetime
 import io
 
 from obspy import read_events
-from osgeo import ogr, osr
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
 from RAMSIS.io.resource import Resource, EResource
@@ -131,7 +130,8 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         # convert origin into local CRS
         try:
             x, y, z = crs_transform(origin.longitude, origin.latitude,
-                                    origin.depth, self.proj)
+                                    origin.depth, self._resource.SRS_ESPG,
+                                    self.proj)
         except Exception as err:
             raise TransformationError(err)
 
@@ -153,32 +153,6 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
                 yield self._deserialize_event(qml_event)
             except InvalidMagnitudeType:
                 continue
-
-    def _transform(self, x, y, z, proj):
-        """
-        Utility method performing a spatial transformation relying on `GDAL's
-        Python API <https://pypi.org/project/GDAL/>`.
-
-        :param float x: X value
-        :param float y: Y value
-        :param float z: Z value
-        :param str proj: Target CRS description (PROJ4)
-
-        :returns: Transformed values
-        :rtype: tuple
-        """
-        source_srs = osr.SpatialReference()
-        source_srs.ImportFromEPSG(self._resource.SRS_ESPG)
-
-        target_srs = osr.SpatialReference()
-        target_srs.ImportFromProj4(proj)
-
-        t = osr.CoordinateTransformation(source_srs, target_srs)
-        # convert to WKT
-        point_z = ogr.CreateGeometryFromWkt(f"POINT_Z ({x} {y} {z})")
-        point_z.Transform(t)
-
-        return point_z.GetX(), point_z.GetY(), point_z.GetZ()
 
 
 IOBase.register(QuakeMLDeserializer)

@@ -12,6 +12,8 @@ import requests
 
 from urllib.parse import urlparse, urlunparse
 
+from osgeo import ogr, osr
+
 from ramsis.utils.error import Error
 
 
@@ -48,13 +50,6 @@ class IOBase(abc.ABC):
         self._transform_callback = _callable_or_raise(
             kwargs.get('transform_callback', self._transform))
 
-    def _transform(self, x, y, z, proj):
-        """
-        Template method implementing the default transformation rule (i.e. no
-        transformation).
-        """
-        return x, y, z
-
     def transform_callback(self, func):
         """
         Decorator that registers a custom SRS transformation.
@@ -80,6 +75,46 @@ class IOBase(abc.ABC):
         """
         self._transform_callback = _callable_or_raise(func)
         return func
+
+    @staticmethod
+    def _transform(x, y, z, source_proj, target_proj):
+        """
+        Utility method performing a spatial transformation relying on `GDAL's
+        Python API <https://pypi.org/project/GDAL/>`.
+
+        :param float x: X value
+        :param float y: Y value
+        :param float z: Z value
+        :param source_proj: Source CRS description (PROJ4 or EPSG)
+        :type source_proj: int or str
+        :param target_proj: Target CRS description (PROJ4 or EPSG)
+        :type target_proj: int or str
+
+        :returns: Transformed values
+        :rtype: tuple
+        """
+        source_srs = osr.SpatialReference()
+        if isinstance(source_proj, int):
+            source_srs.ImportFromEPSG(source_proj)
+        elif isinstance(source_proj, str):
+            source_srs.ImportFromProj4(source_proj)
+        else:
+            raise ValueError(f"Invalid value passed {source_proj!r}")
+
+        target_srs = osr.SpatialReference()
+        if isinstance(target_proj, int):
+            target_srs.ImportFromEPSG(target_proj)
+        elif isinstance(target_proj, str):
+            target_srs.ImportFromProj4(target_proj)
+        else:
+            raise ValueError(f"Invalid value passed {target_proj!r}")
+
+        t = osr.CoordinateTransformation(source_srs, target_srs)
+        # convert to WKT
+        point_z = ogr.CreateGeometryFromWkt(f"POINT_Z ({x} {y} {z})")
+        point_z.Transform(t)
+
+        return point_z.GetX(), point_z.GetY(), point_z.GetZ()
 
 
 class SerializerBase(abc.ABC):
@@ -219,7 +254,7 @@ def _callable_or_raise(obj):
     return obj
 
 
-def pymap3d_transform(x, y, z, proj):
+def pymap3d_transform(x, y, z, source_proj, target_proj):
     """
     Utility method performing a spatial transformation relying on `pymap3d
     <https://github.com/scivision/pymap3d>`.
@@ -227,19 +262,28 @@ def pymap3d_transform(x, y, z, proj):
     :param float x: X value
     :param float y: Y value
     :param float z: Z value
-    :param str proj: Target CRS description (PROJ4)
+    :param source_proj: Source CRS description (PROJ4 or EPSG)
+    :type source_proj: int or str
+    :param target_proj: Target CRS description (PROJ4)
+    :type target_proj: str
 
     :returns: Transformed values
     :rtype: tuple
     """
+    if source_proj not in (4326, '+proj=longlat +datum=WGS84 +no_defs'):
+        raise ValueError(
+            'Only WGS84 source projections handled (EPSG, PROJ4).')
+    if not isinstance(target_proj, str):
+        raise ValueError('Only PROJ4 target projection handled.')
+
     # extract observer position from proj4 string
-    origin = dict([v.split('=') for v in proj.split(' ')
+    origin = dict([v.split('=') for v in target_proj.split(' ')
                    if (v.startswith('+x_0') or
                        v.startswith('+y_0') or
                        v.startswith('+z_0'))])
 
     if len(origin) != 3:
-        raise ValueError(f"Invalid proj4 string: {proj!r}")
+        raise ValueError(f"Invalid proj4 string: {target_proj!r}")
 
     return pymap3d.geodetic2ned(
         x, y, z, int(origin['+y_0']), int(origin['+x_0']), int(origin['+z_0']))
