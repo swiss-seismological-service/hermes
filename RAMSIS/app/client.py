@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-# This is <client.py>
-# -----------------------------------------------------------------------------
-#
-# Copyright (c) Daniel Armbruster (SED, ETH), Lukas Heiniger (SED, ETH)
-#
-# REVISION AND CHANGES
-# 2018/04/17        V0.1    Daniel Armbruster
-# =============================================================================
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Tool to test and simplify the communication with *RT-RAMSIS* SFM-Worker
 implementations.
@@ -38,7 +31,7 @@ from ramsis.utils.protocol import InjectionPlanSchema
 from RAMSIS import __version__
 from RAMSIS.core.engine.worker import WorkerHandle, EWorkerHandle
 
-# -----------------------------------------------------------------------------
+
 TIMEOUT_POLLING = 60
 
 
@@ -46,7 +39,6 @@ class InvalidProjectId(Error):
     """Invalid project identifier ({})."""
 
 
-# -----------------------------------------------------------------------------
 @contextlib.contextmanager
 def session_scope(Session):
     """
@@ -61,8 +53,6 @@ def session_scope(Session):
         raise
     finally:
         session.close()
-
-# session_scope ()
 
 
 def url_worker(url_str):
@@ -80,8 +70,6 @@ def url_worker(url_str):
     except Exception as err:
         raise argparse.ArgumentTypeError(err)
 
-# url ()
-
 
 def db_engine(url_str):
     """
@@ -91,8 +79,6 @@ def db_engine(url_str):
         return create_engine(url_str)
     except Exception as err:
         raise argparse.ArgumentTypeError(err)
-
-# db_engine ()
 
 
 def requests_timeout(timeout):
@@ -110,8 +96,6 @@ def requests_timeout(timeout):
         timeout = timeout[0]
 
     return timeout
-
-# requests_timeout ()
 
 
 def _validate_json(json_str, err_msg='Invalid JSON dict string.'):
@@ -141,8 +125,6 @@ def model_config(config_dict):
     return _validate_json(
         config_dict,
         err_msg='Invalid model default configuration dictionary syntax.')
-
-# model_config ()
 
 
 def scenario(scenario_dict):
@@ -176,8 +158,6 @@ def wkt(wkt_geom):
 
     return geom.ExportToIsoWkt()
 
-# wkt ()
-
 
 # -----------------------------------------------------------------------------
 class WorkerClientApp(object):
@@ -193,8 +173,6 @@ class WorkerClientApp(object):
         self.log_id = log_id
         self.logger = None
         self.logger_configured = False
-
-    # __init__ ()
 
     def configure(self, capture_warnings=True):
         """
@@ -214,8 +192,6 @@ class WorkerClientApp(object):
         logging.captureWarnings(capture_warnings)
 
         return self.args
-
-    # configure ()
 
     def build_parser(self, parents=[]):
         """
@@ -343,8 +319,6 @@ class WorkerClientApp(object):
 
         return parser
 
-    # build_parser
-
     def run(self):
         """
         Run application.
@@ -406,8 +380,6 @@ class WorkerClientApp(object):
 
         sys.exit(exit_code)
 
-    # run ()
-
     def do_commit(self, args):
         """
         Issue a new task to a *RT-RAMSIS* worker. The task is created from an
@@ -430,8 +402,6 @@ class WorkerClientApp(object):
 
             return qml
 
-        # quakeml ()
-
         def model_parameters(args):
 
             if args.model_parameters:
@@ -444,8 +414,6 @@ class WorkerClientApp(object):
 
             return args.model_parameters
 
-        # model_parameters ()
-
         def reservoir(args):
 
             if args.reservoir:
@@ -457,8 +425,6 @@ class WorkerClientApp(object):
             # ramsis-core DB is currently not implemented.
 
             return args.reservoir
-
-        # reservoir ()
 
         def scenario(args):
             if args.scenario:
@@ -489,8 +455,6 @@ class WorkerClientApp(object):
 
         worker.compute(payload)
 
-    # do_commit ()
-
     def do_list(self, args):
         """
         List tasks from a *RT-RAMSIS* worker.
@@ -505,15 +469,11 @@ class WorkerClientApp(object):
                 retval[f[0]] = f[1]
             return retval
 
-        # fconds_as_dict ()
-
         def extract_task_ids(filter_conds):
             if 'id' not in filter_conds:
                 return []
 
             return filter_conds.pop('id').split(',')
-
-        # extract task_ids
 
         self.logger.debug('Worker base URL: {}'.format(self.args.url_worker))
         self.logger.debug('Worker model: {}'.format(self.args.model))
@@ -548,8 +508,6 @@ class WorkerClientApp(object):
                     task_id=list(r['data'].keys())[0],
                     result=str(list(r['data'].values())), **r))
 
-    # do_list ()
-
     def do_remove(self, args):
         """
         Remove one or more tasks from a *RT-RAMSIS* worker.
@@ -570,8 +528,6 @@ class WorkerClientApp(object):
         for r in resp.all():
             print(list(r['data'].keys())[0])
 
-    # do_delete ()
-
     def _setup_logger(self):
         """
         Initialize the logger of the application.
@@ -590,7 +546,6 @@ class WorkerClientApp(object):
                 self.logger.warning('Setup logging failed with %s. '
                                     'Using fallback logging configuration.' %
                                     err)
-    # _setup_logger ()
 
     def _setup_fallback_logger(self):
         """setup a fallback logger"""
@@ -608,10 +563,6 @@ class WorkerClientApp(object):
         self.logger.addHandler(fallback_handler)
         self.logger_configured = True
 
-    # _setup_fallback_logger ()
-
-# class WorkerClientApp
-
 
 # ----------------------------------------------------------------------------
 def main():
@@ -628,11 +579,6 @@ def main():
 
     return app.run()
 
-# main ()
 
-
-# -----------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
-
-# ---- END OF <client.py> ----
