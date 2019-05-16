@@ -21,15 +21,16 @@ from urllib.parse import urlparse
 import marshmallow
 import requests
 
+from marshmallow import Schema, fields
 from osgeo import gdal, ogr
 from sqlalchemy import create_engine
 
 from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
-from ramsis.utils.protocol import InjectionPlanSchema
 from RAMSIS import __version__
 from RAMSIS.core.engine.worker import WorkerHandle, EWorkerHandle
+from RAMSIS.io.hydraulics import InjectionWellSchema
 
 
 TIMEOUT_POLLING = 60
@@ -134,7 +135,10 @@ def scenario(scenario_dict):
     :param str scenario_dict: Scenario configuration dictionary
     :rtype: dict
     """
-    DESERIALIZER = InjectionPlanSchema
+    class ScenarioSchema(Schema):
+        well = fields.Nested(InjectionWellSchema)
+
+    DESERIALIZER = ScenarioSchema
 
     scenario_dict = _validate_json(
         scenario_dict,
@@ -256,7 +260,7 @@ class WorkerClientApp(object):
                                      "(srid=4326)."))
         subparser.add_argument('--scenario', metavar='JSON',
                                type=scenario, dest='scenario',
-                               help="Scenario (injection plan) to be used.")
+                               help="Scenario (injection well) to be used.")
         # subparser.add_argument('--project', dest='project', metavar='ID',
         #                       type=int, default=1,
         #                       help=('Project identifier. '
