@@ -386,54 +386,55 @@ class WorkerClientApp(object):
         already existing project from the RT-RAMSIS database.
         """
         def quakeml(args):
-
-            if args.url_fdsnws_event:
-                self.logger.debug(
-                    'Fetching seismic catalog from fdsnws-event: {!r}'.format(
-                        args.url_fdsnws_event))
-                resp = requests.get(args.url_fdsnws_event)
-                qml = resp.content
-                self.logger.debug('Received seismic catalog.')
-            else:
-                # TODO(damb): To be done.
+            if not args.url_fdsnws_event:
+                # TODO(damb): To be done
                 raise NotImplementedError(
                     'Fetching the catalog from the ramsis-core DB '
                     'is currently not implemented.')
 
+            self.logger.debug(
+                'Fetching seismic catalog from fdsnws-event: {!r}'.format(
+                    args.url_fdsnws_event))
+            resp = requests.get(args.url_fdsnws_event)
+            qml = resp.content
+            self.logger.debug('Received seismic catalog.')
+
             return qml
 
         def model_parameters(args):
+            if not args.model_parameters:
+                # TODO(damb): To be done
+                raise NotImplementedError(
+                    'Fetching the model configuration from the ramsis-core '
+                    'DB is currently not implemented.')
 
-            if args.model_parameters:
-                self.logger.debug(
-                    'Use user-defined model parameters: {!r}'.format(
-                        args.model_parameters))
-
-            # TODO(damb): Fetching the model configuration from the ramsis-core
-            # DB is currently not implemented.
-
+            self.logger.debug(
+                'Use user-defined model parameters: {!r}'.format(
+                    args.model_parameters))
             return args.model_parameters
 
         def reservoir(args):
+            if not args.reservoir:
+                # TODO(damb): To be done
+                raise NotImplementedError(
+                    'Fetching the reservoir configuration from the'
+                    'ramsis-core DB is currently not implemented.')
 
-            if args.reservoir:
-                self.logger.debug(
-                    'Use user-defined reservior configuration: {!r}'.format(
-                        args.reservoir))
-
-            # TODO(damb): Fetching the reservoir configuration from the
-            # ramsis-core DB is currently not implemented.
-
+            self.logger.debug(
+                'Use user-defined reservior configuration: {!r}'.format(
+                    args.reservoir))
             return args.reservoir
 
         def scenario(args):
-            if args.scenario:
-                self.logger.debug(
-                    'Use user-defined scenario configuration: {!r}'.format(
-                        args.scenario))
+            if not args.scenario:
+                # TODO(damb): To be done
+                raise NotImplementedError(
+                    'Fetching the scenario configuration from the'
+                    'ramsis-core DB is currently not implemented.')
 
-            # TODO(damb): Fetching the reservoir configuration from the
-            # ramsis-core DB is currently not implemented.
+            self.logger.debug(
+                'Use user-defined scenario configuration: {!r}'.format(
+                    args.scenario))
             return args.scenario
 
         data = {
