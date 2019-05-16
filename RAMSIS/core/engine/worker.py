@@ -323,7 +323,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'scenario': scenario,
                 'reservoir': {'geom': reservoir}}
 
-            if not model_parameters:
+            if model_parameters is not None:
                 self._payload['model_parameters'] = model_parameters
 
             self._serializer = kwargs.get(
