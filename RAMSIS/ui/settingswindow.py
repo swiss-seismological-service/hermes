@@ -112,7 +112,7 @@ class ApplicationSettingsWindow(SettingsWindow):
         self.ui = app.gui.load_form('appsettingswindow.ui', self)
 
         # State machines for DB settings and buttons
-        self.uism_db = DbUiStateMachine(self.ui)
+        self._ui_state_machine_db = DbUiStateMachine(self.ui)
 
         for text, member in (('Real-Time Mode', LaunchMode.REAL_TIME),
                              ('Lab Mode', LaunchMode.LAB)):
@@ -163,7 +163,7 @@ class ApplicationSettingsWindow(SettingsWindow):
 
     @pyqtSlot(name='on_dbConnectButton_clicked')
     def connect_to_db(self):
-        if self.uism_db.is_disconnected_valid():
+        if self._ui_state_machine_db.is_disconnected_valid():
             url = self.ui.dbUrlEdit.text()
             db_name = self.ui.dbNameEdit.text()
             user = self.ui.dbUserEdit.text()
@@ -173,17 +173,17 @@ class ApplicationSettingsWindow(SettingsWindow):
             success = self.app.ramsis_core.connect(db_url)
             if success:
                 if self.app.ramsis_core.store.is_empty():
-                    self.uism_db.to_connected_empty()
+                    self._ui_state_machine_db.to_connected_empty()
                 else:
-                    self.uism_db.to_connected_initialized()
+                    self._ui_state_machine_db.to_connected_initialized()
             else:
                 QMessageBox.critical(self, 'Connection Failed',
                                      f'Connection to {url} failed. Check the '
                                      f'logs for further information.')
-                self.uism_db.to_disconnected_valid()
-        elif self.uism_db.is_connected(allow_substates=True):
+                self._ui_state_machine_db.to_disconnected_valid()
+        elif self._ui_state_machine_db.is_connected(allow_substates=True):
             self.app.ramsis_core.disconnect()
-            self.uism_db.to_disconnected_valid()
+            self._ui_state_machine_db.to_disconnected_valid()
 
     @pyqtSlot(name='on_dbInitButton_clicked')
     def action_init_db(self):
@@ -213,9 +213,9 @@ class ApplicationSettingsWindow(SettingsWindow):
         # Note: edits are disabled when connected so we only need to cover
         # the state transitions below.
         if valid:
-            self.uism_db.to_disconnected_valid()
+            self._ui_state_machine_db.to_disconnected_valid()
         else:
-            self.uism_db.to_disconnected_invalid()
+            self._ui_state_machine_db.to_disconnected_invalid()
 
     @pyqtSlot(int, name='on_launchModeComboBox_currentIndexChanged')
     def enable_lab_mode_section(self, idx):
