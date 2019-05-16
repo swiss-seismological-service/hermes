@@ -249,6 +249,12 @@ class WorkerClientApp(object):
                                help=('Fetch a seismic catalog from a '
                                      'fdsnws-event webservice specified by '
                                      'URL directly.'))
+        subparser.add_argument('--hydws', dest='url_hydws',
+                               # TODO(damb): Verify the URL
+                               type=str, metavar='URL',
+                               help=('Fetch a borehole and hydraulics '
+                                     'datafrom a hydws webservice '
+                                     'specified by URL.'))
         subparser.add_argument('--model-parameters', metavar='DICT',
                                type=model_config, dest='model_parameters',
                                default='{}',
@@ -405,6 +411,22 @@ class WorkerClientApp(object):
 
             return qml
 
+        def well(args):
+            if not args.url_hydws:
+                # TODO(damb): To be done
+                raise NotImplementedError(
+                    'Fetching well data and hydraulics from the '
+                    'ramsis-core DB is currently not implemented.')
+
+            self.logger.debug(
+                'Fetching well data from hydws: {!r}'.format(
+                    args.url_hydws))
+            resp = requests.get(args.url_hydws)
+            data = resp.content
+            self.logger.debug('Received well data and hydraulics.')
+
+            return data
+
         def model_parameters(args):
             if not args.model_parameters:
                 # TODO(damb): To be done
@@ -443,13 +465,14 @@ class WorkerClientApp(object):
 
         data = {
             'seismic_catalog': quakeml(args),
+            'well': well(args),
             'model_parameters': model_parameters(args),
             'reservoir': reservoir(args),
             'scenario': scenario(args)
         }
 
         payload = WorkerHandle.create_payload(
-            EWorkerHandle.SFM_REMOTE, **data, well=None)
+            EWorkerHandle.SFM_REMOTE, **data)
 
         worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
                                      base_url=self.args.url_worker,
