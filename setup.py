@@ -118,7 +118,7 @@ setup(
     # TODO(damb): ramsis does not necessarily depend on doc extras flag
     entry_points={
         'console_scripts': ['ramsis = RAMSIS.main:main',
-                            'ramsis-client = RAMSIS.app.client:main', ]}
+                            'ramsis-sfm-client = RAMSIS.app.client:main', ]}
 )
 
 # ----- END OF setup.py -----
