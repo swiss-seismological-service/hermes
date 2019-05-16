@@ -8,7 +8,7 @@
 # 2018/04/17        V0.1    Daniel Armbruster
 # =============================================================================
 """
-Tool to test and simplify the communication with *RT-RAMSIS* worker
+Tool to test and simplify the communication with *RT-RAMSIS* SFM-Worker
 implementations.
 """
 # XXX(damb): The client application adds lots of dependencies to
@@ -74,7 +74,7 @@ def url_worker(url_str):
 
         if (url.path or url.params or url.query or url.fragment or
                 url.scheme not in ('http', 'https')):
-            raise ValueError('Invalid RT-RAMSIS worker URL.')
+            raise ValueError('Invalid RT-RAMSIS SFM-Worker URL.')
 
         return url.geturl()
     except Exception as err:
@@ -182,7 +182,8 @@ def wkt(wkt_geom):
 # -----------------------------------------------------------------------------
 class WorkerClientApp(object):
     """
-    A *RT-RAMSIS* worker webservice test implementation. For testing purposes.
+    A *RT-RAMSIS* SFM-Worker webservice test implementation. For testing
+    purposes.
     """
     VERSION = __version__
 
@@ -226,7 +227,7 @@ class WorkerClientApp(object):
         """
         parser = CustomParser(
             prog="ramsis-client",
-            description='Communicate with *RT-RAMSIS* workers.',
+            description='Communicate with *RT-RAMSIS* SFM-Workers.',
             parents=parents)
 
         # TODO TODO TODO
@@ -246,11 +247,11 @@ class WorkerClientApp(object):
                             help="Path to a logging configuration file.")
         parser.add_argument('--timeout', '-t', dest='timeout',
                             type=requests_timeout, default=None,
-                            help=('Maximum time to wait for worker response. '
-                                  'When passing both a connection timeout and '
-                                  'a read timeout values must be colon '
-                                  'separated (default: wait forever). For '
-                                  'further information see: '
+                            help=('Maximum time to wait for SFM worker '
+                                  'response. When passing both a connection '
+                                  'timeout and a read timeout values must be '
+                                  'colon separated (default: wait forever). '
+                                  'For further information see: '
                                   'http://docs.python-requests.org/en/master/'
                                   'user/advanced/#timeouts'))
 
@@ -290,9 +291,9 @@ class WorkerClientApp(object):
         #                       help=('RAMSIS datamodel DB URL indicating the '
         #                             'database dialect and connection '
         #                             'arguments.'))
-        subparser.add_argument('url_worker', metavar='URL_WORKER',
+        subparser.add_argument('url_worker', metavar='URL_SFM_WORKER',
                                type=url_worker,
-                               help='Base worker URL.')
+                               help='Base SFM-worker URL.')
         subparser.add_argument('model', metavar='MODEL', type=str,
                                help='Model identifier.')
         subparser.set_defaults(func=self.do_commit)
@@ -301,7 +302,7 @@ class WorkerClientApp(object):
         subparser = subparsers.add_parser('list',
                                           description=self.do_list.__doc__,
                                           help=('List tasks from a '
-                                                '*RT-RAMSIS* worker.'))
+                                                '*RT-RAMSIS* SFM-Worker.'))
         # subparser - list: optional arguments
         subparser.add_argument('--all', '-a', dest='filters',
                                action='append_const', const=None,
@@ -317,9 +318,9 @@ class WorkerClientApp(object):
                                action='store_true', default=False,
                                help='Only display task identifiers.')
         # subparser - list: positional arguments
-        subparser.add_argument('url_worker', metavar='URL_WORKER',
+        subparser.add_argument('url_worker', metavar='URL_SFM_WORKER',
                                type=url_worker,
-                               help='Base worker URL.')
+                               help='Base SFM-Worker URL.')
         subparser.add_argument('model', metavar='MODEL', type=str,
                                help='Model identifier.')
         subparser.set_defaults(func=self.do_list)
@@ -330,9 +331,9 @@ class WorkerClientApp(object):
                                           help=('Remove tasks from a '
                                                 '*RT-RAMSIS* worker.'))
         # subparser - remove: positional arguments
-        subparser.add_argument('url_worker', metavar='URL_WORKER',
+        subparser.add_argument('url_worker', metavar='URL_SFM_WORKER',
                                type=url_worker,
-                               help='Base worker URL.')
+                               help='Base SFM-Worker URL.')
         subparser.add_argument('model', metavar='MODEL', type=str,
                                help='Model identifier.')
         subparser.add_argument('task_ids', metavar='TASK_ID', type=uuid.UUID,
@@ -615,7 +616,7 @@ class WorkerClientApp(object):
 # ----------------------------------------------------------------------------
 def main():
 
-    app = WorkerClientApp(log_id='RAMSIS-CLIENT')
+    app = WorkerClientApp(log_id='RAMSIS-SFM-CLIENT')
 
     try:
         app.configure()
