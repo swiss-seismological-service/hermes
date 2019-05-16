@@ -336,10 +336,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         @staticmethod
         def validate_ctor_args(well):
-            if len(well.hydraulics) == 1:
-                return well
-            raise ValueError(
-                "A well must have only a single hydraulics time series.")
+            if not isinstance(well, bytes) and not len(well.sections) >= 1:
+                raise ValueError(
+                    "A well must have at least one section.")
+            return well
 
         # validate_ctor_args ()
 
