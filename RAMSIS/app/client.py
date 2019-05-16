@@ -395,7 +395,7 @@ class WorkerClientApp(object):
         Issue a new task to a *RT-RAMSIS* worker. The task is created from an
         already existing project from the RT-RAMSIS database.
         """
-        def quakeml(args):
+        def seismic_catalog(args):
             if not args.url_fdsnws_event:
                 # TODO(damb): To be done
                 raise NotImplementedError(
@@ -464,7 +464,7 @@ class WorkerClientApp(object):
             return args.scenario
 
         data = {
-            'seismic_catalog': quakeml(args),
+            'seismic_catalog': seismic_catalog(args),
             'well': well(args),
             'model_parameters': model_parameters(args),
             'reservoir': reservoir(args),
