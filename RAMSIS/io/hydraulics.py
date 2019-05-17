@@ -28,7 +28,7 @@ class _SchemaBase(Schema):
         """
         Enum collecting schema related contexts.
         """
-        ORM = enum.auto()
+        PAST = enum.auto()
 
     def _flatten_object(self, data, as_flat_fields):
         for f in as_flat_fields:
@@ -104,7 +104,7 @@ class _HydraulicSampleSchema(_SchemaBase):
 
     @post_load
     def make_object(self, data):
-        if self.EContext.ORM in self.context:
+        if self.EContext.PAST in self.context:
             return HydraulicSample(
                 **self._flatten_object(data, self.__QUAKEML_TYPES))
         return data
@@ -157,7 +157,7 @@ class _WellSectionSchema(_SchemaBase):
         return self.make_object(self._transform(data))
 
     def make_object(self, data):
-        if self.EContext.ORM in self.context:
+        if self.EContext.PAST in self.context:
             # XXX(damb): Wrap samples with Hydraulics enevelope
             if 'hydraulics' in data:
                 data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
@@ -210,7 +210,7 @@ class _InjectionWellSchema(_SchemaBase):
 
     @post_load
     def make_object(self, data):
-        if self.EContext.ORM in self.context:
+        if self.EContext.PAST in self.context:
             return InjectionWell(**data)
         return data
 
