@@ -6,28 +6,39 @@ Utilities for seismic data import.
 import datetime
 import io
 
+from lxml import etree
 from obspy import read_events
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
-from RAMSIS.io.resource import Resource, EResource, QuakeMLResource
 from RAMSIS.io.utils import (IOBase, DeserializerBase, _IOError,
                              TransformationError)
 
 
-class QuakeMLIOError(_IOError):
+class QuakeMLCatalogIOError(_IOError):
     """QuakeML de-/serialization error ({})."""
 
 
-class InvalidMagnitudeType(QuakeMLIOError):
+class InvalidMagnitudeType(QuakeMLCatalogIOError):
     """Event with invalid magnitude type {!r} detected."""
 
 
-class QuakeMLDeserializer(DeserializerBase, IOBase):
+class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
     """
     Deserializes `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
     RT-RAMSIS seismic catalog.
     """
-    RESOURCE_TYPE = EResource.QUAKEML
+    NSMAP_QUAKEML = {None: "http://quakeml.org/xmlns/bed/1.2",
+                     'q': "http://quakeml.org/xmlns/quakeml/1.2"}
+    QUAKEML_HEADER = (
+        b'<?xml version="1.0" encoding="UTF-8"?>'
+        b'<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" '
+        b'xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">'
+        b'<eventParameters publicID="smi:scs/0.7/EventParameters">')
+
+    QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
+
+    QUAKEML_SRS_ESPG = 4326
+    SRS_ESPG = QUAKEML_SRS_ESPG
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
@@ -46,7 +57,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
 
         self._proj = kwargs.get('proj')
         if not self._proj:
-            raise QuakeMLIOError("Missing SRS (PROJ4) projection.")
+            raise QuakeMLCatalogIOError("Missing SRS (PROJ4) projection.")
 
         self._mag_type = kwargs.get('mag_type')
 
@@ -79,8 +90,6 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         :returns: Seismic event
         :rtype: :py:class:`ramsis.datamodel.seismics.Event`
         """
-        resource = kwargs.get('resource', QuakeMLResource)
-
         def create_pseudo_catalog(event_element):
             """
             Creates a QuakeML catalog from a single event.
@@ -95,9 +104,9 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
                 catalog from a single event.
             """
             return io.BytesIO(
-                resource.QUAKEML_HEADER +
+                self.QUAKEML_HEADER +
                 event_element +
-                resource.QUAKEML_FOOTER)
+                self.QUAKEML_FOOTER)
 
         def add_prefix(prefix, d, replace_args=['_', '']):
             if not replace_args:
@@ -109,7 +118,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         try:
             e = read_events(create_pseudo_catalog(event_element))[0]
         except Exception as err:
-            raise QuakeMLIOError(f'While parsing QuakeML: {err}')
+            raise QuakeMLCatalogIOError(f'While parsing QuakeML: {err}')
         else:
             self.logger.debug(f"Importing seismic event: {e} ...")
 
@@ -129,7 +138,7 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
         # convert origin into local CRS
         try:
             x, y, z = crs_transform(origin.longitude, origin.latitude,
-                                    origin.depth, resource.SRS_ESPG,
+                                    origin.depth, self.SRS_ESPG,
                                     self.proj)
         except Exception as err:
             raise TransformationError(err)
@@ -149,14 +158,20 @@ class QuakeMLDeserializer(DeserializerBase, IOBase):
 
         :param data: Data events are deserialized from
         """
-        resource = Resource.create_resource(self.RESOURCE_TYPE, data=data)
+        parse_kwargs = {'events': ('end',),
+                        'tag': "{%s}event" % self.NSMAP_QUAKEML[None]}
+        try:
+            for event, element in etree.iterparse(data,
+                                                  **parse_kwargs):
+                if event == 'end' and len(element):
+                    try:
+                        yield self._deserialize_event(etree.tostring(element))
+                    except InvalidMagnitudeType:
+                        continue
 
-        for qml_event in resource:
-            try:
-                yield self._deserialize_event(qml_event, resource=resource)
-            except InvalidMagnitudeType:
-                continue
+        except etree.XMLSyntaxError as err:
+            raise QuakeMLCatalogIOError(err)
 
 
-IOBase.register(QuakeMLDeserializer)
-DeserializerBase.register(QuakeMLDeserializer)
+IOBase.register(QuakeMLCatalogDeserializer)
+DeserializerBase.register(QuakeMLCatalogDeserializer)

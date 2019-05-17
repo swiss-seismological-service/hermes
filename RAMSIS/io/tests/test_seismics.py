@@ -20,20 +20,20 @@ from ramsis.datamodel.hydraulics import Hydraulics, InjectionPlan  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
-from RAMSIS.io.seismics import QuakeMLDeserializer
+from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 from RAMSIS.io.utils import binary_request, pymap3d_transform
 
 
-class QuakeMLDeserializerTestCase(unittest.TestCase):
+class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
     """
-    Test for :py:class:`RAMSIS.io.seismics.QuakeMLDeserializer` class.
+    Test for :py:class:`RAMSIS.io.seismics.QuakeMLCatalogDeserializer` class.
     """
     PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   'resources')
 
     def test_with_ifs(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
-        deserializer = QuakeMLDeserializer(
+        deserializer = QuakeMLCatalogDeserializer(
             proj=proj, transform_callback=pymap3d_transform)
 
         with open(os.path.join(self.PATH_RESOURCES, 'cat.qml'), 'rb') as ifs:
@@ -84,7 +84,7 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
             'magnitudetype': 'ML,Mc,MS,Mw', }
 
         proj = '+x_0=0 +y_0=0 +z_0=0'
-        deserializer = QuakeMLDeserializer(
+        deserializer = QuakeMLCatalogDeserializer(
             proj=proj,
             transform_callback=pymap3d_transform)
 
@@ -114,7 +114,7 @@ class QuakeMLDeserializerTestCase(unittest.TestCase):
 
 
 def suite():
-    return unittest.makeSuite(QuakeMLDeserializerTestCase, 'test')
+    return unittest.makeSuite(QuakeMLCatalogDeserializerTestCase, 'test')
 
 
 if __name__ == '__main__':
