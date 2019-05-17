@@ -10,8 +10,18 @@ from lxml import etree
 from obspy import read_events
 
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
-from RAMSIS.io.utils import (IOBase, DeserializerBase, _IOError,
-                             TransformationError)
+from RAMSIS.io.utils import (IOBase, DeserializerBase, SerializerBase,
+                             _IOError, TransformationError, )
+
+_QUAKEML_HEADER = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b'<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" '
+    b'xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">'
+    b'<eventParameters publicID="smi:scs/0.7/EventParameters">')
+
+_QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
+
+_QUAKEML_SRS_EPSG = 4326
 
 
 class QuakeMLCatalogIOError(_IOError):
@@ -29,16 +39,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
     """
     NSMAP_QUAKEML = {None: "http://quakeml.org/xmlns/bed/1.2",
                      'q': "http://quakeml.org/xmlns/quakeml/1.2"}
-    QUAKEML_HEADER = (
-        b'<?xml version="1.0" encoding="UTF-8"?>'
-        b'<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" '
-        b'xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">'
-        b'<eventParameters publicID="smi:scs/0.7/EventParameters">')
-
-    QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
-
-    QUAKEML_SRS_EPSG = 4326
-    SRS_EPSG = QUAKEML_SRS_EPSG
+    SRS_EPSG = _QUAKEML_SRS_EPSG
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
@@ -104,9 +105,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
                 catalog from a single event.
             """
             return io.BytesIO(
-                self.QUAKEML_HEADER +
-                event_element +
-                self.QUAKEML_FOOTER)
+                _QUAKEML_HEADER + event_element + _QUAKEML_FOOTER)
 
         def add_prefix(prefix, d, replace_args=['_', '']):
             if not replace_args:
@@ -173,5 +172,29 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
             raise QuakeMLCatalogIOError(err)
 
 
+class QuakeMLCatalogSerializer(SerializerBase, IOBase):
+    """
+    Serializes a RT-RAMSIS seismic catalog into `QuakeML
+    <https://quake.ethz.ch/quakeml/>`_.
+    """
+
+    def _serialize(self, data):
+        """
+        Serialize a seismic catalog.
+
+        :param data: Seismic catalog
+        :type data: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
+
+        :returns: Serialized QuakeML seismic catalog
+        :rtype: bytes
+        """
+        # XXX(damb): Since before, the QuakeML event snippet was stored
+        # without modification transforming corrdinates is not required.
+        return (_QUAKEML_HEADER + b''.join(e.quakeml for e in data.events) +
+                _QUAKEML_FOOTER)
+
+
 IOBase.register(QuakeMLCatalogDeserializer)
+IOBase.register(QuakeMLCatalogSerializer)
 DeserializerBase.register(QuakeMLCatalogDeserializer)
+SerializerBase.register(QuakeMLCatalogSerializer)
