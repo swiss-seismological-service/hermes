@@ -16,8 +16,6 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from RAMSIS.ui.base.state import UiStateMachine
 
 from .modelconfigurationwindow import ModelConfigurationWindow
-
-from RAMSIS import ramsissettings
 from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
 
 ui_path = os.path.dirname(__file__)
@@ -145,32 +143,45 @@ class DbUiStateMachine(UiStateMachine):
 
 
 class ApplicationSettingsWindow(SettingsWindow):
+    """
+    RAMSIS specific local application settings window
 
-    def __init__(self, settings, **kwargs):
-        super().__init__(self, **kwargs)
+    The application settings window allows the user to view and modify local
+    application settings such as the DB connection credentials. The window
+    also provides UI facilities to test and establish the DB connection and
+    initialize a fresh application DB.
+    """
+
+    def __init__(self, app, **kwargs):
+        """
+        Application settings window initializer
+
+        :param app: A reference to the application top level object
+        :type core: RAMSIS.application.Application
+        :param dict kwargs: Additional arguments to pass to the window ctor
+        """
+        super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
-        self.settings = settings
+        self.app = app
+        self.ui = app.gui.load_form('appsettingswindow.ui', self)
 
         # State machines for DB settings and buttons
         self.uism_db = DbUiStateMachine(self.ui)
-        # Setup the user interface
-        self.ui = Ui_ApplicationSettingsWindow()
-        self.ui.setupUi(self)
 
         # Add new settings here. This maps each user editable settings key to
         # it's corresponding widget in the settings window
-        widget_map = {
-            # General settings
-            'db_url': self.ui.dbUrlEdit,
-            'db_user': self.ui.dbUserEdit,
-            'db_name': self.ui.dbNameEdit,
-            'db_password': self.ui.dbPasswordEdit,
-            'enable_lab_mode': self.ui.enableLabModeCheckBox,
+        settings_widget_map = {
+            # Database settings
+            'database/url': self.ui.dbUrlEdit,
+            'database/user': self.ui.dbUserEdit,
+            'database/name': self.ui.dbNameEdit,
+            'database/password': self.ui.dbPasswordEdit,
+            'launch_mode': self.ui.launchModeComboBox,
             # Lab mode settings
-            'lab_mode/infinite_speed': self.ui.simulateAFAPRadioButton,
-            'lab_mode/speed': self.ui.speedBox,
+            'simulation/max_speed': self.ui.simulateMaxRadioButton,
+            'simulation/speed': self.ui.speedBox,
         }
-        self.register_widgets(widget_map)
+        self.register_widgets(settings_widget_map)
 
         self.start_observing_changes()
         self.load_settings()
@@ -185,10 +196,9 @@ class ApplicationSettingsWindow(SettingsWindow):
         values in the GUI.
 
         """
-        for key in ramsissettings.known_settings:
+        for key, value in self.app.app_settings.all().items():
             widget = self.widget_map.get(key)
             if widget is not None:
-                value = self.settings.value(key)
                 self._set_value_in_widget(value, widget)
 
     def action_setting_changed(self):
@@ -197,14 +207,9 @@ class ApplicationSettingsWindow(SettingsWindow):
         if value is None:
             return
         key = self.key_map[widget]
-        self.app.app_settings.set_value(key, value)
+        self.app.app_settings[key] = value
 
     # UI Signal Slots
-
-    @pyqtSlot(name='on_resetToDefaultButton_clicked')
-    def load_defaults(self):
-        self.app.app_settings.register_default_settings()
-        self.load_settings()
 
     @pyqtSlot(name='on_dbConnectButton_clicked')
     def connect_to_db(self):
