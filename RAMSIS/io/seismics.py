@@ -37,8 +37,8 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
 
     QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
 
-    QUAKEML_SRS_ESPG = 4326
-    SRS_ESPG = QUAKEML_SRS_ESPG
+    QUAKEML_SRS_EPSG = 4326
+    SRS_EPSG = QUAKEML_SRS_EPSG
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
@@ -138,7 +138,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         # convert origin into local CRS
         try:
             x, y, z = crs_transform(origin.longitude, origin.latitude,
-                                    origin.depth, self.SRS_ESPG,
+                                    origin.depth, self.SRS_EPSG,
                                     self.proj)
         except Exception as err:
             raise TransformationError(err)
