@@ -18,7 +18,7 @@ class HYDWSJSONIOError(_IOError):
     """Base HYDJSON de-/serialization error ({})."""
 
 
-class SchemaBase(Schema):
+class _SchemaBase(Schema):
     """
     Schema base class.
     """
@@ -41,7 +41,7 @@ class SchemaBase(Schema):
         return data
 
 
-class QuakeMLQuantityTypeBase(SchemaBase):
+class _QuakeMLQuantityTypeBase(_SchemaBase):
     """
     Base class for `QuakeML <https://quake.ethz.ch/quakeml/>`_
     :code:`*Quantity` type schemas.
@@ -52,7 +52,7 @@ class QuakeMLQuantityTypeBase(SchemaBase):
     confidencelevel = fields.Float()
 
 
-class QuakeMLRealQuantityType(QuakeMLQuantityTypeBase):
+class _QuakeMLRealQuantityType(_QuakeMLQuantityTypeBase):
     """
     Implementation of a `QuakeML <https://quake.ethz.ch/quakeml/>`_
     :code:`RealQuantity` type schema.
@@ -60,7 +60,7 @@ class QuakeMLRealQuantityType(QuakeMLQuantityTypeBase):
     value = fields.Float()
 
 
-class QuakeMLTimeQuantityType(QuakeMLQuantityTypeBase):
+class _QuakeMLTimeQuantityType(_QuakeMLQuantityTypeBase):
     """
     Implementation of a `QuakeML <https://quake.ethz.ch/quakeml/>`_
     :code:`TimeQuantity` type schema.
@@ -68,7 +68,7 @@ class QuakeMLTimeQuantityType(QuakeMLQuantityTypeBase):
     value = fields.DateTime(format='iso')
 
 
-class HydraulicSampleSchema(SchemaBase):
+class _HydraulicSampleSchema(_SchemaBase):
     """
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     hydraulic sample.
@@ -90,16 +90,16 @@ class HydraulicSampleSchema(SchemaBase):
         'fluidviscosity',
         'fluidph', )
 
-    datetime = fields.Nested(QuakeMLTimeQuantityType)
-    bottomtemperature = fields.Nested(QuakeMLRealQuantityType)
-    bottomflow = fields.Nested(QuakeMLRealQuantityType)
-    bottompressure = fields.Nested(QuakeMLRealQuantityType)
-    toptemperature = fields.Nested(QuakeMLRealQuantityType)
-    topflow = fields.Nested(QuakeMLRealQuantityType)
-    toppressure = fields.Nested(QuakeMLRealQuantityType)
-    fluiddensity = fields.Nested(QuakeMLRealQuantityType)
-    fluidviscosity = fields.Nested(QuakeMLRealQuantityType)
-    fluidph = fields.Nested(QuakeMLRealQuantityType)
+    datetime = fields.Nested(_QuakeMLTimeQuantityType)
+    bottomtemperature = fields.Nested(_QuakeMLRealQuantityType)
+    bottomflow = fields.Nested(_QuakeMLRealQuantityType)
+    bottompressure = fields.Nested(_QuakeMLRealQuantityType)
+    toptemperature = fields.Nested(_QuakeMLRealQuantityType)
+    topflow = fields.Nested(_QuakeMLRealQuantityType)
+    toppressure = fields.Nested(_QuakeMLRealQuantityType)
+    fluiddensity = fields.Nested(_QuakeMLRealQuantityType)
+    fluidviscosity = fields.Nested(_QuakeMLRealQuantityType)
+    fluidph = fields.Nested(_QuakeMLRealQuantityType)
     fluidcomposition = fields.String()
 
     @post_load
@@ -110,7 +110,7 @@ class HydraulicSampleSchema(SchemaBase):
         return data
 
 
-class WellSectionSchema(SchemaBase):
+class _WellSectionSchema(_SchemaBase):
     """
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for a
     well section.
@@ -133,14 +133,14 @@ class WellSectionSchema(SchemaBase):
 
     starttime = fields.DateTime(format='iso')
     endtime = fields.DateTime(format='iso')
-    toplongitude = fields.Nested(QuakeMLRealQuantityType)
-    toplatitude = fields.Nested(QuakeMLRealQuantityType)
-    topdepth = fields.Nested(QuakeMLRealQuantityType)
-    bottomlongitude = fields.Nested(QuakeMLRealQuantityType)
-    bottomlatitude = fields.Nested(QuakeMLRealQuantityType)
-    bottomdepth = fields.Nested(QuakeMLRealQuantityType)
-    holediameter = fields.Nested(QuakeMLRealQuantityType)
-    casingdiameter = fields.Nested(QuakeMLRealQuantityType)
+    toplongitude = fields.Nested(_QuakeMLRealQuantityType)
+    toplatitude = fields.Nested(_QuakeMLRealQuantityType)
+    topdepth = fields.Nested(_QuakeMLRealQuantityType)
+    bottomlongitude = fields.Nested(_QuakeMLRealQuantityType)
+    bottomlatitude = fields.Nested(_QuakeMLRealQuantityType)
+    bottomdepth = fields.Nested(_QuakeMLRealQuantityType)
+    holediameter = fields.Nested(_QuakeMLRealQuantityType)
+    casingdiameter = fields.Nested(_QuakeMLRealQuantityType)
 
     topclosed = fields.Boolean()
     bottomclosed = fields.Boolean()
@@ -150,7 +150,7 @@ class WellSectionSchema(SchemaBase):
 
     publicid = fields.String()
 
-    hydraulics = fields.Nested(HydraulicSampleSchema, many=True)
+    hydraulics = fields.Nested(_HydraulicSampleSchema, many=True)
 
     @post_load
     def postprocess(self, data):
@@ -199,14 +199,14 @@ class WellSectionSchema(SchemaBase):
         return x, y, z
 
 
-class InjectionWellSchema(SchemaBase):
+class _InjectionWellSchema(_SchemaBase):
     """
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     injection well.
     """
     publicid = fields.String()
 
-    sections = fields.Nested(WellSectionSchema, many=True)
+    sections = fields.Nested(_WellSectionSchema, many=True)
 
     @post_load
     def make_object(self, data):
@@ -270,11 +270,11 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         # ma.Schema context
         crs_transform = self._transform_callback or self._transform
         ctx = {
-            SchemaBase.EContext.ORM: True,
+            _SchemaBase.EContext.ORM: True,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self.SRS_EPSG,
                 target_proj=self.proj)}
-        return InjectionWellSchema(context=ctx).loads(data)
+        return _InjectionWellSchema(context=ctx).loads(data)
 
 
 IOBase.register(HYDWSBoreholeHydraulicsDeserializer)
