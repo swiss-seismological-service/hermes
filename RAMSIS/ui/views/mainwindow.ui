@@ -868,17 +868,10 @@ color:white;
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <widget class="QMenu" name="menuOpen_Recent">
-     <property name="title">
-      <string>Open Recent</string>
-     </property>
-    </widget>
-    <addaction name="actionNew_Project"/>
-    <addaction name="actionOpen_Project"/>
-    <addaction name="menuOpen_Recent"/>
-    <addaction name="separator"/>
     <addaction name="actionApplication_Settings"/>
+    <addaction name="actionProject_Settings"/>
     <addaction name="separator"/>
+    <addaction name="actionManage_Projects"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuSimulation">
@@ -897,10 +890,8 @@ color:white;
    </widget>
    <widget class="QMenu" name="menuProject">
     <property name="title">
-     <string>Project</string>
+     <string>Data</string>
     </property>
-    <addaction name="actionProject_Settings"/>
-    <addaction name="separator"/>
     <addaction name="actionSeismic_Data"/>
     <addaction name="actionFetch_from_fdsnws"/>
     <addaction name="actionImport_Seismic_Data"/>
@@ -987,14 +978,9 @@ color:white;
     <string>Import from CSV...</string>
    </property>
   </action>
-  <action name="actionOpen_Project">
+  <action name="actionManage_Projects">
    <property name="text">
-    <string>&amp;Open Project...</string>
-   </property>
-  </action>
-  <action name="actionNew_Project">
-   <property name="text">
-    <string>New Project...</string>
+    <string>Manage Projects...</string>
    </property>
   </action>
   <action name="actionSimulation">
@@ -1029,11 +1015,6 @@ color:white;
   <action name="actionImport_FDSNWS_Data">
    <property name="text">
     <string>Import FDSNWS Data</string>
-   </property>
-  </action>
-  <action name="actionProject_Settings">
-   <property name="text">
-    <string>Project Settings...</string>
    </property>
   </action>
   <action name="actionFetch_from_fdsnws">
@@ -1075,6 +1056,11 @@ color:white;
   <action name="actionDelete_Results">
    <property name="text">
     <string>Delete all forecast results...</string>
+   </property>
+  </action>
+  <action name="actionProject_Settings">
+   <property name="text">
+    <string>Project Settings...</string>
    </property>
   </action>
  </widget>
