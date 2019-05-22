@@ -3,9 +3,10 @@
 Various utility functions
 
 """
+import abc
 import functools
-from PyQt5.QtCore import QTimer
-
+from PyQt5.QtCore import QTimer, QObject
+from sqlalchemy import event
 
 def rsetattr(obj, attr, val):
     """
@@ -45,3 +46,7 @@ def call_later(method, *args, **kwargs):
     :param kwargs: Keyword args to pass to method
     """
     QTimer.singleShot(0, functools.partial(method, *args, **kwargs))
+
+
+class QtABCMeta(type(QObject), abc.ABCMeta):
+    pass
