@@ -252,3 +252,38 @@ def pymap3d_transform_geodetic2ned(x, y, z, source_proj, target_proj):
 
     return pymap3d.geodetic2ned(
         x, y, z, int(origin['+y_0']), int(origin['+x_0']), int(origin['+z_0']))
+
+
+def pymap3d_transform_ned2geodetic(x, y, z, source_proj, target_proj):
+    """
+    Utility method performing a spatial transformation relying on `pymap3d's
+    <https://github.com/scivision/pymap3d>` :code:`ned2geodetic` function.
+
+    :param float x: X value
+    :param float y: Y value
+    :param float z: Z value
+    :param source_proj: Source CRS description (PROJ4 or EPSG)
+    :type source_proj: int or str
+    :param target_proj: Target CRS description (PROJ4)
+    :type target_proj: str
+
+    :returns: Transformed values
+    :rtype: tuple
+    """
+    if target_proj not in (4326, '+proj=longlat +datum=WGS84 +no_defs'):
+        raise ValueError(
+            'Only WGS84 source projections handled (EPSG, PROJ4).')
+    if not isinstance(source_proj, str):
+        raise ValueError('Only PROJ4 target projection handled.')
+
+    # extract observer position from proj4 string
+    origin = dict([v.split('=') for v in source_proj.split(' ')
+                   if (v.startswith('+x_0') or
+                       v.startswith('+y_0') or
+                       v.startswith('+z_0'))])
+
+    if len(origin) != 3:
+        raise ValueError(f"Invalid proj4 string: {source_proj!r}")
+
+    return pymap3d.ned2geodetic(
+        x, y, z, int(origin['+y_0']), int(origin['+x_0']), int(origin['+z_0']))
