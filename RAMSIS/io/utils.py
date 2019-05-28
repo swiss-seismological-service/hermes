@@ -219,10 +219,10 @@ def _callable_or_raise(obj):
     return obj
 
 
-def pymap3d_transform(x, y, z, source_proj, target_proj):
+def pymap3d_transform_geodetic2ned(x, y, z, source_proj, target_proj):
     """
-    Utility method performing a spatial transformation relying on `pymap3d
-    <https://github.com/scivision/pymap3d>`.
+    Utility method performing a spatial transformation relying on `pymap3d's
+    <https://github.com/scivision/pymap3d>` :code:`geodetic2ned` function.
 
     :param float x: X value
     :param float y: Y value

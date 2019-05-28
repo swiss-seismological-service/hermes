@@ -22,7 +22,7 @@ from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
                                 QuakeMLCatalogSerializer)
-from RAMSIS.io.utils import binary_request, pymap3d_transform
+from RAMSIS.io.utils import binary_request, pymap3d_transform_geodetic2ned
 
 
 class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
@@ -35,7 +35,7 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
     def test_with_ifs(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = QuakeMLCatalogDeserializer(
-            proj=proj, transform_callback=pymap3d_transform)
+            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
 
         with open(os.path.join(self.PATH_RESOURCES, 'cat.qml'), 'rb') as ifs:
             cat = deserializer.load(ifs)
@@ -87,7 +87,7 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = QuakeMLCatalogDeserializer(
             proj=proj,
-            transform_callback=pymap3d_transform)
+            transform_callback=pymap3d_transform_geodetic2ned)
 
         with binary_request(requests.get, url, req_params) as ifs:
             cat = deserializer.load(ifs)

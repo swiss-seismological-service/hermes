@@ -21,7 +21,7 @@ from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.utils import binary_request, pymap3d_transform
+from RAMSIS.io.utils import binary_request, pymap3d_transform_geodetic2ned
 
 
 class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
@@ -35,7 +35,7 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
     def test_with_ifs(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=proj, transform_callback=pymap3d_transform)
+            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
 
         with open(os.path.join(self.PATH_RESOURCES, 'hyd.json'), 'rb') as ifs:
             bh = deserializer.load(ifs)
@@ -95,7 +95,7 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
         proj = '+x_0=0 +y_0=0 +z_0=0'
 
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=proj, transform_callback=pymap3d_transform)
+            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
 
         with binary_request(requests.get, url, req_params) as ifs:
             bh = deserializer.load(ifs)
