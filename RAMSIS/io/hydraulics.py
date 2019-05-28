@@ -7,65 +7,91 @@ import enum
 import functools
 import io
 
-from marshmallow import Schema, fields, post_load, ValidationError, EXCLUDE
+from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
+                         validate, validates_schema, ValidationError, EXCLUDE)
 
 from ramsis.datamodel.hydraulics import Hydraulics, HydraulicSample
 from ramsis.datamodel.well import InjectionWell, WellSection
-from RAMSIS.io.utils import DeserializerBase, IOBase, _IOError
+from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
+                             IOBase, _IOError)
+
+
+def validate_positive(d):
+    return d >= 0
+
+
+# XXX(damb): Additional parameter validation to be implemented.
+validate_percentage = validate.Range(min=0, max=100)
+validate_longitude = validate.Range(min=-180., max=180.)
+validate_latitude = validate.Range(min=-90., max=90)
+validate_ph = validate.Range(min=0, max=14)
+
+Positive = functools.partial(fields.Float, validate=validate_positive)
+Percentage = functools.partial(fields.Float, validate=validate_percentage)
+Ph = functools.partial(fields.Float, validate=validate_ph)
+Temperature = functools.partial(fields.Float, validate=validate_positive)
+Longitude = functools.partial(fields.Float, validate=validate_longitude)
+Latitude = functools.partial(fields.Float, validate=validate_latitude)
+Depth = Positive
+Diameter = Positive
+Density = Positive
 
 
 class HYDWSJSONIOError(_IOError):
-    """Base HYDJSON de-/serialization error ({})."""
+    """Base HYDWS-JSON de-/serialization error ({})."""
 
 
 class _SchemaBase(Schema):
     """
     Schema base class.
     """
-    __SEP = '_'
-
     class EContext(enum.Enum):
         """
         Enum collecting schema related contexts.
         """
         PAST = enum.auto()
+        FUTURE = enum.auto()
 
-    def _flatten_object(self, data, as_flat_fields):
-        for f in as_flat_fields:
-            if f in data:
-                for k, v in data[f].items():
-                    data[f + self.__SEP + k] = v
+    @classmethod
+    def _flatten_dict(cls, data, sep='_'):
+        """
+        Flatten a a nested dict :code:`dict` using :code:`sep` as key
+        separator.
+        """
+        retval = {}
+        for k, v in data.items():
+            if isinstance(v, dict):
+                for sub_k, sub_v in cls._flatten_dict(v, sep).items():
+                    retval[k + sep + sub_k] = sub_v
+            else:
+                retval[k] = v
 
-                del data[f]
+        return retval
 
-        return data
+    @classmethod
+    def _nest_dict(cls, data, sep='_'):
+        """
+        Nest a dictionary by splitting the key on a delimiter.
+        """
+        retval = {}
+        for k, v in data.items():
+            t = retval
+            prev = None
+            for part in k.split(sep):
+                if prev is not None:
+                    t = t.setdefault(prev, {})
+                prev = part
+            else:
+                t.setdefault(prev, v)
 
+        return retval
 
-class _QuakeMLQuantityTypeBase(_SchemaBase):
-    """
-    Base class for `QuakeML <https://quake.ethz.ch/quakeml/>`_
-    :code:`*Quantity` type schemas.
-    """
-    uncertainty = fields.Float()
-    loweruncertainty = fields.Float()
-    upperuncertainty = fields.Float()
-    confidencelevel = fields.Float()
-
-
-class _QuakeMLRealQuantityType(_QuakeMLQuantityTypeBase):
-    """
-    Implementation of a `QuakeML <https://quake.ethz.ch/quakeml/>`_
-    :code:`RealQuantity` type schema.
-    """
-    value = fields.Float()
-
-
-class _QuakeMLTimeQuantityType(_QuakeMLQuantityTypeBase):
-    """
-    Implementation of a `QuakeML <https://quake.ethz.ch/quakeml/>`_
-    :code:`TimeQuantity` type schema.
-    """
-    value = fields.DateTime(format='iso')
+    @classmethod
+    def _clear_missing(cls, data):
+        retval = data.copy()
+        for key in filter(lambda key: data[key] is None, data):
+            del retval[key]
+        return retval
 
 
 class _HydraulicSampleSchema(_SchemaBase):
@@ -73,40 +99,83 @@ class _HydraulicSampleSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     hydraulic sample.
     """
-    # TODO(damb): Check if there is a more elegant implementation instead of
-    # the cumbersome, redundant declaration of QuakeML type attributes. Maybe,
-    # something like SQLAlchemy's declared_attr implementation could give some
-    # ideas.
-    # XXX(damb): for context depended flattening
-    __QUAKEML_TYPES = (
-        'datetime',
-        'bottomtemperature',
-        'bottomflow',
-        'bottompressure',
-        'toptemperature',
-        'topflow',
-        'toppressure',
-        'fluiddensity',
-        'fluidviscosity',
-        'fluidph', )
+    datetime_value = fields.DateTime(format='iso')
+    datetime_uncertainty = fields.Float()
+    datetime_loweruncertainty = fields.Float()
+    datetime_uppearuncertainty = fields.Float()
+    datetime_confidencelevel = Percentage()
 
-    datetime = fields.Nested(_QuakeMLTimeQuantityType)
-    bottomtemperature = fields.Nested(_QuakeMLRealQuantityType)
-    bottomflow = fields.Nested(_QuakeMLRealQuantityType)
-    bottompressure = fields.Nested(_QuakeMLRealQuantityType)
-    toptemperature = fields.Nested(_QuakeMLRealQuantityType)
-    topflow = fields.Nested(_QuakeMLRealQuantityType)
-    toppressure = fields.Nested(_QuakeMLRealQuantityType)
-    fluiddensity = fields.Nested(_QuakeMLRealQuantityType)
-    fluidviscosity = fields.Nested(_QuakeMLRealQuantityType)
-    fluidph = fields.Nested(_QuakeMLRealQuantityType)
+    bottomtemperature_value = Temperature()
+    bottomtemperature_uncertainty = fields.Float()
+    bottomtemperature_loweruncertainty = fields.Float()
+    bottomtemperature_upperuncertainty = fields.Float()
+    bottomtemperature_confidencelevel = Percentage()
+
+    bottomflow_value = fields.Float()
+    bottomflow_uncertainty = fields.Float()
+    bottomflow_loweruncertainty = fields.Float()
+    bottomflow_upperuncertainty = fields.Float()
+    bottomflow_confidencelevel = Percentage()
+
+    bottompressure_value = fields.Float()
+    bottompressure_uncertainty = fields.Float()
+    bottompressure_loweruncertainty = fields.Float()
+    bottompressure_upperuncertainty = fields.Float()
+    bottompressure_confidencelevel = Percentage()
+
+    toptemperature_value = Temperature()
+    toptemperature_uncertainty = fields.Float()
+    toptemperature_loweruncertainty = fields.Float()
+    toptemperature_upperuncertainty = fields.Float()
+    toptemperature_confidencelevel = Percentage()
+
+    topflow_value = fields.Float()
+    topflow_uncertainty = fields.Float()
+    topflow_loweruncertainty = fields.Float()
+    topflow_upperuncertainty = fields.Float()
+    topflow_confidencelevel = Percentage()
+
+    toppressure_value = fields.Float()
+    toppressure_uncertainty = fields.Float()
+    toppressure_loweruncertainty = fields.Float()
+    toppressure_upperuncertainty = fields.Float()
+    toppressure_confidencelevel = Percentage()
+
+    fluiddensity_value = Density()
+    fluiddensity_uncertainty = fields.Float()
+    fluiddensity_loweruncertainty = fields.Float()
+    fluiddensity_upperuncertainty = fields.Float()
+    fluiddensity_confidencelevel = Percentage()
+
+    fluidviscosity_value = fields.Float()
+    fluidviscosity_uncertainty = fields.Float()
+    fluidviscosity_loweruncertainty = fields.Float()
+    fluidviscosity_upperuncertainty = fields.Float()
+    fluidviscosity_confidencelevel = Percentage()
+
+    fluidph_value = Ph()
+    fluidph_uncertainty = fields.Float()
+    fluidph_loweruncertainty = fields.Float()
+    fluidph_upperuncertainty = fields.Float()
+    fluidph_confidencelevel = Percentage()
+
     fluidcomposition = fields.String()
+
+    @pre_load
+    def flatten(self, data):
+        return self._flatten_dict(data)
 
     @post_load
     def make_object(self, data):
         if self.EContext.PAST in self.context:
-            return HydraulicSample(
-                **self._flatten_object(data, self.__QUAKEML_TYPES))
+            return HydraulicSample(**data)
+        return data
+
+    @post_dump
+    def nest_fields(self, data):
+        if (self.EContext.PAST in self.context or
+                self.EContext.FUTURE in self.context):
+            return self._nest_dict(self._clear_missing(data))
         return data
 
 
@@ -115,32 +184,58 @@ class _WellSectionSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for a
     well section.
     """
-    # TODO(damb): Check if there is a more elegant implementation instead of
-    # the cumbersome, redundant declaration of QuakeML type attributes. Maybe,
-    # something like SQLAlchemy's declared_attr implementation could give some
-    # ideas.
-    # XXX(damb): for context depended flattening
     TRANSFORM_CALLBACK = None
-    __QUAKEML_TYPES = (
-        'toplongitude',
-        'toplatitude',
-        'topdepth',
-        'bottomlongitude',
-        'bottomlatitude',
-        'bottomdepth',
-        'holediameter',
-        'casingdiameter', )
 
     starttime = fields.DateTime(format='iso')
     endtime = fields.DateTime(format='iso')
-    toplongitude = fields.Nested(_QuakeMLRealQuantityType)
-    toplatitude = fields.Nested(_QuakeMLRealQuantityType)
-    topdepth = fields.Nested(_QuakeMLRealQuantityType)
-    bottomlongitude = fields.Nested(_QuakeMLRealQuantityType)
-    bottomlatitude = fields.Nested(_QuakeMLRealQuantityType)
-    bottomdepth = fields.Nested(_QuakeMLRealQuantityType)
-    holediameter = fields.Nested(_QuakeMLRealQuantityType)
-    casingdiameter = fields.Nested(_QuakeMLRealQuantityType)
+
+    toplongitude_value = Longitude()
+    toplongitude_uncertainty = fields.Float()
+    toplongitude_loweruncertainty = fields.Float()
+    toplongitude_upperuncertainty = fields.Float()
+    toplongitude_confidencelevel = Percentage()
+
+    toplatitude_value = Latitude()
+    toplatitude_uncertainty = fields.Float()
+    toplatitude_loweruncertainty = fields.Float()
+    toplatitude_upperuncertainty = fields.Float()
+    toplatitude_confidencelevel = Percentage()
+
+    topdepth_value = Positive()
+    topdepth_uncertainty = fields.Float()
+    topdepth_loweruncertainty = fields.Float()
+    topdepth_upperuncertainty = fields.Float()
+    topdepth_confidencelevel = Percentage()
+
+    bottomlongitude_value = Longitude()
+    bottomlongitude_uncertainty = fields.Float()
+    bottomlongitude_loweruncertainty = fields.Float()
+    bottomlongitude_upperuncertainty = fields.Float()
+    bottomlongitude_confidencelevel = Percentage()
+
+    bottomlatitude_value = Latitude()
+    bottomlatitude_uncertainty = fields.Float()
+    bottomlatitude_loweruncertainty = fields.Float()
+    bottomlatitude_upperuncertainty = fields.Float()
+    bottomlatitude_confidencelevel = Percentage()
+
+    bottomdepth_value = Positive()
+    bottomdepth_uncertainty = fields.Float()
+    bottomdepth_loweruncertainty = fields.Float()
+    bottomdepth_upperuncertainty = fields.Float()
+    bottomdepth_confidencelevel = Percentage()
+
+    holediameter_value = Diameter()
+    holediameter_uncertainty = fields.Float()
+    holediameter_loweruncertainty = fields.Float()
+    holediameter_upperuncertainty = fields.Float()
+    holediameter_confidencelevel = Percentage()
+
+    casingdiameter_value = Diameter()
+    casingdiameter_uncertainty = fields.Float()
+    casingdiameter_loweruncertainty = fields.Float()
+    casingdiameter_upperuncertainty = fields.Float()
+    casingdiameter_confidencelevel = Percentage()
 
     topclosed = fields.Boolean()
     bottomclosed = fields.Boolean()
@@ -150,40 +245,70 @@ class _WellSectionSchema(_SchemaBase):
 
     publicid = fields.String()
 
-    hydraulics = fields.Nested(_HydraulicSampleSchema, many=True)
+    hydraulics = fields.Method('_serialize_hydraulics',
+                               deserialize='_deserialize_hydraulics')
+
+    def _serialize_hydraulics(self, obj):
+        serializer = _HydraulicSampleSchema(many=True, context=self.context)
+        if self.EContext.PAST in self.context:
+            return serializer.dump(obj.hydraulics.samples)
+        elif self.EContext.FUTURE in self.context:
+            return serializer.dump(obj.injectionplan.samples)
+
+        raise HYDWSJSONIOError('Invalid context.')
+
+    def _deserialize_hydraulics(self, value):
+        # XXX(damb): Load from HYDWS
+        return _HydraulicSampleSchema(
+            many=True, context=self.context).load(value)
+
+    @pre_load
+    def flatten(self, data):
+        return self._flatten_dict(data)
 
     @post_load
-    def postprocess(self, data):
+    def load_postprocess(self, data):
         return self.make_object(self._transform(data))
+
+    @post_dump
+    def dump_postprocess(self, data):
+        if (self.EContext.PAST in self.context or
+                self.EContext.FUTURE in self.context):
+            return self._nest_dict(self._clear_missing(self._transform(data)))
+        return data
+
+    @validates_schema
+    def validate_sections(self, data):
+        if len(data['hydraulics']) < 1:
+            raise ValidationError(
+                'At least a single sample required.')
 
     def make_object(self, data):
         if self.EContext.PAST in self.context:
-            # XXX(damb): Wrap samples with Hydraulics enevelope
+            # XXX(damb): Wrap samples with Hydraulics envelope
             if 'hydraulics' in data:
                 data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
-            return WellSection(
-                **self._flatten_object(data, self.__QUAKEML_TYPES))
+            return WellSection(**data)
         return data
 
     def _transform(self, data):
-
         transform_func = self._transform_callback
         if 'transform_callback' in self.context:
             transform_func = self.context['transform_callback']
 
         try:
-            data['toplongitude']['value'], \
-                data['toplatitude']['value'], \
-                data['topdepth']['value'] = transform_func(
-                data['toplongitude']['value'],
-                data['toplatitude']['value'],
-                data['topdepth']['value'])
-            data['bottomlongitude']['value'], \
-                data['bottomlatitude']['value'], \
-                data['bottomdepth']['value'] = transform_func(
-                data['bottomlongitude']['value'],
-                data['bottomlatitude']['value'],
-                data['bottomdepth']['value'])
+            data['toplongitude_value'], \
+                data['toplatitude_value'], \
+                data['topdepth_value'] = transform_func(
+                data['toplongitude_value'],
+                data['toplatitude_value'],
+                data['topdepth_value'])
+            data['bottomlongitude_value'], \
+                data['bottomlatitude_value'], \
+                data['bottomdepth_value'] = transform_func(
+                data['bottomlongitude_value'],
+                data['bottomlatitude_value'],
+                data['bottomdepth_value'])
         except (TypeError, ValueError, AttributeError) as err:
             raise ValidationError(
                 f"Error while transforming coordinates: {err}")
@@ -214,6 +339,12 @@ class _InjectionWellSchema(_SchemaBase):
             return InjectionWell(**data)
         return data
 
+    @validates_schema
+    def validate_sections(self, data):
+        if len(data['sections']) != 1:
+            raise ValidationError(
+                'InjectionWells are required to have a single section.')
+
     class Meta:
         unknown = EXCLUDE
 
@@ -236,10 +367,6 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         """
         :param str proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
-        :param mag_type: Describes the type of magnitude events should be
-            configured with. If :code:`None` the magnitude type is not
-            verified (default).
-        :type mag_type: str or None
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
@@ -270,12 +397,55 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         # ma.Schema context
         crs_transform = self._transform_callback or self._transform
         ctx = {
-            _SchemaBase.EContext.ORM: True,
+            _SchemaBase.EContext.PAST: True,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self.SRS_EPSG,
                 target_proj=self.proj)}
         return _InjectionWellSchema(context=ctx).loads(data)
 
 
+class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
+    """
+    Serializes borehole and hydraulics data from the RT-RAMSIS data model.
+    """
+
+    SRS_EPSG = 4326
+
+    def __init__(self, **kwargs):
+        """
+        :param str proj: Spatial reference system in Proj4 notation
+            representing the local coordinate system
+        :param transform_callback: Function reference for transforming data
+            into local coordinate system
+        """
+        super().__init__(**kwargs)
+
+        self._proj = kwargs.get('proj')
+        if not self._proj:
+            raise HYDWSJSONIOError("Missing SRS (PROJ4) projection.")
+
+        self._ctx = ({_SchemaBase.EContext.FUTURE: True}
+                     if kwargs.get('plan', False) else
+                     {_SchemaBase.EContext.PAST: True})
+
+    def _serialize(self, data):
+        """
+        Serializes borehole hydraulic data from the ORM into an HYDWS conform
+        JSON format.
+
+        :param data: Injection well to be serialized
+        :type data: :py:class:`ramsis.datamodel.hydraulics.InjectionWell`
+        """
+        crs_transform = self._transform_callback or self._transform
+        ctx = {
+            'transform_callback': functools.partial(
+                crs_transform, source_proj=self._proj,
+                target_proj=self.SRS_EPSG)}
+        ctx.update(self._ctx)
+        return _InjectionWellSchema(context=ctx).dump(data)
+
+
 IOBase.register(HYDWSBoreholeHydraulicsDeserializer)
+IOBase.register(HYDWSBoreholeHydraulicsSerializer)
 DeserializerBase.register(HYDWSBoreholeHydraulicsDeserializer)
+SerializerBase.register(HYDWSBoreholeHydraulicsSerializer)
