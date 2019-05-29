@@ -1,6 +1,6 @@
 # Copyright 2019, ETH Zurich - Swiss Seismological Service SED
 """
-Utitlities for hydraulics data import.
+Utilities for hydraulics data import/export.
 """
 
 import enum
