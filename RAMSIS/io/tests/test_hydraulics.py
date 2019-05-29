@@ -191,7 +191,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         serializer = HYDWSBoreholeHydraulicsSerializer(
             proj=proj, transform_callback=pymap3d_transform_ned2geodetic)
 
-        self.assertEqual(serializer.dump(bh), reference_result)
+        self.assertEqual(serializer.dumps(bh), reference_result)
 
     def test_with_injectionplan(self):
         # XXX(damb): Depending on the coordinate transformation used the
@@ -247,7 +247,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
             proj=proj, plan=True,
             transform_callback=pymap3d_transform_ned2geodetic)
 
-        self.assertEqual(serializer.dump(bh), reference_result)
+        self.assertEqual(serializer.dumps(bh), reference_result)
 
 
 def suite():

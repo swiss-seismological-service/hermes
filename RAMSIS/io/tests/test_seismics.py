@@ -60,6 +60,34 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_1.y_value, 4980141.7949330835)
         self.assertEqual(e_1.z_value, 2436607.0696544466)
 
+    def test_with_bytes(self):
+        proj = '+x_0=0 +y_0=0 +z_0=0'
+        deserializer = QuakeMLCatalogDeserializer(
+            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+
+        with open(os.path.join(self.PATH_RESOURCES, 'cat.qml'), 'rb') as ifs:
+            cat = deserializer.loads(ifs.read())
+
+        self.assertEqual(len(cat), 2)
+
+        events = sorted(cat)
+
+        e_0 = events[0]
+        self.assertEqual(e_0.datetime_value,
+                         datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
+        self.assertEqual(e_0.magnitude_value, 4.4)
+        self.assertEqual(e_0.x_value, 852934.4308659385)
+        self.assertEqual(e_0.y_value, 4865438.458302228)
+        self.assertEqual(e_0.z_value, 2337337.475712796)
+
+        e_1 = events[1]
+        self.assertEqual(e_1.datetime_value,
+                         datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
+        self.assertEqual(e_1.magnitude_value, 4.5)
+        self.assertEqual(e_1.x_value, 686647.2190603528)
+        self.assertEqual(e_1.y_value, 4980141.7949330835)
+        self.assertEqual(e_1.z_value, 2436607.0696544466)
+
     @mock.patch('requests.get')
     def test_with_binary_request(self, mock_req):
 
@@ -133,7 +161,7 @@ class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
 
         catalog = SeismicCatalog(events=events)
 
-        self.assertEqual(QuakeMLCatalogSerializer().dump(catalog),
+        self.assertEqual(QuakeMLCatalogSerializer().dumps(catalog),
                          reference_result)
 
 
