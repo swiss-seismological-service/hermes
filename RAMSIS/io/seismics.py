@@ -5,6 +5,7 @@ Utilities for seismic data import.
 
 import datetime
 import io
+import json
 
 from lxml import etree
 from obspy import read_events
@@ -76,9 +77,17 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         :returns: Seismic catalog
         :rtype: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
         """
+        if isinstance(data, str):
+            # encode string to bytes
+            data = data.encode(encoding=json.detect_encoding(data))
+
+        if not isinstance(data, (bytes, bytearray)):
+            raise TypeError('The data object must be str, bytes or bytearray, '
+                            'not {!r}'.format(data.__class__.__name__))
+
         return SeismicCatalog(
             creationinfo_creationtime=datetime.datetime.utcnow(),
-            events=[e for e in self._get_events(data)])
+            events=[e for e in self._get_events(io.BytesIO(data))])
 
     def _deserialize_event(self, event_element, **kwargs):
         """
@@ -159,9 +168,9 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         """
         parse_kwargs = {'events': ('end',),
                         'tag': "{%s}event" % self.NSMAP_QUAKEML[None]}
+
         try:
-            for event, element in etree.iterparse(data,
-                                                  **parse_kwargs):
+            for event, element in etree.iterparse(data, **parse_kwargs):
                 if event == 'end' and len(element):
                     try:
                         yield self._deserialize_event(etree.tostring(element))

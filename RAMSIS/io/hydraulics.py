@@ -390,9 +390,6 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         :returns: Borehole ORM representation
         :rtype: :py:class:`ramsis.datamodel.well.InjectionWell`
         """
-        if isinstance(data, io.IOBase):
-            data = data.read()
-
         # XXX(damb): Pass transformation rule/function by means of the
         # ma.Schema context
         crs_transform = self._transform_callback or self._transform

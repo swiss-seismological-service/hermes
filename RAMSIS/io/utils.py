@@ -135,9 +135,9 @@ class SerializerBase(abc.ABC):
     def _serialize(self, data):
         pass
 
-    def dump(self, data):
+    def dumps(self, data):
         """
-        Alias for :py:meth:`_serialize`.
+        Serialize to string. Alias for :py:meth:`_serialize`.
 
         :param data: Data to be serialized.
         """
@@ -153,11 +153,19 @@ class DeserializerBase(abc.ABC):
     def _deserialize(self):
         pass
 
-    def load(self, data):
+    def load(self, ifd):
         """
-        Alias for :py:meth:`_deserialize`.
+        Deserialize data from a file-like object (i.e. must support
+        :code:`.read()`).
+        """
+        return self._deserialize(ifd.read())
+
+    def loads(self, data):
+        """
+        Deserialize :code:`data` from string.
 
         :param data: Data to be deserialized.
+        :type data: str or bytes
         """
         return self._deserialize(data)
 
