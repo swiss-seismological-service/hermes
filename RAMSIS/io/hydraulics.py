@@ -5,7 +5,6 @@ Utilities for hydraulics data import/export.
 
 import enum
 import functools
-import io
 
 from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
                          validate, validates_schema, ValidationError, EXCLUDE)
