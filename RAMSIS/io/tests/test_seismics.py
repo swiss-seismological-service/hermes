@@ -162,8 +162,8 @@ class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
 
     def test_dump_quakeml(self):
 
-        reference_result = _read(os.path.join(self.PATH_RESOURCES,
-                                              'cat-01.qml'))
+        reference_result = _read(
+            os.path.join(self.PATH_RESOURCES, 'cat-01.qml')).decode('utf-8')
 
         event_0 = _read(os.path.join(self.PATH_RESOURCES, 'e-00.qmlevent'))
         event_1 = _read(os.path.join(self.PATH_RESOURCES, 'e-01.qmlevent'))
