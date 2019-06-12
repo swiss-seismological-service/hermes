@@ -431,6 +431,8 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
 
         :param data: Injection well to be serialized
         :type data: :py:class:`ramsis.datamodel.hydraulics.InjectionWell`
+
+        :rtype: str
         """
         crs_transform = self._transform_callback or self._transform
         ctx = {
@@ -438,7 +440,7 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
                 crs_transform, source_proj=self._proj,
                 target_proj=self.SRS_EPSG)}
         ctx.update(self._ctx)
-        return _InjectionWellSchema(context=ctx).dump(data)
+        return _InjectionWellSchema(context=ctx).dumps(data)
 
 
 IOBase.register(HYDWSBoreholeHydraulicsDeserializer)

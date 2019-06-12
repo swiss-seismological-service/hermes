@@ -195,12 +195,12 @@ class QuakeMLCatalogSerializer(SerializerBase, IOBase):
         :type data: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
 
         :returns: Serialized QuakeML seismic catalog
-        :rtype: bytes
+        :rtype: str
         """
         # XXX(damb): Since before, the QuakeML event snippet was stored
         # without modification transforming corrdinates is not required.
         return (_QUAKEML_HEADER + b''.join(e.quakeml for e in data.events) +
-                _QUAKEML_FOOTER)
+                _QUAKEML_FOOTER).decode('utf-8')
 
 
 IOBase.register(QuakeMLCatalogDeserializer)
