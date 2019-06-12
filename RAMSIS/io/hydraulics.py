@@ -166,14 +166,16 @@ class _HydraulicSampleSchema(_SchemaBase):
 
     @post_load
     def make_object(self, data):
-        if self.EContext.PAST in self.context:
+        if ('time' in self.context and
+                self.context['time'] is self.EContext.PAST):
             return HydraulicSample(**data)
         return data
 
     @post_dump
     def nest_fields(self, data):
-        if (self.EContext.PAST in self.context or
-                self.EContext.FUTURE in self.context):
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
             return self._nest_dict(self._clear_missing(data))
         return data
 
@@ -249,10 +251,11 @@ class _WellSectionSchema(_SchemaBase):
 
     def _serialize_hydraulics(self, obj):
         serializer = _HydraulicSampleSchema(many=True, context=self.context)
-        if self.EContext.PAST in self.context:
-            return serializer.dump(obj.hydraulics.samples)
-        elif self.EContext.FUTURE in self.context:
-            return serializer.dump(obj.injectionplan.samples)
+        if 'time' in self.context:
+            if self.context['time'] is self.EContext.PAST:
+                return serializer.dump(obj.hydraulics.samples)
+            elif self.context['time'] is self.EContext.FUTURE:
+                return serializer.dump(obj.injectionplan.samples)
 
         raise HYDWSJSONIOError('Invalid context.')
 
@@ -263,16 +266,25 @@ class _WellSectionSchema(_SchemaBase):
 
     @pre_load
     def flatten(self, data):
-        return self._flatten_dict(data)
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
+            return self._flatten_dict(data)
+        return data
 
     @post_load
     def load_postprocess(self, data):
-        return self.make_object(self._transform(data))
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
+            return self.make_object(self._transform(data))
+        return data
 
     @post_dump
     def dump_postprocess(self, data):
-        if (self.EContext.PAST in self.context or
-                self.EContext.FUTURE in self.context):
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
             return self._nest_dict(self._clear_missing(self._transform(data)))
         return data
 
@@ -283,10 +295,11 @@ class _WellSectionSchema(_SchemaBase):
                 'At least a single sample required.')
 
     def make_object(self, data):
-        if self.EContext.PAST in self.context:
-            # XXX(damb): Wrap samples with Hydraulics envelope
-            if 'hydraulics' in data:
-                data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
+        # XXX(damb): Wrap samples with Hydraulics envelope
+        if ('time' in self.context and
+            self.context['time'] is self.EContext.PAST and
+                'hydraulics' in data):
+            data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
             return WellSection(**data)
         return data
 
@@ -334,7 +347,8 @@ class _InjectionWellSchema(_SchemaBase):
 
     @post_load
     def make_object(self, data):
-        if self.EContext.PAST in self.context:
+        if ('time' in self.context and
+                self.context['time'] is self.EContext.PAST):
             return InjectionWell(**data)
         return data
 
@@ -393,7 +407,7 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         # ma.Schema context
         crs_transform = self._transform_callback or self._transform
         ctx = {
-            _SchemaBase.EContext.PAST: True,
+            'time': _SchemaBase.EContext.PAST,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self.SRS_EPSG,
                 target_proj=self.proj)}
@@ -420,9 +434,9 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
         if not self._proj:
             raise HYDWSJSONIOError("Missing SRS (PROJ4) projection.")
 
-        self._ctx = ({_SchemaBase.EContext.FUTURE: True}
+        self._ctx = ({'time': _SchemaBase.EContext.FUTURE}
                      if kwargs.get('plan', False) else
-                     {_SchemaBase.EContext.PAST: True})
+                     {'time': _SchemaBase.EContext.PAST})
 
     def _serialize(self, data):
         """
