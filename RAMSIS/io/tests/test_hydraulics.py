@@ -203,6 +203,7 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
         self.assertEqual(s1.datetime_value,
                          datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
 
+
 class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
     """
     Test for the
@@ -369,7 +370,6 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         serializer = HYDWSBoreholeHydraulicsSerializer(proj=None)
 
         self.assertEqual(json.loads(serializer.dumps(bh)), reference_result)
-
 
     def test_injectionplan_no_proj(self):
         reference_result = {
