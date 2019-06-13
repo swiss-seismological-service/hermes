@@ -44,7 +44,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
-    def __init__(self, mag_type=None, **kwargs):
+    def __init__(self, proj=None, mag_type=None, **kwargs):
         """
         :param str proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
@@ -57,11 +57,8 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         """
         super().__init__(**kwargs)
 
-        self._proj = kwargs.get('proj')
-        if not self._proj:
-            raise QuakeMLCatalogIOError("Missing SRS (PROJ4) projection.")
-
-        self._mag_type = kwargs.get('mag_type')
+        self._proj = proj
+        self._mag_type = mag_type
 
     @property
     def proj(self):
@@ -142,14 +139,19 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         attr_dict['datetime_value'] = origin.time.datetime
         attr_dict.update(add_prefix('datetime_', origin.time_errors))
 
-        crs_transform = self._transform_callback or self._transform
-        # convert origin into local CRS
-        try:
-            x, y, z = crs_transform(origin.longitude, origin.latitude,
-                                    origin.depth, self.SRS_EPSG,
-                                    self.proj)
-        except Exception as err:
-            raise TransformationError(err)
+        x = origin.longitude
+        y = origin.latitude
+        z = origin.depth
+
+        if self._proj is not None:
+            crs_transform = self._transform_callback or self._transform
+            # convert origin into local CRS
+            try:
+                x, y, z = crs_transform(origin.longitude, origin.latitude,
+                                        origin.depth, self.SRS_EPSG,
+                                        self.proj)
+            except Exception as err:
+                raise TransformationError(err)
 
         attr_dict['x_value'] = x
         attr_dict.update(add_prefix('x_', origin.longitude_errors))
