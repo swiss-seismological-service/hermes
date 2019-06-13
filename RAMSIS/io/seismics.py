@@ -160,6 +160,8 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         attr_dict['z_value'] = z
         attr_dict.update(add_prefix('z_', origin.depth_errors))
 
+        attr_dict['quakeml'] = event_element
+
         return SeismicEvent(**attr_dict)
 
     def _get_events(self, data):
