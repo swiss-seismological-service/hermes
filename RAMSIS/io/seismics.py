@@ -125,7 +125,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         except Exception as err:
             raise QuakeMLCatalogIOError(f'While parsing QuakeML: {err}')
         else:
-            self.logger.debug(f"Importing seismic event: {e} ...")
+            self.logger.debug(f"Importing seismic event: {e.short_str()} ...")
 
         attr_dict = {}
         magnitude = e.preferred_magnitude()
