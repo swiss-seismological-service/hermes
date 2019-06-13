@@ -9,7 +9,8 @@ import functools
 from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
                          validate, validates_schema, ValidationError, EXCLUDE)
 
-from ramsis.datamodel.hydraulics import Hydraulics, HydraulicSample
+from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
+                                         HydraulicSample)
 from ramsis.datamodel.well import InjectionWell, WellSection
 from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
                              IOBase, _IOError)
@@ -167,7 +168,8 @@ class _HydraulicSampleSchema(_SchemaBase):
     @post_load
     def make_object(self, data):
         if ('time' in self.context and
-                self.context['time'] is self.EContext.PAST):
+                self.context['time'] in (self.EContext.PAST,
+                                         self.EContext.FUTURE)):
             return HydraulicSample(**data)
         return data
 
@@ -297,11 +299,16 @@ class _WellSectionSchema(_SchemaBase):
                 'At least a single sample required.')
 
     def make_object(self, data):
-        # XXX(damb): Wrap samples with Hydraulics envelope
-        if ('time' in self.context and
-            self.context['time'] is self.EContext.PAST and
-                'hydraulics' in data):
-            data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
+        if 'time' in self.context and 'hydraulics' in data:
+            if self.context['time'] is self.EContext.PAST:
+                # XXX(damb): Wrap samples with Hydraulics envelope
+                data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
+            elif self.context['time'] is self.EContext.FUTURE:
+                # XXX(damb): Wrap samples with InjectionPlan envelope
+                data['injectionplan'] = InjectionPlan(
+                    samples=data['hydraulics'])
+                del data['hydraulics']
+
             return WellSection(**data)
         return data
 
@@ -350,7 +357,8 @@ class _InjectionWellSchema(_SchemaBase):
     @post_load
     def make_object(self, data):
         if ('time' in self.context and
-                self.context['time'] is self.EContext.PAST):
+                self.context['time'] in (self.EContext.PAST,
+                                         self.EContext.FUTURE)):
             return InjectionWell(**data)
         return data
 
@@ -390,6 +398,10 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
 
         self._proj = proj
 
+        self._ctx = ({'time': _SchemaBase.EContext.FUTURE}
+                     if kwargs.get('plan', False) else
+                     {'time': _SchemaBase.EContext.PAST})
+
     @property
     def proj(self):
         return self._proj
@@ -408,11 +420,11 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         # ma.Schema context
         crs_transform = self._transform_callback or self._transform
         ctx = {
-            'time': _SchemaBase.EContext.PAST,
             'proj': self.proj,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self.SRS_EPSG,
                 target_proj=self.proj)}
+        ctx.update(self._ctx)
         return _InjectionWellSchema(context=ctx).loads(data)
 
 
