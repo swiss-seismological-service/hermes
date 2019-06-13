@@ -152,6 +152,32 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
 
         self.assertEqual(e_1.z_value, 2436607.0696544466)
 
+    def test_no_proj(self):
+        deserializer = QuakeMLCatalogDeserializer(proj=None)
+
+        cat = deserializer.loads(
+            _read(os.path.join(self.PATH_RESOURCES, 'cat-00.qml')))
+
+        self.assertEqual(len(cat), 2)
+
+        events = sorted(cat)
+
+        e_0 = events[0]
+        self.assertEqual(e_0.datetime_value,
+                         datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
+        self.assertEqual(e_0.magnitude_value, 4.4)
+        self.assertEqual(e_0.x_value, 7.731667)
+        self.assertEqual(e_0.y_value, 50.29)
+        self.assertEqual(e_0.z_value, 4100.0)
+
+        e_1 = events[1]
+        self.assertEqual(e_1.datetime_value,
+                         datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
+        self.assertEqual(e_1.magnitude_value, 4.5)
+        self.assertEqual(e_1.x_value, 6.211667)
+        self.assertEqual(e_1.y_value, 51.64017)
+        self.assertEqual(e_1.z_value, 10300.0)
+
 
 class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
     """
