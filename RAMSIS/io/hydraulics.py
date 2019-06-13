@@ -99,7 +99,7 @@ class _HydraulicSampleSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     hydraulic sample.
     """
-    datetime_value = fields.DateTime(format='iso')
+    datetime_value = fields.DateTime(format='iso', required=True)
     datetime_uncertainty = fields.Float()
     datetime_loweruncertainty = fields.Float()
     datetime_uppearuncertainty = fields.Float()
@@ -190,37 +190,37 @@ class _WellSectionSchema(_SchemaBase):
     starttime = fields.DateTime(format='iso')
     endtime = fields.DateTime(format='iso')
 
-    toplongitude_value = Longitude()
+    toplongitude_value = Longitude(required=True)
     toplongitude_uncertainty = fields.Float()
     toplongitude_loweruncertainty = fields.Float()
     toplongitude_upperuncertainty = fields.Float()
     toplongitude_confidencelevel = Percentage()
 
-    toplatitude_value = Latitude()
+    toplatitude_value = Latitude(required=True)
     toplatitude_uncertainty = fields.Float()
     toplatitude_loweruncertainty = fields.Float()
     toplatitude_upperuncertainty = fields.Float()
     toplatitude_confidencelevel = Percentage()
 
-    topdepth_value = Positive()
+    topdepth_value = Positive(required=True)
     topdepth_uncertainty = fields.Float()
     topdepth_loweruncertainty = fields.Float()
     topdepth_upperuncertainty = fields.Float()
     topdepth_confidencelevel = Percentage()
 
-    bottomlongitude_value = Longitude()
+    bottomlongitude_value = Longitude(required=True)
     bottomlongitude_uncertainty = fields.Float()
     bottomlongitude_loweruncertainty = fields.Float()
     bottomlongitude_upperuncertainty = fields.Float()
     bottomlongitude_confidencelevel = Percentage()
 
-    bottomlatitude_value = Latitude()
+    bottomlatitude_value = Latitude(required=True)
     bottomlatitude_uncertainty = fields.Float()
     bottomlatitude_loweruncertainty = fields.Float()
     bottomlatitude_upperuncertainty = fields.Float()
     bottomlatitude_confidencelevel = Percentage()
 
-    bottomdepth_value = Positive()
+    bottomdepth_value = Positive(required=True)
     bottomdepth_uncertainty = fields.Float()
     bottomdepth_loweruncertainty = fields.Float()
     bottomdepth_upperuncertainty = fields.Float()
