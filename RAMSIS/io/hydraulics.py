@@ -185,8 +185,6 @@ class _WellSectionSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for a
     well section.
     """
-    TRANSFORM_CALLBACK = None
-
     starttime = fields.DateTime(format='iso')
     endtime = fields.DateTime(format='iso')
 
@@ -277,7 +275,9 @@ class _WellSectionSchema(_SchemaBase):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            return self.make_object(self._transform(data))
+            if self.context.get('proj'):
+                data = self._transform(data)
+            return self.make_object(data)
         return data
 
     @post_dump
@@ -285,7 +285,9 @@ class _WellSectionSchema(_SchemaBase):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            return self._nest_dict(self._clear_missing(self._transform(data)))
+            if self.context.get('proj'):
+                data = self._transform(data)
+            return self._nest_dict(self._clear_missing(data))
         return data
 
     @validates_schema
@@ -376,18 +378,17 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
 
     LOGGER = 'RAMSIS.io.hydwsboreholehydraulicsdeserializer'
 
-    def __init__(self, **kwargs):
+    def __init__(self, proj=None, **kwargs):
         """
-        :param str proj: Spatial reference system in Proj4 notation
+        :param proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
+        :type proj: str or None
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
         super().__init__(**kwargs)
 
-        self._proj = kwargs.get('proj')
-        if not self._proj:
-            raise HYDWSJSONIOError("Missing SRS (PROJ4) projection.")
+        self._proj = proj
 
     @property
     def proj(self):
@@ -408,6 +409,7 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         crs_transform = self._transform_callback or self._transform
         ctx = {
             'time': _SchemaBase.EContext.PAST,
+            'proj': self.proj,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self.SRS_EPSG,
                 target_proj=self.proj)}
@@ -421,18 +423,17 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
 
     SRS_EPSG = 4326
 
-    def __init__(self, **kwargs):
+    def __init__(self, proj=None, **kwargs):
         """
-        :param str proj: Spatial reference system in Proj4 notation
+        :param proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
+        :type proj: str or None
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
         super().__init__(**kwargs)
 
-        self._proj = kwargs.get('proj')
-        if not self._proj:
-            raise HYDWSJSONIOError("Missing SRS (PROJ4) projection.")
+        self._proj = proj
 
         self._ctx = ({'time': _SchemaBase.EContext.FUTURE}
                      if kwargs.get('plan', False) else
@@ -450,6 +451,7 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
         """
         crs_transform = self._transform_callback or self._transform
         ctx = {
+            'proj': self._proj,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self._proj,
                 target_proj=self.SRS_EPSG)}
