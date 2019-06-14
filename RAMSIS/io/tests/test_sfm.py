@@ -309,7 +309,6 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
             sections=[sec_scenario])
 
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         serializer = SFMWorkerIMessageSerializer(proj=None)
 
         payload = {'seismic_catalog': {'quakeml': catalog},
@@ -320,6 +319,8 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
 
         self.assertEqual(reference_result,
                          json.loads(serializer.dumps(payload)))
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(
