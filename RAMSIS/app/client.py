@@ -445,7 +445,7 @@ class WorkerClientApp(object):
                     'ramsis-core DB is currently not implemented.')
 
             self.logger.debug(
-                'Use user-defined reservior configuration: {!r}'.format(
+                'Use user-defined reservoir configuration: {!r}'.format(
                     args.reservoir))
             return args.reservoir
 
@@ -453,7 +453,7 @@ class WorkerClientApp(object):
             if not args.scenario:
                 # TODO(damb): To be done
                 raise NotImplementedError(
-                    'Fetching the scenario configuration from the'
+                    'Fetching the scenario configuration from the '
                     'ramsis-core DB is currently not implemented.')
 
             self.logger.debug(
