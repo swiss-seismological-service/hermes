@@ -353,9 +353,23 @@ class _InjectionWellSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     injection well.
     """
+    bedrockdepth_value = Positive(required=True)
+    bedrockdepth_uncertainty = Uncertainty()
+    bedrockdepth_loweruncertainty = Uncertainty()
+    bedrockdepth_upperuncertainty = Uncertainty()
+    bedrockdepth_confidencelevel = Percentage()
+
     publicid = fields.String()
 
     sections = fields.Nested(_WellSectionSchema, many=True)
+
+    @pre_load
+    def flatten(self, data):
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
+            return self._flatten_dict(data)
+        return data
 
     @post_load
     def make_object(self, data):
@@ -364,6 +378,15 @@ class _InjectionWellSchema(_SchemaBase):
                                          self.EContext.FUTURE)):
             return InjectionWell(**data)
         return data
+
+    @post_dump
+    def dump_postprocess(self, data):
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
+            return self._nest_dict(self._clear_missing(data))
+        return data
+
 
     @validates_schema
     def validate_sections(self, data):
