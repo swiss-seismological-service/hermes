@@ -17,7 +17,7 @@ from marshmallow import Schema, fields
 from marshmallow.validate import OneOf
 
 from ramsis.utils.error import Error
-from ramsis.utils.protocol import StatusCode, MIMETYPE
+from ramsis.utils.protocol import StatusCode
 from RAMSIS.io.sfm import SFMWorkerIMessageSerializer
 
 
@@ -130,6 +130,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     API_VERSION = 'v1'
     PATH_RAMSIS_WORKER_SCENARIOS = '/runs'
 
+    MIMETYPE = 'application/json'
     LOGGER = 'ramsis.core.remote_seismicity_worker_handle'
 
     class EncodingError(WorkerHandleBase.WorkerHandleError):
@@ -440,7 +441,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             'Sending computation request (model={!r}, url={!r}).'.format(
                 self.model, self.url))
         try:
-            headers = {'Content-Type': MIMETYPE,
+            headers = {'Content-Type': self.MIMETYPE,
                        'Accept': 'text/plain'}
             response = requests.post(self.url, data=_payload,
                                      headers=headers,
