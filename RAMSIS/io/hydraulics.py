@@ -203,7 +203,7 @@ class _WellSectionSchema(_SchemaBase):
     toplatitude_upperuncertainty = Uncertainty()
     toplatitude_confidencelevel = Percentage()
 
-    topdepth_value = Positive(required=True)
+    topdepth_value = Depth(required=True)
     topdepth_uncertainty = Uncertainty()
     topdepth_loweruncertainty = Uncertainty()
     topdepth_upperuncertainty = Uncertainty()
@@ -221,7 +221,7 @@ class _WellSectionSchema(_SchemaBase):
     bottomlatitude_upperuncertainty = Uncertainty()
     bottomlatitude_confidencelevel = Percentage()
 
-    bottomdepth_value = Positive(required=True)
+    bottomdepth_value = Depth(required=True)
     bottomdepth_uncertainty = Uncertainty()
     bottomdepth_loweruncertainty = Uncertainty()
     bottomdepth_upperuncertainty = Uncertainty()
@@ -353,7 +353,7 @@ class _InjectionWellSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     injection well.
     """
-    bedrockdepth_value = Positive(required=True)
+    bedrockdepth_value = Depth(required=True)
     bedrockdepth_uncertainty = Uncertainty()
     bedrockdepth_loweruncertainty = Uncertainty()
     bedrockdepth_upperuncertainty = Uncertainty()
