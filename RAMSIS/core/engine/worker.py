@@ -1,13 +1,4 @@
-# This is <worker.py>
-# -----------------------------------------------------------------------------
-#
-# Copyright (c) 2018 by Daniel Armbruster (SED, ETHZ)
-#
-#
-# REVISION and CHANGES:
-# 2018/10/23
-#
-# =============================================================================
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Worker related *RT-RAMSIS* facilities.
 """
@@ -44,8 +35,6 @@ class FilterSchema(Schema):
         validate=OneOf(choices=[c.value for c in StatusCode],
                        error=('Invalid status given: (input={input}, '
                               'choices={choices}.')))
-
-# class FilterSchema
 
 
 class EWorkerHandle(enum.Enum):
@@ -119,8 +108,6 @@ class WorkerHandleBase(abc.ABC):
     def delete(self, task_ids=[]):
         pass
 
-# class WorkerHandleBase
-
 
 WorkerHandle = WorkerHandleBase
 
@@ -173,8 +160,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 resp = [resp]
             self._resp = resp
 
-        # __init__ ()
-
         @classmethod
         def from_requests(cls, resp):
             """
@@ -188,8 +173,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                         yield from flatten(el)
                     else:
                         yield el
-
-            # flatten ()
 
             def _json(resp):
                 """
@@ -205,14 +188,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
                 return list(flatten(resp_json))
 
-            # _json ()
-
             if not isinstance(resp, list):
                 resp = [resp]
 
             return cls(_json(resp))
-
-        # from_requests ()
 
         def filter_by(self, **kwargs):
             """
@@ -237,8 +216,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
             return self.__class__(retval)
 
-        # filter_by ()
-
         def all(self):
             """
             Return the results represented by this :py:class:`QueryResult` as a
@@ -246,15 +223,11 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             """
             return self._resp
 
-        # all ()
-
         def count(self):
             """
             Return a count this :py:class:`QueryResult` would return.
             """
             return len(self._resp)
-
-        # count ()
 
         def first(self):
             """
@@ -265,8 +238,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 return None
 
             return self._resp[0]
-
-        # first ()
 
         def load(self, serializer):
             """
@@ -279,10 +250,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 return serializer(many=True).load(self._resp.json())
             except (ValueError, marshmallow.exceptions.ValidationError) as err:
                 raise RemoteSeismicityWorkerHandle.DecodingError(err)
-
-        # load ()
-
-    # class QueryResult
 
     class Payload(object):
         """
@@ -333,8 +300,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self._serializer = kwargs.get(
                 'serializer', self.DEFAULT_SERIALIZER)
 
-        # __init__ ()
-
         def dumps(self):
             return self._serializer().dumps(self._payload)
 
@@ -344,10 +309,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 raise ValueError(
                     "A well must have at least one section.")
             return well
-
-        # validate_ctor_args ()
-
-    # class Payload
 
     def __init__(self, base_url, **kwargs):
         """
@@ -371,8 +332,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         self._timeout = kwargs.get('timeout')
 
-    # __init__ ()
-
     @classmethod
     def create(cls, base_url, worker_id, **kwargs):
         """
@@ -394,8 +353,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         raise cls.WorkerHandleError(
             'Invalid worker identifier: {!r}'.format(worker_id))
-
-    # create ()
 
     @property
     def model(self):
@@ -464,8 +421,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         return self.QueryResult.from_requests(resp)
 
-    # query ()
-
     def compute(self, payload, **kwargs):
         """
         Issue a task to a remote seismicity forecast worker.
@@ -513,8 +468,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 self.model, self.url, result))
         return result
 
-    # _compute ()
-
     _run = compute
 
     def delete(self, task_ids=[]):
@@ -557,8 +510,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         return self.QueryResult.from_requests(resp)
 
-    # delete ()
-
     def __repr__(self):
         return '<%s (model=%r, url=%r)>' % (type(self).__name__,
                                             self.model, self.url)
@@ -574,10 +525,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         return url.geturl(), model_id
 
-    # validate_ctor_args ()
-
-# class SeismicityWorkerHandle
-
 
 SeismicityWorkerHandle = RemoteSeismicityWorkerHandle
 WorkerHandleBase.register(SeismicityWorkerHandle)
@@ -586,6 +533,3 @@ WorkerHandleBase.register(SeismicityWorkerHandle)
 class EM1WorkerHandle(SeismicityWorkerHandle):
     MODEL_ID = 'EM1'
     API_VERSION = 'v1'
-
-
-# ---- END OF <worker.py> ----
