@@ -48,12 +48,7 @@ class _SeismicCatalogSchema(_SchemaBase):
         <https://quake.ethz.ch/quakeml/>`_ representation.
         """
         if 'quakeml' in data:
-            serializer = QuakeMLCatalogSerializer()
-
-            try:
-                data['quakeml'] = serializer.dumps(data['quakeml'])
-            except AttributeError:
-                pass
+            data['quakeml'] = QuakeMLCatalogSerializer().dumps(data['quakeml'])
 
         return data
 
