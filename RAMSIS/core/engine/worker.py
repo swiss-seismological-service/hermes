@@ -287,7 +287,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             :param serializer: Serializer used to serialize the payload
             :type serializer: :py:class:`marshmallow.Schema`
             """
-            well = self.validate_ctor_args(well)
             self._payload = {
                 'seismic_catalog': {'quakeml': seismic_catalog},
                 'well': well,
@@ -302,13 +301,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         def dumps(self):
             return self._serializer().dumps(self._payload)
-
-        @staticmethod
-        def validate_ctor_args(well):
-            if not isinstance(well, bytes) and not len(well.sections) >= 1:
-                raise ValueError(
-                    "A well must have at least one section.")
-            return well
 
     def __init__(self, base_url, **kwargs):
         """
