@@ -499,7 +499,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                                      headers=headers,
                                      timeout=self._timeout)
         except requests.exceptions.RequestException as err:
-            raise self.ConnectionError(err)
+            raise self.ConnectionError(self.url, err)
 
         try:
             result = response.json()
