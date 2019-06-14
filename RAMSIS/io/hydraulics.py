@@ -35,6 +35,7 @@ Latitude = functools.partial(fields.Float, validate=validate_latitude)
 Depth = Positive
 Diameter = Positive
 Density = Positive
+Viscosity = Positive
 Uncertainty = Positive
 
 
@@ -148,7 +149,7 @@ class _HydraulicSampleSchema(_SchemaBase):
     fluiddensity_upperuncertainty = Uncertainty()
     fluiddensity_confidencelevel = Percentage()
 
-    fluidviscosity_value = fields.Float()
+    fluidviscosity_value = Viscosity()
     fluidviscosity_uncertainty = Uncertainty()
     fluidviscosity_loweruncertainty = Uncertainty()
     fluidviscosity_upperuncertainty = Uncertainty()
