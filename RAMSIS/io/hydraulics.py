@@ -298,7 +298,7 @@ class _WellSectionSchema(_SchemaBase):
     def validate_sections(self, data):
         if ('time' in self.context and
             self.context['time'] is self.EContext.PAST and
-                len(data['hydraulics']) < 1):
+                'hydraulics' in data and len(data['hydraulics']) < 1):
             raise ValidationError(
                 'At least a single sample required.')
 
