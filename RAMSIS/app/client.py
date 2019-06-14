@@ -4,9 +4,6 @@
 Tool to test and simplify the communication with *RT-RAMSIS* SFM-Worker
 implementations.
 """
-# XXX(damb): The client application adds lots of dependencies to
-# ramsis.worker (e.g. ramsis.datamodel, sqlalchemy). In order to keep the
-# ramsis.worker package slim it is made part of the RAMSIS package.
 
 import argparse
 import contextlib
