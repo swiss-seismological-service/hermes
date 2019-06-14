@@ -263,7 +263,8 @@ class WorkerClientApp(object):
                                      "(srid=4326)."))
         subparser.add_argument('--scenario', metavar='JSON',
                                type=scenario, dest='scenario',
-                               help="Scenario (injection well) to be used.")
+                               help=("Scenario (injection well) to be used "
+                                     "(JSON syntax)."))
         # subparser.add_argument('--project', dest='project', metavar='ID',
         #                       type=int, default=1,
         #                       help=('Project identifier. '
@@ -440,7 +441,7 @@ class WorkerClientApp(object):
             if not args.reservoir:
                 # TODO(damb): To be done
                 raise NotImplementedError(
-                    'Fetching the reservoir configuration from the'
+                    'Fetching the reservoir configuration from the '
                     'ramsis-core DB is currently not implemented.')
 
             self.logger.debug(
