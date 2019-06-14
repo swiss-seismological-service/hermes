@@ -30,6 +30,10 @@ from ramsis.utils.protocol import (SFMWorkerInputMessageSchema, StatusCode,
                                    MIMETYPE)
 
 
+class WorkerError(Error):
+    """Base worker error ({})."""
+
+
 class FilterSchema(Schema):
 
     status = fields.Str(
@@ -58,7 +62,7 @@ class WorkerHandleBase(abc.ABC):
 
     LOGGER = 'ramsis.core.worker_handle'
 
-    class WorkerHandleError(Error):
+    class WorkerHandleError(WorkerError):
         """Base worker handle error ({})."""
 
     @classmethod
@@ -147,10 +151,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     class DecodingError(WorkerHandleBase.WorkerHandleError):
         """Error while decoding response ({})."""
 
-    class WorkerError(WorkerHandleBase.WorkerHandleError):
+    class RemoteWorkerError(WorkerHandleBase.WorkerHandleError):
         """Base worker error ({})."""
 
-    class ConnectionError(WorkerError):
+    class ConnectionError(RemoteWorkerError):
         """Worker connection error (url={!r}, reason={!r})."""
 
     class QueryResult(object):
