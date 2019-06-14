@@ -387,7 +387,6 @@ class _InjectionWellSchema(_SchemaBase):
             return self._nest_dict(self._clear_missing(data))
         return data
 
-
     @validates_schema
     def validate_sections(self, data):
         if len(data['sections']) != 1:
