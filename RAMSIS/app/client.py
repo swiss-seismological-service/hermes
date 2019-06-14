@@ -18,16 +18,25 @@ from urllib.parse import urlparse
 import marshmallow
 import requests
 
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, post_load
 from osgeo import gdal, ogr
 from sqlalchemy import create_engine
 
+from ramsis.datamodel.status import Status  # noqa
+from ramsis.datamodel.seismicity import SeismicityModel  # noqa
+from ramsis.datamodel.forecast import Forecast  # noqa
+from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.well import InjectionWell  # noqa
+from ramsis.datamodel.hydraulics import Hydraulics, InjectionPlan  # noqa
+from ramsis.datamodel.settings import ProjectSettings  # noqa
+from ramsis.datamodel.project import Project  # noqa
 from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
 from RAMSIS.core.engine.worker import WorkerHandle, EWorkerHandle
-from RAMSIS.io.hydraulics import InjectionWellSchema
+from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 
 
 TIMEOUT_POLLING = 60
@@ -133,18 +142,28 @@ def scenario(scenario_dict):
     :rtype: dict
     """
     class ScenarioSchema(Schema):
-        well = fields.Nested(InjectionWellSchema)
+        well = fields.Dict(keys=fields.Str(), required=True)
 
-    DESERIALIZER = ScenarioSchema
+        @post_load
+        def make_object(self, data):
+            if 'well' in data:
+                deserializer = HYDWSBoreholeHydraulicsDeserializer(
+                    plan=True, proj=None)
 
-    scenario_dict = _validate_json(
-        scenario_dict,
-        err_msg='Invalid scenario dict syntax.')
+                # FIXME(damb): This approach is somehow awkward. Deserializers
+                # should implement parsing from python objects, too. (As
+                # implemented by marshmallow)
+                data['well'] = deserializer.loads(
+                    json.dumps(data['well']))
+
+            return data
 
     try:
-        return DESERIALIZER().load(scenario_dict)
+        retval = ScenarioSchema().loads(scenario_dict)
     except marshmallow.exceptions.ValidationError as err:
         raise argparse.ArgumentTypeError(err)
+
+    return retval
 
 
 def wkt(wkt_geom):
@@ -404,10 +423,10 @@ class WorkerClientApp(object):
                 'Fetching seismic catalog from fdsnws-event: {!r}'.format(
                     args.url_fdsnws_event))
             resp = requests.get(args.url_fdsnws_event)
-            qml = resp.content
-            self.logger.debug('Received seismic catalog.')
-
-            return qml
+            self.logger.debug('Received seismic catalog. Deserializing ...')
+            cat = QuakeMLCatalogDeserializer(proj=None).loads(resp.content)
+            self.logger.debug('Number of seismic events: %d' % len(cat))
+            return cat
 
         def well(args):
             if not args.url_hydws:
@@ -420,10 +439,13 @@ class WorkerClientApp(object):
                 'Fetching well data from hydws: {!r}'.format(
                     args.url_hydws))
             resp = requests.get(args.url_hydws)
-            data = resp.content
-            self.logger.debug('Received well data and hydraulics.')
-
-            return data
+            self.logger.debug(
+                'Received well data and hydraulics. Deserializing ...')
+            bh = HYDWSBoreholeHydraulicsDeserializer(
+                proj=None).loads(resp.content)
+            self.logger.debug('Number of borehole sections: %d' %
+                              len(bh.sections))
+            return bh
 
         def model_parameters(args):
             if not args.model_parameters:

@@ -17,8 +17,8 @@ from marshmallow import Schema, fields
 from marshmallow.validate import OneOf
 
 from ramsis.utils.error import Error
-from ramsis.utils.protocol import (SFMWorkerInputMessageSchema, StatusCode,
-                                   MIMETYPE)
+from ramsis.utils.protocol import StatusCode, MIMETYPE
+from RAMSIS.io.sfm import SFMWorkerIMessageSerializer
 
 
 class WorkerError(Error):
@@ -265,7 +265,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             scenario).
         """
 
-        DEFAULT_SERIALIZER = SFMWorkerInputMessageSchema
+        DEFAULT_SERIALIZER = SFMWorkerIMessageSerializer
 
         def __init__(self, seismic_catalog, well, scenario, reservoir,
                      model_parameters=None, **kwargs):
