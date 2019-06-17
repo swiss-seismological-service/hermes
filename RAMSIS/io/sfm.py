@@ -5,7 +5,6 @@ Utilities for SFM-Worker data import/export.
 
 import base64
 import functools
-import json
 
 from marshmallow import Schema, fields, pre_dump, post_dump
 
@@ -163,6 +162,10 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
         self._proj = proj
 
     @property
+    def proj(self):
+        return self._proj
+
+    @property
     def _ctx(self):
         crs_transform = self._transform_callback or self._transform
 
@@ -180,7 +183,6 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
 
     def _dumpo(self, data):
         return _SFMWorkerIMessageSchema(context=self._ctx).dump(data)
-
 
 
 IOBase.register(SFMWorkerIMessageSerializer)
