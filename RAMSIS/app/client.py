@@ -42,6 +42,10 @@ from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 TIMEOUT_POLLING = 60
 
 
+class InvalidFilterCondition(AppError):
+    """Invalid filter flag argument passed: {!r}"""
+
+
 class InvalidProjectId(Error):
     """Invalid project identifier ({})."""
 
@@ -514,8 +518,7 @@ class WorkerClientApp(object):
             for f_cond in filter_conds:
                 f = f_cond.split('=')
                 if len(f) != 2:
-                    raise AppError(
-                        'Invalid filter condition ({})'.format(f_cond))
+                    raise InvalidFilterCondition(f_cond)
                 retval[f[0]] = f[1]
             return retval
 
