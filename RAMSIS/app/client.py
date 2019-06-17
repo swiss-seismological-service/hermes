@@ -153,8 +153,7 @@ def scenario(scenario_dict):
                 # FIXME(damb): This approach is somehow awkward. Deserializers
                 # should implement parsing from python objects, too. (As
                 # implemented by marshmallow)
-                data['well'] = deserializer.loads(
-                    json.dumps(data['well']))
+                data['well'] = deserializer._loado(data['well'])
 
             return data
 
