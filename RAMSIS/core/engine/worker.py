@@ -240,15 +240,15 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
             return self._resp[0]
 
-        def load(self, serializer):
+        def load(self, deserializer):
             """
-            Return a serialized query result.
+            Return a deserialized query result.
 
-            :param serializer: Serializer to be used for data serialization.
-            :type serializer: :py:class:`marshmallow.Schema`
+            :param deserializer: Serializer to be used for data serialization.
+            :type deserializer: :py:class:`marshmallow.Schema`
             """
             try:
-                return serializer(many=True).load(self._resp.json())
+                return deserializer(many=True).load(self._resp.json())
             except (ValueError, marshmallow.exceptions.ValidationError) as err:
                 raise RemoteSeismicityWorkerHandle.DecodingError(err)
 

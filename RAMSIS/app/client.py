@@ -313,9 +313,10 @@ class WorkerClientApp(object):
                                      'successfully completed tasks.'))
         subparser.add_argument('--filter', '-f', dest='filters',
                                action='append',
-                               help=('Filter tasks based on conditions '
+                               help=('Filter tasks based on condition '
                                      'provided. The filtering flag format '
-                                     'is a key=value pair.'))
+                                     'is a key=value pair. The parameter '
+                                     'may be used repeatedly.'))
         subparser.add_argument('--quiet', '-q', dest='quiet',
                                action='store_true', default=False,
                                help='Only display task identifiers.')
