@@ -372,6 +372,13 @@ class _InjectionWellSchema(_SchemaBase):
             return self._flatten_dict(data)
         return data
 
+    @pre_load
+    def extract_section_with_samples(self, data):
+        # FIXME(damb): This is a workaround
+        data['sections'] = [s for s in data['sections']
+                            if s.get('hydraulics')]
+        return data
+
     @post_load
     def make_object(self, data):
         if ('time' in self.context and
@@ -424,13 +431,26 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
 
         self._proj = proj
 
-        self._ctx = ({'time': _SchemaBase.EContext.FUTURE}
-                     if kwargs.get('plan', False) else
-                     {'time': _SchemaBase.EContext.PAST})
+        self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
+                      if kwargs.get('plan', False) else
+                      {'time': _SchemaBase.EContext.PAST})
 
     @property
     def proj(self):
         return self._proj
+
+    @property
+    def _ctx(self):
+        # XXX(damb): Pass transformation rule/function by means of the
+        # ma.Schema context
+        crs_transform = self._transform_callback or self._transform
+        ctx = {
+            'proj': self.proj,
+            'transform_callback': functools.partial(
+                crs_transform, source_proj=self.SRS_EPSG,
+                target_proj=self.proj)}
+        ctx.update(self.__ctx)
+        return ctx
 
     def _deserialize(self, data):
         """
@@ -442,16 +462,10 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         :returns: Borehole ORM representation
         :rtype: :py:class:`ramsis.datamodel.well.InjectionWell`
         """
-        # XXX(damb): Pass transformation rule/function by means of the
-        # ma.Schema context
-        crs_transform = self._transform_callback or self._transform
-        ctx = {
-            'proj': self.proj,
-            'transform_callback': functools.partial(
-                crs_transform, source_proj=self.SRS_EPSG,
-                target_proj=self.proj)}
-        ctx.update(self._ctx)
-        return _InjectionWellSchema(context=ctx).loads(data)
+        return _InjectionWellSchema(context=self._ctx).loads(data)
+
+    def _loado(self, data):
+        return _InjectionWellSchema(context=self._ctx).load(data)
 
 
 class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
@@ -473,9 +487,20 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
 
         self._proj = proj
 
-        self._ctx = ({'time': _SchemaBase.EContext.FUTURE}
-                     if kwargs.get('plan', False) else
-                     {'time': _SchemaBase.EContext.PAST})
+        self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
+                      if kwargs.get('plan', False) else
+                      {'time': _SchemaBase.EContext.PAST})
+
+    @property
+    def _ctx(self):
+        crs_transform = self._transform_callback or self._transform
+        ctx = {
+            'proj': self._proj,
+            'transform_callback': functools.partial(
+                crs_transform, source_proj=self._proj,
+                target_proj=self.SRS_EPSG)}
+        ctx.update(self.__ctx)
+        return ctx
 
     def _serialize(self, data):
         """
@@ -487,14 +512,10 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
 
         :rtype: str
         """
-        crs_transform = self._transform_callback or self._transform
-        ctx = {
-            'proj': self._proj,
-            'transform_callback': functools.partial(
-                crs_transform, source_proj=self._proj,
-                target_proj=self.SRS_EPSG)}
-        ctx.update(self._ctx)
-        return _InjectionWellSchema(context=ctx).dumps(data)
+        return _InjectionWellSchema(context=self._ctx).dumps(data)
+
+    def _dumpo(self, data):
+        return _InjectionWellSchema(context=self._ctx).dump(data)
 
 
 IOBase.register(HYDWSBoreholeHydraulicsDeserializer)

@@ -99,7 +99,7 @@ class _ScenarioSchema(_SchemaBase):
             # XXX(damb): This is not a nice solution. Something like
             # marshmallow's dump method would be required to avoid dumping to a
             # string firstly just to load the data afterwards, again.
-            data['well'] = json.loads(serializer.dumps(data['well']))
+            data['well'] = serializer._dumpo(data['well'])
 
         return data
 
@@ -134,7 +134,7 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
             # XXX(damb): This is not a nice solution. Something like
             # marshmallow's dump method would be required to avoid dumping to a
             # string firstly just to load the data afterwards, again.
-            data['well'] = json.loads(serializer.dumps(data['well']))
+            data['well'] = serializer._dumpo(data['well'])
 
         return data
 
@@ -162,19 +162,25 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
 
         self._proj = proj
 
-    def _serialize(self, data):
-        """
-        Serializes a SFM-Worker payload from the ORM into JSON.
-        """
+    @property
+    def _ctx(self):
         crs_transform = self._transform_callback or self._transform
 
-        ctx = {
+        return {
             'proj': self._proj,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self._proj,
                 target_proj=self.SRS_EPSG)}
 
-        return _SFMWorkerIMessageSchema(context=ctx).dumps(data)
+    def _serialize(self, data):
+        """
+        Serializes a SFM-Worker payload from the ORM into JSON.
+        """
+        return _SFMWorkerIMessageSchema(context=self._ctx).dumps(data)
+
+    def _dumpo(self, data):
+        return _SFMWorkerIMessageSchema(context=self._ctx).dump(data)
+
 
 
 IOBase.register(SFMWorkerIMessageSerializer)

@@ -143,6 +143,16 @@ class SerializerBase(abc.ABC):
         """
         return self._serialize(data)
 
+    def _dumpo(self, data):
+        """
+        Serialize to :code:`dict`.
+
+        :param data: Data to be serialized.
+
+        :rtype: dict
+        """
+        raise NotImplementedError
+
 
 class DeserializerBase(abc.ABC):
     """
@@ -168,6 +178,14 @@ class DeserializerBase(abc.ABC):
         :type data: str or bytes
         """
         return self._deserialize(data)
+
+    def _loado(self, data):
+        """
+        Deserialize :code:`data` from an object.
+
+        :param data: Data to be deserialized.
+        """
+        raise NotImplementedError
 
 
 # -----------------------------------------------------------------------------

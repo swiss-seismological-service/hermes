@@ -86,6 +86,11 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
             creationinfo_creationtime=datetime.datetime.utcnow(),
             events=[e for e in self._get_events(io.BytesIO(data))])
 
+    def _loado(self, data):
+        return SeismicCatalog(
+            creationinfo_creationtime=datetime.datetime.utcnow(),
+            events=[e for e in self._get_events(data, parser=etree.iterwalk)])
+
     def _deserialize_event(self, event_element, **kwargs):
         """
         Deserialize a single `QuakeML <https://quake.ethz.ch/quakeml/>`_
@@ -164,7 +169,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
 
         return SeismicEvent(**attr_dict)
 
-    def _get_events(self, data):
+    def _get_events(self, data, parser=etree.iterparse):
         """
         Generator yielding the deserialized events of a seismic catalog.
 
@@ -174,7 +179,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
                         'tag': "{%s}event" % self.NSMAP_QUAKEML[None]}
 
         try:
-            for event, element in etree.iterparse(data, **parse_kwargs):
+            for event, element in parser(data, **parse_kwargs):
                 if event == 'end' and len(element):
                     try:
                         yield self._deserialize_event(etree.tostring(element))
