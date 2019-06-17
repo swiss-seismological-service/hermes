@@ -422,6 +422,7 @@ class WorkerClientApp(object):
                 'Fetching seismic catalog from fdsnws-event: {!r}'.format(
                     args.url_fdsnws_event))
             resp = requests.get(args.url_fdsnws_event)
+            resp.raise_for_status()
             self.logger.debug('Received seismic catalog. Deserializing ...')
             cat = QuakeMLCatalogDeserializer(proj=None).loads(resp.content)
             self.logger.debug('Number of seismic events: %d' % len(cat))
@@ -438,6 +439,7 @@ class WorkerClientApp(object):
                 'Fetching well data from hydws: {!r}'.format(
                     args.url_hydws))
             resp = requests.get(args.url_hydws)
+            resp.raise_for_status()
             self.logger.debug(
                 'Received well data and hydraulics. Deserializing ...')
             bh = HYDWSBoreholeHydraulicsDeserializer(
