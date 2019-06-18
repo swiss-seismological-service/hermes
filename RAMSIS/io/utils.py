@@ -276,9 +276,10 @@ def pymap3d_transform_geodetic2ned(x, y, z, source_proj, target_proj):
     if len(origin) != 3:
         raise ValueError(f"Invalid proj4 string: {target_proj!r}")
 
-    return pymap3d.geodetic2ned(
-        x, y, z,
+    n, e, d = pymap3d.geodetic2ned(
+        y, x, z,
         float(origin['+y_0']), float(origin['+x_0']), float(origin['+z_0']))
+    return e, n, d
 
 
 def pymap3d_transform_ned2geodetic(x, y, z, source_proj, target_proj):
@@ -312,6 +313,7 @@ def pymap3d_transform_ned2geodetic(x, y, z, source_proj, target_proj):
     if len(origin) != 3:
         raise ValueError(f"Invalid proj4 string: {source_proj!r}")
 
-    return pymap3d.ned2geodetic(
-        x, y, z,
+    lat, lon, alt = pymap3d.ned2geodetic(
+        y, x, z,
         float(origin['+y_0']), float(origin['+x_0']), float(origin['+z_0']))
+    return lon, lat, alt
