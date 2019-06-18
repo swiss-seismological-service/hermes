@@ -317,10 +317,10 @@ class _WellSectionSchema(_SchemaBase):
         return data
 
     def _transform(self, data):
-        transform_func = self._transform_callback
-        if 'transform_callback' in self.context:
-            transform_func = self.context['transform_callback']
+        if 'transform_callback' not in self.context:
+            return data
 
+        transform_func = self.context['transform_callback']
         try:
             data['toplongitude_value'], \
                 data['toplatitude_value'], \
@@ -339,14 +339,6 @@ class _WellSectionSchema(_SchemaBase):
                 f"Error while transforming coordinates: {err}")
 
         return data
-
-    @staticmethod
-    def _transform_callback(x, y, z):
-        """
-        Template method implementing the default transformation rule (i.e. no
-        transformation).
-        """
-        return x, y, z
 
 
 class _InjectionWellSchema(_SchemaBase):
