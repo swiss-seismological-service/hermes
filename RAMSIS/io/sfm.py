@@ -6,11 +6,14 @@ Utilities for SFM-Worker data import/export.
 import base64
 import functools
 
-from marshmallow import Schema, fields, pre_dump, post_dump
+from marshmallow import Schema, fields, pre_dump, post_dump, ValidationError
+from osgeo import ogr, gdal
 
 from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import SerializerBase, IOBase, _IOError
+
+gdal.UseExceptions()
 
 
 class SFMWIOError(_IOError):
@@ -67,6 +70,8 @@ class _ReservoirSchema(_SchemaBase):
     """
     Schema representation of a reservoir to be forecasted.
     """
+    ALLOWED_GEOMS = ('POLYHEDRALSURFACE')
+
     # XXX(damb): WKT/WKB
     geom = fields.String()
 
@@ -77,6 +82,42 @@ class _ReservoirSchema(_SchemaBase):
 
     # XXX(damb): Currently no sub_geometries are supported.
     # sub_geometries = fields.Nested('self', many=True)
+
+    @post_dump
+    def transform(self, data):
+        if (not self.context.get('proj') or
+            'transform_callback' not in self.context or
+                'geom' not in data):
+            return data
+
+        try:
+            geom = ogr.CreateGeometryFromWkt(data['geom'])
+        except Exception as err:
+            raise ValidationError(f"Invalid geometry ({err}).")
+
+        if geom.GetGeometryName() not in self.ALLOWED_GEOMS:
+            raise ValidationError(
+                f"Unknown geometry type {geom.GetGeometryName()!r}")
+
+        transform_func = self.context['transform_callback']
+        try:
+            phsf = ogr.Geometry(ogr.wkbPolyhedralSurfaceZ)
+            for i in range(0, geom.GetGeometryCount()):
+                g = geom.GetGeometryRef(i)
+                ring = ogr.Geometry(ogr.wkbLinearRing)
+                for j in range(0, g.GetGeometryRef(0).GetPointCount()):
+                    ring.AddPoint(
+                        *transform_func(*g.GetGeometryRef(0).GetPoint(j)))
+                polygon = ogr.Geometry(ogr.wkbPolygon)
+                polygon.AddGeometry(ring)
+                phsf.AddGeometry(polygon)
+
+            data['geom'] = phsf.ExportToWkt()
+        except Exception as err:
+            raise ValidationError(
+                f"Error while transforming coordinates: {err}")
+
+        return data
 
 
 class _ScenarioSchema(_SchemaBase):
