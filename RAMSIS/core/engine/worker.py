@@ -17,12 +17,27 @@ from marshmallow import Schema, fields
 from marshmallow.validate import OneOf
 
 from ramsis.utils.error import Error
-from ramsis.utils.protocol import StatusCode
 from RAMSIS.io.sfm import SFMWorkerIMessageSerializer
 
 
 class WorkerError(Error):
     """Base worker error ({})."""
+
+
+class StatusCode(enum.Enum):
+    """
+    SFM-Worker status code enum.
+    """
+    # codes related to worker states
+    TaskAccepted = 202
+    TaskProcessing = 423
+    TaskError = 418
+    TaskCompleted = 200
+    TaskNotAvailable = 204
+    # codes related to worker resource
+    HTTPMethodNotAllowed = 405
+    UnprocessableEntity = 422
+    WorkerError = 500
 
 
 class FilterSchema(Schema):
