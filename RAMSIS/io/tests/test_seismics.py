@@ -59,17 +59,17 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_0.datetime_value,
                          datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
         self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 852934.4308659385)
-        self.assertEqual(e_0.y_value, 4865438.458302228)
-        self.assertEqual(e_0.z_value, 2337337.475712796)
+        self.assertEqual(e_0.x_value, 549667.8429826467)
+        self.assertEqual(e_0.y_value, 4886615.047588805)
+        self.assertEqual(e_0.z_value, 2329559.564246732)
 
         e_1 = events[1]
         self.assertEqual(e_1.datetime_value,
                          datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
         self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 686647.2190603528)
-        self.assertEqual(e_1.y_value, 4980141.7949330835)
-        self.assertEqual(e_1.z_value, 2436607.0696544466)
+        self.assertEqual(e_1.x_value, 429866.65732392936)
+        self.assertEqual(e_1.y_value, 4986132.283391061)
+        self.assertEqual(e_1.z_value, 2428637.741202894)
 
     def test_with_bytes(self):
         proj = '+x_0=0 +y_0=0 +z_0=0'
@@ -87,17 +87,17 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_0.datetime_value,
                          datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
         self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 852934.4308659385)
-        self.assertEqual(e_0.y_value, 4865438.458302228)
-        self.assertEqual(e_0.z_value, 2337337.475712796)
+        self.assertEqual(e_0.x_value, 549667.8429826467)
+        self.assertEqual(e_0.y_value, 4886615.047588805)
+        self.assertEqual(e_0.z_value, 2329559.564246732)
 
         e_1 = events[1]
         self.assertEqual(e_1.datetime_value,
                          datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
         self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 686647.2190603528)
-        self.assertEqual(e_1.y_value, 4980141.7949330835)
-        self.assertEqual(e_1.z_value, 2436607.0696544466)
+        self.assertEqual(e_1.x_value, 429866.65732392936)
+        self.assertEqual(e_1.y_value, 4986132.283391061)
+        self.assertEqual(e_1.z_value, 2428637.741202894)
 
     @mock.patch('requests.get')
     def test_with_binary_request(self, mock_req):
@@ -139,18 +139,17 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_0.datetime_value,
                          datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
         self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 852934.4308659385)
-        self.assertEqual(e_0.y_value, 4865438.458302228)
-        self.assertEqual(e_0.z_value, 2337337.475712796)
+        self.assertEqual(e_0.x_value, 549667.8429826467)
+        self.assertEqual(e_0.y_value, 4886615.047588805)
+        self.assertEqual(e_0.z_value, 2329559.564246732)
 
         e_1 = events[1]
         self.assertEqual(e_1.datetime_value,
                          datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
         self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 686647.2190603528)
-        self.assertEqual(e_1.y_value, 4980141.7949330835)
-
-        self.assertEqual(e_1.z_value, 2436607.0696544466)
+        self.assertEqual(e_1.x_value, 429866.65732392936)
+        self.assertEqual(e_1.y_value, 4986132.283391061)
+        self.assertEqual(e_1.z_value, 2428637.741202894)
 
     def test_no_proj(self):
         deserializer = QuakeMLCatalogDeserializer(proj=None)
