@@ -34,7 +34,7 @@ from ramsis.utils import real_file_path
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
-from RAMSIS.core.engine.worker import WorkerHandle, EWorkerHandle
+from RAMSIS.core.worker import WorkerHandle, EWorkerHandle
 from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 
