@@ -198,13 +198,7 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(**kwargs)
-
-        self._proj = proj
-
-    @property
-    def proj(self):
-        return self._proj
+        super().__init__(proj=proj, **kwargs)
 
     @property
     def _ctx(self):

@@ -56,8 +56,13 @@ class IOBase(abc.ABC):
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(self.LOGGER)
 
+        self._proj = kwargs.get('proj', None)
         self._transform_callback = _callable_or_raise(
             kwargs.get('transform_callback', self._transform))
+
+    @property
+    def proj(self):
+        return self._proj
 
     def transform_callback(self, func):
         """

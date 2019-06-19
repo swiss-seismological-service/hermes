@@ -46,8 +46,9 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
 
     def __init__(self, proj=None, mag_type=None, **kwargs):
         """
-        :param str proj: Spatial reference system in Proj4 notation
+        :param proj: Spatial reference system in Proj4 notation
             representing the local coordinate system
+        :type proj: str or None
         :param mag_type: Describes the type of magnitude events should be
             configured with. If :code:`None` the magnitude type is not
             verified (default).
@@ -55,14 +56,9 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(**kwargs)
+        super().__init__(proj=proj, **kwargs)
 
-        self._proj = proj
         self._mag_type = mag_type
-
-    @property
-    def proj(self):
-        return self._proj
 
     def _deserialize(self, data):
         """
@@ -194,7 +190,26 @@ class QuakeMLCatalogSerializer(SerializerBase, IOBase):
     """
     Serializes a RT-RAMSIS seismic catalog into `QuakeML
     <https://quake.ethz.ch/quakeml/>`_.
+
+    .. note::
+
+        The serializer currently does not support transformation.
     """
+
+    def __init__(self, proj=None, **kwargs):
+        """
+        :param proj: Spatial reference system in Proj4 notation
+            representing the local coordinate system
+        :type proj: None
+        """
+        if proj is not None:
+            raise QuakeMLCatalogIOError(
+                'Passing SRS identifier is not allowed.')
+
+        super().__init__(proj=proj, **kwargs)
+
+    def transform_callback(self, func):
+        raise NotImplementedError
 
     def _serialize(self, data):
         """

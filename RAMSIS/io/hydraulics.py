@@ -419,17 +419,11 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(**kwargs)
-
-        self._proj = proj
+        super().__init__(proj=proj, **kwargs)
 
         self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
                       if kwargs.get('plan', False) else
                       {'time': _SchemaBase.EContext.PAST})
-
-    @property
-    def proj(self):
-        return self._proj
 
     @property
     def _ctx(self):
@@ -475,9 +469,7 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
         :param transform_callback: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(**kwargs)
-
-        self._proj = proj
+        super().__init__(proj=proj, **kwargs)
 
         self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
                       if kwargs.get('plan', False) else
