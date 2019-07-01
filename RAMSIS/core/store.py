@@ -133,6 +133,10 @@ class Store:
             models.filter(Model._type == model_type)
         return models.all()
 
+    def delete(self, obj):
+        """ Delete any object from the store """
+        self.session.delete(obj)
+
     def test_connection(self):
         try:
             self.engine.connect()
