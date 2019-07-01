@@ -66,7 +66,7 @@ class ControlInterface:
 class QCheckBoxInterface(ControlInterface):
     """ Default interface for QCheckBox """
     def get_value(self):
-        return self.control.isChecked
+        return self.control.isChecked()
 
     def set_value(self, value):
         self.control.setChecked(value)
@@ -96,7 +96,7 @@ class QDateTimeEditInterface(ControlInterface):
         self.control.setDateTime(utc_to_local(value))
 
     def change_signal(self):
-        return self.control.dateTimeChanged
+        return self.control.editingFinished
 
 
 class  QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
@@ -113,7 +113,7 @@ class  QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
         self.control.setDateTime(value)
 
     def change_signal(self):
-        return self.control.dateTimeChanged
+        return self.control.editingFinished
 
 
 class QLineEditInterface(ControlInterface):

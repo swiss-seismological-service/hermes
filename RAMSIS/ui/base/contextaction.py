@@ -4,8 +4,33 @@ Actions installed in context menus for TableView rows
 Copyright (C) 2018, SED (ETH Zurich)
 
 """
-from PyQt5.QtWidgets import QAction, QMessageBox
+from PyQt5.QtWidgets import QAction, QMessageBox, QMenu
+from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import Qt
 from ui.base.roles import CustomRoles
+
+
+class ContextActionMixin:
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.context_actions = []
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(
+            self.on_context_actions_menu_requested)
+
+    def on_context_actions_menu_requested(self, pos):
+        indexes = [idx for idx in self.selectionModel().selectedIndexes()
+                   if idx.column() == 0]
+        menu = QMenu()
+        for action in self.context_actions:
+            if action.isSeparator():
+                menu.addSeparator()
+            else:
+                action.selected_indexes = indexes
+                menu.addAction(action)
+        if menu.actions():
+            menu.exec(QCursor.pos())
 
 
 class ContextAction(QAction):

@@ -12,7 +12,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 
 from RAMSIS.core.simulator import SimulatorState
-from .ramsisuihelpers import pyqt_local_to_utc_ua, utc_to_local
+from RAMSIS.ui.base.utils import pyqt_local_to_utc_ua, utc_to_local
 
 ui_path = os.path.dirname(__file__)
 SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')
@@ -44,15 +44,10 @@ class SimulationWindow(QDialog):
         self.ramsis_core.simulator.state_changed.\
             connect(self.on_sim_state_change)
         self.ramsis_core.project_loaded.connect(self.on_project_load)
-
-        project = ramsis_core.project
-        if project:
-            local = utc_to_local(project.start_date)
-            self.ui.startTimeEdit.setDateTime(local)
-            local = utc_to_local(project.end_date)
-            self.ui.endTimeEdit.setDateTime(local)
+        self.refresh()
 
     def update_controls(self):
+        # TODO LH: use ui state machine
         afap = self.ui.afapCheckBox.isChecked()
         if not self.ramsis_core.project:
             self.ui.startButton.setEnabled(False)
@@ -82,6 +77,18 @@ class SimulationWindow(QDialog):
             self.ui.speedSpinBox.setEnabled(not afap)
             self.ui.afapCheckBox.setEnabled(True)
 
+    def refresh(self):
+        """ Refresh displayed data from model """
+        project = self.ramsis_core.project
+        if project:
+            if project.settings:
+                start = utc_to_local(project.settings['forecast_start'])
+            else:
+                start = utc_to_local(project.starttime)
+            self.ui.startTimeEdit.setDateTime(start)
+            end = utc_to_local(project.endtime)
+            self.ui.endTimeEdit.setDateTime(end)
+
     # Actions
 
     def action_start_simulation(self):
@@ -106,10 +113,7 @@ class SimulationWindow(QDialog):
         self.update_controls()
 
     def on_project_load(self, project):
-        local = utc_to_local(project.start_date)
-        self.ui.startTimeEdit.setDateTime(local)
-        local = utc_to_local(project.end_date)
-        self.ui.endTimeEdit.setDateTime(local)
+        self.refresh()
         # Make sure we get updated on project changes
         project.will_close.connect(self.on_project_will_close)
         self.update_controls()
@@ -140,7 +144,7 @@ class SimulationWindow(QDialog):
     #     t_forecast = core.engine.t_next_forecast
     #     speed = self.ramsis_core.simulator.speed
     #     if core.simulator.state == SimulatorState.RUNNING:
-    #         event = self.project.seismic_catalog.latest_event(time)
+    #         event = self.project.seismiccatalog.latest_event(time)
     #         status = 'Simulating at ' + str(speed) + 'x'
     #         if core.forecast_job.busy:
     #             status += ' - Computing Forecast'
@@ -149,7 +153,7 @@ class SimulationWindow(QDialog):
     #         self.ui.lastEventLabel.setText(str(event))
     #         self.ui.nextForecastLabel.setText(str(t_forecast.ctime()))
     #     elif core.simulator.state == SimulatorState.PAUSED:
-    #         event = self.project.seismic_catalog.latest_event(time)
+    #         event = self.project.seismiccatalog.latest_event(time)
     #         self.ui.coreStatusLabel.setText('Paused')
     #         self.ui.projectTimeLabel.setText(time.ctime())
     #         self.ui.lastEventLabel.setText(str(event))

@@ -7,10 +7,11 @@ Copyright (C) 2018, SED (ETH Zurich)
 from PyQt5.QtCore import QObject, Qt, QSortFilterProxyModel
 from PyQt5.QtWidgets import QMenu, QAction, QTableView, QStyledItemDelegate
 from PyQt5.QtGui import QCursor
-from ui.base.roles import CustomRoles
+from RAMSIS.ui.base.contextaction import ContextActionMixin
+from RAMSIS.ui.base.roles import CustomRoles
 
 
-class TableView(QTableView):
+class TableView(ContextActionMixin, QTableView):
     """
     Base class for tables used throughout the app
 
@@ -28,7 +29,6 @@ class TableView(QTableView):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.context_actions = []
 
     @property
     def source_model(self):
@@ -41,9 +41,6 @@ class TableView(QTableView):
         headers.setContextMenuPolicy(Qt.CustomContextMenu)
         headers.customContextMenuRequested.connect(
             self.on_header_ctx_menu_requested)
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(
-            self.on_context_actions_menu_requested)
         column_role = CustomRoles.RepresentedItemRole
         visible_columns = [model.headerData(i, Qt.Horizontal, role=column_role)
                            for i in range(self.horizontalHeader().count())]
@@ -57,19 +54,6 @@ class TableView(QTableView):
     def on_header_ctx_menu_requested(self):
         menu = ColumnSelectorMenu(self.model())
         menu.show(QCursor.pos())
-
-    def on_context_actions_menu_requested(self, pos):
-        indexes = [idx for idx in self.selectionModel().selectedIndexes()
-                   if idx.column() == 0]
-        menu = QMenu()
-        for action in self.context_actions:
-            if action.isSeparator():
-                menu.addSeparator()
-            else:
-                action.selected_indexes = indexes
-                menu.addAction(action)
-        if menu.actions():
-            menu.exec(QCursor.pos())
 
 
 class ColumnSelectorMenu(QObject):

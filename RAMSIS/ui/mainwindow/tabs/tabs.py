@@ -39,11 +39,12 @@ class TabPresenter(QObject):
         :param Scenario scenario: forecast scenario
 
         """
-        if self.scenario:
-            self.scenario.scenario_changed.disconnect(self._on_change)
+        # TODO LH: these signals don't exist anymore. find another way
+        # if self.scenario:
+        #     self.scenario.scenario_changed.disconnect(self._on_change)
         self.scenario = scenario
-        if self.scenario:
-            self.scenario.scenario_changed.connect(self._on_change)
+        # if self.scenario:
+        #     self.scenario.scenario_changed.connect(self._on_change)
         self.refresh()
 
     def refresh(self):

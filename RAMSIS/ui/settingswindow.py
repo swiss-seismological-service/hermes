@@ -31,6 +31,7 @@ Ui_ProjectSettingsWindow = \
 
 
 class SettingsWindow(QDialog):
+    # TODO LH: harmonize initializers, add on-accept callback
 
     def __init__(self):
         super(SettingsWindow, self).__init__()
@@ -173,10 +174,10 @@ class ApplicationSettingsWindow(SettingsWindow,
             db_url = f'{protocol}://{user}:{password}@{address}/{db_name}'
             success = self.app.ramsis_core.connect(db_url)
             if success:
-                if self.app.ramsis_core.store.is_empty():
-                    self._ui_state_machine_db.to_connected_empty()
-                else:
+                if self.app.ramsis_core.store.is_db_initialized():
                     self._ui_state_machine_db.to_connected_initialized()
+                else:
+                    self._ui_state_machine_db.to_connected_empty()
             else:
                 QMessageBox.critical(self, 'Connection Failed',
                                      f'Connection to {url} failed. Check the '
@@ -233,11 +234,13 @@ class ApplicationSettingsWindow(SettingsWindow,
 
 
 class ProjectSettingsWindow(SettingsWindow):
+    # TODO LH: adapt to new data model
 
     def __init__(self, project, **kwargs):
         super(ProjectSettingsWindow, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.project = project
+        self.save_callback = None
 
         # Other windows
         self.rj_model_configuration_window = None
@@ -249,6 +252,7 @@ class ProjectSettingsWindow(SettingsWindow):
 
         # Add new settings here. This maps each user editable settings key to
         # it's corresponding widget in the settings window
+        # TODO LH: handle settings on the project itself too (use keypaths?)
         widget_map = {
             'fdsnws_enable': self.ui.enableFdsnCheckBox,
             'fdsnws_url': self.ui.fdsnUrlEdit,
@@ -293,16 +297,19 @@ class ProjectSettingsWindow(SettingsWindow):
                 value = self.project.settings[key]
                 control_interface(widget).set_value(value)
         # Project properties are shown in the settings tab too
-        self.ui.projectTitleEdit.setText(self.project.title)
-        local = utc_to_local(self.project.start_date)
+        self.ui.projectTitleEdit.setText(self.project.name)
+        local = utc_to_local(self.project.starttime)
         self.ui.projectStartEdit.setDateTime(local)
-        local = utc_to_local(self.project.end_date)
-        self.ui.projectEndEdit.setDateTime(local)
+        if self.project.endtime:
+            local = utc_to_local(self.project.endtime)
+            self.ui.projectEndEdit.setDateTime(local)
         self.ui.descriptionEdit.setPlainText(self.project.description)
-        ref = self.project.reference_point
-        self.ui.refLatEdit.setText('{:.6f}'.format(ref['lat']))
-        self.ui.refLonEdit.setText('{:.6f}'.format(ref['lon']))
-        self.ui.refHEdit.setText('{:.1f}'.format(ref['h']))
+        ref = self.project.referencepoint
+        if ref:
+            # TODO LH: handle POINTZ type of referencepoint correctly
+            self.ui.refLatEdit.setText('{:.6f}'.format(ref['lat']))
+            self.ui.refLonEdit.setText('{:.6f}'.format(ref['lon']))
+            self.ui.refHEdit.setText('{:.1f}'.format(ref['h']))
 
     def action_setting_changed(self):
         widget = self.sender()
@@ -310,6 +317,9 @@ class ProjectSettingsWindow(SettingsWindow):
         if value is None:
             return
         key = self.key_map[widget]
+        # TODO LH: we need a couple hooks here or other mechanisms to handle
+        #  settings that don't map 1:1, e.g. the referencepoint (geometry)
+        #  or the forecast_start time which depends on project.starttime
         self.project.settings[key] = value
 
     # Button actions
@@ -318,28 +328,13 @@ class ProjectSettingsWindow(SettingsWindow):
         pass
 
     def action_load_defaults(self):
-        self.settings.register_default_settings()
+        self.project.settings.register_default_settings()
         self.load_settings()
 
     def action_save(self):
-        p = self.project
-        p.title = self.ui.projectTitleEdit.text()
-        start_date = pyqt_local_to_utc_ua(self.ui.projectStartEdit.dateTime())
-        end_date = pyqt_local_to_utc_ua(self.ui.projectEndEdit.dateTime())
-        if start_date != p.start_date or end_date != p.end_date:
-            p.start_date = start_date
-            p.end_date = end_date
-            p.settings['forecast_start'] = p.start_date
-            p.update_project_time(p.start_date)
-        p.description = self.ui.descriptionEdit.toPlainText()
-        try:
-            p.reference_point = {'lat': float(self.ui.refLatEdit.text()),
-                                 'lon': float(self.ui.refLonEdit.text()),
-                                 'h': float(self.ui.refHEdit.text())}
-        except TypeError as e:
-            self.logger.error('Invalid reference point: {}'.format(e))
-        p.settings.commit()
-        p.save()
+        self.project.settings.commit()
+        if self.save_callback:
+            self.save_callback()
         self.close()
 
     def action_show_rj_model_configuration(self):

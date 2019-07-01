@@ -76,6 +76,7 @@ class ProjectManagementWindow(QWidget, UiForm('projectmanagementwindow.ui')):
         idx = self.ui.projectsTable.selectionModel().selectedIndexes()[0]
         project = idx.data(CustomRoles.RepresentedItemRole)
         self.app.ramsis_core.open_project(project)
+        self.close()
 
     def on_project_selection_changed(self, selected, deselected):
         if not selected.indexes():

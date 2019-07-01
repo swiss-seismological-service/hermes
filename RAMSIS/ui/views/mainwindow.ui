@@ -46,7 +46,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QTreeView" name="forecastTreeView">
+        <widget class="TreeView" name="forecastTreeView">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
            <horstretch>0</horstretch>
@@ -938,7 +938,11 @@ color:white;
    <addaction name="actionSimulation"/>
    <addaction name="actionShow_3D"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+  </widget>
   <action name="actionImport_Seismic_Data">
    <property name="text">
     <string>&amp;Import  from CSV...</string>
@@ -1082,6 +1086,11 @@ color:white;
    <extends>QWidget</extends>
    <header>RAMSIS.ui.views.widgets</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TreeView</class>
+   <extends>QTreeView</extends>
+   <header>RAMSIS.ui.base.tree.view</header>
   </customwidget>
  </customwidgets>
  <resources>

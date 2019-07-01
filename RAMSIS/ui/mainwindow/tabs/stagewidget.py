@@ -11,9 +11,10 @@ import os
 from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
-from RAMSIS.ui.styles import STATUS_COLOR_ERROR, STATUS_COLOR_DISABLED
+from RAMSIS.ui.styles import StatusColor
 
-from ramsis.datamodel.calculationstatus import CalculationStatus
+#TODO: readd
+#from ramsis.datamodel.calculationstatus import CalculationStatus
 
 ui_path = os.path.dirname(__file__)
 STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
@@ -48,8 +49,8 @@ class StageWidget(QWidget):
 
     def set_substages(self, substages):
         colors = {
-            'Error': STATUS_COLOR_ERROR,
-            'Disabled': STATUS_COLOR_DISABLED,
+            'Error': StatusColor.ERROR,
+            'Disabled': StatusColor.DISABLED,
         }
         for i, stage in enumerate(substages):
             stage_label = QLabel(stage[0])
@@ -79,19 +80,21 @@ class StageWidget(QWidget):
         :param string state: Defined CalculationStatus state
 
         """
-        if state == CalculationStatus.RUNNING:
-            image = 'stage_running.png'
-            text = 'Running'
-        elif state == CalculationStatus.COMPLETE:
-            image = 'stage_complete.png'
-            text = 'Complete'
-        elif state == CalculationStatus.ERROR:
-            image = 'stage_error.png'
-            text = 'Error'
-        else:
-            image = 'stage_other.png'
-            text = '???'
-        self.ui.imageLabel.setPixmap(
-            QPixmap(':/stage_images/images/{}'.format(image)))
-        self.ui.statusLabel.setText(text)
+        # TODO: reimplement
+        pass
+        # if state == CalculationStatus.RUNNING:
+        #     image = 'stage_running.png'
+        #     text = 'Running'
+        # elif state == CalculationStatus.COMPLETE:
+        #     image = 'stage_complete.png'
+        #     text = 'Complete'
+        # elif state == CalculationStatus.ERROR:
+        #     image = 'stage_error.png'
+        #     text = 'Error'
+        # else:
+        #     image = 'stage_other.png'
+        #     text = '???'
+        # self.ui.imageLabel.setPixmap(
+        #     QPixmap(':/stage_images/images/{}'.format(image)))
+        # self.ui.statusLabel.setText(text)
 

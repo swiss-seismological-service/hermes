@@ -16,6 +16,10 @@ from PyQt5.QtWidgets import QStyleFactory
 
 import pyqtgraph as pg
 
+from ramsis.datamodel.project import Project
+from ramsis.datamodel.settings import ProjectSettings
+from ramsis.datamodel.seismics import SeismicCatalog
+
 log = logging.getLogger(__name__)
 
 
@@ -25,10 +29,15 @@ class TimeLinePresenter(QObject):
 
     """
     def __init__(self, ui, core):
+        """
+
+        :param ui:
+        :param core:
+        """
         super(TimeLinePresenter, self).__init__()
         self.ui = ui
         self.core = core
-        self.displayed_project_time = datetime(1970, 1, 1)
+        self.displayed_time = datetime(1970, 1, 1)
 
         # configure time line widget (use time_line as shortcut)
         self.time_line = self.ui.timeLineWidget
@@ -45,6 +54,8 @@ class TimeLinePresenter(QObject):
         self.plotter = SeismicityPlotter(self.time_line)
 
         core.project_loaded.connect(self.on_project_loaded)
+        core.project_data_changed.connect(self.on_project_data_changed)
+        core.clock.time_changed.connect(self.on_time_changed)
 
         if core.project:
             self.present_time_line_for_project(core.project)
@@ -62,15 +73,19 @@ class TimeLinePresenter(QObject):
         """
         if project is None:
             return
-        start = (project.start_date - datetime(1970, 1, 1)).total_seconds()
-        end = (project.end_date - datetime(1970, 1, 1)).total_seconds()
+        # TODO LH: This should always be forecast_start once the setting gets
+        #   adjusted automatically to the project starttime.
+        start_time = project.settings['forecast_start'] or project.starttime
+        start = (start_time - datetime(1970, 1, 1)).total_seconds()
+        end_time = project.endtime or datetime.now()
+        end = (end_time - datetime(1970, 1, 1)).total_seconds()
         self.time_line.setRange(xRange=(start, end))
         self.replot()
-        self.show_current_time(project.project_time)
+        self.show_current_time(self.core.clock.time)
 
     def show_current_time(self, t):
-        dt = (t - self.displayed_project_time).total_seconds()
-        self.displayed_project_time = t
+        dt = (t - self.displayed_time).total_seconds()
+        self.displayed_time = t
         # we do a more efficient relative change if the change is not too big
         if abs(dt) > self.ui.timeLineWidget.display_range:
             epoch = datetime(1970, 1, 1)
@@ -95,40 +110,41 @@ class TimeLinePresenter(QObject):
         if self.core.project is None:
             self.time_line.forecasts_plot.setData(None)
             return
+        # TODO LH: since we display time as total seconds since Epoch we might
+        #   as well have a utility function that gives us that. We could use
+        #   datetime.timestamp() with python3 but it doesn't work with naive
+        #   datetimes that represent UTC (which is what we have). We could
+        #   also make sure that the datamodel always returns aware datetimes
+        #   with UTC set explicitly.
         epoch = datetime(1970, 1, 1)
-        forecasts = self.core.project.forecast_set.forecasts
-        data = [((f.forecast_time - epoch).total_seconds(), 1.0)
+        forecasts = self.core.project.forecasts
+        data = [((f.starttime - epoch).total_seconds(), 1.0)
                 for f in forecasts]
         self.time_line.forecasts_plot.setData(pos=data)
 
     # signal slots
 
     def on_project_loaded(self, project):
-        project.will_close.connect(self.on_project_will_close)
-        project.project_time_changed.connect(self.on_project_time_changed)
-        project.settings.settings_changed.connect(self.on_settings_changed)
-        project.seismic_catalog.history_changed.connect(
-            self.on_catalog_changed)
-        project.forecast_set.forecasts_changed.connect(
-            self.on_forecasts_changed)
+        # TODO LH: observe project catalog, forecasts and settings which no
+        #   longer emit change signals.
         self.present_time_line_for_project(project)
         self.replot()
         self.show_forecasts()
 
-    def on_project_will_close(self, project):
+    def on_project_will_close(self):
         self.present_time_line_for_project(None)
 
-    def on_project_time_changed(self, project_time):
-        self.show_current_time(project_time)
+    def on_time_changed(self, current_time):
+        self.show_current_time(current_time)
 
-    def on_forecasts_changed(self, _):
-        self.show_forecasts()
-
-    def on_settings_changed(self, settings):
-        self.present_time_line_for_project(self.core.project)
-
-    def on_catalog_changed(self, _):
-        self.replot()
+    def on_project_data_changed(self, obj):
+        # TODO LH: this is obv. a bit ugly, see controller signals
+        if obj == self.core.project.forecasts:
+            self.show_forecasts()
+        elif obj == self.core.project.seismiccatalog:
+            self.replot()
+        elif obj == self.core.project.settings:
+            self.present_time_line_for_project(self.core.project)
 
     def on_timeline_selection(self, index):
         if index == 0:
@@ -150,12 +166,14 @@ class SeismicityPlotter(object):
     def replot(self, project=None, max_time=None):
         epoch = datetime(1970, 1, 1)
         if project:
-            events = project.seismic_catalog.seismic_events
+            events = project.seismiccatalog.events
             if max_time:
-                data = [((e.date_time - epoch).total_seconds(), e.magnitude)
+                data = [((e.datetime_value - epoch).total_seconds(),
+                         e.magnitude_value)
                         for e in events if e.date_time < max_time]
             else:
-                data = [((e.date_time - epoch).total_seconds(), e.magnitude)
+                data = [((e.datetime_value - epoch).total_seconds(),
+                         e.magnitude_value)
                         for e in events]
         else:
             data = []
@@ -175,13 +193,15 @@ class InjectionPlotter(object):
     def replot(self, project=None, max_time=None):
         epoch = datetime(1970, 1, 1)
         if project:
-            events = project.injection_history.samples
+            samples = project.injection_history.samples
             if max_time:
-                data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
-                        for e in events if e.date_time < max_time]
+                data = [((s.datetime_value - epoch).total_seconds(),
+                         s.topflow_value)
+                        for s in samples if s.datetime_value < max_time]
             else:
-                data = [((e.date_time - epoch).total_seconds(), e.flow_xt)
-                        for e in events]
+                data = [((s.datetime_value - epoch).total_seconds(),
+                         s.topflow_value)
+                        for s in samples]
         else:
             data = []
 
