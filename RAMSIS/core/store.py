@@ -113,13 +113,7 @@ class Store:
 
         """
         logger.info(f'Creating project {init_args.get("name", "unnamed")}')
-        # TODO LH: IMO we should not be concerned with the details of how to
-        #   setup a valid project from scratch. This should probably be
-        #   implemented in Project.__init__()
         project = Project(**init_args)
-        default_settings = ProjectSettings()
-        project.settings.append(default_settings)
-        project.seismiccatalog = [SeismicCatalog()]
         self.session.add(project)
         self.session.commit()
         return project
