@@ -30,7 +30,7 @@ class TaskManager:
 
         self.periodic_tasks = {
             'Rate update': {
-                'dt_setting': 'rate_interval',
+                'dt_setting': 'seismic_rate_interval',
                 'function': self.update_rates
             },
             'FDSNWS': {
@@ -58,10 +58,10 @@ class TaskManager:
     def on_project_loaded(self, project):
         for task in self.scheduler.scheduled_tasks:
             if task.name in self.periodic_tasks:
-                task.t0 = project.start_date
+                task.t0 = project.starttime
                 dt_setting = self.periodic_tasks[task.name]['dt_setting']
                 task.dt = timedelta(minutes=project.settings[dt_setting])
-        self.scheduler.reset(project.project_time)
+        self.scheduler.reset(project.starttime)
 
     def on_time_changed(self, time):
         if self.scheduler.has_due_tasks(time):
@@ -99,6 +99,10 @@ class TaskManager:
 
     def update_rates(self, t):
         """ Rate computation task function """
+        # TODO LH: reimplement. We don't have a rate history on the project any
+        #   more. However, this should be cheap to compute, so we can probably
+        #   just implement a RateComputer that recomputes all rates on the fly
+        #   (and allows filtering on magnitude bins).
         # t_run = info.t_project
         # seismic_events = self.project.seismic_catalog.events_before(t_run)
         # data = [(e.date_time, e.magnitude) for e in seismic_events]
@@ -121,14 +125,15 @@ class TaskManager:
         p = self.core.project
         dt = timedelta(hours=p.settings['forecast_interval'])
         if self.forecast_task.next_forecast:
-            t_next = self.forecast_task.next_forecast.forecast_time + dt
+            t_next = self.forecast_task.next_forecast.starttime + dt
         else:
             t_next = p.start_date + dt
-        next_forecast = p.forecast_set.forecast_at(t_next)
+        next_forecast = next((f for f in p.forecasts if f.starttime == t_next),
+                             None)
         if next_forecast is None:
-            next_forecast = self.core.create_forecast(t_next)
-            p.forecast_set.add_forecast(next_forecast)
-            p.store.commit()
+            next_forecast = self.core.prepare_interactive_forecast(t_next)
+            p.forecasts.append(next_forecast)
+            self.core.store.save()
 
 
 class ForecastTask(Task):
@@ -146,7 +151,7 @@ class ForecastTask(Task):
 
     def schedule(self, t):
         """
-        Schedule the next forecast
+        Schedule the next regular forecast
 
         This method simply looks for the next forecast that hasn't been
         completed yet and whose forecast_time is after t.
@@ -156,11 +161,10 @@ class ForecastTask(Task):
         if self.core.project is None:
             return
 
-        forecasts = self.core.project.forecast_set.forecasts
+        forecasts = self.core.project.forecasts
         try:
-            self.next_forecast = next(f for f in forecasts if not f.complete
-                                      and f.forecast_time > t)
-            self.run_time = self.next_forecast.forecast_time
+            self.next_forecast = next(f for f in forecasts if f.starttime > t)
+            self.run_time = self.next_forecast.starttime
         except StopIteration:
             self.next_forecast = None
             self.run_time = None
