@@ -56,14 +56,6 @@ class Engine(QObject):
         self._logger.info('Initiating forecast scheduled for {} at {}'.format(
             forecast.starttime, t))
 
-        # Snapshot the current catalog by creating a copy
-        def filter_future_events(event):
-            return event.datetime_value <= forecast.starttime
-
-        snapshot = project.seismiccatalog.snapshot(filter_future_events)
-        forecast.seismiccatalog = snapshot
-        self.core.store.save()
-
         self._forecast = forecast
         self.busy = True
         self._forecast_executor = ForecastExecutor(self.core, forecast)
