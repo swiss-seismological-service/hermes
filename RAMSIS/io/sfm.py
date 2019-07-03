@@ -190,16 +190,6 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
 
     SRS_EPSG = 4326
 
-    def __init__(self, proj=None, **kwargs):
-        """
-        :param proj: Spatial reference system in Proj4 notation
-            representing the local coordinate system
-        :type proj: str or None
-        :param transform_callback: Function reference for transforming data
-            into local coordinate system
-        """
-        super().__init__(proj=proj, **kwargs)
-
     @property
     def _ctx(self):
         crs_transform = self._transform_callback or self._transform
