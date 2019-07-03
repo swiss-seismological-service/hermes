@@ -5,13 +5,20 @@ Utilities for SFM-Worker data import/export.
 
 import base64
 import functools
+import uuid
 
-from marshmallow import Schema, fields, pre_dump, post_dump, ValidationError
+from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
+                         post_load, ValidationError, EXCLUDE)
+
 from osgeo import ogr, gdal
 
+from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
+                                         SeismicityPredictionBin)
 from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
-from RAMSIS.io.utils import SerializerBase, IOBase, _IOError
+from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
+                             _IOError, TransformationError, Percentage,
+                             Uncertainty)
 
 gdal.UseExceptions()
 
@@ -19,7 +26,19 @@ gdal.UseExceptions()
 class SFMWIOError(_IOError):
     """Base SFMW de-/serialization error ({})."""
 
-# TODO(damb): Implement a solution based on hydraulics
+
+class DataField(fields.Field):
+    def _serialize(self, value, attr, obj, **kwargs):
+        # TODO(damb): Currently, not implemented.
+        return value
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        _uuid = list(value.keys())[0]
+
+        if 'status_code' in data and data['status_code'] != 200:
+            return {uuid.UUID(_uuid): str(value[_uuid])}
+        return {uuid.UUID(_uuid):
+                _ReservoirSchema(context=self.context).load(value[_uuid])}
 
 
 class _SchemaBase(Schema):
@@ -31,6 +50,22 @@ class _SchemaBase(Schema):
         retval = data.copy()
         for key in filter(lambda key: data[key] in (None, {}, []), data):
             del retval[key]
+        return retval
+
+    @classmethod
+    def _flatten_dict(cls, data, sep='_'):
+        """
+        Flatten a a nested dict :code:`dict` using :code:`sep` as key
+        separator.
+        """
+        retval = {}
+        for k, v in data.items():
+            if isinstance(v, dict):
+                for sub_k, sub_v in cls._flatten_dict(v, sep).items():
+                    retval[k + sep + sub_k] = sub_v
+            else:
+                retval[k] = v
+
         return retval
 
 
@@ -66,6 +101,34 @@ class _SeismicCatalogSchema(_SchemaBase):
         return data
 
 
+class _ModelResultSampleSchema(_SchemaBase):
+    """
+    Schema representation for a model result sample.
+    """
+    starttime = fields.DateTime(format='iso')
+    endtime = fields.DateTime(format='iso')
+
+    rate_value = fields.Float(required=True)
+    rate_uncertainty = Uncertainty()
+    rate_loweruncertainty = Uncertainty()
+    rate_upperuncertainty = Uncertainty()
+    rate_confidencelevel = Percentage()
+
+    b_value = fields.Float(required=True)
+    b_uncertainy = Uncertainty()
+    b_loweruncertainty = Uncertainty()
+    b_upperuncertainty = Uncertainty()
+    b_confidencelevel = Percentage()
+
+    @pre_load
+    def flatten(self, data):
+        return self._flatten_dict(data)
+
+    @post_load
+    def make_object(self, data):
+        return SeismicityPredictionBin(**data)
+
+
 class _ReservoirSchema(_SchemaBase):
     """
     Schema representation of a reservoir to be forecasted.
@@ -74,11 +137,7 @@ class _ReservoirSchema(_SchemaBase):
 
     # XXX(damb): WKT/WKB
     geom = fields.String()
-
-    # TODO(damb): Attributes to be verified.
-    event_rate = fields.Float()
-    b_value = fields.Float()
-    std_event_rate = fields.Float()
+    samples = fields.Nested(_ModelResultSampleSchema, many=True)
 
     # XXX(damb): Currently no sub_geometries are supported.
     # sub_geometries = fields.Nested('self', many=True)
@@ -90,8 +149,21 @@ class _ReservoirSchema(_SchemaBase):
                 'geom' not in data):
             return data
 
+        data['geom'] = self._transform_wkt(data['geom'])
+
+        return data
+
+    @post_load
+    def load_postprocess(self, data):
+        if (self.context.get('proj') and
+                'transform_callback' in self.context):
+            data['geom'] = self._transform_wkt(data['geom'])
+
+        return ReservoirSeismicityPrediction(**data)
+
+    def _transform_wkt(self, geom):
         try:
-            geom = ogr.CreateGeometryFromWkt(data['geom'])
+            geom = ogr.CreateGeometryFromWkt(geom)
         except Exception as err:
             raise ValidationError(f"Invalid geometry ({err}).")
 
@@ -112,12 +184,12 @@ class _ReservoirSchema(_SchemaBase):
                 polygon.AddGeometry(ring)
                 phsf.AddGeometry(polygon)
 
-            data['geom'] = phsf.ExportToWkt()
+            return phsf.ExportToWkt()
         except Exception as err:
-            raise ValidationError(
-                f"Error while transforming coordinates: {err}")
+            raise TransformationError(f"{err}")
 
-        return data
+    class Meta:
+        unknown = EXCLUDE
 
 
 class _ScenarioSchema(_SchemaBase):
@@ -183,6 +255,14 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
         return self._clear_missing(data)
 
 
+class _SFMWorkerOMessageSchema(_SchemaBase):
+    status = fields.String()
+    status_code = fields.Integer()
+    length = fields.Integer()
+    warning = fields.String(missing=None, allow_none=True)
+    data = DataField()
+
+
 class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
     """
     Serializes a data structure which later can be consumed by SFM-Workers.
@@ -208,6 +288,30 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
 
     def _dumpo(self, data):
         return _SFMWorkerIMessageSchema(context=self._ctx).dump(data)
+
+
+class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
+    """
+    Serializes a data structure which later can be consumed by SFM workers.
+    """
+
+    SRS_EPSG = 4326
+
+    @property
+    def _ctx(self):
+        crs_transform = self._transform_callback or self._transform
+
+        return {
+            'proj': self._proj,
+            'transform_callback': functools.partial(
+                crs_transform, source_proj=self.SRS_EPSG,
+                target_proj=self._proj)}
+
+    def _deserialize(self, data):
+        """
+        Deserializes a data structure returned by SFM-Worker implementations.
+        """
+        return _SFMWorkerOMessageSchema(context=self._ctx).loads(data)
 
 
 IOBase.register(SFMWorkerIMessageSerializer)

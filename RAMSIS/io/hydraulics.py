@@ -13,21 +13,15 @@ from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
                                          HydraulicSample)
 from ramsis.datamodel.well import InjectionWell, WellSection
 from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
-                             IOBase, _IOError)
-
-
-def validate_positive(d):
-    return d >= 0
+                             IOBase, _IOError, TransformationError, Positive,
+                             Percentage, Uncertainty, validate_positive)
 
 
 # XXX(damb): Additional parameter validation to be implemented.
-validate_percentage = validate.Range(min=0, max=100)
 validate_longitude = validate.Range(min=-180., max=180.)
 validate_latitude = validate.Range(min=-90., max=90)
 validate_ph = validate.Range(min=0, max=14)
 
-Positive = functools.partial(fields.Float, validate=validate_positive)
-Percentage = functools.partial(fields.Float, validate=validate_percentage)
 Ph = functools.partial(fields.Float, validate=validate_ph)
 Temperature = functools.partial(fields.Float, validate=validate_positive)
 Longitude = functools.partial(fields.Float, validate=validate_longitude)
@@ -36,7 +30,6 @@ Depth = Positive
 Diameter = Positive
 Density = Positive
 Viscosity = Positive
-Uncertainty = Positive
 
 
 class HYDWSJSONIOError(_IOError):
@@ -339,8 +332,7 @@ class _WellSectionSchema(_SchemaBase):
                 data['bottomlatitude_value'],
                 data['bottomdepth_value'])
         except (TypeError, ValueError, AttributeError) as err:
-            raise ValidationError(
-                f"Error while transforming coordinates: {err}")
+            raise TransformationError(f"{err}")
 
         return data
 

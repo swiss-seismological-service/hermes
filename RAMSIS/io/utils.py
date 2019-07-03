@@ -5,6 +5,7 @@ General purpose IO utilities.
 
 import abc
 import contextlib
+import functools
 import io
 import logging
 
@@ -13,9 +14,21 @@ import requests
 
 from urllib.parse import urlparse, urlunparse
 
+from marshmallow import fields, validate
 from osgeo import ogr, osr
 
 from ramsis.utils.error import Error
+
+
+def validate_positive(d):
+    return d >= 0
+
+
+validate_percentage = validate.Range(min=0, max=100)
+
+Percentage = functools.partial(fields.Float, validate=validate_percentage)
+Positive = functools.partial(fields.Float, validate=validate_positive)
+Uncertainty = Positive
 
 
 class _IOError(Error):
