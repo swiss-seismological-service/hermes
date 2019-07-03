@@ -8,19 +8,26 @@ import datetime
 import json
 import os
 import unittest
+import uuid
+
+import dateutil
 
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.datamodel.seismicity import SeismicityModel  # noqa
 from ramsis.datamodel.forecast import Forecast  # noqa
 from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
+                                         SeismicityPredictionBin)
 from ramsis.datamodel.well import InjectionWell, WellSection  # noqa
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,  # noqa
                                          HydraulicSample) # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
-from RAMSIS.io.sfm import SFMWorkerIMessageSerializer
-from RAMSIS.io.utils import pymap3d_transform_ned2geodetic
+from RAMSIS.io.sfm import (SFMWorkerIMessageSerializer,
+                           SFMWorkerOMessageDeserializer)
+from RAMSIS.io.utils import (pymap3d_transform_ned2geodetic,
+                             pymap3d_transform_geodetic2ned)
 
 
 def _read(path):
@@ -365,10 +372,135 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                          json.loads(serializer.dumps(payload)))
 
 
+class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
+    """
+    Test for :py:class:`RAMSIS.io.sfm.SFMWorkerOMessageDeserializer` class.
+    """
+
+    PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  'resources')
+
+    def test_error_msg(self):
+        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
+                                       'omsg-500.json'))
+
+        reference_result = {
+            'status_code': 500,
+            'status': 'WorkerError',
+            'length': 1,
+            'warning': 'Caught in default model exception handler.',
+            'data': {
+                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'):
+                "KeyError: 'foo'"}}
+
+        proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
+        deserializer = SFMWorkerOMessageDeserializer(
+            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+
+        self.assertEqual(deserializer.loads(json_omsg),
+                         reference_result)
+
+    def test_result_msg(self):
+        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
+                                       'omsg-200.json'))
+
+        s0 = SeismicityPredictionBin(
+            starttime=dateutil.parser.parse(
+                '2019-07-02T14:59:52.508142+00:00'),
+            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142+00:00'),
+            b_value=73,
+            rate_value=42)
+
+        prediction = ReservoirSeismicityPrediction(
+            geom=('POLYHEDRALSURFACE Z '
+                  '(((-944829.45117427 -4619265.09168063 2094632.70852796,'
+                  '-944257.736152511 -4466699.60773925 1934552.84972869,'
+                  '-723677.819288185 -4488118.51527331 1914833.54607117,'
+                  '-724115.980887884 -4640696.9676138 2074901.46552201,'
+                  '-944829.45117427 -4619265.09168063 2094632.70852796)),'
+                  '((-944829.45117427 -4619265.09168063 2094632.70852796,'
+                  '-944257.736152511 -4466699.60773925 1934552.84972869,'
+                  '-944258.032243325 -4466701.01472902 1934551.45950928,'
+                  '-944829.747445564 -4619266.54683276 2094631.36884307,'
+                  '-944829.45117427 -4619265.09168063 2094632.70852796)),'
+                  '((-944829.45117427 -4619265.09168063 2094632.70852796,'
+                  '-724115.980887884 -4640696.9676138 2074901.46552201,'
+                  '-724116.207949793 -4640698.42948635 2074900.11964997,'
+                  '-944829.747445564 -4619266.54683276 2094631.36884307,'
+                  '-944829.45117427 -4619265.09168063 2094632.70852796)),'
+                  '((-723678.046211774 -4488119.9289794 1914832.14966838,'
+                  '-724116.207949793 -4640698.42948635 2074900.11964997,'
+                  '-944829.747445564 -4619266.54683276 2094631.36884307,'
+                  '-944258.032243325 -4466701.01472902 1934551.45950928,'
+                  '-723678.046211774 -4488119.9289794 1914832.14966838)),'
+                  '((-723678.046211774 -4488119.9289794 1914832.14966838,'
+                  '-724116.207949793 -4640698.42948635 2074900.11964997,'
+                  '-724115.980887884 -4640696.9676138 2074901.46552201,'
+                  '-723677.819288185 -4488118.51527331 1914833.54607117,'
+                  '-723678.046211774 -4488119.9289794 1914832.14966838)),'
+                  '((-723678.046211774 -4488119.9289794 1914832.14966838,'
+                  '-723677.819288185 -4488118.51527331 1914833.54607117,'
+                  '-944257.736152511 -4466699.60773925 1934552.84972869,'
+                  '-944258.032243325 -4466701.01472902 1934551.45950928,'
+                  '-723678.046211774 -4488119.9289794 1914832.14966838)))'),
+            samples=[s0, ])
+
+        reference_result = {
+            'status_code': 200,
+            'status': 'TaskCompleted',
+            'length': 1,
+            'warning': None,
+            'data': {
+                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'): prediction}}
+
+        proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
+        deserializer = SFMWorkerOMessageDeserializer(
+            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+
+        self.assertEqual(deserializer.loads(json_omsg),
+                         reference_result)
+
+    def test_no_proj(self):
+        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
+                                       'omsg-200.json'))
+
+        s0 = SeismicityPredictionBin(
+            starttime=dateutil.parser.parse(
+                '2019-07-02T14:59:52.508142+00:00'),
+            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142+00:00'),
+            b_value=73,
+            rate_value=42)
+
+        prediction = ReservoirSeismicityPrediction(
+            geom=('POLYHEDRALSURFACE Z '
+                  '(((0 0 0,0 2 0,2 2 0,2 0 0,0 0 0)),'
+                  '((0 0 0,0 2 0,0 2 2,0 0 2,0 0 0)),'
+                  '((0 0 0,2 0 0,2 0 2,0 0 2,0 0 0)),'
+                  '((2 2 2,2 0 2,0 0 2,0 2 2,2 2 2)),'
+                  '((2 2 2,2 0 2,2 0 0,2 2 0,2 2 2)),'
+                  '((2 2 2,2 2 0,0 2 0,0 2 2,2 2 2)))'),
+            samples=[s0, ])
+
+        reference_result = {
+            'status_code': 200,
+            'status': 'TaskCompleted',
+            'length': 1,
+            'warning': None,
+            'data': {
+                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'): prediction}}
+
+        deserializer = SFMWorkerOMessageDeserializer(proj=None)
+
+        self.assertEqual(deserializer.loads(json_omsg),
+                         reference_result)
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(
         unittest.makeSuite(SFMWorkerIMessageSerializerTestCase, 'test'))
+    suite.addTest(
+        unittest.makeSuite(SFMWorkerOMessageDeserializerTestCase, 'test'))
     return suite
 
 
