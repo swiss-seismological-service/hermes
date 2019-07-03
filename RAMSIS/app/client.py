@@ -557,7 +557,7 @@ class WorkerClientApp(object):
                   'WARNING'))
             for r in resp.filter_by(**filter_conditions).all():
                 print(('{task_id:<40}{status_code:<12}{status:<20}'
-                       '{length:<8}{result:<60} {warning:<20}').format(
+                       '{length:<8}{result:<60} {warning!s:<20}').format(
                     task_id=list(r['data'].keys())[0],
                     result=str(list(r['data'].values())), **r))
 
