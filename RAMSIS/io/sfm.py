@@ -185,7 +185,7 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
 
 class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
     """
-    Serializes borehole and hydraulics data from the RT-RAMSIS data model.
+    Serializes a data structure which later can be consumed by SFM-Workers.
     """
 
     SRS_EPSG = 4326
