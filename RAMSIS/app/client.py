@@ -358,45 +358,7 @@ class WorkerClientApp(object):
         try:
             self.args.func(self.args)
 
-            """
-            # XXX(damb): Load a project from the DB such we avoid setting up a
-            # new project from scratch.
-            with session_scope(
-                    sessionmaker(bind=self.args.db_engine)) as session:
-                # load project
-                try:
-                    project = session.query(Project).\
-                        filter(Project.id == self.args.project).\
-                        one()
-                except (NoResultFound, MultipleResultsFound) as err:
-                    raise InvalidProjectId(err)
-
-                self.logger.info('Using project {!r}.'.format(project))
-
-                forecast = self._create_forecast(datetime.datetime.utcnow())
-                # append the project's seismic catalog to the forecast_input
-                forecast.input.input_catalog = \
-                    project.seismic_catalog
-                forecast.input.input_catalog.catalog_date = \
-                    datetime.datetime.utcnow()
-                reference_point = project.reference_point
-                injection_well = project.injection_well
-                injection_history = project.injection_history
-
-                model_parameters = {'x': 4.4}
-
-                data = WorkerInputMessage(
-                    forecast=forecast,
-                    coordinate_reference=reference_point,
-                    injection_well=injection_well,
-                    injection_history=injection_history,
-                    model_parameters=model_parameters)
-
-                client = WorkerClient("http://localhost:5000/runs",
-                                      data=data, )
-                client()
-                self.logger.info('Worker message: {!r}'.format(client.result))
-                """
+            # TODO(damb): To be implemented.
 
         except Error as err:
             self.logger.error(err)
