@@ -494,6 +494,41 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
 
+    def test_ok_dict(self):
+        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
+                                       'omsg-200.json'))
+
+        s0 = dict(
+            starttime=dateutil.parser.parse(
+                '2019-07-02T14:59:52.508142+00:00'),
+            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508143+00:00'),
+            b_value=73.,
+            rate_value=42.)
+
+        prediction = dict(
+            geom=('POLYHEDRALSURFACE Z '
+                  '(((0 0 0,0 2 0,2 2 0,2 0 0,0 0 0)),'
+                  '((0 0 0,0 2 0,0 2 2,0 0 2,0 0 0)),'
+                  '((0 0 0,2 0 0,2 0 2,0 0 2,0 0 0)),'
+                  '((2 2 2,2 0 2,0 0 2,0 2 2,2 2 2)),'
+                  '((2 2 2,2 0 2,2 0 0,2 2 0,2 2 2)),'
+                  '((2 2 2,2 2 0,0 2 0,0 2 2,2 2 2)))'),
+            samples=[s0, ])
+
+        reference_result = {
+            'status_code': 200,
+            'status': 'TaskCompleted',
+            'length': 1,
+            'warning': None,
+            'data': {
+                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'): prediction}}
+
+        deserializer = SFMWorkerOMessageDeserializer(
+            proj=None, context={'format': 'dict'})
+
+        self.assertEqual(deserializer.loads(json_omsg),
+                         reference_result)
+
 
 def suite():
     suite = unittest.TestSuite()
