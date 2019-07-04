@@ -305,6 +305,7 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
         super().__init__(proj=proj, **kwargs)
 
         self._context = kwargs.get('context', {'format': 'orm'})
+        self._many = kwargs.get('many', False)
 
     @property
     def _ctx(self):
@@ -322,10 +323,12 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
         """
         Deserializes a data structure returned by SFM-Worker implementations.
         """
-        return _SFMWorkerOMessageSchema(context=self._ctx).loads(data)
+        return _SFMWorkerOMessageSchema(
+            context=self._ctx, many=self._many).loads(data)
 
     def _loado(self, data):
-        return _SFMWorkerOMessageSchema(context=self._ctx).load(data)
+        return _SFMWorkerOMessageSchema(
+            context=self._ctx, many=self._many).load(data)
 
 
 IOBase.register(SFMWorkerIMessageSerializer)
