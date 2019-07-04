@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 import marshmallow
 import requests
 
-from marshmallow import Schema, fields, post_load
+from marshmallow import Schema, fields, post_load, ValidationError
 from osgeo import gdal, ogr
 from sqlalchemy import create_engine
 
@@ -37,6 +37,7 @@ from RAMSIS import __version__
 from RAMSIS.core.worker import WorkerHandle, EWorkerHandle
 from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from RAMSIS.io.sfm import SFMWorkerOMessageDeserializer
 
 
 TIMEOUT_POLLING = 60
@@ -44,6 +45,10 @@ TIMEOUT_POLLING = 60
 
 class InvalidFilterCondition(AppError):
     """Invalid filter flag argument passed: {!r}"""
+
+
+class InvalidWorkerResponse(AppError):
+    """Invalid SFM-Worker response received: {!r}"""
 
 
 class InvalidProjectId(Error):
@@ -324,6 +329,9 @@ class WorkerClientApp(object):
         subparser.add_argument('--quiet', '-q', dest='quiet',
                                action='store_true', default=False,
                                help='Only display task identifiers.')
+        subparser.add_argument('--deserialize', dest='deserialize',
+                               action='store_true', default=False,
+                               help='Deserialize SFM-Worker responses.')
         # subparser - list: positional arguments
         subparser.add_argument('url_worker', metavar='URL_SFM_WORKER',
                                type=url_worker,
@@ -507,7 +515,19 @@ class WorkerClientApp(object):
 
         self.logger.debug('Filters: {}'.format(filter_conditions))
 
-        resp = worker.query(extract_task_ids(filter_conditions))
+        if self.args.deserialize:
+            try:
+                resp = worker.query(
+                    extract_task_ids(filter_conditions),
+                    deserializer=SFMWorkerOMessageDeserializer(
+                        proj=None, many=True, context={'format': 'dict'}))
+            except ValidationError as err:
+                raise InvalidWorkerResponse(err)
+        else:
+            resp = worker.query(
+                extract_task_ids(filter_conditions),
+                deserializer=None)
+
         self.logger.debug('Number of query results: {}'.format(resp.count()))
 
         if self.args.quiet:
@@ -518,7 +538,14 @@ class WorkerClientApp(object):
                   'TASK_ID', 'STATUS_CODE', 'STATUS', 'LENGTH', 'DATA',
                   'WARNING'))
             for r in resp.filter_by(**filter_conditions).all():
-                print(('{task_id:<40}{status_code:<12}{status:<20}'
+                if 'warning' not in r:
+                    print(('{task_id!s:<40}{status_code:<12}{status:<20}'
+                           '{length:<8}{result:<60}').format(
+                        task_id=list(r['data'].keys())[0],
+                        result=str(list(r['data'].values())), **r))
+                    continue
+
+                print(('{task_id!s:<40}{status_code:<12}{status:<20}'
                        '{length:<8}{result:<60} {warning!s:<20}').format(
                     task_id=list(r['data'].keys())[0],
                     result=str(list(r['data'].values())), **r))
