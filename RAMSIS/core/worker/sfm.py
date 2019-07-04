@@ -176,18 +176,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
             return self._resp[0]
 
-        def load(self, deserializer):
-            """
-            Return a deserialized query result.
-
-            :param deserializer: Serializer to be used for data serialization.
-            :type deserializer: :py:class:`marshmallow.Schema`
-            """
-            try:
-                return deserializer(many=True).load(self._resp.json())
-            except (ValueError, marshmallow.exceptions.ValidationError) as err:
-                raise RemoteSeismicityWorkerHandle.DecodingError(err)
-
     class Payload(object):
         """
         Representation of the payload sent to the remote seismicity forecast
