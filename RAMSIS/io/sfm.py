@@ -330,3 +330,5 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
 
 IOBase.register(SFMWorkerIMessageSerializer)
 SerializerBase.register(SFMWorkerIMessageSerializer)
+IOBase.register(SFMWorkerOMessageDeserializer)
+DeserializerBase.register(SFMWorkerOMessageDeserializer)
