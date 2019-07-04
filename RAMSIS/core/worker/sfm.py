@@ -98,10 +98,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self._resp = resp
 
         @classmethod
-        def from_requests(cls, resp):
+        def from_requests(cls, resp, deserializer=None):
             """
             :param resp: *RT-RAMSIS* worker responses.
             :type resp: list or :py:class:`requests.Response`
+            :param deserializer: Deserializer used
+            :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
             """
             def flatten(l):
                 for el in l:
@@ -128,7 +130,9 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             if not isinstance(resp, list):
                 resp = [resp]
 
-            return cls(_json(resp))
+            if deserializer is None:
+                return cls(_json(resp))
+            return cls(deserializer._loado(_json(resp)))
 
         def filter_by(self, **kwargs):
             """
@@ -279,16 +283,16 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     def url(self):
         return self._url_base + self._url_path
 
-    def query(self, task_ids=[]):
+    def query(self, task_ids=[], deserializer=None):
         """
         Query the result for worker's tasks.
 
         :param task_ids: List of task identifiers (:py:class:`uuid.UUID`). If
             an empty list is passed all results are requested.
         :type task_ids: list or :py:class:`uuid.UUID`
-        :param serializer: Serializer to be used for data serialization. If
-            :code:`None` no serialization is performed at all.
-        :type serializer: :py:class:`marshmallow.Schema` or None
+        :param deserializer: Deserializer to be used for data deserialization.
+            If :code:`None` no deserialization is performed at all.
+        :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
         """
         if not task_ids:
             self.logger.debug(
@@ -305,7 +309,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                     'WorkerError (code={}).'.format(resp.status_code))
                 resp = []
 
-            return self.QueryResult.from_requests(resp)
+            return self.QueryResult.from_requests(
+                resp, deserializer=deserializer)
 
         # query results sequentially
         if isinstance(task_ids, uuid.UUID):
@@ -336,7 +341,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 self.logger.warning(
                     'WorkerError (code={}).'.format(response.status_code))
 
-        return self.QueryResult.from_requests(resp)
+        return self.QueryResult.from_requests(
+            resp, deserializer=deserializer)
 
     def compute(self, payload, **kwargs):
         """
