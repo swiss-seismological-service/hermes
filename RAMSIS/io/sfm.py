@@ -324,6 +324,9 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
         """
         return _SFMWorkerOMessageSchema(context=self._ctx).loads(data)
 
+    def _loado(self, data):
+        return _SFMWorkerOMessageSchema(context=self._ctx).load(data)
+
 
 IOBase.register(SFMWorkerIMessageSerializer)
 SerializerBase.register(SFMWorkerIMessageSerializer)
