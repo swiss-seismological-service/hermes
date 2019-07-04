@@ -126,6 +126,8 @@ class _ModelResultSampleSchema(_SchemaBase):
 
     @post_load
     def make_object(self, data):
+        if (self.context.get('format') == 'dict'):
+            return data
         return SeismicityPredictionBin(**data)
 
 
@@ -159,6 +161,8 @@ class _ReservoirSchema(_SchemaBase):
                 'transform_callback' in self.context):
             data['geom'] = self._transform_wkt(data['geom'])
 
+        if (self.context.get('format') == 'dict'):
+            return data
         return ReservoirSeismicityPrediction(**data)
 
     def _transform_wkt(self, geom):
@@ -297,15 +301,22 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
 
     SRS_EPSG = 4326
 
+    def __init__(self, proj=None, **kwargs):
+        super().__init__(proj=proj, **kwargs)
+
+        self._context = kwargs.get('context', {'format': 'orm'})
+
     @property
     def _ctx(self):
         crs_transform = self._transform_callback or self._transform
 
-        return {
+        self._context.update({
             'proj': self._proj,
             'transform_callback': functools.partial(
                 crs_transform, source_proj=self.SRS_EPSG,
-                target_proj=self._proj)}
+                target_proj=self._proj)})
+
+        return self._context
 
     def _deserialize(self, data):
         """
