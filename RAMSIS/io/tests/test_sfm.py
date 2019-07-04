@@ -400,7 +400,7 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
 
-    def test_result_msg(self):
+    def test_ok_msg(self):
         json_omsg = _read(os.path.join(self.PATH_RESOURCES,
                                        'omsg-200.json'))
 
