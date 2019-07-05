@@ -121,7 +121,7 @@
           <bool>true</bool>
          </property>
          <property name="text">
-          <string>Changing the projects start or end date will also reset the project time and forecast start date</string>
+          <string>Changing the projects start or end date will also reset simulation time and forecast start date</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>

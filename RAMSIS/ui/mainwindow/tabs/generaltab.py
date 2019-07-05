@@ -13,8 +13,10 @@ from .tabs import TabPresenter
 from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget
 
-from RAMSIS.ui.ramsisuihelpers import utc_to_local
-from ramsis.datamodel.calculationstatus import CalculationStatus as CS
+from RAMSIS.ui.base.utils import utc_to_local
+
+# TODO: readd
+#from ramsis.datamodel.calculationstatus import CalculationStatus as CS
 
 
 class GeneralTabPresenter(TabPresenter):
@@ -29,7 +31,7 @@ class GeneralTabPresenter(TabPresenter):
 
     def refresh(self):
         if self.scenario:
-            t = self.scenario.forecast_input.forecast.forecast_time
+            t = self.scenario.forecast.starttime
             t_str = utc_to_local(t).strftime('%d.%m.%Y %H:%M')
             title = 'Forecast {}    {}'.format(t_str, self.scenario.name)
         else:
@@ -74,10 +76,11 @@ class StageStatusPresenter(QObject):
         """
         if scenario is None:
             return
-        self._refresh_model_status(scenario)
-        self._refresh_hazard_status(scenario)
-        self._refresh_risk_status(scenario)
-        self._refresh_traffic_light(scenario)
+        # TODO LH: reimplement with new model
+        # self._refresh_model_status(scenario)
+        # self._refresh_hazard_status(scenario)
+        # self._refresh_risk_status(scenario)
+        # self._refresh_traffic_light(scenario)
 
     def _refresh_model_status(self, scenario):
         widget = self.widgets[0]
@@ -97,17 +100,18 @@ class StageStatusPresenter(QObject):
                     substages[model_id] = mr.status.state
         widget.set_substages([(models[k]['title'], v)
                               for k, v in substages.items()])
-        # revisit overall state
-        if all(s in (CS.COMPLETE, 'Disabled') for s in substages.values()):
-            state = CS.COMPLETE
-        elif any(s == CS.ERROR for s in substages.values()):
-            state = CS.ERROR
-        elif any(s == CS.RUNNING for s in substages.values()):
-            state = CS.RUNNING
-        else:
-            widget.plan()
-            return
-        widget.set_state(state)
+
+        # TODO LH: revisit overall state
+        # if all(s in (CS.COMPLETE, 'Disabled') for s in substages.values()):
+        #     state = CS.COMPLETE
+        # elif any(s == CS.ERROR for s in substages.values()):
+        #     state = CS.ERROR
+        # elif any(s == CS.RUNNING for s in substages.values()):
+        #     state = CS.RUNNING
+        # else:
+        #     widget.plan()
+        #     return
+        # widget.set_state(state)
 
     def _refresh_hazard_status(self, scenario):
         widget = self.widgets[1]

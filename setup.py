@@ -60,10 +60,13 @@ _dependency_links = [(
     "#egg=ramsis.datamodel-0.1"), ]
 
 # TODO(damb): add doc
+# TODO LH: find a good way to handle the settings file. The app looks for
+#   it in standard config locations defined by QAppConfigLocation which
+#   are not writable by setup.py AFAIK.
 _data_files = [
     ('', ['LICENSE',
           'Makefile']),
-    ('config', ['config/ramsis.ini']), ]
+    ('config', ['settings.template.yml']), ]
 
 setup(
     name='RAMSIS',

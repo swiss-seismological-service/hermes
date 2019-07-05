@@ -3,27 +3,25 @@
 RAMSIS Core Controller.
 
 This module defines a single class `Controller` which acts as the
-central coordinator for all core components.
+central coordinator for all core (i.e. non UI) components.
 
 """
 
 import logging
-import os
+from enum import Enum, auto
 from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
 
-from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.core.engine.engine import Engine
+from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
-from ramsis.datamodel.forecast import Forecast, ForecastInput, Scenario
-from ramsis.datamodel.hydraulics import InjectionPlan, InjectionSample
-from ramsis.datamodel.ormbase import OrmBase
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.store import Store
+from RAMSIS.core.store import Store
+from ramsis.datamodel.forecast import Forecast
+from ramsis.datamodel.seismics import SeismicEvent
+from ramsis.datamodel.hydraulics import HydraulicSample
 
-# from core.tools.tools import Profiler
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
 """
@@ -31,6 +29,17 @@ Used internally to pass information to repeating tasks
 t_project is the project time at which the task is launched
 
 """
+
+
+class LaunchMode(Enum):
+    """
+    Application Mode
+
+    The application can launch in one of two modes.
+
+    """
+    REAL_TIME = 'real-time'  #: Real time operation for live applications
+    LAB = 'lab'  #: Lab mode where the user simulates through recorded data
 
 
 class Controller(QtCore.QObject):
@@ -46,83 +55,123 @@ class Controller(QtCore.QObject):
     the user interface.
 
     :ivar Project project: Currently loaded project
-    :param AppSettings settings: reference to the application settings
+    :param RAMSIS.application.Application app: reference to the application
+        top level object
 
     """
 
+    #: Signal emitted after a new project has been loaded into the core
     project_loaded = QtCore.pyqtSignal(object)
+    #: Signal emitted when the currently active project is about to be closed
+    project_will_unload = QtCore.pyqtSignal()
+    #: Signal emitted when a data base connection is established or closed
+    store_changed = QtCore.pyqtSignal()
+    #: Signal emitted when project data changes. Carries the changed instance
+    # TODO LH: This is a cheap and unsatisfactory replacement for the change
+    #   signals that model objects used to emit and that were caught by the
+    #   GUI to update views. We might need a better solution here. I tried
+    #   listening to SQLAlchemy events but there is too little control over the
+    #   granularity of events. Best would probably still be for data model
+    #   objects to emit change signals somehow.
+    project_data_changed = QtCore.pyqtSignal(object)
 
-    def __init__(self, settings):
+    def __init__(self, app, launch_mode):
         super(Controller, self).__init__()
-        self._settings = settings
+        self._settings = app.app_settings
+        assert (launch_mode == LaunchMode.LAB), \
+            f'Mode {launch_mode} is not implemented'
+        self._launch_mode = launch_mode
+        self.store = None
         self.project = None
-        self.engine = Engine(self)
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None
         self.seismics_data_source = None
         self.hydraulics_data_source = None
 
-        # Initialize simulator
-        self.simulator = Simulator(self._simulation_handler)
+        # Core components for real time and simulation operation
+        self.engine = Engine(self)
+        self.clock = WallClock()
 
-        # Task Manager
+        def simulation_handler(time):
+            self.clock.time = time
+
+        self.simulator = Simulator(simulation_handler)
         self.task_manager = TaskManager(core=self)
 
-        # Time, state and other internals
+        # Other internals
         self._logger = logging.getLogger(__name__)
         # self._logger.setLevel(logging.DEBUG)
 
+        # Signals
+        app.app_launched.connect(self._on_app_launched)
+
+    # DB handling
+
+    @property
+    def launch_mode(self):
+        return self._launch_mode
+
+    def connect(self, db_url):
+        """
+        Connect to a new data store
+
+        :param str db_url: Fully qualified db url to connect to (including
+            user, pw)
+        :return: True if connection is successful, False otherwise
+        :rtype: Bool
+
+        """
+        self.disconnect()
+        store = Store(db_url)
+        if store.test_connection():
+            self.store = store
+            self.store_changed.emit()
+            return True
+        return False
+
+    def disconnect(self):
+        """ Disconnect from the current data store """
+        if self.project:
+            self.close_project()
+        if self.store:
+            self.store.close()
+            self.store = None
+            self.store_changed.emit()
+
     # Project handling
 
-    def open_project(self, path):
+    def open_project(self, project):
         """
-        Open RAMSIS project file located at path
+        Open RAMSIS project
 
-        :param str path: path to the ramsis project file
+        This makes `project` the cores currently active project and
+        reconfigures tasks based on the project's timeline. In Lab Mode
+        it also resets the wall clock to the start of the project.
+
+        :param project: Project to load
+        :type project: ramsis.datamodel.project.Project
 
         """
-        if not os.path.exists(path):
-            self._logger.error('Could not find project: ' + path)
-            return
-        # We add an additional / in front of the url. So now we have 3 slashes
-        # in total, because host and db-name section are both empty for sqlite
-        store_path = 'sqlite:///' + path
-        self._logger.info('Loading project at ' + path +
-                          ' - This might take a while...')
-        store = Store(store_path, OrmBase)
-        self.project = store.session.query(Project).first()
-        self.project.store = store
-        self.project.settings.settings_changed.connect(
-            self._on_project_settings_changed
-        )
-        self.engine.observe_project(self.project)
-        self.project_loaded.emit(self.project)
+
+        self._logger.info(f'Loading project {project.name}')
+        if self.project:
+            self.close_project()
+        self.project = project
+        if self.launch_mode == LaunchMode.LAB:
+            # TODO LH: always use forecast_start
+            self.clock.reset(project.settings['forecast_start'] or
+                             project.starttime)
+        self.project_loaded.emit(project)
         self._update_data_sources()
         self._logger.info('... done loading project')
 
-    def create_project(self, path):
-        """
-        Create a new project at path and load it.
-
-        If a project exists at path, it will be replaced.
-
-        """
-        if self.project:
-            self.close_project()
-        if os.path.exists(path):
-            os.remove(path)
-        store_path = 'sqlite:///' + path
-        self._logger.info('Creating project at ' + path)
-        store = Store(store_path, OrmBase)
-        project = Project(store=store, title='New Project')
-        project.save()
-
     def close_project(self):
         """
-        Close the current project.
+        Close the currently active project.
 
         """
-        self.project.close()
+        self._logger.info(f'Closing project {self.project.name}')
+        self.project_will_unload.emit()
         self.project = None
 
     # Other user actions
@@ -134,7 +183,36 @@ class Controller(QtCore.QObject):
 
         """
         self._logger.info('Re-fetching seismic data from data source')
-        self.seismics_data_source.fetch()
+        # TODO LH: re-add using io. A signal should be emitted when done
+        #   so we can update activity messages in the gui.
+        #self.seismics_data_source.fetch()
+        self.project_data_changed.emit(self.project.seismiccatalog)
+
+    def import_seismic_events(self, importer):
+        """ Import seismic events manually """
+        # TODO LH: re-add using io and convert wgs84 to cartesian
+        try:
+            events = [SeismicEvent(datetime_value=date,
+                                   x_value=float(fields['lon']),
+                                   y_value=float(fields['lat']),
+                                   z_value=float(fields['depth']),
+                                   magnitude_value=float(fields['mag']),
+                                   quakeml=b'')
+                      for date, fields in importer]
+        except KeyError as e:
+            self._logger.error('Failed to import seismic events. Make sure '
+                               'the data contains lat, lon, depth, and mag '
+                               'fields and that the date field has the format '
+                               'dd.mm.yyyyTHH:MM:SS. The original error was ' +
+                               str(e))
+        else:
+            # TODO LH: for some reason this is extremely slow when replacing
+            #   the collection directly. Seemingly spending a lot of time
+            #   in SeismicEvent.__eq__
+            self.project.seismiccatalog.events = []
+            self.project.seismiccatalog.events = events
+            self.store.save()
+        self.project_data_changed.emit(self.project.seismiccatalog)
 
     def fetch_hydraulic_events(self):
         """
@@ -143,20 +221,50 @@ class Controller(QtCore.QObject):
 
         """
         self._logger.info('Re-fetching hydraulic data from data source')
-        self.hydraulics_data_source.fetch()
+        hydraulics = self.project.wells[0].sections[-1].hydraulics
+        # TODO LH: re-add using io. A signal should be emitted when done
+        #   so we can update activity messages in the gui.
+        #self.hydraulics_data_source.fetch()
+        self.project_data_changed.emit(hydraulics)
 
-    def delete_results(self):
-        project = self.project
-        self._logger.info('Deleting all results and input catalogs')
-        for forecast in project.forecast_set.forecasts:
-            # As long as we have expire_on_commit=False we need to make sure
-            # we have no dangling relations in the session after a delete
-            # manually.
-            for result in forecast.results:
-                result.scenario = None
-            forecast.results = []
-            forecast.input.input_catalog = None
-        project.save()
+    def import_hydraulics_events(self, importer):
+        """ Import seismic events manually """
+        # TODO LH: re-add using io. Also, we need to think of a way to
+        #   specify the well/wellsection instead of hardcoding it
+        try:
+            samples = [HydraulicSample(datetime_value=date,
+                                       bottomflow_value=float(
+                                           fields.get('flow_dh') or 0),
+                                       topflow_value=float(
+                                           fields.get('flow_xt') or 0),
+                                       bottompressure_value=float(
+                                           fields.get('pr_dh') or 0),
+                                       toppressure=float(
+                                           fields.get('pr_xt') or 0))
+                       for date, fields in importer]
+        except KeyError as e:
+            self._logger.error('Failed to import hydraulic events. Make sure '
+                               'the .csv file contains top and bottom hole '
+                               'flow and pressure fields and that the date '
+                               'field has the format dd.mm.yyyyTHH:MM:SS. The '
+                               'original error was ' + str(e))
+        else:
+            self.project.wells[0].sections[-1].hydraulics.samples = samples
+            self.store.save()
+        self.project_data_changed.emit(hydraulics)
+
+    def reset_forecasts(self):
+        """
+        Delete forecast results and intermediate products
+
+        This basically returns all forecasts to their 'configured but not yet
+        executed' state so that the user can re-run them.
+
+        """
+        self._logger.info('Resetting all forecasts')
+        for forecast in self.project.forecasts:
+            forecast.reset()
+        self.store.save()
 
     # Running
 
@@ -173,6 +281,7 @@ class Controller(QtCore.QObject):
         :param speed: simulation speed, -1 for as fast as possible
 
         """
+        # TODO LH: implement real time operation mode
         if time_range:
             self.start_simulation(time_range, speed)
         else:
@@ -221,7 +330,7 @@ class Controller(QtCore.QObject):
         """
         # self._logger.info(
         #     'Deleting any forecasting results from previous runs')
-        # self.project.seismic_catalog.clear()
+        # self.project.seismiccatalog.clear()
         inf_speed = True if speed == -1 else False
         if inf_speed:
             self._logger.info('Simulating at maximum speed')
@@ -233,6 +342,9 @@ class Controller(QtCore.QObject):
             self._logger.info('Simulating at {:.0f}x'.format(speed))
             self.simulator.configure(time_range, speed=speed)
         self.task_manager.reset(time_range[0])
+        self.clock.mode = WallClockMode.MANUAL
+        self.clock.time = time_range[0]
+        self.clock.arm()
 
     def pause_simulation(self):
         """ Pauses the simulation. """
@@ -249,110 +361,89 @@ class Controller(QtCore.QObject):
         self._logger.info('Stopping simulation')
         self.simulator.stop()
 
-    # Simulation handling
+    # Signal slots
 
-    def _simulation_handler(self, simulation_time):
-        """ Invoked by the simulation whenever the project time changes """
-        self.project.update_project_time(simulation_time)
+    def _on_app_launched(self):
+        """ Invoked when the application has launched """
+        db_settings = self._settings['database']
+        if all(v for v, k in db_settings.items()):
+            protocol, address = db_settings['url'].split('://')
+            self._logger.info(f'Reconnecting to {address}/'
+                              f'{db_settings["name"]}')
+            db_url = f'{protocol}://{db_settings["user"]}:' \
+                f'{db_settings["password"]}@{address}/{db_settings["name"]}'
+            self.connect(db_url)
+
+    # Forecast handling
 
     def create_next_future_forecast(self):
         """ Adds the next regular forecast to the list of future forecasts """
-        p = self.project
-        dt = timedelta(hours=p.settings['forecast_interval'])
-        if len(p.forecast_set.forecasts) > 0:
-            t_last = p.forecast_set.forecasts[-1].forecast_time
+        dt = timedelta(hours=self.project.settings['forecast_interval'])
+        if self.project.forecasts:
+            t_last = self.project.forecasts[-1].starttime
         else:
             t_last = self.project.settings['forecast_start'] - dt
-        forecast = self.create_forecast(t_last + dt)
-        p.forecast_set.add_forecast(forecast)
-        p.store.commit()
-
-    def create_forecast(self, forecast_time):
-        """ Returns a new Forecast instance """
-
-        # rows
-        forecast = Forecast()
-        forecast_input = ForecastInput()
-        scenario = Scenario()
-        scenario.name = 'Default Scenario'
-        model_settings = self.project.settings['forecast_models'].items()
-        scenario.config = {
-            'run_is_forecast': True,
-            'run_hazard': True,
-            'run_risk': True,
-            'disabled_models': [model_id for model_id, conf in model_settings
-                                if not conf['enabled']]
-        }
-        injection_plan = InjectionPlan()
-        injection_sample = InjectionSample(None, None, None, None, None)
-
-        # relations
-        forecast.input = forecast_input
-        forecast_input.scenarios = [scenario]
-        scenario.injection_plan = injection_plan
-        injection_plan.samples = [injection_sample]
-
-        # forecast attributes
-        forecast.forecast_time = forecast_time
-        forecast.forecast_interval = self.project.settings['forecast_length']
-        forecast.mc = 0.9
-        forecast.m_min = 0
-        forecast.m_max = 6
-
-        # injection_sample attributes
-        injection_sample.date_time = forecast_time
-
+        t_next = t_last + dt
+        models = [m for m in self.store.load_models() if m.enabled]
+        forecast = Forecast.create_interactive(t_next, t_next + dt, models)
+        self.project.forecasts.append(forecast)
+        self.store.save()
+        self.project_data_changed.emit(self.project.forecasts)
         return forecast
 
+    # TODO LH: this needs a trigger. It used to react to the settings_changed
+    #   signal on project settings.
     def _on_project_settings_changed(self, _):
         self._update_data_sources()
 
     def _update_data_sources(self):
-        # Seismic
-        new_url = self.project.settings['fdsnws_url']
-        en = self.project.settings['fdsnws_enable']
-        if new_url is None:
-            self.seismics_data_source = None
-        elif self.seismics_data_source:
-            if self.seismics_data_source.url != new_url:
-                self.seismics_data_source.url = new_url
-                self._logger.info('Seismic data source changed to {}'
-                                 .format(new_url))
-            if self.seismics_data_source.enabled != en:
-                self.seismics_data_source.enabled = en
-                self._logger.info('Seismic data source {}'
-                                  .format('enabled' if en else 'disabled'))
-        else:
-            self.seismics_data_source = FDSNWSDataSource(new_url)
-            self.seismics_data_source.enabled = en
-            self.seismics_data_source.data_received.connect(
-                self._on_seismic_data_received)
-        # Hydraulic
-        new_url = self.project.settings['hydws_url']
-        en = self.project.settings['hydws_enable']
-        if new_url is None:
-            self.hydraulics_data_source = None
-        elif self.hydraulics_data_source:
-            if self.hydraulics_data_source.url != new_url:
-                self.hydraulics_data_source.url = new_url
-                self._logger.info('Hydraulic data source changed to {}'
-                                  .format(new_url))
-            if self.hydraulics_data_source.enabled != en:
-                self.hydraulics_data_source.enabled = en
-                self._logger.info('Hydraulic data source {}'
-                                  .format('enabled' if en else 'disabled'))
-        else:
-            self.hydraulics_data_source = HYDWSDataSource(new_url)
-            self.hydraulics_data_source.enabled = en
-            self.hydraulics_data_source.data_received.connect(
-                self._on_hydraulic_data_received)
+        pass
+        # TODO LH: reimplement once daniels services are integrated
+        # # Seismic
+        # new_url = self.project.settings['fdsnws_url']
+        # en = self.project.settings['fdsnws_enable']
+        # if new_url is None:
+        #     self.seismics_data_source = None
+        # elif self.seismics_data_source:
+        #     if self.seismics_data_source.url != new_url:
+        #         self.seismics_data_source.url = new_url
+        #         self._logger.info('Seismic data source changed to {}'
+        #                          .format(new_url))
+        #     if self.seismics_data_source.enabled != en:
+        #         self.seismics_data_source.enabled = en
+        #         self._logger.info('Seismic data source {}'
+        #                           .format('enabled' if en else 'disabled'))
+        # else:
+        #     self.seismics_data_source = FDSNWSDataSource(new_url)
+        #     self.seismics_data_source.enabled = en
+        #     self.seismics_data_source.data_received.connect(
+        #         self._on_seismic_data_received)
+        # # Hydraulic
+        # new_url = self.project.settings['hydws_url']
+        # en = self.project.settings['hydws_enable']
+        # if new_url is None:
+        #     self.hydraulics_data_source = None
+        # elif self.hydraulics_data_source:
+        #     if self.hydraulics_data_source.url != new_url:
+        #         self.hydraulics_data_source.url = new_url
+        #         self._logger.info('Hydraulic data source changed to {}'
+        #                           .format(new_url))
+        #     if self.hydraulics_data_source.enabled != en:
+        #         self.hydraulics_data_source.enabled = en
+        #         self._logger.info('Hydraulic data source {}'
+        #                           .format('enabled' if en else 'disabled'))
+        # else:
+        #     self.hydraulics_data_source = HYDWSDataSource(new_url)
+        #     self.hydraulics_data_source.enabled = en
+        #     self.hydraulics_data_source.data_received.connect(
+        #         self._on_hydraulic_data_received)
 
     def _on_seismic_data_received(self, result):
         if result is not None:
             tr = result['time_range']
             importer = result['importer']
-            self.project.seismic_catalog.clear_events(tr)
-            self.project.seismic_catalog.import_events(importer)
+            self.project.seismiccatalog.clear_events(tr)
+            self.project.seismiccatalog.import_events(importer)
             self.project.store.commit()
 
     def _on_hydraulic_data_received(self, result):

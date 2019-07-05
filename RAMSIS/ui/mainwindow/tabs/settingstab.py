@@ -30,11 +30,13 @@ class SettingsTabPresenter(TabPresenter):
             checkbox.stateChanged.connect(self.on_check_state_changed)
 
     def refresh(self):
-        if self.scenario:
-            config = self.scenario.config
-            for checkbox, config_name in self.config_map.items():
-                checkbox.setCheckState(Qt.Checked if config[config_name] else
-                                       Qt.Unchecked)
+        # TODO LH: adapt to new model
+        pass
+        # if self.scenario:
+        #     config = self.scenario.config
+        #     for checkbox, config_name in self.config_map.items():
+        #         checkbox.setCheckState(Qt.Checked if config[config_name] else
+        #                                Qt.Unchecked)
 
     def on_check_state_changed(self, state):
         sender = self.sender()

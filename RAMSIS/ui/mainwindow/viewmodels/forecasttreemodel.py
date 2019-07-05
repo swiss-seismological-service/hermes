@@ -1,10 +1,10 @@
-# -*- encoding: utf-8 -*-
+# Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 """
-A view model to display forecast_set and scenarios in a tree view
+A view model to display forecasts and their scenarios in a tree view
 
 The tree view has the following structure:
 
-    root_node
+    root_node (not visible)
       Forecast 06:00
         Scenario 1
         Scenario 2
@@ -12,51 +12,36 @@ The tree view has the following structure:
         Scenario 1
         ...
 
-Copyright (C) 2016, SED (ETH Zurich)
-
 """
 
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
 from PyQt5.QtGui import QBrush, QFont
-from RAMSIS.ui.ramsisuihelpers import utc_to_local
+from RAMSIS.ui.base.tree.model import TreeModel, Node
+from RAMSIS.ui.base.utils import utc_to_local
 
 
-class Node(object):
-    """
-    Parent class for all node types
-
-    A node represents an item in the tree
-
-    """
-    def __init__(self, item, parent_node):
-        self.parent_node = parent_node
-        self.item = item
-        self.visible = True
-
-    def data(self, column, role):
-        """
-        The default implementation returns the item itself for the display
-        role and None for all other roles
-        :param column: data column
-        :param role: role
-        :return: requested data
-        """
-        return None
-
-    def child_count(self):
-        return 0
+COLUMNS = ('FC / Scenario', 'Status')
 
 
 class ScenarioNode(Node):
+    """
+    Node representing a scenario
+
+    The :ivar:`Node.item` here is a
+    :class:`ramsis.datamodel.forecast.ForecastScenario`.
+    """
 
     def data(self, column, role):
         default = super(ScenarioNode, self).data(column, role)
         if column == 0:
             if role == Qt.DisplayRole:
+                # TODO LH: we could define __str__ on the model entities
                 return self.item.name
         if column == 1:
             if role == Qt.DisplayRole:
-                return self.item.summary_status
+                # TODO LH: this doesn't exist in the new model atm
+                #return self.item.summary_status
+                return 'n/a'
             elif role == Qt.ForegroundRole:
                 return QBrush(Qt.gray)
             elif role == Qt.FontRole:
@@ -68,126 +53,50 @@ class ScenarioNode(Node):
 
 
 class ForecastNode(Node):
-    """ Represents a forecast at a specific time """
+    """
+    Node representing a forecast at a specific time
+
+    The :ivar:`Node.item` here is a
+    :class:`ramsis.datamodel.forecast.Forecast`.
+
+    """
     def __init__(self, forecast, parent_node):
         """
         :param Forecast forecast: Forecast object represented by this node
         :param Node parent_node: Parent Node (root node)
 e
         """
-        super(ForecastNode, self).__init__(forecast, parent_node)
-        scenarios = self.item.input.scenarios
-        self.children = [ScenarioNode(s, self) for s in scenarios]
-
-    def child(self, row, column):
-        return self.children[row]
-
-    def child_count(self):
-        return len(self.children)
+        super().__init__(forecast, parent_node)
+        self.children = [ScenarioNode(s, self) for s in self.item.scenarios]
 
     def data(self, column, role):
-        default = super(ForecastNode, self).data(column, role)
-        if role == Qt.DisplayRole:
-            if column == 0:
-                local = utc_to_local(self.item.forecast_time)
-                return local.strftime('%d.%m.%Y %H:%M')
-            else:
-                return None
-        elif role == Qt.DecorationRole:
-            return None
-        else:
-            return default
-
-    def insert_children(self, position, rows):
-        inserted_scenarios = self.item.scenarios[position:position + rows]
-        for i, scenario in enumerate(inserted_scenarios):
-            self.children.insert(position + i, ScenarioNode(scenario, self))
+        default = super().data(column, role)
+        if role == Qt.DisplayRole and column == 0:
+            local = utc_to_local(self.item.starttime)
+            return local.strftime('%Y-%m-%d %H:%M')
+        return default
 
 
-class ForecastTreeModel(QAbstractItemModel):
+class ForecastsRootNode(Node):
+    """
+    This is the (invisible) root node.
 
-    def __init__(self, forecast_set):
-        super(ForecastTreeModel, self).__init__(parent=None)
-        self.root_node = Node('Forecasts', parent_node=None)
-        self.forecast_set = forecast_set
-        self.forecast_nodes = [ForecastNode(f, self.root_node)
-                               for f in self.forecast_set.forecasts]
+    The root node just provides the header data for the tree view.
+    """
 
-    def refresh(self):
-        self.beginResetModel()
-        self.forecast_nodes = [ForecastNode(f, self.root_node)
-                               for f in self.forecast_set.forecasts]
-        self.endResetModel()
+    def __init__(self, project):
+        super().__init__(COLUMNS, parent_node=None)
+        self.children = [ForecastNode(f, self) for f in project.forecasts]
 
-    def columnCount(self, parent):
-        return 2
 
-    def rowCount(self, parent):
-        if not parent.isValid():
-            return len(self.forecast_nodes)
-        if parent.column() > 0:
-            return 0
-        node = parent.internalPointer()
-        return node.child_count()
+class ForecastTreeModel(TreeModel):
 
-    def index(self, row, column, parent):
-        if not parent.isValid():
-            # we're at the root node
-            item = self.forecast_nodes[row]
-        else:
-            item = parent.internalPointer().child(row, column)
-        return self.createIndex(row, column, item)
+    def __init__(self, project):
+        self.project = project
+        self.root_node = ForecastsRootNode(project)
+        super(ForecastTreeModel, self).__init__(root_node=self.root_node)
 
-    def parent(self, index):
-        if not index.isValid():
-            return QModelIndex()
-        node = index.internalPointer()
-        parent_node = node.parent_node
-        if parent_node == self.root_node:
-            return QModelIndex()
-        node_idx = self.forecast_nodes.index(parent_node)
-        return self.createIndex(node_idx, 0, parent_node)
-
-    def data(self, index, role):
-        if not index.isValid():
-            return None
-        node = index.internalPointer()
-        data = node.data(index.column(), role)
-        return data
-
-    def setData(self, index, value, role):
-        if role == Qt.CheckStateRole:
-            node = index.internalPointer()
-            node.visible = value
-            self.dataChanged.emit(index, index)
-            return True
-        elif role == Qt.EditRole:
-            if value:
-                node = index.internalPointer()
-                node.item.name = value
-                node.item.forecast_input.forecast.forecast_set.project.save()
-        return False
-
-    def flags(self, index):
-        return Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | \
-               Qt.ItemIsEnabled | Qt.ItemIsEditable
-
-    def headerData(self, column, orientation, role):
-        if orientation != Qt.Horizontal:
-            return None
-        if role == Qt.DisplayRole:
-            if column == 0:
-                return 'Forecast'
-            elif column == 1:
-                return 'Status'
-        elif role == Qt.SizeHintRole:
-            if column == 0:
-                return QSize(142, 20)
-        return None
-
-    def insertRows(self, position, rows, parent_idx):
-        parent_node = parent_idx.internalPointer()
-        self.beginInsertRows(parent_idx, position, position + rows - 1)
-        success = parent_node.insert_children(position, rows)
-        self.endInsertRows()
-        return success
+    def add_forecast(self, forecast):
+        row = self.project.forecasts.index(forecast)
+        node = ForecastNode(forecast, self.root_node)
+        self.insert_nodes(self.root_node, row, [node])

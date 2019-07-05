@@ -32,10 +32,11 @@ class ModelTabPresenter(TabPresenter):
         Refresh everything
 
         """
-        fc_result = self.scenario.forecast_result
-        self._update_models_list(fc_result)
-        model_result = self._get_selected_model_result(fc_result)
-        self._present_model_result(model_result)
+        # TODO LH: the rabbit hole is now much deeper. adapt.
+        # fc_result = self.scenario.forecast_result
+        # self._update_models_list(fc_result)
+        # model_result = self._get_selected_model_result(fc_result)
+        # self._present_model_result(model_result)
 
     def _present_model_result(self, model_result):
         """

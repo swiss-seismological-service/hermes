@@ -41,19 +41,16 @@ class ReservoirWindow(QWidget):
         if self.core.project is None:
             return
         scaling = self.ui.scaleSpinBox.value()
-        t_max = datetime.max if show_all else self.core.project.project_time
-        events = [e for e in self.core.project.seismic_catalog.seismic_events
-                  if e.date_time < t_max]
-        loc = np.array([(e.lat, e.lon, e.depth) for e in events])
-        mag = np.array([e.magnitude for e in events]) * scaling
-
-        ref = self.core.project.reference_point
-        lat, lon, h = loc[:, 0], loc[:, 1], -loc[:, 2]
-        n, e, d = geodetic2ned(lat, lon, h, ref['lat'], ref['lon'], ref['h'])
-        self.ui.viewerWidget.show_events(np.array([n, e, d]).T, size=mag)
+        t_max = datetime.max if show_all else self.core.clock.time
+        events = [e for e in self.core.project.seismiccatalog
+                  if e.datetime_value < t_max]
+        loc = np.array([(e.x_value, e.y_value, e.z_value)
+                        for e in events])
+        mag = np.array([e.magnitude_value for e in events]) * scaling
+        self.ui.viewerWidget.show_events(np.array(loc), size=mag)
 
     def on_project_loaded(self, project):
-        project.seismic_catalog.history_changed.connect(
+        project.seismiccatalog.history_changed.connect(
             self.on_catalog_changed)
 
     def on_project_will_unload(self):
