@@ -5,6 +5,7 @@
 *.egg-info
 .eggs/
 .pytest_cache/
+.tox
 
 # Other
 images_rc.py
