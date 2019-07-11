@@ -36,20 +36,6 @@ class AppSettings:
 
     """
 
-    def all(self):
-        """ Return all settings as a flat dict: {'section/key': value} """
-        def flatten(d, parent_key='', sep='/'):
-            items = []
-            for k, v in d.items():
-                new_key = parent_key + sep + k if parent_key else k
-                if isinstance(v, collections.MutableMapping):
-                    items.extend(flatten(v, new_key, sep=sep).items())
-                else:
-                    items.append((new_key, v))
-            return dict(items)
-
-        return flatten(self.settings)
-
     def __init__(self, settings_file=None):
         """
         Load either the default settings or, if a file name is
@@ -64,6 +50,20 @@ class AppSettings:
         self._logger.info('Loading settings from ' + settings_file)
         with open(settings_file, 'r') as f:
             self.settings = yaml.full_load(f.read())
+
+    def all(self):
+        """ Return all settings as a flat dict: {'section/key': value} """
+        def flatten(d, parent_key='', sep='/'):
+            items = []
+            for k, v in d.items():
+                new_key = parent_key + sep + k if parent_key else k
+                if isinstance(v, collections.MutableMapping):
+                    items.extend(flatten(v, new_key, sep=sep).items())
+                else:
+                    items.append((new_key, v))
+            return dict(items)
+
+        return flatten(self.settings)
 
     def __getitem__(self, key):
         return reduce(operator.getitem, key.split('/'), self.settings)
