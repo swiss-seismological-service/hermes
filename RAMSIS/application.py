@@ -7,10 +7,15 @@ the GUI and the Ramsis core application).
 
 """
 
-import sys
+import collections
+import operator
 import os
 import logging
 import signal
+import sys
+import yaml
+
+from functools import reduce
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QStandardPaths
@@ -20,7 +25,6 @@ from PyQt5.QtWidgets import QApplication, QStyleFactory
 
 from RAMSIS.ui.ramsisgui import RamsisGui
 from RAMSIS.core.controller import Controller, LaunchMode
-from RAMSIS.ramsissettings import AppSettings
 
 
 VERSION = '0.1 "Bug Infested Alpha"'
@@ -30,6 +34,55 @@ VERSION = '0.1 "Bug Infested Alpha"'
 # if not prefix_path:
 #     logging.getLogger(__name__).warning('QGIS prefix path is not set')
 # QgsApplication.setPrefixPath(prefix_path, True)
+
+
+class AppSettings:
+    """
+    Global application settings.
+
+    To access settings through this class.
+
+    """
+
+    def all(self):
+        """ Return all settings as a flat dict: {'section/key': value} """
+        def flatten(d, parent_key='', sep='/'):
+            items = []
+            for k, v in d.items():
+                new_key = parent_key + sep + k if parent_key else k
+                if isinstance(v, collections.MutableMapping):
+                    items.extend(flatten(v, new_key, sep=sep).items())
+                else:
+                    items.append((new_key, v))
+            return dict(items)
+
+        return flatten(self.settings)
+
+    def __init__(self, settings_file=None):
+        """
+        Load either the default settings or, if a file name is
+        provided, specific settings from that file.
+
+        """
+        self._settings_file = settings_file
+        self._logger = logging.getLogger(__name__)
+        if settings_file is None:
+            settings_file = 'settings.yml'
+
+        self._logger.info('Loading settings from ' + settings_file)
+        with open(settings_file, 'r') as f:
+            self.settings = yaml.full_load(f.read())
+
+    def __getitem__(self, key):
+        return reduce(operator.getitem, key.split('/'), self.settings)
+
+    def __setitem__(self, key, value):
+        keys = key.split('/')
+        if len(keys) > 1:
+            leaf_node = reduce(operator.getitem, keys[:-1], self.settings)
+        else:
+            leaf_node = self.settings
+        leaf_node[keys[-1]] = value
 
 
 class Application(QtCore.QObject):
