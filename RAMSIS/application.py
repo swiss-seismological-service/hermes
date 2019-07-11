@@ -19,21 +19,13 @@ from functools import reduce
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QStandardPaths
-from PyQt5.QtWidgets import QApplication, QStyleFactory
-
-#from qgis.core import QgsApplication
+from PyQt5.QtWidgets import QApplication
 
 from RAMSIS.ui.ramsisgui import RamsisGui
 from RAMSIS.core.controller import Controller, LaunchMode
 
 
 VERSION = '0.1 "Bug Infested Alpha"'
-
-# Initialize QGIS
-# prefix_path = os.environ.get('QGIS_PREFIX_PATH')
-# if not prefix_path:
-#     logging.getLogger(__name__).warning('QGIS prefix path is not set')
-# QgsApplication.setPrefixPath(prefix_path, True)
 
 
 class AppSettings:
@@ -118,10 +110,7 @@ class Application(QtCore.QObject):
         # Instantiate the appropriate Qt app object
         self.has_gui = not args.no_gui
         if self.has_gui:
-            # QApplication.setStyle(
-            #     QStyleFactory.create('Cleanlooks'))
             self.qt_app = QApplication(sys.argv)
-            # QgsApplication.initQgis()
         else:
             self.qt_app = QtCore.QCoreApplication(sys.argv)
         # Register some general app information
@@ -177,6 +166,4 @@ class Application(QtCore.QObject):
         self._exit(0)
 
     def _exit(self, code):
-        # if self.has_gui:
-        #     QgsApplication.exitQgis()
         sys.exit(code)
