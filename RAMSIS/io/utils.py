@@ -223,7 +223,8 @@ def append_ms_zeroes(dt_str):
 
 
 @contextlib.contextmanager
-def binary_request(request, url, params={}, timeout=None, **kwargs):
+def binary_request(request, url, params={}, timeout=None,
+                   nocontent_codes=(204,), **kwargs):
     """
     Make a binary request
 
@@ -250,8 +251,7 @@ def binary_request(request, url, params={}, timeout=None, **kwargs):
 
     try:
         r = request(url, params=params, timeout=timeout, **kwargs)
-        # TODO(damb): Move codes to a generic settings variable
-        if r.status_code in (204, 404):
+        if r.status_code in nocontent_codes:
             raise NoContent(r.url, r.status_code, response=r)
 
         r.raise_for_status()
