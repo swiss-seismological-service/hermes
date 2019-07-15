@@ -4,6 +4,8 @@ Various utility functions
 
 """
 import abc
+import collections
+import enum
 import functools
 
 from PyQt5.QtCore import QTimer, QObject
@@ -51,3 +53,20 @@ def call_later(method, *args, **kwargs):
 
 class QtABCMeta(type(QObject), abc.ABCMeta):
     pass
+
+
+class EStatus(enum.Enum):
+    INITIALIZED = enum.auto()
+    PENDING = enum.auto()
+    RUNNING = enum.auto()
+
+    OK = enum.auto()
+    # alias
+    INFO = OK
+    WARNING = enum.auto()
+    ERROR = enum.auto()
+    CRITICAL = enum.auto()
+
+
+Message = collections.namedtuple(
+    'StatusMessage', ['status', 'status_code', 'data', 'info'])
