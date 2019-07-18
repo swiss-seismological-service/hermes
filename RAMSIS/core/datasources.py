@@ -194,7 +194,6 @@ class HYDWSDataSource(QtCore.QThread):
 class FDSNWSDataSource(QtCore.QThread):
     """
     Fetches seismic event data from a web service in the background.
-
     """
 
     DESERIALZER = QuakeMLCatalogDeserializer
@@ -216,14 +215,9 @@ class FDSNWSDataSource(QtCore.QThread):
 
     def fetch(self, **kwargs):
         """
-        Fetch data in the background
+        Fetch data by means of a background-thread
 
-        If kwargs contains starttime and endtime, these are returned together
-        with the results so that the receiver of the event knows which time
-        range was requested.
-
-        :param kwargs: args dict forwarded to the fdsnws client
-
+        :param kwargs: args dict forwarded to fdsnws-event
         """
         self._args = kwargs
         if self.enabled:
@@ -240,6 +234,7 @@ class FDSNWSDataSource(QtCore.QThread):
                 requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
                 cat = self._deserializer.load(ifd)
+
         except NoContent:
             self.logger.info('No data received.')
         except RequestsError as err:
