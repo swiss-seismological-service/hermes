@@ -154,7 +154,7 @@ def scenario(scenario_dict):
         well = fields.Dict(keys=fields.Str(), required=True)
 
         @post_load
-        def make_object(self, data):
+        def make_object(self, data, **kwargs):
             if 'well' in data:
                 deserializer = HYDWSBoreholeHydraulicsDeserializer(
                     plan=True, proj=None)
