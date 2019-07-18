@@ -237,7 +237,7 @@ class FDSNWSDataSource(QtCore.QThread):
             f"params={self._params}).")
         try:
             with binary_request(
-                requests.get, self._url, self._args, self._timeout,
+                requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
                 cat = self._deserializer.load(ifd)
 
