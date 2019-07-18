@@ -407,6 +407,8 @@ class Controller(QtCore.QObject):
         self._update_data_sources()
 
     def _update_data_sources(self):
+        # TODO(damb): Read configuration from the DB.
+
         pass
         # TODO LH: reimplement once daniels services are integrated
         # # Seismic
