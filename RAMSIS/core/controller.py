@@ -10,7 +10,7 @@ central coordinator for all core (i.e. non UI) components.
 import datetime
 import logging
 
-from enum import Enum, auto
+from enum import Enum
 from operator import attrgetter
 
 from PyQt5 import QtCore
