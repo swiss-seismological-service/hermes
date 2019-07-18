@@ -453,6 +453,7 @@ class Controller(QtCore.QObject):
     def _on_seismic_data_received(self, cat):
         if cat is not None:
             self.project.seismiccatalog.merge(cat)
+            self.store.save()
 
     def _on_hydraulic_data_received(self, result):
         if result is not None:
