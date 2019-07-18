@@ -36,41 +36,17 @@ import csv
 import logging
 from time import strptime, mktime
 from datetime import datetime, timedelta
+
+import requests
+
 from PyQt5 import QtCore
-from obspy.clients import fdsn
 
 import RAMSIS.core.tools.hydws as hydws
 
-
-class ObsPyCatalogImporter:
-    """ Imports event data from an obspy catalog """
-
-    def __init__(self, catalog):
-        self.catalog = catalog
-
-    def __iter__(self):
-        """
-        Iterator for the importer. Parses events and returns the data in a
-        tuple.
-
-        The tuple contains the absolute date of the event and a dictionary
-        with the location and magnitude of the event.
-
-        """
-        for event in self.catalog:
-            origin = event.preferred_origin()
-            magnitude = event.preferred_magnitude()
-            if not (hasattr(origin, 'depth') and hasattr(magnitude, 'mag')):
-                continue
-
-            date = origin.time.datetime
-            row = {
-                'lat': origin.latitude,
-                'lon': origin.longitude,
-                'depth': origin.depth,
-                'mag': magnitude.mag
-            }
-            yield (date, row)
+from RAMSIS.config import FDSNWS_NOCONTENT_CODES
+from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.utils import (binary_request, pymap3d_transform_geodetic2ned,
+                             NoContent, RequestsError)
 
 
 class CsvEventImporter:
@@ -221,15 +197,22 @@ class FDSNWSDataSource(QtCore.QThread):
 
     """
 
+    DESERIALZER = QuakeMLCatalogDeserializer
+
     data_received = QtCore.pyqtSignal(object)
 
-    def __init__(self, url):
+    def __init__(self, url, proj=None, timeout=None):
         super(FDSNWSDataSource, self).__init__()
         self.url = url
+        self._timeout = None
         self._logger = logging.getLogger(__name__)
         self._args = {}
         self._logger.info('FDSN data source: {}'.format(url))
         self.enabled = False
+
+        self._deserializer = self.DESERIALZER(
+            proj=proj,
+            transform_callback=pymap3d_transform_geodetic2ned)
 
     def fetch(self, **kwargs):
         """
@@ -247,21 +230,23 @@ class FDSNWSDataSource(QtCore.QThread):
             self.start()
 
     def run(self):
-        client = fdsn.Client(self.url)
-        args = self._args
+        cat = None
+
+        self.logger.debug(
+            f"Request seismic catalog from fdsnws-event (url={self._url}, "
+            f"params={self._params}).")
         try:
-            catalog = client.get_events(**args)
-        except fdsn.header.FDSNException as e:
-            if 'No data available' in str(e):
-                self._logger.info('No data available between {} and {}'
-                                  .format(self._args['starttime'],
-                                          self._args['endtime']))
-            else:
-                self._logger.error('FDSNException: ' + str(e))
-            self.data_received.emit(None)
+            with binary_request(
+                requests.get, self._url, self._args, self._timeout,
+                    nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
+                cat = self._deserializer.load(ifd)
+
+        except NoContent:
+            self.logger.info('No data received.')
+        except RequestsError as err:
+            self.logger.error(f"Error while fetching data ({err}).")
         else:
-            result = {
-                'importer': ObsPyCatalogImporter(catalog),
-                'time_range': [args.get(a) for a in ['starttime', 'endtime']]
-            }
-            self.data_received.emit(result)
+            self.logger.info(
+                f"Received catalog with {len(self._cat)} events.")
+
+        self.data_received.emit(cat)

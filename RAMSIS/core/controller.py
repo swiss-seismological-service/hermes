@@ -252,7 +252,9 @@ class Controller(QtCore.QObject):
         self.project_data_changed.emit(hydraulics)
 
     def import_hydraulics_events(self, importer):
-        """ Import seismic events manually """
+        """
+        Import seismic events manually
+        """
         # TODO LH: re-add using io. Also, we need to think of a way to
         #   specify the well/wellsection instead of hardcoding it
         try:
@@ -446,13 +448,9 @@ class Controller(QtCore.QObject):
         #     self.hydraulics_data_source.data_received.connect(
         #         self._on_hydraulic_data_received)
 
-    def _on_seismic_data_received(self, result):
-        if result is not None:
-            tr = result['time_range']
-            importer = result['importer']
-            self.project.seismiccatalog.clear_events(tr)
-            self.project.seismiccatalog.import_events(importer)
-            self.project.store.commit()
+    def _on_seismic_data_received(self, cat):
+        if cat is not None:
+            self.project.seismiccatalog.merge(cat)
 
     def _on_hydraulic_data_received(self, result):
         if result is not None:
