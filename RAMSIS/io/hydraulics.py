@@ -164,11 +164,11 @@ class _HydraulicSampleSchema(_SchemaBase):
     fluidcomposition = fields.String()
 
     @pre_load
-    def flatten(self, data):
+    def flatten(self, data, **kwargs):
         return self._flatten_dict(data)
 
     @post_load
-    def make_object(self, data):
+    def make_object(self, data, **kwargs):
         if ('time' in self.context and
                 self.context['time'] in (self.EContext.PAST,
                                          self.EContext.FUTURE)):
@@ -176,7 +176,7 @@ class _HydraulicSampleSchema(_SchemaBase):
         return data
 
     @post_dump
-    def nest_fields(self, data):
+    def nest_fields(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -271,7 +271,7 @@ class _WellSectionSchema(_SchemaBase):
             many=True, context=self.context).load(value)
 
     @pre_load
-    def flatten(self, data):
+    def flatten(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -279,7 +279,7 @@ class _WellSectionSchema(_SchemaBase):
         return data
 
     @post_load
-    def load_postprocess(self, data):
+    def load_postprocess(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -289,7 +289,7 @@ class _WellSectionSchema(_SchemaBase):
         return data
 
     @post_dump
-    def dump_postprocess(self, data):
+    def dump_postprocess(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -299,7 +299,7 @@ class _WellSectionSchema(_SchemaBase):
         return data
 
     @validates_schema
-    def validate_sections(self, data):
+    def validate_sections(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] is self.EContext.PAST and
                 'hydraulics' in data and len(data['hydraulics']) < 1):
@@ -361,7 +361,7 @@ class _InjectionWellSchema(_SchemaBase):
     sections = fields.Nested(_WellSectionSchema, many=True)
 
     @pre_load
-    def flatten(self, data):
+    def flatten(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -369,14 +369,14 @@ class _InjectionWellSchema(_SchemaBase):
         return data
 
     @pre_load
-    def extract_section_with_samples(self, data):
+    def extract_section_with_samples(self, data, **kwargs):
         # FIXME(damb): This is a workaround
         data['sections'] = [s for s in data['sections']
                             if s.get('hydraulics')]
         return data
 
     @post_load
-    def make_object(self, data):
+    def make_object(self, data, **kwargs):
         if ('time' in self.context and
                 self.context['time'] in (self.EContext.PAST,
                                          self.EContext.FUTURE)):
@@ -384,7 +384,7 @@ class _InjectionWellSchema(_SchemaBase):
         return data
 
     @post_dump
-    def dump_postprocess(self, data):
+    def dump_postprocess(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -392,7 +392,7 @@ class _InjectionWellSchema(_SchemaBase):
         return data
 
     @validates_schema
-    def validate_sections(self, data):
+    def validate_sections(self, data, **kwargs):
         if len(data['sections']) != 1:
             raise ValidationError(
                 'InjectionWells are required to have a single section.')
