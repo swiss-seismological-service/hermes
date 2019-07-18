@@ -205,10 +205,10 @@ class FDSNWSDataSource(QtCore.QThread):
         super(FDSNWSDataSource, self).__init__()
         self.url = url
         self._timeout = None
-        self._logger = logging.getLogger(__name__)
+
         self._args = {}
-        self._logger.info('FDSN data source: {}'.format(url))
         self.enabled = False
+        self.logger = logging.getLogger(__name__)
 
         self._deserializer = self.DESERIALZER(
             proj=proj,
