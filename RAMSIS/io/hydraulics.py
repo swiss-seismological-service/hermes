@@ -254,10 +254,14 @@ class _WellSectionSchema(_SchemaBase):
     def _serialize_hydraulics(self, obj):
         serializer = _HydraulicSampleSchema(many=True, context=self.context)
         if 'time' in self.context:
-            if self.context['time'] is self.EContext.PAST:
+            if (self.context['time'] is self.EContext.PAST and
+                    obj.hydraulics is not None):
                 return serializer.dump(obj.hydraulics.samples)
-            elif self.context['time'] is self.EContext.FUTURE:
+            elif (self.context['time'] is self.EContext.FUTURE and
+                    obj.injectionplan is not None):
                 return serializer.dump(obj.injectionplan.samples)
+
+            return None
 
         raise HYDWSJSONIOError('Invalid context.')
 
