@@ -247,6 +247,6 @@ class FDSNWSDataSource(QtCore.QThread):
             self.logger.error(f"Error while fetching data ({err}).")
         else:
             self.logger.info(
-                f"Received catalog with {len(self._cat)} events.")
+                f"Received catalog with {len(cat)} events.")
 
         self.data_received.emit(cat)
