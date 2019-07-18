@@ -240,11 +240,12 @@ class FDSNWSDataSource(QtCore.QThread):
                 requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
                 cat = self._deserializer.load(ifd)
-
         except NoContent:
             self.logger.info('No data received.')
         except RequestsError as err:
             self.logger.error(f"Error while fetching data ({err}).")
+        except QuakeMLCatalogIOError as err:
+            self.logger.error(f"Error while deserializing data ({err}).")
         else:
             self.logger.info(
                 f"Received catalog with {len(cat)} events.")
