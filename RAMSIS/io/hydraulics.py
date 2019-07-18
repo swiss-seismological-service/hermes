@@ -465,8 +465,13 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
 
         :returns: Borehole ORM representation
         :rtype: :py:class:`ramsis.datamodel.well.InjectionWell`
+
+        :raises: :py:class:`HYDWSJSONIOError` if deserialization fails
         """
-        return _InjectionWellSchema(context=self._ctx).loads(data)
+        try:
+            return _InjectionWellSchema(context=self._ctx).loads(data)
+        except ValidationError as err:
+            raise HYDWSJSONIOError(err)
 
     def _loado(self, data):
         return _InjectionWellSchema(context=self._ctx).load(data)
