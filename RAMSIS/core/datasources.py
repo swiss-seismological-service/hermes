@@ -201,7 +201,7 @@ class FDSNWSDataSource(QtCore.QThread):
 
     data_received = QtCore.pyqtSignal(object)
 
-    def __init__(self, url, proj=None, timeout=None):
+    def __init__(self, url, timeout=None, proj=None):
         super(FDSNWSDataSource, self).__init__()
         self.url = url
         self._timeout = None
