@@ -41,10 +41,11 @@ import requests
 
 from PyQt5 import QtCore
 
-import RAMSIS.core.tools.hydws as hydws
-
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
-from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
+                                  HYDWSJSONIOError)
+from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
+                                QuakeMLCatalogIOError)
 from RAMSIS.io.utils import (binary_request, pymap3d_transform_geodetic2ned,
                              NoContent, RequestsError)
 
@@ -124,71 +125,59 @@ class CsvEventImporter:
             yield (date, row)
 
 
-class HYDWSCatalogImporter:
-    """ Imports hydraulic data from hydws event dicts """
-
-    def __init__(self, catalog):
-        self.catalog = catalog
-
-    def __iter__(self):
-        for event in self.catalog:
-            date = event['time']['value']
-            date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
-            row = {
-                'flow_dh': event['bottomHoleFlowRate']['value'],
-                'flow_xt': event['topHoleFlowRate']['value'],
-                'pr_dh': event['bottomHolePressure']['value'],
-                'pr_xt': event['topHolePressure']['value']
-            }
-            yield (date, row)
-
-
 class HYDWSDataSource(QtCore.QThread):
     """
-    Fetches hydraulic data from a web service in the background.
-
+    QThread fetching and deserializing data from *HYDWS*.
     """
+    DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
     data_received = QtCore.pyqtSignal(object)
 
-    def __init__(self, url):
-        super(HYDWSDataSource, self).__init__()
+    def __init__(self, url, timeout=None, proj=None):
+        super().__init__()
         self.url = url
-        self._logger = logging.getLogger(__name__)
+
         self._args = {}
-        self._logger.info('HYDWS data source: {}'.format(url))
         self.enabled = False
+        self.logger = logging.getLogger(__name__)
+
+        self._deserializer = self.DESERIALZER(
+            proj=proj,
+            transform_callback=pymap3d_transform_geodetic2ned)
 
     def fetch(self, **kwargs):
         """
-        Fetch data in the background
+        Fetch data by means of a background-thread
 
-        If kwargs contains starttime and endtime, these are returned together
-        with the results so that the receiver of the event knows which time
-        range was requested.
-
-        :param kwargs: args dict forwarded to the fdsnws client
-
+        :param kwargs: args dict forwarded to the HYDWS
         """
         self._args = kwargs
         if self.enabled:
             self.start()
 
     def run(self):
-        client = hydws.Client(self.url)
-        args = self._args
-        try:
-            data_set = client.get_events(**args)
-        except hydws.HYDWSException as e:
-            self._logger.error('HYDWSException: ' + str(e))
-            self.data_received.emit(None)
-            return
+        bh = None
 
-        result = {
-            'importer': HYDWSDataSource(data_set),
-            'time_range': [args.get(a) for a in ['starttime', 'endtime']]
-        }
-        self.data_received.emit(result)
+        self.logger.debug(
+            f"Request seismic catalog from fdsnws-event (url={self._url}, "
+            f"params={self._params}).")
+        try:
+            with binary_request(
+                requests.get, self.url, self._args, self._timeout,
+                    nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
+                bh = self._deserializer.load(ifd)
+
+        except NoContent:
+            self.logger.info('No data received.')
+        except RequestsError as err:
+            self.logger.error(f"Error while fetching data ({err}).")
+        except HYDWSJSONIOError as err:
+            self.logger.error(f"Error while deserializing data ({err}).")
+        else:
+            self.logger.info(
+                f"Received borehole data with {len(bh)} sections.")
+
+        self.data_received.emit(bh)
 
 
 class FDSNWSDataSource(QtCore.QThread):

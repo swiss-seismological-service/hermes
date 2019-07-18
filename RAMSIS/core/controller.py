@@ -455,10 +455,7 @@ class Controller(QtCore.QObject):
             self.project.seismiccatalog.merge(cat)
             self.store.save()
 
-    def _on_hydraulic_data_received(self, result):
-        if result is not None:
-            tr = result['time_range']
-            importer = result['importer']
-            self.project.injection_history.clear_events(tr)
-            self.project.injection_history.import_events(importer)
-            self.project.store.commit()
+    def _on_hydraulic_data_received(self, well):
+        if well is not None:
+            self.project.wells[0].merge(well)
+            self.store.save()
