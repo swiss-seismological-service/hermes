@@ -10,6 +10,8 @@ import functools
 
 from PyQt5.QtCore import QTimer, QObject
 
+from ramsis.utils.error import Error
+
 
 def rsetattr(obj, attr, val):
     """
@@ -53,6 +55,10 @@ def call_later(method, *args, **kwargs):
 
 class QtABCMeta(type(QObject), abc.ABCMeta):
     pass
+
+
+class RamsisError(Error):
+    """Base RAMSIS exception ({})."""
 
 
 class EStatus(enum.Enum):

@@ -7,5 +7,10 @@ RT-RAMSIS Business Logic
 The `core` package contains most of the business logic of RT-RAMSIS, i.e.
 everything that is not part of the :doc:`user interface <ui>` or
 :doc:`data model <data>`.
-
 """
+
+from RAMSIS.utils import RamsisError
+
+
+class CoreError(RamsisError):
+    """Base RAMSIS core exception ({})."""
