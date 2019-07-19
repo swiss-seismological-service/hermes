@@ -43,7 +43,7 @@ class _SeismicCatalogSchema(_SchemaBase):
     quakeml = fields.String(required=True)
 
     @pre_dump
-    def make_catalog(self, data):
+    def make_catalog(self, data, **kwargs):
         """
         Convert an instance of
         :py:class:`ramsis.datamodel.seismics.SeismicCatalog` into its `QuakeML
@@ -55,7 +55,7 @@ class _SeismicCatalogSchema(_SchemaBase):
         return data
 
     @post_dump
-    def b64encode(self, data):
+    def b64encode(self, data, **kwargs):
         """
         Encode the catalog using base64 encoding.
         """
@@ -84,7 +84,7 @@ class _ReservoirSchema(_SchemaBase):
     # sub_geometries = fields.Nested('self', many=True)
 
     @post_dump
-    def transform(self, data):
+    def transform(self, data, **kwargs):
         if (not self.context.get('proj') or
             'transform_callback' not in self.context or
                 'geom' not in data):
@@ -129,7 +129,7 @@ class _ScenarioSchema(_SchemaBase):
     well = fields.Dict(keys=fields.Str())
 
     @pre_dump
-    def serialize_well(self, data):
+    def serialize_well(self, data, **kwargs):
         if 'well' in data:
             serializer = HYDWSBoreholeHydraulicsSerializer(
                 plan=True,
@@ -164,7 +164,7 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
     model_parameters = fields.Dict(keys=fields.Str())
 
     @pre_dump
-    def serialize_well(self, data):
+    def serialize_well(self, data, **kwargs):
         if 'well' in data:
             serializer = HYDWSBoreholeHydraulicsSerializer(
                 plan=False,
@@ -179,7 +179,7 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
         return data
 
     @post_dump
-    def skip_missing(self, data):
+    def skip_missing(self, data, **kwargs):
         return self._clear_missing(data)
 
 

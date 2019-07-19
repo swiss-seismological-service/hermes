@@ -36,6 +36,7 @@ _install_requires = [
     "astropy>=2.0.3",
     "lxml>=3.3.3",
     "matplotlib",
+    "marshmallow==3.0.0rc8",
     # TODO (damb): check if valid version: "numpy==1.8.2",
     "numpy>=1.8.2",
     "obspy>=1.0.2",
@@ -43,6 +44,7 @@ _install_requires = [
     "PyQt5 >=5.12, <5.13",
     "pymap3d",
     "pyqtgraph==0.10.0",
+    "python-dateutil>=2.8.0",
     "ramsis.datamodel==0.3rc0", ]
 
 _extras_require = {'doc': [
