@@ -200,18 +200,6 @@ class Controller(QtCore.QObject):
 
     # Other user actions
 
-    def fetch_seismic_events(self):
-        """
-        Reload seismic catalog by fetching all events from the
-        seismic data source.
-
-        """
-        self._logger.info('Re-fetching seismic data from data source')
-        # TODO LH: re-add using io. A signal should be emitted when done
-        #   so we can update activity messages in the gui.
-        #self.seismics_data_source.fetch()
-        self.project_data_changed.emit(self.project.seismiccatalog)
-
     def import_seismic_events(self, importer):
         """ Import seismic events manually """
         # TODO LH: re-add using io and convert wgs84 to cartesian
@@ -237,19 +225,6 @@ class Controller(QtCore.QObject):
             self.project.seismiccatalog.events = events
             self.store.save()
         self.project_data_changed.emit(self.project.seismiccatalog)
-
-    def fetch_hydraulic_events(self):
-        """
-        Reload hydraulic history by fetching all events from the
-        hydraulic data source.
-
-        """
-        self._logger.info('Re-fetching hydraulic data from data source')
-        hydraulics = self.project.wells[0].sections[-1].hydraulics
-        # TODO LH: re-add using io. A signal should be emitted when done
-        #   so we can update activity messages in the gui.
-        #self.hydraulics_data_source.fetch()
-        self.project_data_changed.emit(hydraulics)
 
     def import_hydraulics_events(self, importer):
         """
