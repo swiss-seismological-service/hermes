@@ -24,7 +24,6 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
 from RAMSIS.core.builder import default_scenario, empty_forecast
 from RAMSIS.core.simulator import SimulatorState
 from RAMSIS.core.store import EditingContext
-from RAMSIS.core.datasources import CsvEventImporter
 from RAMSIS.ui.projectmanagementwindow import ProjectManagementWindow
 from RAMSIS.ui.settingswindow import (
     ApplicationSettingsWindow, ProjectSettingsWindow)
@@ -237,16 +236,18 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_actionImport_Seismic_Data_triggered')
     def action_import_seismic_data(self):
-        """ Import seismic data manually """
-        home = os.path.expanduser("~")
+        """
+        Import seismic data manually
+        """
         path = QFileDialog.getOpenFileName(None,
                                            'Open seismic data file',
-                                           home)
+                                           os.path.expanduser("~"))
+
         if not path or path[0] == '':
             return
+
         with open(path[0]) as ifd:
-            importer = _create_csv_importer_interactive(file)
-            self.app.ramsis_core.import_seismic_events(importer)
+            self.app.ramsis_core.import_seismic_catalog(ifd)
 
     @pyqtSlot(name='on_actionFetch_from_hydws_triggered')
     def action_fetch_hydraulic_data(self):
@@ -264,9 +265,8 @@ class MainWindow(QMainWindow):
                                            home)
         if not path or path[0] == '':
             return
-        with open(path[0]) as file:
-            importer = _create_csv_importer_interactive(file, delimiter='\t')
-            self.app.ramsis_core.import_hydraulic_events(importer)
+
+        # TODO(damb): To be implemented
 
     @pyqtSlot(name='on_actionDelete_Results_triggered')
     def action_delete_results(self):
@@ -467,15 +467,3 @@ class DateDialog(QDialog):
         result = dialog.exec_()
         date = dialog.date_time()
         return date.toPyDateTime(), result == QDialog.Accepted
-
-
-def _create_csv_importer_interactive(file, delimiter=','):
-    importer = CsvEventImporter(file, delimiter=delimiter)
-    if importer.expects_base_date:
-        date, accepted = DateDialog.get_date_time()
-        if not accepted:
-            return
-        importer.base_date = date
-    else:
-        importer.date_format = '%Y-%m-%dT%H:%M:%S'
-    return importer

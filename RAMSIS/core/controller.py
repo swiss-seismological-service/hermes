@@ -16,13 +16,16 @@ from operator import attrgetter
 from PyQt5 import QtCore
 from collections import namedtuple
 
-from ramsis.datamodel.seismics import SeismicEvent
 from ramsis.datamodel.hydraulics import HydraulicSample
+from RAMSIS.core import CoreError
 from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
+from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
+                                QuakeMLCatalogIOError)
+from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -200,30 +203,37 @@ class Controller(QtCore.QObject):
 
     # Other user actions
 
-    def import_seismic_events(self, importer):
-        """ Import seismic events manually """
-        # TODO LH: re-add using io and convert wgs84 to cartesian
+    def import_seismic_catalog(self, ifd, cat_format='quakeml', force=False):
+        """
+        Import a seismic catalog manually.
+
+        :param ifd: A :code:`read()` supporting file-like object
+        :param str cat_format: Data format of the seismic catalog. Currently
+            :code:`'quakeml'` only.
+        :param bool force: If :code:`True` overwrite the existing catalog.
+        """
+
+        if cat_format != 'quakeml':
+            raise ValueError(
+                f'Invalid catalog format specified: {cat_format!r}')
+
+        deserializer = QuakeMLCatalogDeserializer(
+            proj=self.project.spacialreference,
+            transform_callback=pymap3d_transform_geodetic2ned)
+
         try:
-            events = [SeismicEvent(datetime_value=date,
-                                   x_value=float(fields['lon']),
-                                   y_value=float(fields['lat']),
-                                   z_value=float(fields['depth']),
-                                   magnitude_value=float(fields['mag']),
-                                   quakeml=b'')
-                      for date, fields in importer]
-        except KeyError as e:
-            self._logger.error('Failed to import seismic events. Make sure '
-                               'the data contains lat, lon, depth, and mag '
-                               'fields and that the date field has the format '
-                               'dd.mm.yyyyTHH:MM:SS. The original error was ' +
-                               str(e))
+            cat = deserializer.load(ifd)
+        except QuakeMLCatalogIOError as err:
+            self.logger.error(
+                f'Error while importing seismic data: {err}')
+            raise CoreError(err)
+
+        if not force:
+            self.project.seismiccatalog.merge(cat)
         else:
-            # TODO LH: for some reason this is extremely slow when replacing
-            #   the collection directly. Seemingly spending a lot of time
-            #   in SeismicEvent.__eq__
-            self.project.seismiccatalog.events = []
-            self.project.seismiccatalog.events = events
-            self.store.save()
+            self.project.seismiccatalog = cat
+
+        self.store.save()
         self.project_data_changed.emit(self.project.seismiccatalog)
 
     def import_hydraulics_events(self, importer):
