@@ -266,7 +266,8 @@ class MainWindow(QMainWindow):
         if not path or path[0] == '':
             return
 
-        # TODO(damb): To be implemented
+        with open(path[0]) as ifd:
+            self.app.ramsis_core.import_hydraulics(ifd)
 
     @pyqtSlot(name='on_actionDelete_Results_triggered')
     def action_delete_results(self):

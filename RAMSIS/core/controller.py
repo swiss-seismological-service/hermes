@@ -16,13 +16,14 @@ from operator import attrgetter
 from PyQt5 import QtCore
 from collections import namedtuple
 
-from ramsis.datamodel.hydraulics import HydraulicSample
 from RAMSIS.core import CoreError
 from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
+from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
+                                  HYDWSJSONIOError)
 from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
                                 QuakeMLCatalogIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
@@ -236,33 +237,32 @@ class Controller(QtCore.QObject):
         self.store.save()
         self.project_data_changed.emit(self.project.seismiccatalog)
 
-    def import_hydraulics_events(self, importer):
+    def import_hydraulics(self, ifd, force=False):
         """
-        Import seismic events manually
+        Import borehole/hydraulics manually
+
+        :param ifd: A :code:`read()` supporting file-like object
+        :param bool force: If :code:`True` overwrite the existing
+            borehole/hydraulics.
         """
-        # TODO LH: re-add using io. Also, we need to think of a way to
-        #   specify the well/wellsection instead of hardcoding it
+        deserializer = HYDWSBoreholeHydraulicsDeserializer(
+            proj=self.project.spacialreference,
+            transform_callback=pymap3d_transform_geodetic2ned)
+
         try:
-            samples = [HydraulicSample(datetime_value=date,
-                                       bottomflow_value=float(
-                                           fields.get('flow_dh') or 0),
-                                       topflow_value=float(
-                                           fields.get('flow_xt') or 0),
-                                       bottompressure_value=float(
-                                           fields.get('pr_dh') or 0),
-                                       toppressure=float(
-                                           fields.get('pr_xt') or 0))
-                       for date, fields in importer]
-        except KeyError as e:
-            self._logger.error('Failed to import hydraulic events. Make sure '
-                               'the .csv file contains top and bottom hole '
-                               'flow and pressure fields and that the date '
-                               'field has the format dd.mm.yyyyTHH:MM:SS. The '
-                               'original error was ' + str(e))
+            bh = deserializer.load(ifd)
+        except HYDWSJSONIOError as err:
+            self.logger.error(
+                f'Error while importing hydraulic data: {err}')
+            raise CoreError(err)
+
+        if not force:
+            self.project.wells[0].merge(bh)
         else:
-            self.project.wells[0].sections[-1].hydraulics.samples = samples
-            self.store.save()
-        self.project_data_changed.emit(hydraulics)
+            self.project.wells[0] = bh
+
+        self.store.save()
+        self.project_data_changed.emit(bh)
 
     def reset_forecasts(self):
         """
