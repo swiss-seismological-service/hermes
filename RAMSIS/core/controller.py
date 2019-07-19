@@ -22,6 +22,7 @@ from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
+from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSJSONIOError)
 from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
@@ -392,48 +393,58 @@ class Controller(QtCore.QObject):
         self._update_data_sources()
 
     def _update_data_sources(self):
-        # TODO(damb): Read configuration from the DB.
+        if 'resources' in self.project.settings:
+            if 'fdsnwsEvent' in self.project.settings['resources']:
+                url = self.project.settings['fdsnwsEvent']['url']
+                enabled = self.project.settings['fdsnwsEvent']['enabled']
+                timeout = self.project.settings['fdsnwsEvent']['timeout']
 
-        pass
-        # TODO LH: reimplement once daniels services are integrated
-        # # Seismic
-        # new_url = self.project.settings['fdsnws_url']
-        # en = self.project.settings['fdsnws_enable']
-        # if new_url is None:
-        #     self.seismics_data_source = None
-        # elif self.seismics_data_source:
-        #     if self.seismics_data_source.url != new_url:
-        #         self.seismics_data_source.url = new_url
-        #         self._logger.info('Seismic data source changed to {}'
-        #                          .format(new_url))
-        #     if self.seismics_data_source.enabled != en:
-        #         self.seismics_data_source.enabled = en
-        #         self._logger.info('Seismic data source {}'
-        #                           .format('enabled' if en else 'disabled'))
-        # else:
-        #     self.seismics_data_source = FDSNWSDataSource(new_url)
-        #     self.seismics_data_source.enabled = en
-        #     self.seismics_data_source.data_received.connect(
-        #         self._on_seismic_data_received)
-        # # Hydraulic
-        # new_url = self.project.settings['hydws_url']
-        # en = self.project.settings['hydws_enable']
-        # if new_url is None:
-        #     self.hydraulics_data_source = None
-        # elif self.hydraulics_data_source:
-        #     if self.hydraulics_data_source.url != new_url:
-        #         self.hydraulics_data_source.url = new_url
-        #         self._logger.info('Hydraulic data source changed to {}'
-        #                           .format(new_url))
-        #     if self.hydraulics_data_source.enabled != en:
-        #         self.hydraulics_data_source.enabled = en
-        #         self._logger.info('Hydraulic data source {}'
-        #                           .format('enabled' if en else 'disabled'))
-        # else:
-        #     self.hydraulics_data_source = HYDWSDataSource(new_url)
-        #     self.hydraulics_data_source.enabled = en
-        #     self.hydraulics_data_source.data_received.connect(
-        #         self._on_hydraulic_data_received)
+                if url is None:
+                    self.seismics_data_source = None
+                elif self.seismics_data_source:
+                    if self.seismics_data_source.url != url:
+                        self.seismics_data_source.url = url
+                        self._logger.info(
+                            f'fdsnws-event changed to {url}.')
+                    if self.seismics_data_source.enabled != enabled:
+                        self.seismics_data_source.enabled = enabled
+                        self._logger.info(
+                            'fdsnws-event {}.'.format(
+                                'enabled' if enabled else 'disabled'))
+                else:
+                    self.seismics_data_source = FDSNWSDataSource(
+                        url, timeout=timeout,
+                        proj=self.project.spacialreference)
+                    self.seismics_data_source.enabled = enabled
+                    self.seismics_data_source.data_received.connect(
+                        self._on_seismic_data_received)
+
+            if 'hydws' in self.project.settings['resources']:
+                # XXX(damb): Borehole is specified in the hydws URL; for
+                # multiple boreholes add a list of borehole identifiers
+                url = self.project.settings['hydws']['url']
+                enabled = self.project.settings['hydws']['enabled']
+                timeout = self.project.settings['hydws']['timeout']
+
+                if url is None:
+                    self.hydraulics_data_source = None
+                elif self.hydraulics_data_source:
+                    if self.hydraulics_data_source.url != url:
+                        self.hydraulics_data_source.url = url
+                        self._logger.info(
+                            f'hydws changed to {url}.')
+                    if self.hydraulics_data_source.enabled != enabled:
+                        self.hydraulics_data_source.enabled = enabled
+                        self._logger.info(
+                            'hydws {}'.format(
+                                'enabled' if enabled else 'disabled'))
+                else:
+                    self.hydraulics_data_source = HYDWSDataSource(
+                        url, timeout=timeout,
+                        proj=self.project.spacialreference)
+                    self.hydraulics_data_source.enabled = enabled
+                    self.hydraulics_data_source.data_received.connect(
+                        self._on_hydraulic_data_received)
 
     def _on_seismic_data_received(self, cat):
         if cat is not None:
