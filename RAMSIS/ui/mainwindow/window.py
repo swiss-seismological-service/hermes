@@ -238,14 +238,13 @@ class MainWindow(QMainWindow):
     @pyqtSlot(name='on_actionImport_Seismic_Data_triggered')
     def action_import_seismic_data(self):
         """ Import seismic data manually """
-        # TODO LH: re-implement using io
         home = os.path.expanduser("~")
         path = QFileDialog.getOpenFileName(None,
                                            'Open seismic data file',
                                            home)
         if not path or path[0] == '':
             return
-        with open(path[0]) as file:
+        with open(path[0]) as ifd:
             importer = _create_csv_importer_interactive(file)
             self.app.ramsis_core.import_seismic_events(importer)
 
