@@ -1,35 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Provides tools to receive and import data
-
-All event importers must be implemented as iterators who yield one event
-per iteration in the form of (date, row) where date is a datetime object and
-row is a dictionary containing at least the fields
-
-    - date
-    - x
-    - y
-    - depth
-    - mag
-
-Hydraulic data importers are same but with the fields
-
-    - flow_dh
-    - flow_xt
-    - pr_dh
-    - pr_xt
-
-Data sources receive data from a web service or other data source in the
-background. The data is returned by firing a pyqtSignal with the payload
-
-    {'importer': importer, 'time_range': (start_time, end_time)}
-
-The importer will yield the imported events and the time_range contains the
-requested time_range as a tuple. The time_range tuple members can be None if no
-start or end time was specified.
-
-Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
-
+Data fetching facilities.
 """
 
 import csv
