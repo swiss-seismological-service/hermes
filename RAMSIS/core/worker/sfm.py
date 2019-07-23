@@ -372,7 +372,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 self.model, self.url))
         try:
             headers = {'Content-Type': self.MIMETYPE,
-                       'Accept': 'text/plain'}
+                       'Accept': 'application/json'}
             response = requests.post(self.url, data=_payload,
                                      headers=headers,
                                      timeout=self._timeout)
