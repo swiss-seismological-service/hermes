@@ -5,7 +5,6 @@ Utilities for SFM-Worker data import/export.
 
 import base64
 import functools
-import uuid
 
 from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
                          post_load, ValidationError, EXCLUDE)
@@ -25,20 +24,6 @@ gdal.UseExceptions()
 
 class SFMWIOError(_IOError):
     """Base SFMW de-/serialization error ({})."""
-
-
-class DataField(fields.Field):
-    def _serialize(self, value, attr, obj, **kwargs):
-        # TODO(damb): Currently, not implemented.
-        return value
-
-    def _deserialize(self, value, attr, data, **kwargs):
-        _uuid = list(value.keys())[0]
-
-        if 'status_code' in data and data['status_code'] != 200:
-            return {uuid.UUID(_uuid): str(value[_uuid])}
-        return {uuid.UUID(_uuid):
-                _ReservoirSchema(context=self.context).load(value[_uuid])}
 
 
 class _SchemaBase(Schema):
@@ -121,11 +106,11 @@ class _ModelResultSampleSchema(_SchemaBase):
     b_confidencelevel = Percentage()
 
     @pre_load
-    def flatten(self, data):
+    def flatten(self, data, **kwargs):
         return self._flatten_dict(data)
 
     @post_load
-    def make_object(self, data):
+    def make_object(self, data, **kwargs):
         if (self.context.get('format') == 'dict'):
             return data
         return SeismicityPredictionBin(**data)
@@ -156,7 +141,7 @@ class _ReservoirSchema(_SchemaBase):
         return data
 
     @post_load
-    def load_postprocess(self, data):
+    def load_postprocess(self, data, **kwargs):
         if (self.context.get('proj') and
                 'transform_callback' in self.context):
             data['geom'] = self._transform_wkt(data['geom'])
@@ -259,11 +244,54 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
         return self._clear_missing(data)
 
 
+class SFMWorkerResponseDataAttributesSchema(_SchemaBase):
+    """
+    Schema representation of the SFM worker response data attributes.
+    """
+    status = fields.Str()
+    status_code = fields.Int()
+    forecast = fields.Nested(_ReservoirSchema)
+    warning = fields.Str(missing='')
+
+    @post_dump
+    def clear_missing(self, data, **kwargs):
+        return self._clear_missing(data)
+
+
+class SFMWorkerResponseDataSchema(_SchemaBase):
+    """
+    Schema representation fo the SFM worker response data.
+    """
+    id = fields.UUID()
+    attributes = fields.Nested(SFMWorkerResponseDataAttributesSchema)
+
+    @post_dump
+    def clear_missing(self, data, **kwargs):
+        return self._clear_missing(data)
+
+
 class _SFMWorkerOMessageSchema(_SchemaBase):
-    status = fields.String()
-    status_code = fields.Integer()
-    warning = fields.String(missing=None, allow_none=True)
-    data = DataField()
+    data = fields.Method("_serialize_data", deserialize="_deserialize_data")
+
+    @post_dump
+    def clear_missing(self, data, **kwargs):
+        return self._clear_missing(data)
+
+    def _serialize_data(self, obj):
+        if 'data' in obj:
+            if isinstance(obj['data'], list):
+                return SFMWorkerResponseDataSchema(
+                    context=self.context, many=True).dump(obj['data'])
+
+            return SFMWorkerResponseDataSchema(
+                context=self.context).dump(obj['data'])
+
+    def _deserialize_data(self, value):
+        if isinstance(value, list):
+            return SFMWorkerResponseDataSchema(
+                context=self.context, many=True).load(value)
+
+        return SFMWorkerResponseDataSchema(context=self.context).load(value)
 
 
 class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
@@ -305,6 +333,7 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
 
         self._context = kwargs.get('context', {'format': 'orm'})
         self._many = kwargs.get('many', False)
+        self._partial = kwargs.get('partial', False)
 
     @property
     def _ctx(self):
@@ -327,7 +356,8 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
 
     def _loado(self, data):
         return _SFMWorkerOMessageSchema(
-            context=self._ctx, many=self._many).load(data)
+            context=self._ctx, many=self._many,
+            partial=self._partial).load(data)
 
 
 IOBase.register(SFMWorkerIMessageSerializer)

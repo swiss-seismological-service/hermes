@@ -3,7 +3,6 @@
 Seismicity forecast model (SFM) worker related facilities.
 """
 
-import collections
 import enum
 import uuid
 
@@ -16,6 +15,10 @@ from marshmallow import Schema, fields, validate
 
 from RAMSIS.core.worker import WorkerHandleBase
 from RAMSIS.io.sfm import SFMWorkerIMessageSerializer
+
+
+KEY_DATA = 'data'
+KEY_ATTRIBUTES = 'attributes'
 
 
 class StatusCode(enum.Enum):
@@ -100,19 +103,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         @classmethod
         def from_requests(cls, resp, deserializer=None):
             """
-            :param resp: *RT-RAMSIS* worker responses.
-            :type resp: list or :py:class:`requests.Response`
+            :param resp: SFM worker responses.
+            :type resp: list of :py:class:`requests.Response or
+                :py:class:`requests.Response`
             :param deserializer: Deserializer used
             :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
             """
-            def flatten(l):
-                for el in l:
-                    if (isinstance(el, collections.Iterable) and not
-                            isinstance(el, (str, bytes, dict))):
-                        yield from flatten(el)
-                    else:
-                        yield el
-
             def _json(resp):
                 """
                 Return a JSON encoded query result.
@@ -125,14 +121,30 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 except ValueError as err:
                     raise RemoteSeismicityWorkerHandle.DecodingError(err)
 
-                return list(flatten(resp_json))
+                return resp_json
+
+            def demux_data(resp):
+                """
+                Demultiplex the the responses' primary data. :code:`errors` and
+                :code:`meta` is ignored.
+                """
+                retval = []
+                for r in resp:
+                    if KEY_DATA in r:
+                        if isinstance(r[KEY_DATA], list):
+                            for d in r[KEY_DATA]:
+                                retval.append({KEY_DATA: d})
+                        else:
+                            retval.append({KEY_DATA: r[KEY_DATA]})
+
+                return retval
 
             if not isinstance(resp, list):
                 resp = [resp]
 
             if deserializer is None:
-                return cls(_json(resp))
-            return cls(deserializer._loado(_json(resp)))
+                return cls(demux_data(_json(resp)))
+            return cls(deserializer._loado(demux_data(_json(resp))))
 
         def filter_by(self, **kwargs):
             """
@@ -142,6 +154,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             Multiple criteria may be specified as comma separated; the effect
             is that they will be joined together using a logical :code:`and`.
             """
+
             # XXX(damb): Validate filter conditions
             try:
                 filter_conditions = FilterSchema().load(kwargs)
@@ -149,9 +162,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 raise RemoteSeismicityWorkerHandle.WorkerHandleError(err)
 
             retval = []
+
             for resp in self._resp:
                 if (resp is not None and
-                    all(resp[k] == v
+                    all(resp[KEY_DATA][KEY_ATTRIBUTES][k] == v
                         for k, v in filter_conditions.items())):
                     retval.append(resp)
 
@@ -179,6 +193,14 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 return None
 
             return self._resp[0]
+
+        @staticmethod
+        def _extract(obj):
+            return obj[KEY_DATA] if KEY_DATA in obj else []
+
+        @staticmethod
+        def _wrap(value):
+            return {KEY_DATA: value}
 
     class Payload(object):
         """

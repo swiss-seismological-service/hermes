@@ -35,6 +35,7 @@ from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
 from RAMSIS.core.worker import WorkerHandle, EWorkerHandle
+from RAMSIS.core.worker.sfm import KEY_DATA
 from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from RAMSIS.io.sfm import SFMWorkerOMessageDeserializer
@@ -481,7 +482,7 @@ class WorkerClientApp(object):
 
     def do_list(self, args):
         """
-        List tasks from a *RT-RAMSIS* worker.
+        List tasks from a SFM worker.
         """
         def fconds_as_dict(filter_conds):
             retval = {}
@@ -532,22 +533,26 @@ class WorkerClientApp(object):
 
         if self.args.quiet:
             for r in resp.filter_by(**filter_conditions).all():
-                print(list(r['data'].keys())[0])
+                if KEY_DATA in r:
+                    r = r[KEY_DATA]
+                print(r['id'])
         else:
             print('{:<40}{:<12}{:<20}{:<60} {:<20}'.format(
                   'TASK_ID', 'STATUS_CODE', 'STATUS', 'DATA', 'WARNING'))
             for r in resp.filter_by(**filter_conditions).all():
-                if 'warning' not in r:
-                    print(('{task_id!s:<40}{status_code:<12}{status:<20}'
-                           '{result:<60}').format(
-                        task_id=list(r['data'].keys())[0],
-                        result=str(list(r['data'].values())), **r))
-                    continue
+                if KEY_DATA in r:
+                    r = r[KEY_DATA]
+                    # XXX(damb): Add missing attribute fields, with
+                    # --deserialize missing fields are added on-the-fly
+                    if 'warning' not in r['attributes']:
+                        r['attributes']['warning'] = ''
 
-                print(('{task_id!s:<40}{status_code:<12}{status:<20}'
-                       '{result:<60} {warning!s:<20}').format(
-                    task_id=list(r['data'].keys())[0],
-                    result=str(list(r['data'].values())), **r))
+                    if 'forecast' not in r['attributes']:
+                        r['attributes']['forecast'] = None
+
+                    print(('{task_id!s:<40}{status_code:<12}{status:<20}'
+                           '{forecast!s:<60} {warning!s:<20}').format(
+                        task_id=r['id'], **r['attributes']))
 
     def do_remove(self, args):
         """
