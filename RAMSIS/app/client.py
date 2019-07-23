@@ -534,19 +534,18 @@ class WorkerClientApp(object):
             for r in resp.filter_by(**filter_conditions).all():
                 print(list(r['data'].keys())[0])
         else:
-            print('{:<40}{:<12}{:<20}{:<8}{:<60} {:<20}'.format(
-                  'TASK_ID', 'STATUS_CODE', 'STATUS', 'LENGTH', 'DATA',
-                  'WARNING'))
+            print('{:<40}{:<12}{:<20}{:<60} {:<20}'.format(
+                  'TASK_ID', 'STATUS_CODE', 'STATUS', 'DATA', 'WARNING'))
             for r in resp.filter_by(**filter_conditions).all():
                 if 'warning' not in r:
                     print(('{task_id!s:<40}{status_code:<12}{status:<20}'
-                           '{length:<8}{result:<60}').format(
+                           '{result:<60}').format(
                         task_id=list(r['data'].keys())[0],
                         result=str(list(r['data'].values())), **r))
                     continue
 
                 print(('{task_id!s:<40}{status_code:<12}{status:<20}'
-                       '{length:<8}{result:<60} {warning!s:<20}').format(
+                       '{result:<60} {warning!s:<20}').format(
                     task_id=list(r['data'].keys())[0],
                     result=str(list(r['data'].values())), **r))
 

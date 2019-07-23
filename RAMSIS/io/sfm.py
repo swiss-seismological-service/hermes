@@ -262,7 +262,6 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
 class _SFMWorkerOMessageSchema(_SchemaBase):
     status = fields.String()
     status_code = fields.Integer()
-    length = fields.Integer()
     warning = fields.String(missing=None, allow_none=True)
     data = DataField()
 
