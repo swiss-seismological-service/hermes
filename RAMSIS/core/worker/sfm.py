@@ -239,13 +239,16 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             :type serializer: :py:class:`marshmallow.Schema`
             """
             self._payload = {
-                'seismic_catalog': {'quakeml': seismic_catalog},
-                'well': well,
-                'scenario': scenario,
-                'reservoir': {'geom': reservoir}}
+                'data': {
+                    'attributes': {
+                        'seismic_catalog': {'quakeml': seismic_catalog},
+                        'well': well,
+                        'scenario': scenario,
+                        'reservoir': {'geom': reservoir}}}}
 
             if model_parameters is not None:
-                self._payload['model_parameters'] = model_parameters
+                self._payload['data']['attributes']['model_parameters'] = \
+                    model_parameters
 
             self._serializer = kwargs.get(
                 'serializer', self.DEFAULT_SERIALIZER)

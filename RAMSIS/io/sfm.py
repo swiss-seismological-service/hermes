@@ -205,9 +205,9 @@ class _ScenarioSchema(_SchemaBase):
         return data
 
 
-class _SFMWorkerIMessageSchema(_SchemaBase):
+class _SFMWorkerRunsAttributesSchema(_SchemaBase):
     """
-    Schema implementation for serializing input messages for seismicity
+    Schema implementation for serializing attributes for seismicity
     forecast model worker implementations.
 
     .. note::
@@ -242,6 +242,19 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
     @post_dump
     def skip_missing(self, data, **kwargs):
         return self._clear_missing(data)
+
+
+class _SFMWorkerRunsSchema(_SchemaBase):
+    type = fields.Str(default='runs')
+    attributes = fields.Nested(_SFMWorkerRunsAttributesSchema)
+
+
+class _SFMWorkerIMessageSchema(_SchemaBase):
+    """
+    Schema implementation for serializing input messages for seismicity
+    forecast model worker implementations.
+    """
+    data = fields.Nested(_SFMWorkerRunsSchema)
 
 
 class SFMWorkerResponseDataAttributesSchema(_SchemaBase):
