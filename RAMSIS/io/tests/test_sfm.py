@@ -53,7 +53,7 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         reference_catalog = base64.b64encode(
             reference_catalog).decode('utf-8')
 
-        reference_result = {
+        attributes = {
             'seismic_catalog': {
                 'quakeml': reference_catalog},
             'well': {
@@ -146,6 +146,11 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                '8.53214231158096 47.374794651327 '
                                '-591.843242307722)))')}}
 
+        reference_result = {
+            'data': {
+                'type': 'runs',
+                'attributes': attributes}}
+
         event_0 = _read(os.path.join(self.PATH_RESOURCES, 'e-00.qmlevent'))
         event_1 = _read(os.path.join(self.PATH_RESOURCES, 'e-01.qmlevent'))
         event_2 = _read(os.path.join(self.PATH_RESOURCES, 'e-02.qmlevent'))
@@ -223,11 +228,14 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         serializer = SFMWorkerIMessageSerializer(
             proj=proj, transform_callback=pymap3d_transform_ned2geodetic)
 
-        payload = {'seismic_catalog': {'quakeml': catalog},
-                   'well': bh,
-                   'scenario': {'well': bh_scenario},
-                   'reservoir': {'geom': reservoir},
-                   'model_parameters': {}}
+        payload = {
+            'data': {
+                'attributes': {
+                    'seismic_catalog': {'quakeml': catalog},
+                    'well': bh,
+                    'scenario': {'well': bh_scenario},
+                    'reservoir': {'geom': reservoir},
+                    'model_parameters': {}}}}
 
         self.assertEqual(reference_result,
                          json.loads(serializer.dumps(payload)))
@@ -239,7 +247,7 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         reference_catalog = base64.b64encode(
             reference_catalog).decode('utf-8')
 
-        reference_result = {
+        attributes = {
             'seismic_catalog': {
                 'quakeml': reference_catalog},
             'well': {
@@ -292,6 +300,11 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                '((2 2 2, 2 0 2, 0 0 2, 0 2 2, 2 2 2)),'
                                '((2 2 2, 2 0 2, 2 0 0, 2 2 0, 2 2 2)),'
                                '((2 2 2, 2 2 0, 0 2 0, 0 2 2, 2 2 2)))')}}
+
+        reference_result = {
+            'data': {
+                'type': 'runs',
+                'attributes': attributes}}
 
         event_0 = _read(os.path.join(self.PATH_RESOURCES, 'e-00.qmlevent'))
         event_1 = _read(os.path.join(self.PATH_RESOURCES, 'e-01.qmlevent'))
@@ -362,11 +375,14 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
 
         serializer = SFMWorkerIMessageSerializer(proj=None)
 
-        payload = {'seismic_catalog': {'quakeml': catalog},
-                   'well': bh,
-                   'scenario': {'well': bh_scenario},
-                   'reservoir': {'geom': reservoir},
-                   'model_parameters': {}}
+        payload = {
+            'data': {
+                'attributes': {
+                    'seismic_catalog': {'quakeml': catalog},
+                    'well': bh,
+                    'scenario': {'well': bh_scenario},
+                    'reservoir': {'geom': reservoir},
+                    'model_parameters': {}}}}
 
         self.assertEqual(reference_result,
                          json.loads(serializer.dumps(payload)))
@@ -385,13 +401,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                                        'omsg-500.json'))
 
         reference_result = {
-            'status_code': 500,
-            'status': 'WorkerError',
-            'length': 1,
-            'warning': 'Caught in default model exception handler.',
             'data': {
-                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'):
-                "KeyError: 'foo'"}}
+                'id': uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'),
+                'attributes': {
+                    'status_code': 500,
+                    'status': 'WorkerError',
+                    'warning': 'Caught in default model exception handler.'}}}
 
         proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
         deserializer = SFMWorkerOMessageDeserializer(
@@ -446,12 +461,13 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
             samples=[s0, ])
 
         reference_result = {
-            'status_code': 200,
-            'status': 'TaskCompleted',
-            'length': 1,
-            'warning': None,
             'data': {
-                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'): prediction}}
+                'id': uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'),
+                'attributes': {
+                    'status_code': 200,
+                    'status': 'TaskCompleted',
+                    'warning': '',
+                    'forecast': prediction}}}
 
         proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
         deserializer = SFMWorkerOMessageDeserializer(
@@ -482,12 +498,13 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
             samples=[s0, ])
 
         reference_result = {
-            'status_code': 200,
-            'status': 'TaskCompleted',
-            'length': 1,
-            'warning': None,
             'data': {
-                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'): prediction}}
+                'id': uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'),
+                'attributes': {
+                    'status_code': 200,
+                    'status': 'TaskCompleted',
+                    'warning': '',
+                    'forecast': prediction}}}
 
         deserializer = SFMWorkerOMessageDeserializer(proj=None)
 
@@ -516,12 +533,13 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
             samples=[s0, ])
 
         reference_result = {
-            'status_code': 200,
-            'status': 'TaskCompleted',
-            'length': 1,
-            'warning': None,
             'data': {
-                uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'): prediction}}
+                'id': uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'),
+                'attributes': {
+                    'status_code': 200,
+                    'status': 'TaskCompleted',
+                    'warning': '',
+                    'forecast': prediction}}}
 
         deserializer = SFMWorkerOMessageDeserializer(
             proj=None, context={'format': 'dict'})
