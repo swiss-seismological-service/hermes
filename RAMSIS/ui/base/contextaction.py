@@ -7,7 +7,8 @@ Copyright (C) 2018, SED (ETH Zurich)
 from PyQt5.QtWidgets import QAction, QMessageBox, QMenu
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
-from ui.base.roles import CustomRoles
+
+from RAMSIS.ui.base.roles import CustomRoles
 
 
 class ContextActionMixin:
