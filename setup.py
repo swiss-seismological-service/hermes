@@ -45,7 +45,8 @@ _install_requires = [
     "pymap3d",
     "pyqtgraph==0.10.0",
     "python-dateutil>=2.8.0",
-    "ramsis.datamodel==0.3rc0", ]
+    "ramsis.datamodel==0.3rc0",
+    "transitions==0.6.9", ]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",
