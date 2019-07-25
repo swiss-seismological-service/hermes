@@ -14,8 +14,7 @@ from .tabs import TabPresenter
 
 class SettingsTabPresenter(TabPresenter):
     """
-    Handles the Hazard tabs content
-
+    Present the *Configuration* tab content.
     """
 
     def __init__(self, ui):
