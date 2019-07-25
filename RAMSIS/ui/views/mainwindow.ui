@@ -149,7 +149,7 @@
           <enum>QTabWidget::Rounded</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <property name="elideMode">
           <enum>Qt::ElideRight</enum>
@@ -251,19 +251,12 @@
                </property>
                <layout class="QGridLayout" name="gridLayout_3">
                 <item row="1" column="2">
-                 <widget class="QRadioButton" name="radioButton">
+                 <widget class="QRadioButton" name="injectionStrategyRadioButton">
                   <property name="text">
-                   <string>Keep x-tree pressure constant</string>
+                   <string>Import from file</string>
                   </property>
                   <property name="checked">
                    <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="2">
-                 <widget class="QRadioButton" name="radioButton_2">
-                  <property name="text">
-                   <string>Use absolute pressure</string>
                   </property>
                  </widget>
                 </item>
@@ -276,22 +269,6 @@
                    <bool>true</bool>
                   </property>
                  </widget>
-                </item>
-                <item row="3" column="3">
-                 <widget class="QDoubleSpinBox" name="pressureSpinBox"/>
-                </item>
-                <item row="3" column="4">
-                 <spacer name="horizontalSpacer_3">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
                 </item>
                 <item row="0" column="2">
                  <widget class="QLabel" name="label_2">
@@ -313,17 +290,23 @@
                   </property>
                  </spacer>
                 </item>
-                <item row="4" column="2">
-                 <widget class="QRadioButton" name="radioButton_3">
-                  <property name="text">
-                   <string>Shut-In</string>
+                <item row="1" column="4">
+                 <spacer name="horizontalSpacer_3">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
                   </property>
-                 </widget>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
                 </item>
-                <item row="5" column="2">
-                 <widget class="QRadioButton" name="radioButton_4">
+                <item row="1" column="3">
+                 <widget class="QPushButton" name="pushButton">
                   <property name="text">
-                   <string>Bleed-Off</string>
+                   <string>Open</string>
                   </property>
                  </widget>
                 </item>
@@ -861,7 +844,7 @@ color:white;
      <x>0</x>
      <y>0</y>
      <width>1300</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
