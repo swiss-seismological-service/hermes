@@ -14,7 +14,7 @@ class SettingsTabPresenter(TabPresenter):
     """
 
     def __init__(self, ui):
-        super(SettingsTabPresenter, self).__init__(ui)
+        super().__init__(ui)
         self.config_map = {
             self.ui.fcStageEnable: 'run_is_forecast',
             self.ui.hazardStageEnable: 'run_hazard',
