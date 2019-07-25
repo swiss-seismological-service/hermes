@@ -1,14 +1,10 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
-
-Long Description
-    
-Copyright (C) 2015, SED (ETH Zurich)
-
+Configuration tab related GUI facilities.
 """
 
 from PyQt5.QtCore import Qt
+
 from .tabs import TabPresenter
 
 
@@ -45,5 +41,3 @@ class SettingsTabPresenter(TabPresenter):
         self.scenario.config[key] = True if state == Qt.Checked else False
         self.scenario.scenario_changed.emit(self.scenario.config)
         self.scenario.project.save()
-
-
