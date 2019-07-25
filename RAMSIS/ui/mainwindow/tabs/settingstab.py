@@ -10,7 +10,7 @@ from .tabs import TabPresenter
 
 class SettingsTabPresenter(TabPresenter):
     """
-    Present the *Configuration* tab content.
+    Present the main window's *Configuration* tab content. 
     """
 
     def __init__(self, ui):
