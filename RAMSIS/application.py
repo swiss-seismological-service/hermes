@@ -21,11 +21,9 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QStandardPaths
 from PyQt5.QtWidgets import QApplication
 
+from RAMSIS import __version__
 from RAMSIS.ui.ramsisgui import RamsisGui
 from RAMSIS.core.controller import Controller, LaunchMode
-
-
-VERSION = '0.1 "Bug Infested Alpha"'
 
 
 class AppSettings:
@@ -106,7 +104,7 @@ class Application(QtCore.QObject):
         self.thread().setObjectName('Main')
         # Setup the logger
         self.logger = logging.getLogger(__name__)
-        self.logger.info('Launching RAMSIS v' + VERSION)
+        self.logger.info('Launching RAMSIS v' + __version__)
         # Instantiate the appropriate Qt app object
         self.has_gui = not args.no_gui
         if self.has_gui:
@@ -116,7 +114,7 @@ class Application(QtCore.QObject):
         # Register some general app information
         self.qt_app.setApplicationName('Ramsis')
         self.qt_app.setOrganizationDomain('seismo.ethz.ch')
-        self.qt_app.setApplicationVersion(VERSION)
+        self.qt_app.setApplicationVersion(__version__)
         self.qt_app.setOrganizationName('SED')
         # Load application settings
         locations = QStandardPaths.\
