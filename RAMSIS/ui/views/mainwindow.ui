@@ -322,16 +322,6 @@
                 <bool>false</bool>
                </property>
                <layout class="QGridLayout" name="gridLayout_4">
-                <item row="1" column="0">
-                 <widget class="QCheckBox" name="checkBox_2">
-                  <property name="text">
-                   <string>Use Forecast Stage results as input</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
                 <item row="0" column="0">
                  <widget class="QCheckBox" name="hazardStageEnable">
                   <property name="text">
@@ -354,16 +344,6 @@
                 <bool>false</bool>
                </property>
                <layout class="QGridLayout" name="gridLayout_8">
-                <item row="1" column="0">
-                 <widget class="QCheckBox" name="checkBox_3">
-                  <property name="text">
-                   <string>Use Hazard Stage results as input</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
                 <item row="0" column="0">
                  <widget class="QCheckBox" name="riskStageEnable">
                   <property name="text">
