@@ -31,6 +31,7 @@ from RAMSIS.ui.simulationwindow import SimulationWindow
 from RAMSIS.ui.reservoirwindow import ReservoirWindow
 from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
+from RAMSIS.ui.dialog import ForecastConfigDialog
 
 from .presenter import ContentPresenter
 from .viewmodels.seismicdatamodel import SeismicDataModel
@@ -173,8 +174,12 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_planNextButton_clicked')
     def on_plan_next_forecast_clicked(self):
-        forecast = self.app.ramsis_core.create_next_future_forecast()
-        self.content_presenter.add_forecast(forecast)
+        config_dialog = ForecastConfigDialog()
+        config_dialog.exec_()
+
+        fc = self.app.ramsis_core.create_forecast(
+            **config_dialog.data)
+        self.content_presenter.add_forecast(fc)
 
     @pyqtSlot(name='on_actionApplication_Settings_triggered')
     def show_application_settings(self):

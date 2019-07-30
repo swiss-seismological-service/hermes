@@ -13,14 +13,15 @@ from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
 
+from ramsis.datamodel.forecast import Forecast
+from ramsis.datamodel.seismics import SeismicEvent
+from ramsis.datamodel.hydraulics import HydraulicSample
+from RAMSIS.core.builder import empty_forecast
 from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
-from ramsis.datamodel.forecast import Forecast
-from ramsis.datamodel.seismics import SeismicEvent
-from ramsis.datamodel.hydraulics import HydraulicSample
 
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -375,6 +376,22 @@ class Controller(QtCore.QObject):
             self.connect(db_url)
 
     # Forecast handling
+
+    def create_forecast(self, starttime=None, endtime=None, name=None):
+        """
+        Create a forecast and add it to the project.
+
+        :param starttime: Forecast starttime
+        :type starttime: :py:class:`datetime.datetime`
+        :param endtime: Forecast endtime
+        :type endtime: :py:class:`datetime.datetime`
+        """
+        fc = empty_forecast(starttime, endtime,
+                            name='RAMSIS Forecast' if name is None else name)
+        self.project.forecasts.append(fc)
+        self.store.save()
+        self.project_data_changed.emit(self.project.forecasts)
+        return fc
 
     def create_next_future_forecast(self):
         """ Adds the next regular forecast to the list of future forecasts """

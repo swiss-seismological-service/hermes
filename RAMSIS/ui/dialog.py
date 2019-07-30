@@ -7,12 +7,66 @@ import collections
 import json
 import logging
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, QDateTime
 from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox
 from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
+
+
+class ScenarioConfigDialog(
+        QDialog, UiForm('scenarioconfigdialog.ui')):
+    """
+    UI dialog for scenario configuration.
+    """
+    pass
+
+
+class ForecastConfigDialog(
+        QDialog, UiForm('forecastconfigdialog.ui')):
+    """
+    UI dialog for forecast configuration.
+    """
+    RetVal = collections.namedtuple(
+        'Retval', ['name', 'starttime', 'endtime'])
+
+    def __init__(self, *args, min_datetime=None, **kwargs):
+        """
+        :param min_datetime: Minimum datetime for edit fields
+        :type min_datetime: :py:class:`datetime.datetime`
+        """
+        super().__init__(*args, **kwargs)
+        if min_datetime:
+            q_dt = QDateTime()
+            q_dt.setTime_t(min_datetime.timestamp())
+            self.ui.starttimeDateTimeEdit.setMinimumDateTime(q_dt)
+            self.ui.endtimeDateTimeEdit.setMinimumDateTime(q_dt)
+
+        self._data = None
+
+    @property
+    def data(self):
+        return self._data._asdict()
+
+    def _on_accept(self):
+        start = self.ui.starttimeDateTimeEdit.dateTime()
+        end = self.ui.endtimeDateTimeEdit.dateTime()
+
+        # validate
+        if end <= start:
+            _ = QMessageBox.critical(
+                self, 'RAMSIS',
+                'Endtime must be greater than starttime.',
+                buttons=QMessageBox.Close)
+
+        self._data = self.RetVal(name=self.ui.nameLineEdit.text(),
+                                 starttime=start.toPyDateTime(),
+                                 endtime=end.toPyDateTime())
+
+    def accept(self):
+        self._on_accept()
+        super().accept()
 
 
 class ImportInjectionStrategyFromFileDialog(
