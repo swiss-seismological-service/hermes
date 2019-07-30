@@ -5,8 +5,22 @@ Various utility functions
 """
 import abc
 import functools
-from PyQt5.QtCore import QTimer, QObject
+from PyQt5.QtCore import QTimer, QObject, QDateTime
 from sqlalchemy import event
+
+
+def datetime_to_qdatetime(dt):
+    """
+    Convert a :py:class:`datetime.datetime` object into a corresponding
+    :py:class:`PyQt5.QtCore.QDateTime` object.
+
+    :param dt: Datetime to be converted
+    :type dt: :py:class:`datetime.datetime`
+    
+    :rtype: :py:class:`PyQt5.QtCore.QDateTime`
+    """
+    return QDateTime.fromMSecsSinceEpoch(int(dt.timestamp() * 1000))
+
 
 def rsetattr(obj, attr, val):
     """

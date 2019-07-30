@@ -175,6 +175,21 @@ class Controller(QtCore.QObject):
         self.project_will_unload.emit()
         self.project = None
 
+    def update_project(self, obj, mapping={}):
+        """
+        Update an project's object from a mapping.
+
+        :param obj: Object to be updated
+        :param dict mapping: Mapping to be used to update the object's values
+        """
+        for k, v in mapping.items():
+            attr = getattr(obj, k, None)
+            if attr and attr != v:
+                setattr(obj, k, v)
+
+        self.store.save()
+        self.project_data_changed.emit(obj)
+
     # Other user actions
 
     def fetch_seismic_events(self):

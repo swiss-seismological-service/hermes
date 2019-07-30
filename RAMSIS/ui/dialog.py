@@ -7,12 +7,13 @@ import collections
 import json
 import logging
 
-from PyQt5.QtCore import pyqtSlot, QDateTime
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox
 from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
+from RAMSIS.utils import datetime_to_qdatetime
 
 
 class ScenarioConfigDialog(
@@ -37,17 +38,40 @@ class ForecastConfigDialog(
         :type min_datetime: :py:class:`datetime.datetime`
         """
         super().__init__(*args, **kwargs)
+
         if min_datetime:
-            q_dt = QDateTime()
-            q_dt.setTime_t(min_datetime.timestamp())
+            q_dt = datetime_to_qdatetime(min_datetime)
             self.ui.starttimeDateTimeEdit.setMinimumDateTime(q_dt)
             self.ui.endtimeDateTimeEdit.setMinimumDateTime(q_dt)
 
         self._data = None
 
+    @classmethod
+    def from_forecast(cls, forecast):
+        """
+        Create a dialog from a forecast.
+
+        :param forecast: Forecast to preconfigure the dialog from
+        :type forecast: :py:class:`ramsis.datamodel.forecast.Forecast`
+        """
+        dialog = cls()
+
+        if forecast.name is not None:
+            dialog.ui.nameLineEdit.setText(forecast.name)
+
+        dialog.ui.starttimeDateTimeEdit.setDateTime(
+            datetime_to_qdatetime(forecast.starttime))
+        dialog.ui.endtimeDateTimeEdit.setDateTime(
+            datetime_to_qdatetime(forecast.endtime))
+
+        return dialog
+
     @property
     def data(self):
-        return self._data._asdict()
+        try:
+            return self._data._asdict()
+        except AttributeError:
+            return None
 
     def _on_accept(self):
         start = self.ui.starttimeDateTimeEdit.dateTime()
