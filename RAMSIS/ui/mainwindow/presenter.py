@@ -11,7 +11,7 @@ for individual window elements.
 from datetime import datetime
 
 from .tabs import ModelTabPresenter, HazardTabPresenter, \
-    GeneralTabPresenter, SettingsTabPresenter
+    GeneralTabPresenter
 from .timeline import TimeLinePresenter
 
 from ramsis.datamodel.forecast import Forecast, ForecastScenario
@@ -64,7 +64,7 @@ class ContentPresenter(object):
 
         # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter,
-                       GeneralTabPresenter, SettingsTabPresenter]
+                       GeneralTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 

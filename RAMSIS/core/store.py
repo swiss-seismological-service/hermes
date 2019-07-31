@@ -133,6 +133,9 @@ class Store:
             models = models.filter(Model._type == model_type)
         return models.all()
 
+    def load_models_by(self, with_polymorphic, **kwargs):
+        return self.session.query(with_polymorphic).filter_by(**kwargs).all()
+
     def delete(self, obj):
         """ Delete any object from the store """
         self.session.delete(obj)

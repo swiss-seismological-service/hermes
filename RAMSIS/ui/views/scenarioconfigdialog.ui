@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>scenarioConfigDialog</class>
+ <widget class="QDialog" name="scenarioConfigDialog">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>411</width>
+    <height>567</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Scenario Configuration</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_5">
+   <item>
+    <widget class="QTabWidget" name="generalScenarioTab">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="tabShape">
+      <enum>QTabWidget::Rounded</enum>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>General</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QCheckBox" name="scenarioEnable">
+         <property name="text">
+          <string>Enable</string>
+         </property>
+        </widget>
+       </item>
+       <item alignment="Qt::AlignTop">
+        <widget class="QWidget" name="widget_2" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Name:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="nameLineEdit"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item alignment="Qt::AlignTop">
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Reservoir</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Geometry (WKT):</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPlainTextEdit" name="reservoirGeometryPlainTextEdit"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item alignment="Qt::AlignTop">
+        <widget class="QGroupBox" name="groupBox">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="title">
+          <string>Injection Strategy</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QRadioButton" name="injectionStrategyRadioButton1">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Import from file</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="injectionStrategyImportFromFilePushButton">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Import ...</string>
+            </property>
+            <property name="checkable">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="seismicityStageTab">
+      <attribute name="title">
+       <string>Seismicity Stage</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
+       <item>
+        <widget class="QCheckBox" name="seismicityStageEnable">
+         <property name="text">
+          <string>Enable</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Seismicity models</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QComboBox" name="seismicityModelsComboBox"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="modelEnableCheckBox">
+            <property name="text">
+             <string>Enable Model</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Model Configuration (JSON):</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPlainTextEdit" name="modelPlainTextEdit"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="hazardStageTab">
+      <attribute name="title">
+       <string>Hazard Stage</string>
+      </attribute>
+      <widget class="QCheckBox" name="hazardStageEnable">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>359</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Enable</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="riskStageTab">
+      <attribute name="title">
+       <string>Risk Stage</string>
+      </attribute>
+      <widget class="QCheckBox" name="riskStageEnable">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>359</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Enable</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>scenarioConfigDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>545</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>205</x>
+     <y>283</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>scenarioConfigDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>545</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>205</x>
+     <y>283</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

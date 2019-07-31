@@ -20,10 +20,10 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
     QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView, \
     QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout
 
+from RAMSIS.core.builder import default_scenario
 from RAMSIS.core.store import EditingContext
 from RAMSIS.core.simulator import SimulatorState
 from RAMSIS.core.datasources import CsvEventImporter
-
 from RAMSIS.ui.projectmanagementwindow import ProjectManagementWindow
 from RAMSIS.ui.settingswindow import (
     ApplicationSettingsWindow, ProjectSettingsWindow)
@@ -31,11 +31,10 @@ from RAMSIS.ui.simulationwindow import SimulationWindow
 from RAMSIS.ui.reservoirwindow import ReservoirWindow
 from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
-from RAMSIS.ui.dialog import ForecastConfigDialog
+from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 
 from .presenter import ContentPresenter
 from .viewmodels.seismicdatamodel import SeismicDataModel
-from ramsis.datamodel.forecast import ForecastScenario
 
 
 ui_path = os.path.dirname(__file__)
@@ -146,21 +145,34 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_addScenarioButton_clicked')
     def on_add_scenario_clicked(self):
-        fc_selection = self.ui.forecastTreeView.selectionModel()
-        idx = fc_selection.currentIndex()
+        selection_model = self.ui.forecastTreeView.selectionModel()
+        idx = selection_model.currentIndex()
+
+        if not idx.isValid():
+            _ = QMessageBox.critical(
+                self, 'RAMSIS', 'No forecast/scenario item selected.',
+                buttons=QMessageBox.Close)
+            return
+
+        # check if child was selected
         if idx.parent().isValid():
-            forecast_idx = idx.parent().row()
-        else:
-            forecast_idx = idx.row()
-        try:
-            forecast_set = self.content_presenter.fc_tree_model.forecast_set
-            forecast = forecast_set.forecasts[forecast_idx]
-            scenario = ForecastScenario()
-            scenario.name = 'new scenario'
-            forecast.add_scenario(scenario)
-            self.app.ramsis_core.project.store.commit()
-        except IndexError as e:
-            raise e
+            idx = idx.parent()
+
+        fc = self.content_presenter.fc_tree_model.project.forecasts[idx.row()]
+
+        dlg = ScenarioConfigDialog(
+            default_scenario(self.app.ramsis_core.store))
+        dlg.exec_()
+
+        scenario = dlg.data
+        if scenario is not None:
+            self.logger.debug(f"Dialog data: {dlg.data!r}")
+            fc.append(scenario)
+            self.app.ramsis_core.store.save()
+
+            self.logger.info(
+                f'Created new scenario {scenario!r} for forecast {fc!r}.')
+            self.content_presenter.fc_tree_model.add_scenario(idx, scenario)
 
     @pyqtSlot(name='on_removeScenarioButton_clicked')
     def on_remove_scenario_clicked(self):
@@ -174,7 +186,8 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_planNextButton_clicked')
     def on_plan_next_forecast_clicked(self):
-        config_dialog = ForecastConfigDialog()
+        config_dialog = ForecastConfigDialog(
+            min_datetime=self.app.ramsis_core.project.starttime)
         config_dialog.exec_()
 
         fc = self.app.ramsis_core.create_forecast(
