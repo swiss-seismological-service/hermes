@@ -201,53 +201,6 @@ class MainWindow(QMainWindow):
         window.show()
         self.app.gui.manage_window(window)
 
-    def _open_project_at_path(self, path):
-        if path is None:
-            return
-        if self.app.ramsis_core.project is not None:
-            self.app.ramsis_core.close_project()
-        self.app.ramsis_core.open_project(str(path))
-        # Update the list of recent files
-        recent_files = self.application_settings.value('recent_files')
-        if recent_files is None:
-            recent_files = []
-        if path in recent_files:
-            recent_files.insert(0,
-                                recent_files.pop(recent_files.index(path)))
-        else:
-            recent_files.insert(0, path)
-        del recent_files[4:]
-        self.application_settings.set_value('recent_files', recent_files)
-        self._refresh_recent_files_menu()
-
-    def _refresh_recent_files_menu(self):
-        files = self.application_settings.value('recent_files')
-        self.ui.menuOpen_Recent.clear()
-        if files is None:
-            return
-        for path in files:
-            path = str(path)
-            file_name = os.path.basename(path)
-            file_action = QAction(file_name, self)
-            file_action.setData(path)
-            file_action.triggered.connect(self.action_open_recent)
-            self.ui.menuOpen_Recent.addAction(file_action)
-
-    def action_open_recent(self):
-        sender_action = self.sender()
-        path = str(sender_action.data())
-        self._open_project_at_path(path)
-
-    def action_new_project(self):
-        home = os.path.expanduser("~")
-        path = QFileDialog. \
-            getSaveFileName(None, 'New Project', home,
-                            'Ramsis Project Files (*.db)')
-        if not path.endswith('.db'):
-            path += '.db'
-        self.app.ramsis_core.create_project(path)
-        self._open_project_at_path(path)
-
     def action_fetch_seismic_data(self):
         self.status_bar.show_activity('Fetching seismic data...',
                                       id='fdsn_fetch')
