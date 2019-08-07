@@ -130,43 +130,7 @@ class MainWindow(QMainWindow):
         self.content_presenter = ContentPresenter(self.app.ramsis_core,
                                                   self.ui)
 
-        # Hook up signals
-        # TODO: change these below to autoconnect
-        # ...Data
-        self.ui.actionFetch_from_fdsnws.triggered.connect(
-            self.action_fetch_seismic_data)
-        self.ui.actionFetch_from_hydws.triggered.connect(
-            self.action_fetch_hydraulic_data)
-        self.ui.actionImport_Seismic_Data.triggered.connect(
-            self.action_import_seismic_data)
-        self.ui.actionImport_Hydraulic_Data.triggered.connect(
-            self.action_import_hydraulic_data)
-        self.ui.actionView_Data.triggered.\
-            connect(self.action_view_seismic_data)
-        self.ui.actionDelete_Results.triggered.connect(
-            self.action_delete_results)
-        # ...Forecast planning
-        self.ui.addScenarioButton.clicked.connect(
-            self.on_add_scenario_clicked)
-        self.ui.removeScenarioButton.clicked.connect(
-            self.on_remove_scenario_clicked)
-        self.ui.planNextButton.clicked.connect(
-            self.on_plan_next_forecast_clicked
-        )
-        # ...Simulation
-        self.ui.actionStart_Simulation.triggered.\
-            connect(self.action_start_simulation)
-        self.ui.actionPause_Simulation.triggered.\
-            connect(self.action_pause_simulation)
-        self.ui.actionStop_Simulation.triggered.\
-            connect(self.action_stop_simulation)
-        # ...Window
-        self.ui.actionShow_3D.triggered.connect(self.action_show_3d)
-        self.ui.actionSimulation.triggered.\
-            connect(self.action_show_sim_controls)
-
-        # Connect essential signals
-        # ... from the core
+        # Connect essential signals from the core
         app.app_launched.connect(self.on_app_launch)
         app.ramsis_core.store_changed.connect(self.on_store_changed)
         app.ramsis_core.project_loaded.connect(self.on_project_loaded)
@@ -176,9 +140,40 @@ class MainWindow(QMainWindow):
             connect(self.on_sim_state_change)
         app.ramsis_core.clock.time_changed.connect(self.on_time_changed)
 
-    # Menu Actions
+    # UI signals
 
-    # TODO LH: use pyqtSlot decorator to annotate and auto-connect all actions
+    @pyqtSlot(name='on_addScenarioButton_clicked')
+    def on_add_scenario_clicked(self):
+        fc_selection = self.ui.forecastTreeView.selectionModel()
+        idx = fc_selection.currentIndex()
+        if idx.parent().isValid():
+            forecast_idx = idx.parent().row()
+        else:
+            forecast_idx = idx.row()
+        try:
+            forecast_set = self.content_presenter.fc_tree_model.forecast_set
+            forecast = forecast_set.forecasts[forecast_idx]
+            scenario = ForecastScenario()
+            scenario.name = 'new scenario'
+            forecast.add_scenario(scenario)
+            self.app.ramsis_core.project.store.commit()
+        except IndexError as e:
+            raise e
+
+    @pyqtSlot(name='on_removeScenarioButton_clicked')
+    def on_remove_scenario_clicked(self):
+        fc_selection = self.ui.forecastTreeView.selectionModel()
+        idx = fc_selection.currentIndex()
+        if not idx.parent().isValid():
+            return
+        scenario = idx.data(role=CustomRoles.RepresentedItemRole)
+        scenario.forecast.scenarios.remove(scenario)
+        self.app.ramsis_core.store.save()
+
+    @pyqtSlot(name='on_planNextButton_clicked')
+    def on_plan_next_forecast_clicked(self):
+        forecast = self.app.ramsis_core.create_next_future_forecast()
+        self.content_presenter.add_forecast(forecast)
 
     @pyqtSlot(name='on_actionApplication_Settings_triggered')
     def show_application_settings(self):
@@ -201,11 +196,13 @@ class MainWindow(QMainWindow):
         window.show()
         self.app.gui.manage_window(window)
 
+    @pyqtSlot(name='on_actionFetch_from_fdsnws_triggered')
     def action_fetch_seismic_data(self):
         self.status_bar.show_activity('Fetching seismic data...',
                                       id='fdsn_fetch')
         self.app.ramsis_core.fetch_seismic_events()
 
+    @pyqtSlot(name='on_actionImport_Seismic_Data_triggered')
     def action_import_seismic_data(self):
         """ Import seismic data manually """
         # TODO LH: re-implement using io
@@ -219,11 +216,13 @@ class MainWindow(QMainWindow):
             importer = _create_csv_importer_interactive(file)
             self.app.ramsis_core.import_seismic_events(importer)
 
+    @pyqtSlot(name='on_actionFetch_from_hydws_triggered')
     def action_fetch_hydraulic_data(self):
         self.status_bar.show_activity('Fetching hydraulic data...',
                                       id='hydws_fetch')
         self.app.ramsis_core.fetch_hydraulic_events()
 
+    @pyqtSlot(name='on_actionImport_Hydraulic_Data_triggered')
     def action_import_hydraulic_data(self):
         """ Import hydraulic data manually """
         # TODO LH: re-implement using io.
@@ -237,6 +236,7 @@ class MainWindow(QMainWindow):
             importer = _create_csv_importer_interactive(file, delimiter='\t')
             self.app.ramsis_core.import_hydraulic_events(importer)
 
+    @pyqtSlot(name='on_actionDelete_Results_triggered')
     def action_delete_results(self):
         reply = QMessageBox.question(
             self,
@@ -248,17 +248,20 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             self.app.ramsis_core.reset_forecasts()
 
+    @pyqtSlot(name='on_actionSimulation_triggered')
     def action_show_sim_controls(self):
         if self.simulation_window is None:
             self.simulation_window = \
                 SimulationWindow(ramsis_core=self.app.ramsis_core, parent=self)
         self.simulation_window.show()
 
+    @pyqtSlot(name='on_actionShow_3D_triggered')
     def action_show_3d(self):
         self.reservoir_window = ReservoirWindow(self.app.ramsis_core)
         self.reservoir_window.show()
         self.reservoir_window.draw_catalog()
 
+    @pyqtSlot(name='on_actionView_Data_triggered')
     def action_view_seismic_data(self):
         if self.table_view is None:
             self.table_view = QTableView()
@@ -269,14 +272,17 @@ class MainWindow(QMainWindow):
 
     # ... Simulation
 
+    @pyqtSlot(name='on_actionStart_Simulation_triggered')
     def action_start_simulation(self):
         # speed = self.ui.speedBox.value()
         # self.ramsis_core.simulator.speed = speed
         self.app.ramsis_core.start()
 
+    @pyqtSlot(name='on_actionPause_Simulation_triggered')
     def action_pause_simulation(self):
         self.app.ramsis_core.pause()
 
+    @pyqtSlot(name='on_actionStop_Simulation_triggered')
     def action_stop_simulation(self):
         self.app.ramsis_core.stop()
 
@@ -341,38 +347,6 @@ class MainWindow(QMainWindow):
             return
 
         self.status_bar.show_activity(state_msg, 'simulator_state')
-
-    # UI signals
-
-    def on_add_scenario_clicked(self):
-        fc_selection = self.ui.forecastTreeView.selectionModel()
-        idx = fc_selection.currentIndex()
-        if idx.parent().isValid():
-            forecast_idx = idx.parent().row()
-        else:
-            forecast_idx = idx.row()
-        try:
-            forecast_set = self.content_presenter.fc_tree_model.forecast_set
-            forecast = forecast_set.forecasts[forecast_idx]
-            scenario = ForecastScenario()
-            scenario.name = 'new scenario'
-            forecast.add_scenario(scenario)
-            self.app.ramsis_core.project.store.commit()
-        except IndexError as e:
-            raise e
-
-    def on_remove_scenario_clicked(self):
-        fc_selection = self.ui.forecastTreeView.selectionModel()
-        idx = fc_selection.currentIndex()
-        if not idx.parent().isValid():
-            return
-        scenario = idx.data(role=CustomRoles.RepresentedItemRole)
-        scenario.forecast.scenarios.remove(scenario)
-        self.app.ramsis_core.store.save()
-
-    def on_plan_next_forecast_clicked(self):
-        forecast = self.app.ramsis_core.create_next_future_forecast()
-        self.content_presenter.add_forecast(forecast)
 
     # Handlers for signals from the core
 
