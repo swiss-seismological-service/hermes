@@ -267,21 +267,6 @@ class ProjectSettingsWindow(SettingsWindow):
         }
         self.register_widgets(widget_map)
 
-        # Hook up buttons
-        self.ui.saveButton.clicked.connect(self.action_save)
-        self.ui.cancelButton.clicked.connect(self.action_cancel)
-        self.ui.selectOutputDirButton.clicked.\
-            connect(self.action_select_output_directory)
-        self.ui.resetToDefaultButton.clicked.connect(self.action_load_defaults)
-        self.ui.rjConfigButton.clicked.connect(
-            self.action_show_rj_model_configuration)
-        self.ui.etasConfigButton.clicked.connect(
-            self.action_show_etas_model_configuration)
-
-        # Hook up checkboxes
-        self.ui.enableRjCheckBox.clicked.connect(self.action_rj_checked)
-        self.ui.enableEtasCheckBox.clicked.connect(self.action_etas_checked)
-
         self.start_observing_changes()
         self.load_settings()
 
@@ -324,31 +309,39 @@ class ProjectSettingsWindow(SettingsWindow):
 
     # Button actions
 
-    def action_select_output_directory(self):
-        pass
-
+    @pyqtSlot(name='on_resetToDefaultButton_clicked')
     def action_load_defaults(self):
         self.project.settings.register_default_settings()
         self.load_settings()
 
+    @pyqtSlot(name='on_saveButton.clicked_connect')
     def action_save(self):
         self.project.settings.commit()
         if self.save_callback:
             self.save_callback()
         self.close()
 
+    @pyqtSlot(name='on_cancelButton_clicked')
+    def action_cancel(self):
+        super().action_cancel()
+
+    # TODO LH: These (below) need to be implemented generically
+
+    @pyqtSlot(name='on_rjConfigButton_clicked')
     def action_show_rj_model_configuration(self):
         if self.rj_model_configuration_window is None:
             self.rj_model_configuration_window = ModelConfigurationWindow(
                 project=self.project, model='rj')
         self.rj_model_configuration_window.show()
 
+    @pyqtSlot(name='on_etasConfigButton_clicked')
     def action_show_etas_model_configuration(self):
         if self.etas_model_configuration_window is None:
             self.etas_model_configuration_window = ModelConfigurationWindow(
                 project=self.project, model='etas')
         self.etas_model_configuration_window.show()
 
+    @pyqtSlot(name='on_enableRjCheckBox_clicked')
     def action_rj_checked(self):
         state = self.ui.enableRjCheckBox.checkState()
         if state:
@@ -356,6 +349,7 @@ class ProjectSettingsWindow(SettingsWindow):
         else:
             self.ui.rjConfigButton.setDisabled(True)
 
+    @pyqtSlot(name='on_enableEtasCheckBox_clicked')
     def action_etas_checked(self):
         state = self.ui.enableEtasCheckBox.checkState()
         if state:
