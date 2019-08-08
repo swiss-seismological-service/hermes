@@ -17,7 +17,6 @@ The tree view has the following structure:
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QFont
 from RAMSIS.ui.base.tree.model import TreeModel, Node
-from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.base.utils import utc_to_local
 
 
@@ -41,7 +40,7 @@ class ScenarioNode(Node):
         if column == 1:
             if role == Qt.DisplayRole:
                 # TODO LH: this doesn't exist in the new model atm
-                #return self.item.summary_status
+                # return self.item.summary_status
                 return 'n/a'
             elif role == Qt.ForegroundRole:
                 return QBrush(Qt.gray)
