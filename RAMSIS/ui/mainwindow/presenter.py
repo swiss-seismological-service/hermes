@@ -52,7 +52,7 @@ class ContentPresenter(object):
             return (len(idx) == 1 and is_lab_mode() and
                     idx[0].parent().isValid() is False)
 
-        # context mentu
+        # context menu
         self.ui.forecastTreeView.context_actions = [
             ContextAction('Run now', self.action_run_now, enabler=enable_run),
             Separator(),
