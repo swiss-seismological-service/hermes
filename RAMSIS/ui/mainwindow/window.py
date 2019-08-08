@@ -56,7 +56,7 @@ class StatusBar(QStatusBar):
         self.activityWidget = QLabel('Idle')
         self.current_activity_id = None
         self.addWidget(self.statusWidget)
-        self.addWidget(QLabel(' '*10))
+        self.addWidget(QLabel(' ' * 10))
         self.addWidget(self.timeWidget)
         self.addPermanentWidget(self.activityWidget)
         self.addPermanentWidget(self.progressBar)
