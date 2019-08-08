@@ -22,7 +22,7 @@ from RAMSIS.ui.base.contextaction import (
     ContextAction, ContextActionDelete, Separator)
 from RAMSIS.ui.dialog import ForecastConfigDialog
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
-    ForecastTreeModel, ForecastNode)
+    ForecastTreeModel)
 from RAMSIS.ui.styles import StatusColor
 
 
