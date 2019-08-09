@@ -15,11 +15,13 @@ import sys
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, with_polymorphic
 
 import ramsis.datamodel
-from ramsis.datamodel.model import Model, ORMBase
+from ramsis.datamodel.base import ORMBase
 from ramsis.datamodel.project import Project
+from ramsis.datamodel.model import EModel, Model
+from ramsis.datamodel.seismicity import SeismicityModel
 
 logger = logging.getLogger(__name__)
 
@@ -128,13 +130,18 @@ class Store:
         :return: List of models
         :rtype: [ramsis.datamodel.model.Model]
         """
-        models = self.session.query(Model)
-        if model_type:
-            models = models.filter(Model._type == model_type)
-        return models.all()
+        _map = {
+            EModel.SEISMICITY: SeismicityModel, }
 
-    def load_models_by(self, with_polymorphic, **kwargs):
-        return self.session.query(with_polymorphic).filter_by(**kwargs).all()
+        try:
+            entity = with_polymorphic(Model, _map[model_type])
+        except KeyError:
+            entity = with_polymorphic(Model, '*')
+
+        return self.session.query(entity).all()
+
+    def load_models_by(self, entity, **kwargs):
+        return self.session.query(entity).filter_by(**kwargs).all()
 
     def delete(self, obj):
         """ Delete any object from the store """
