@@ -214,3 +214,40 @@ class Store:
                 errors = True
 
         return not errors
+
+
+class EditingContext:
+    """
+    A temporary context for editing data model objects
+
+    The editing context provides temporary copies of data model objects for
+    editing. When the editing context is saved, the changes will be committed
+    to the database. When the editing context is discarded, all changes to
+    objects inside the context will be discarded with it.
+
+    """
+
+    def __init__(self, store):
+        """
+
+        :param store: The main store from which objects edit are pulled in
+        """
+        self._store = store
+        session = sessionmaker(bind=store.engine, autoflush=False)
+        self._editing_session = session()
+
+    def get(self, object):
+        """
+        Pull a copy of `object` into the editing context and return it
+
+        .. note: It's save to do edits on any related objects too.
+
+        """
+        return self._editing_session.merge(object, load=False)
+
+    def save(self):
+        """ Save edits to the main store and the data base """
+        for obj in self._editing_session.dirty:
+            self._store.session.merge(obj)
+        self._store.save()
+

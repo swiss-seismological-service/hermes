@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
     QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView, \
     QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout
 
+from RAMSIS.core.store import EditingContext
 from RAMSIS.core.simulator import SimulatorState
 from RAMSIS.core.datasources import CsvEventImporter
 
@@ -183,9 +184,13 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_actionProject_Settings_triggered')
     def show_project_settings(self):
+        editing_context = EditingContext(self.app.ramsis_core.store)
+        editable_project = editing_context.get(self.app.ramsis_core.project)
+
         def on_save():
-            self.app.ramsis_core.store.save()
-        window = ProjectSettingsWindow(project=self.app.ramsis_core.project)
+            editing_context.save()
+
+        window = ProjectSettingsWindow(project=editable_project)
         window.save_callback = on_save
         window.show()
         self.app.gui.manage_window(window)
