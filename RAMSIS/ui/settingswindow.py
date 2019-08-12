@@ -14,9 +14,10 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from RAMSIS.core.controller import LaunchMode
-from RAMSIS.ui.utils import UiForm
+from RAMSIS.ui.base.bindings import (AttrBinding, DictBinding)
 from RAMSIS.ui.base.state import UiStateMachine
 
+from RAMSIS.ui.utils import UiForm, WktPointBinding
 from .modelconfigurationwindow import ModelConfigurationWindow
 from RAMSIS.ui.base.controlinterface import control_interface
 from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
@@ -250,69 +251,44 @@ class ProjectSettingsWindow(SettingsWindow):
         self.ui = Ui_ProjectSettingsWindow()
         self.ui.setupUi(self)
 
-        # Add new settings here. This maps each user editable settings key to
-        # it's corresponding widget in the settings window
-        # TODO LH: handle settings on the project itself too (use keypaths?)
-        widget_map = {
-            'fdsnws_enable': self.ui.enableFdsnCheckBox,
-            'fdsnws_url': self.ui.fdsnUrlEdit,
-            'hydws_enable': self.ui.enableHydwsCheckBox,
-            'hydws_url': self.ui.hydwsUrlEdit,
-            'auto_schedule_enable': self.ui.enableAutoSchedulingCheckBox,
-            'forecast_interval': self.ui.forecastIntervalBox,
-            'forecast_length': self.ui.forecastBinTimeBox,
-            'forecast_start': self.ui.firstForecastBox,
-            'seismic_rate_interval': self.ui.rateIntervalBox,
-            'write_fc_results_to_disk': self.ui.writeResultsToFileCheckBox,
-        }
-        self.register_widgets(widget_map)
+        # Register bindings
+        settings = project.settings
+        self.bindings = [
+            AttrBinding(project, 'name', self.ui.projectTitleEdit),
+            AttrBinding(project, 'description', self.ui.descriptionEdit),
+            AttrBinding(project, 'starttime', self.ui.projectStartEdit),
+            AttrBinding(project, 'endtime', self.ui.projectEndEdit),
+            WktPointBinding(project, 'referencepoint', 0, self.ui.refLatEdit),
+            WktPointBinding(project, 'referencepoint', 1, self.ui.refLonEdit),
+            WktPointBinding(project, 'referencepoint', 2, self.ui.refHEdit),
+            DictBinding(settings, 'fdsnws_enable', self.ui.enableFdsnCheckBox),
+            DictBinding(settings, 'fdsnws_url', self.ui.fdsnUrlEdit),
+            DictBinding(settings, 'hydws_url', self.ui.hydwsUrlEdit),
+            DictBinding(settings, 'hydws_enable', self.ui.enableHydwsCheckBox),
+            DictBinding(settings, 'auto_schedule_enable',
+                        self.ui.enableAutoSchedulingCheckBox),
+            DictBinding(settings, 'forecast_interval',
+                        self.ui.forecastIntervalBox),
+            DictBinding(settings, 'forecast_length',
+                        self.ui.forecastBinTimeBox),
+            DictBinding(settings, 'forecast_start', self.ui.firstForecastBox),
+            DictBinding(settings, 'seismic_rate_interval',
+                        self.ui.rateIntervalBox),
+            DictBinding(settings, 'write_fc_results_to_disk',
+                        self.ui.writeResultsToFileCheckBox),
+        ]
+        self.refresh_ui()
 
-        self.start_observing_changes()
-        self.load_settings()
-
-    def load_settings(self):
-        """
-        Load the current settings from the settings object and reflect the
-        values in the GUI.
-
-        """
-        for key in self.project.settings.keys():
-            widget = self.widget_map.get(key)
-            if widget is not None:
-                value = self.project.settings[key]
-                control_interface(widget).set_value(value)
-        # Project properties are shown in the settings tab too
-        self.ui.projectTitleEdit.setText(self.project.name)
-        local = utc_to_local(self.project.starttime)
-        self.ui.projectStartEdit.setDateTime(local)
-        if self.project.endtime:
-            local = utc_to_local(self.project.endtime)
-            self.ui.projectEndEdit.setDateTime(local)
-        self.ui.descriptionEdit.setPlainText(self.project.description)
-        ref = self.project.referencepoint
-        if ref:
-            # TODO LH: handle POINTZ type of referencepoint correctly
-            self.ui.refLatEdit.setText('{:.6f}'.format(ref['lat']))
-            self.ui.refLonEdit.setText('{:.6f}'.format(ref['lon']))
-            self.ui.refHEdit.setText('{:.1f}'.format(ref['h']))
-
-    def action_setting_changed(self):
-        widget = self.sender()
-        value = control_interface(widget).get_value()
-        if value is None:
-            return
-        key = self.key_map[widget]
-        # TODO LH: we need a couple hooks here or other mechanisms to handle
-        #  settings that don't map 1:1, e.g. the referencepoint (geometry)
-        #  or the forecast_start time which depends on project.starttime
-        self.project.settings[key] = value
+    def refresh_ui(self):
+        for binding in self.bindings:
+            binding.refresh_ui()
 
     # Button actions
 
     @pyqtSlot(name='on_resetToDefaultButton_clicked')
     def action_load_defaults(self):
         self.project.settings.register_default_settings()
-        self.load_settings()
+        self.refresh_ui()
 
     @pyqtSlot(name='on_saveButton.clicked_connect')
     def action_save(self):
