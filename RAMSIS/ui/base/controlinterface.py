@@ -19,7 +19,8 @@ another one at runtime using :func:`register_interface`.
 """
 
 from PyQt5.QtWidgets import (QCheckBox, QRadioButton, QSpinBox, QDoubleSpinBox,
-                             QDateTimeEdit, QLineEdit, QComboBox)
+                             QDateTimeEdit, QLineEdit, QPlainTextEdit,
+                             QComboBox)
 from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
 
 
@@ -110,7 +111,10 @@ class  QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
         return self.control.dateTime().toPyDateTime()
 
     def set_value(self, value):
-        self.control.setDateTime(value)
+        if value:
+            self.control.setDateTime(value)
+        else:
+            self.control.clear()
 
     def change_signal(self):
         return self.control.editingFinished
@@ -119,10 +123,22 @@ class  QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
 class QLineEditInterface(ControlInterface):
     """ Default interface for QLineEdit """
     def get_value(self):
-        self.control.text()
+        return self.control.text()
 
     def set_value(self, value):
         self.control.setText(value)
+
+    def change_signal(self):
+        return self.control.textChanged
+
+
+class QPlainTextEditInterface(ControlInterface):
+    """ Default interface for QPlainTextEdit """
+    def get_value(self):
+        return self.control.toPlainText()
+
+    def set_value(self, value):
+        self.control.setPlainText(value)
 
     def change_signal(self):
         return self.control.textChanged
@@ -138,7 +154,7 @@ class QComboBoxInterface(ControlInterface):
         return self.control.currentData()
 
     def set_value(self, value):
-        return self.control.setCurrentIndex(self.control.findData(value))
+        self.control.setCurrentIndex(self.control.findData(value))
 
     def change_signal(self):
         return self.control.currentIndexChanged
@@ -155,6 +171,7 @@ class ControlInterfaceFactory:
             QDoubleSpinBox: ControlInterface,
             QDateTimeEdit: QDateTimeEditInterface,
             QLineEdit: QLineEditInterface,
+            QPlainTextEdit: QPlainTextEditInterface,
             QComboBox: QComboBoxInterface
         }
 
