@@ -15,12 +15,10 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from RAMSIS.core.controller import LaunchMode
 from RAMSIS.ui.base.bindings import (AttrBinding, DictBinding)
+from RAMSIS.ui.base.controlinterface import control_interface
 from RAMSIS.ui.base.state import UiStateMachine
-
 from RAMSIS.ui.utils import UiForm, WktPointBinding
 from .modelconfigurationwindow import ModelConfigurationWindow
-from RAMSIS.ui.base.controlinterface import control_interface
-from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
 
 ui_path = os.path.dirname(__file__)
 PROJECT_SETTINGS_WINDOW_PATH = \
@@ -35,7 +33,7 @@ class SettingsWindow(QDialog):
     # TODO LH: harmonize initializers, add on-accept callback
 
     def __init__(self):
-        super(SettingsWindow, self).__init__()
+        super().__init__()
         self.widget_map = {}
         self.key_map = {}
 
@@ -235,10 +233,9 @@ class ApplicationSettingsWindow(SettingsWindow,
 
 
 class ProjectSettingsWindow(SettingsWindow):
-    # TODO LH: adapt to new data model
 
-    def __init__(self, project, **kwargs):
-        super(ProjectSettingsWindow, self).__init__()
+    def __init__(self, project, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.project = project
         self.save_callback = None
@@ -290,7 +287,7 @@ class ProjectSettingsWindow(SettingsWindow):
         self.project.settings.register_default_settings()
         self.refresh_ui()
 
-    @pyqtSlot(name='on_saveButton.clicked_connect')
+    @pyqtSlot(name='on_saveButton_clicked')
     def action_save(self):
         self.project.settings.commit()
         if self.save_callback:
