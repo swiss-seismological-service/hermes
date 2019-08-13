@@ -56,7 +56,8 @@ class ContentPresenter(object):
         self.ui.forecastTreeView.context_actions = [
             ContextAction('Run now', self.action_run_now, enabler=enable_run),
             Separator(),
-            ContextAction('Edit ...', self.action_edit),
+            ContextAction('Edit ...', self.action_edit,
+                          enabler=ContextAction.single_only_enabler),
             ContextActionDelete(self.action_delete,
                                 parent_widget=self.ui.forecastTreeView,
                                 enabler=is_lab_mode)]
@@ -154,10 +155,6 @@ class ContentPresenter(object):
 
     def action_edit(self, indices):
         if indices:
-            if len(indices) > 1:
-                raise ValueError(
-                    'Multiple entities cannot be edited simultaneously.')
-
             item = indices[0].data(CustomRoles.RepresentedItemRole)
 
             if isinstance(item, Forecast):
