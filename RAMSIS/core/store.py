@@ -45,7 +45,7 @@ class Store:
         self.engine = create_engine(db_url)
         # TODO LH: reconsider the use of expire_on_commit=False
         self.make_session = sessionmaker(bind=self.engine,
-                                          expire_on_commit=False)
+                                         expire_on_commit=False)
         self.session = self.make_session()
 
     def init_db(self):
