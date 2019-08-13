@@ -161,10 +161,10 @@ class ContentPresenter(object):
             item = indices[0].data(CustomRoles.RepresentedItemRole)
 
             if isinstance(item, Forecast):
-                dlg = ForecastConfigDialog.from_forecast(item)
+                dlg = ForecastConfigDialog(item)
                 dlg.exec_()
                 if dlg.data is not None:
-                    self.ramsis_core.update_project(item, dlg.data)
+                    self.ramsis_core.store.save()
 
             elif isinstance(item, ForecastScenario):
                 # TODO(damb): Make scenario editable

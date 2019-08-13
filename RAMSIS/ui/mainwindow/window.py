@@ -11,6 +11,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 
+import datetime
 import logging
 import os
 
@@ -20,7 +21,7 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
     QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView, \
     QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout
 
-from RAMSIS.core.builder import default_scenario
+from RAMSIS.core.builder import default_scenario, empty_forecast
 from RAMSIS.core.store import EditingContext
 from RAMSIS.core.simulator import SimulatorState
 from RAMSIS.core.datasources import CsvEventImporter
@@ -186,13 +187,16 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_planNextButton_clicked')
     def on_plan_next_forecast_clicked(self):
+        dt = datetime.datetime(2000, 1, 1)
         config_dialog = ForecastConfigDialog(
+            empty_forecast(starttime=dt, endtime=dt),
             min_datetime=self.app.ramsis_core.project.starttime)
         config_dialog.exec_()
 
-        fc = self.app.ramsis_core.create_forecast(
-            **config_dialog.data)
-        self.content_presenter.add_forecast(fc)
+        fc = config_dialog.data
+        if fc is not None:
+            self.app.ramsis_core.add_forecast(fc)
+            self.content_presenter.add_forecast(fc)
 
     @pyqtSlot(name='on_actionApplication_Settings_triggered')
     def show_application_settings(self):

@@ -37,6 +37,10 @@ class DialogBase(QDialog):
     def data(self):
         return self._data
 
+    def reject(self):
+        self._data = None
+        super().reject()
+
 
 class ScenarioConfigDialog(
         DialogBase, UiForm('scenarioconfigdialog.ui')):
@@ -133,7 +137,7 @@ class ScenarioConfigDialog(
                 self, 'RAMSIS',
                 'Invalid forecast stage configuration.',
                 buttons=QMessageBox.Close)
-            return
+            return self.reject()
 
         wkt_geom = self.ui.reservoirGeometryPlainTextEdit.toPlainText()
         if not is_phsf(wkt_geom):
@@ -142,7 +146,7 @@ class ScenarioConfigDialog(
                 buttons=QMessageBox.Close)
             self.logger.error(
                 f'Invalid reservoir geometry passed {wkt_geom!r}')
-            return
+            return self.reject()
 
         # create injection plan
         if (self.ui.injectionStrategyRadioButton1.isChecked() and
@@ -174,7 +178,7 @@ class ScenarioConfigDialog(
                     buttons=QMessageBox.Close)
                 self.logger.error(
                     f'Importing data from {fpath!r} failed ({err}).')
-                return
+                return self.reject()
             else:
                 self.logger.info(
                     'Injection plan sucessfully imported.')
@@ -185,7 +189,7 @@ class ScenarioConfigDialog(
                 self, 'RAMSIS',
                 f'Invalid injection strategy configuration.',
                 buttons=QMessageBox.Close)
-            return
+            return self.reject()
 
         # complete scenario
         self._data.config = {}
@@ -276,10 +280,7 @@ class ForecastConfigDialog(
     """
     UI dialog for forecast configuration.
     """
-    RetVal = collections.namedtuple(
-        'Retval', ['name', 'starttime', 'endtime'])
-
-    def __init__(self, *args, min_datetime=None, **kwargs):
+    def __init__(self, forecast, *args, min_datetime=None, **kwargs):
         """
         :param min_datetime: minimum datetime for edit fields
         :type min_datetime: :py:class:`datetime.datetime`
@@ -291,32 +292,23 @@ class ForecastConfigDialog(
             self.ui.starttimeDateTimeEdit.setMinimumDateTime(q_dt)
             self.ui.endtimeDateTimeEdit.setMinimumDateTime(q_dt)
 
-    @classmethod
-    def from_forecast(cls, forecast):
+        self._data = forecast
+        self._configure(forecast)
+
+    def _configure(self, forecast):
         """
-        Create a dialog from a forecast.
+        Preconfigure the dialog with a forecast.
 
         :param forecast: Forecast to preconfigure the dialog from
         :type forecast: :py:class:`ramsis.datamodel.forecast.Forecast`
         """
-        dialog = cls()
-
         if forecast.name is not None:
-            dialog.ui.nameLineEdit.setText(forecast.name)
+            self.ui.nameLineEdit.setText(forecast.name)
 
-        dialog.ui.starttimeDateTimeEdit.setDateTime(
+        self.ui.starttimeDateTimeEdit.setDateTime(
             datetime_to_qdatetime(forecast.starttime))
-        dialog.ui.endtimeDateTimeEdit.setDateTime(
+        self.ui.endtimeDateTimeEdit.setDateTime(
             datetime_to_qdatetime(forecast.endtime))
-
-        return dialog
-
-    @property
-    def data(self):
-        try:
-            return self._data._asdict()
-        except AttributeError:
-            return None
 
     def _on_accept(self):
         start = self.ui.starttimeDateTimeEdit.dateTime()
@@ -328,11 +320,12 @@ class ForecastConfigDialog(
                 self, 'RAMSIS',
                 'Endtime must be greater than starttime.',
                 buttons=QMessageBox.Close)
-            return
 
-        self._data = self.RetVal(name=self.ui.nameLineEdit.text(),
-                                 starttime=start.toPyDateTime(),
-                                 endtime=end.toPyDateTime())
+            return self.reject()
+
+        self._data.name = self.ui.nameLineEdit.text()
+        self._data.starttime = start.toPyDateTime()
+        self._data.endtime = end.toPyDateTime()
 
     def accept(self):
         self._on_accept()
