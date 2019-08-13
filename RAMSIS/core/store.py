@@ -14,8 +14,6 @@ import pkgutil
 import sys
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, RelationshipProperty
-from sqlalchemy.ext.declarative.clsregistry import _ModuleMarker
 import ramsis.datamodel
 from ramsis.datamodel.project import Project
 from ramsis.datamodel.seismics import SeismicCatalog
@@ -156,64 +154,6 @@ class Store:
         if all(tn in self.engine.table_names() for tn in expected_tables):
             return True
         return False
-
-    def is_sane(self):
-        """
-        Check whether the current database matches our model
-
-        Currently we check that all tables exist with all columns. What is not
-        checked
-
-        * Column types are not verified
-        * Relationships are not verified at all (TODO)
-
-        :return: True if all declared models have corresponding tables and
-            columns.
-        """
-
-        engine = self.session.get_bind()
-        iengine = inspect(engine)
-
-        errors = False
-
-        tables = iengine.get_table_names()
-
-        # Go through all SQLAlchemy models
-        for name, klass in ORMBase._decl_class_registry.items():
-
-            if isinstance(klass, _ModuleMarker):
-                # Not a model
-                continue
-
-            table = klass.__tablename__
-            if table in tables:
-                # Check all columns are found
-                # Looks like
-                # [{'default': "nextval('sanity_check_test_id_seq'::regclass)",
-                #   'autoincrement': True, 'nullable': False, 'type': INTEGER(),
-                #   'name': 'id'}]
-
-                columns = [c["name"] for c in iengine.get_columns(table)]
-                mapper = inspect(klass)
-
-                for column_prop in mapper.attrs:
-                    if isinstance(column_prop, RelationshipProperty):
-                        # TODO: Add sanity checks for relations
-                        pass
-                    else:
-                        for column in column_prop.columns:
-                            # Assume normal flat column
-                            if not column.key in columns:
-                                logger.error(f'Model {klass} declares column '
-                                             f'{column.key} which does not exist '
-                                             f'in database {engine}')
-                                errors = True
-            else:
-                logger.error(f'Model {klass} declares table {table} which does not '
-                             f'exist in database {engine}')
-                errors = True
-
-        return not errors
 
 
 class EditingContext:
