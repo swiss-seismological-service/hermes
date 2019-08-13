@@ -128,7 +128,7 @@ class Store:
         """
         models = self.session.query(Model)
         if model_type:
-            models.filter(Model._type == model_type)
+            models = models.filter(Model._type == model_type)
         return models.all()
 
     def delete(self, obj):
