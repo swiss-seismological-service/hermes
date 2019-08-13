@@ -180,21 +180,21 @@ class EditingContext:
         self._editing_session = store.make_session()
         self._edited = set()
 
-    def get(self, object):
+    def get(self, obj):
         """
         Get a copy of `object` that is ready for editing.
 
         .. note: Any edits to related objects will be saved too when invoking
                  :meth:`save()'.
 
-        :param object: Data model object to copy for editing
+        :param obj: Data model object to copy for editing
 
         """
-        editing_copy = self._editing_session.merge(object, load=False)
+        editing_copy = self._editing_session.merge(obj, load=False)
         self._edited.add(editing_copy)
         return editing_copy
 
-    def add(self, object):
+    def add(self, obj):
         """
         Register a newly created top level object
 
@@ -202,12 +202,12 @@ class EditingContext:
         relation to any object obtained through :meth:`get()`, it needs to be
         :meth:`add()`ed to the editing context before saving.
 
-        :param object: Data model object to add to the context
+        :param obj: Data model object to add to the context
 
         """
-        self._edited.add(object)
+        self._edited.add(obj)
 
-    def delete(self, object):
+    def delete(self, obj):
         """
         Mark a top-level object for deletion
 
@@ -224,10 +224,10 @@ class EditingContext:
 
                      catalog.events.remove(event_x)
 
-        :param object: Data model object to mark for deletion
+        :param obj: Data model object to mark for deletion
 
         """
-        self._editing_session.delete(object)
+        self._editing_session.delete(obj)
 
     def save(self):
         """ Save edits to the main store and the data base """
