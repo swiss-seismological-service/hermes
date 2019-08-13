@@ -8,18 +8,18 @@ and connection engine over the life cycle of the app.
 
 """
 
-import re
 import logging
 import pkgutil
+import re
 import sys
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
-import ramsis.datamodel
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.seismics import SeismicCatalog
-from ramsis.datamodel.settings import ProjectSettings
-from ramsis.datamodel.model import Model, ORMBase
 
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+
+import ramsis.datamodel
+from ramsis.datamodel.model import Model, ORMBase
+from ramsis.datamodel.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,10 @@ class Store:
         starred_url = re.sub("(?<=:)([^@:]+)(?=@[^@]+$)", "***", db_url)
         logger.info(f'Opening DB connection at {starred_url}')
         self.engine = create_engine(db_url)
-        session = sessionmaker(bind=self.engine, expire_on_commit=False)
-        self.session = session()
+        # TODO LH: reconsider the use of expire_on_commit=False
+        self.make_session = sessionmaker(bind=self.engine,
+                                          expire_on_commit=False)
+        self.session = self.make_session()
 
     def init_db(self):
         """
@@ -165,29 +167,75 @@ class EditingContext:
     to the database. When the editing context is discarded, all changes to
     objects inside the context will be discarded with it.
 
+    .. note: An `EditingContext` should be discarded after saving.
+
     """
 
     def __init__(self, store):
         """
 
-        :param store: The main store from which objects edit are pulled in
+        :param store: The main store from which objects to edit are pulled in
         """
         self._store = store
-        session = sessionmaker(bind=store.engine, autoflush=False)
-        self._editing_session = session()
+        self._editing_session = store.make_session()
+        self._edited = set()
 
     def get(self, object):
         """
-        Pull a copy of `object` into the editing context and return it
+        Get a copy of `object` that is ready for editing.
 
-        .. note: It's save to do edits on any related objects too.
+        .. note: Any edits to related objects will be saved too when invoking
+                 :meth:`save()'.
+
+        :param object: Data model object to copy for editing
 
         """
-        return self._editing_session.merge(object, load=False)
+        editing_copy = self._editing_session.merge(object, load=False)
+        self._edited.add(editing_copy)
+        return editing_copy
+
+    def add(self, object):
+        """
+        Register a newly created top level object
+
+        If a new toplevel object is created during editing that has no
+        relation to any object obtained through :meth:`get()`, it needs to be
+        :meth:`add()`ed to the editing context before saving.
+
+        :param object: Data model object to add to the context
+
+        """
+        self._edited.add(object)
+
+    def delete(self, object):
+        """
+        Mark a top-level object for deletion
+
+        Usage example:
+
+            editable_project = editing_context.get(project)
+            editing_context.delete(editable_project)
+            editing_context.save()
+
+        .. note: Objects that are reachable through relationships of previously
+                 obtained objects (either through :meth:`add` or :meth:`get`)
+                 usually don't have to be marked for deletion explicitly.
+                 They are typically marked when they become orphans, e.g.:
+
+                     catalog.events.remove(event_x)
+
+        :param object: Data model object to mark for deletion
+
+        """
+        self._editing_session.delete(object)
 
     def save(self):
         """ Save edits to the main store and the data base """
-        for obj in self._editing_session.dirty:
-            self._store.session.merge(obj)
+        for obj in self._edited:
+            original = self._store.session.merge(obj)
+            # We need to propagate deletes manually since the instance state is
+            # not updated until flush() (and flushing the editing session
+            # causes other issues
+            if obj in self._editing_session.deleted:
+                self._store.delete(original)
         self._store.save()
-
