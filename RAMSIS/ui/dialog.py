@@ -15,7 +15,7 @@ from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
-from RAMSIS.utils import datetime_to_qdatetime
+from RAMSIS.utils import datetime_to_qdatetime, is_phsf
 
 
 class DialogBase(QDialog):
@@ -135,8 +135,14 @@ class ScenarioConfigDialog(
                 buttons=QMessageBox.Close)
             return
 
-        # validate reservoirgeom
-        # TODO(damb): To be implemented
+        wkt_geom = self.ui.reservoirGeometryPlainTextEdit.toPlainText()
+        if not is_phsf(wkt_geom):
+            _ = QMessageBox.critical(
+                self, 'RAMSIS', f'Invalid reservoir geometry {wkt_geom!r}.',
+                buttons=QMessageBox.Close)
+            self.logger.error(
+                f'Invalid reservoir geometry passed {wkt_geom!r}')
+            return
 
         # create injection plan
         if (self.ui.injectionStrategyRadioButton1.isChecked() and
@@ -184,8 +190,7 @@ class ScenarioConfigDialog(
         # complete scenario
         self._data.config = {}
         self._data.name = self.ui.nameLineEdit.text()
-        self._data.reservoirgeom = \
-            self.ui.reservoirGeometryPlainTextEdit.toPlainText()
+        self._data.reservoirgeom = wkt_geom
         self._data.well = well
 
         try:
