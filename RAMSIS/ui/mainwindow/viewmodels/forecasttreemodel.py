@@ -101,8 +101,7 @@ class ForecastTreeModel(TreeModel):
         self.insert_nodes(self.root_node, row, [node])
 
     def add_scenario(self, parent_idx, scenario):
-        # TODO(damb): Currently, fails if no forecast is selected.
-        fc_node = parent_idx.data(role=Qt.UserRole)
+        fc_node = parent_idx.internalPointer()
         fc_row = parent_idx.row()
 
         node = ScenarioNode(scenario, fc_node)

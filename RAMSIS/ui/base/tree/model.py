@@ -31,9 +31,7 @@ class Node:
         :param int column: Column index to get data for
         :param role: Requested Qt role
         """
-        if role == Qt.UserRole:
-            return self
-        elif role == CustomRoles.RepresentedItemRole:
+        if role == CustomRoles.RepresentedItemRole:
             return self.item
         elif role == Qt.DisplayRole:
             if isinstance(self.item, str):
