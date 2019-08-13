@@ -159,8 +159,6 @@ class MainWindow(QMainWindow):
         if idx.parent().isValid():
             idx = idx.parent()
 
-        fc = self.content_presenter.fc_tree_model.project.forecasts[idx.row()]
-
         dlg = ScenarioConfigDialog(
             default_scenario(self.app.ramsis_core.store))
         dlg.exec_()
@@ -168,7 +166,10 @@ class MainWindow(QMainWindow):
         scenario = dlg.data
         if scenario is not None:
             self.logger.debug(f"Dialog data: {dlg.data!r}")
+
+            fc = idx.data(CustomRoles.RepresentedItemRole)
             fc.append(scenario)
+
             self.app.ramsis_core.store.save()
 
             self.logger.info(
