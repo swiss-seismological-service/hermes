@@ -279,26 +279,17 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         self._timeout = kwargs.get('timeout')
 
     @classmethod
-    def create(cls, base_url, worker_id, **kwargs):
+    def from_run(cls, model_run):
         """
-        Factory class method creating worker handels for a corresponding model.
+        Create a :py:class:`RemoteSeismicityWorkerHandle` from a model run.
 
-        :param str base_url: Worker base URL
-        :param str worker_id: Worker/Model identifier
-        :param kwargs: Keyword value parameters passed to the
-            :py:class:`WorkerHandle` constructor
-
-        :returns: Instance of a concrete implementation of
-            :py:class:`WorkerHandle`
-        :rtype: :py:class:`WorkerHandle`
-
-        :raises WorkerHandleError: If an invalid model identifier was passed
+        :param model_run:
+        :type model_run:
+            :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
         """
-        if 'EM1' == worker_id:
-            return EM1WorkerHandle(base_url, **kwargs)
-
-        raise cls.WorkerHandleError(
-            'Invalid worker identifier: {!r}'.format(worker_id))
+        # XXX(damb): Where to get additional configuration options from?
+        # model_run.config? model.config? From somewhere else?
+        return cls(model_run.model.url, model_run.model.name)
 
     @property
     def model(self):
@@ -476,8 +467,3 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
 SeismicityWorkerHandle = RemoteSeismicityWorkerHandle
 WorkerHandleBase.register(SeismicityWorkerHandle)
-
-
-class EM1WorkerHandle(SeismicityWorkerHandle):
-    MODEL_ID = 'EM1'
-    API_VERSION = 'v1'

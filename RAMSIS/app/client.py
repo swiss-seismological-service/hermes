@@ -453,7 +453,7 @@ class WorkerClientApp(object):
 
         worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
                                      base_url=self.args.url_worker,
-                                     worker_id=self.args.model,
+                                     model_id=self.args.model,
                                      timeout=self.args.timeout)
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
@@ -484,7 +484,7 @@ class WorkerClientApp(object):
 
         worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
                                      base_url=self.args.url_worker,
-                                     worker_id=self.args.model,
+                                     model_id=self.args.model,
                                      timeout=self.args.timeout)
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
@@ -543,7 +543,7 @@ class WorkerClientApp(object):
 
         worker = WorkerHandle.create(EWorkerHandle.SFM_REMOTE,
                                      base_url=self.args.url_worker,
-                                     worker_id=self.args.model,
+                                     model_id=self.args.model,
                                      timeout=self.args.timeout)
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))

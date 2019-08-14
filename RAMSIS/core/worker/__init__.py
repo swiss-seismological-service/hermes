@@ -51,7 +51,7 @@ class WorkerHandleBase(abc.ABC):
         :rtype: :py:class:`WorkerHandleBase`
         """
         if EWorkerHandle.SFM_REMOTE == handle_id:
-            return RemoteSeismicityWorkerHandle.create(**kwargs)
+            return RemoteSeismicityWorkerHandle(**kwargs)
 
         raise cls.WorkerHandleError(
             'Invalid handle identifier: {!r}'.format(handle_id))
