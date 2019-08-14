@@ -160,9 +160,6 @@ def scenario(scenario_dict):
                 deserializer = HYDWSBoreholeHydraulicsDeserializer(
                     plan=True, proj=None)
 
-                # FIXME(damb): This approach is somehow awkward. Deserializers
-                # should implement parsing from python objects, too. (As
-                # implemented by marshmallow)
                 data['well'] = deserializer._loado(data['well'])
 
             return data
@@ -235,15 +232,6 @@ class WorkerClientApp(object):
             description='Communicate with *RT-RAMSIS* SFM-Workers.',
             parents=parents)
 
-        # TODO TODO TODO
-        # TODO(damb): Work with subparsers.
-        # subcommands are:
-        # * commit -> issue a new task/scenario
-        # * list -> fetch the tasks for a certain ID; if no ID is passed
-        # * remove -> delete a task
-        # * cycle -> issue a new task and fetch/ poll for the results; when the
-        #   results are fetched the task is removed again
-
         # optional arguments
         parser.add_argument('--version', '-V', action='version',
                             version='%(prog)s version ' + self.VERSION)
@@ -293,16 +281,8 @@ class WorkerClientApp(object):
                                type=scenario, dest='scenario',
                                help=("Scenario (injection well) to be used "
                                      "(JSON syntax)."))
-        # subparser.add_argument('--project', dest='project', metavar='ID',
-        #                       type=int, default=1,
-        #                       help=('Project identifier. '
-        #                             '(default: %(default)s)'))
 
         # subparser: commit: positional arguments
-        # subparser.add_argument('url_db', metavar='URL_DB', type=db_engine,
-        #                       help=('RAMSIS datamodel DB URL indicating the '
-        #                             'database dialect and connection '
-        #                             'arguments.'))
         subparser.add_argument('url_worker', metavar='URL_SFM_WORKER',
                                type=url_worker,
                                help='Base SFM-worker URL.')
