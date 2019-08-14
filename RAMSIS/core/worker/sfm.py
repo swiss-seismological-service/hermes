@@ -70,7 +70,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     PATH_RAMSIS_WORKER_SCENARIOS = '/runs'
 
     MIMETYPE = 'application/json'
-    LOGGER = 'ramsis.core.remote_seismicity_worker_handle'
+    LOGGER = 'ramsis.core.worker.remote_seismicity_worker_handle'
 
     class EncodingError(WorkerHandleBase.WorkerHandleError):
         """Error while encoding payload ({})."""
