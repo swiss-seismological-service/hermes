@@ -15,7 +15,7 @@ from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
-from RAMSIS.utils import datetime_to_qdatetime, is_phsf
+from RAMSIS.utils import is_phsf
 
 
 class DialogBase(QDialog):
@@ -288,9 +288,8 @@ class ForecastConfigDialog(
         super().__init__(*args, **kwargs)
 
         if min_datetime:
-            q_dt = datetime_to_qdatetime(min_datetime)
-            self.ui.starttimeDateTimeEdit.setMinimumDateTime(q_dt)
-            self.ui.endtimeDateTimeEdit.setMinimumDateTime(q_dt)
+            self.ui.starttimeDateTimeEdit.setMinimumDateTime(min_datetime)
+            self.ui.endtimeDateTimeEdit.setMinimumDateTime(min_datetime)
 
         self._data = forecast
         self._configure(forecast)
@@ -305,10 +304,8 @@ class ForecastConfigDialog(
         if forecast.name is not None:
             self.ui.nameLineEdit.setText(forecast.name)
 
-        self.ui.starttimeDateTimeEdit.setDateTime(
-            datetime_to_qdatetime(forecast.starttime))
-        self.ui.endtimeDateTimeEdit.setDateTime(
-            datetime_to_qdatetime(forecast.endtime))
+        self.ui.starttimeDateTimeEdit.setDateTime(forecast.starttime)
+        self.ui.endtimeDateTimeEdit.setDateTime(forecast.endtime)
 
     def _on_accept(self):
         start = self.ui.starttimeDateTimeEdit.dateTime()
