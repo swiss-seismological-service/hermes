@@ -51,6 +51,18 @@ class DialogBase(QDialog):
         self._data = None
         super().reject()
 
+    def accept(self):
+        try:
+            self._on_accept()
+        except DialogError as err:
+            self.logger.error(f'{err}')
+            self.reject()
+        else:
+            super().accept()
+
+    def _on_accept():
+        raise NotImplementedError
+
 
 class ScenarioConfigDialog(
         DialogBase, UiForm('scenarioconfigdialog.ui')):
@@ -147,16 +159,16 @@ class ScenarioConfigDialog(
                 self, 'RAMSIS',
                 'Invalid forecast stage configuration.',
                 buttons=QMessageBox.Close)
-            return self.reject()
+            raise ValidationError(
+                'Invalid forecast stage configuration.')
 
         wkt_geom = self.ui.reservoirGeometryPlainTextEdit.toPlainText()
         if not is_phsf(wkt_geom):
             _ = QMessageBox.critical(
                 self, 'RAMSIS', f'Invalid reservoir geometry {wkt_geom!r}.',
                 buttons=QMessageBox.Close)
-            self.logger.error(
+            raise ValidationError(
                 f'Invalid reservoir geometry passed {wkt_geom!r}')
-            return self.reject()
 
         # create injection plan
         if (self.ui.injectionStrategyRadioButton1.isChecked() and
@@ -186,9 +198,8 @@ class ScenarioConfigDialog(
                     (f'Error while importing data from {fpath!r}:'
                      f'\n{err}.'),
                     buttons=QMessageBox.Close)
-                self.logger.error(
+                raise DialogError(
                     f'Importing data from {fpath!r} failed ({err}).')
-                return self.reject()
             else:
                 self.logger.info(
                     'Injection plan sucessfully imported.')
@@ -199,7 +210,9 @@ class ScenarioConfigDialog(
                 self, 'RAMSIS',
                 f'Invalid injection strategy configuration.',
                 buttons=QMessageBox.Close)
-            return self.reject()
+
+            raise ValidationError(
+                f'Invalid injection strategy configuration.')
 
         # complete scenario
         self._data.config = {}
@@ -229,10 +242,6 @@ class ScenarioConfigDialog(
             pass
         else:
             stage.enabled = risk_stage_enabled
-
-    def accept(self):
-        self._on_accept()
-        super().accept()
 
     @pyqtSlot(name='on_injectionStrategyImportFromFilePushButton_clicked')
     def import_plan_from_file(self):
@@ -335,15 +344,6 @@ class ForecastConfigDialog(
         self._data.starttime = start.toPyDateTime()
         self._data.endtime = end.toPyDateTime()
 
-    def accept(self):
-        try:
-            self._on_accept()
-        except ValidationError as err:
-            self.logger.error(f'{err}')
-            self.reject()
-        else:
-            super().accept()
-
 
 class ImportInjectionStrategyFromFileDialog(
         DialogBase, UiForm('importinjectionstrategyfromfile.ui')):
@@ -378,7 +378,3 @@ class ImportInjectionStrategyFromFileDialog(
         self._data = self.RetVal(
             source_srs=self.ui.sourceSRSLineEdit.text(),
             fpath=self.ui.filePathLineEdit.text())
-
-    def accept(self):
-        self._on_accept()
-        super().accept()
