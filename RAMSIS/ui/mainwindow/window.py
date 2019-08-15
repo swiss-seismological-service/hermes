@@ -194,8 +194,7 @@ class MainWindow(QMainWindow):
             min_datetime=self.app.ramsis_core.project.starttime)
         dlg.exec_()
 
-        if (dlg.result() == QDialog.Accepted and
-                dlg.data is not None):
+        if dlg.result() == QDialog.Accepted:
             fc = dlg.data
             self.app.ramsis_core.add_forecast(fc)
             self.content_presenter.add_forecast(fc)

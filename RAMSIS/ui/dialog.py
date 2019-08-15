@@ -10,12 +10,22 @@ import logging
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox
 
+from ramsis.utils.error import Error
 from ramsis.datamodel.forecast import EStage
+
 from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
 from RAMSIS.utils import is_phsf
+
+
+class DialogError(Error):
+    """Base Dialog Error ({})."""
+
+
+class ValidationError(DialogError):
+    """ValidationError: {!r}"""
 
 
 class DialogBase(QDialog):
@@ -318,15 +328,21 @@ class ForecastConfigDialog(
                 'Endtime must be greater than starttime.',
                 buttons=QMessageBox.Close)
 
-            return self.reject()
+            raise ValidationError(
+                'Endtime must be greater than starttime.')
 
         self._data.name = self.ui.nameLineEdit.text()
         self._data.starttime = start.toPyDateTime()
         self._data.endtime = end.toPyDateTime()
 
     def accept(self):
-        self._on_accept()
-        super().accept()
+        try:
+            self._on_accept()
+        except ValidationError as err:
+            self.logger.error(f'{err}')
+            self.reject()
+        else:
+            super().accept()
 
 
 class ImportInjectionStrategyFromFileDialog(
