@@ -7,8 +7,6 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 
 from dateutil.tz import tzlocal, tzutc
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QDateTimeEdit, \
-    QDialogButtonBox
 from PyQt5.QtCore import QDateTime
 
 

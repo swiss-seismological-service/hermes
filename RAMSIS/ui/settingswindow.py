@@ -14,12 +14,11 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from RAMSIS.core.controller import LaunchMode
-from RAMSIS.ui.utils import UiForm
-from RAMSIS.ui.base.state import UiStateMachine
-
-from .modelconfigurationwindow import ModelConfigurationWindow
+from RAMSIS.ui.base.bindings import (AttrBinding, DictBinding)
 from RAMSIS.ui.base.controlinterface import control_interface
-from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
+from RAMSIS.ui.base.state import UiStateMachine
+from RAMSIS.ui.utils import UiForm, WktPointBinding
+from .modelconfigurationwindow import ModelConfigurationWindow
 
 ui_path = os.path.dirname(__file__)
 PROJECT_SETTINGS_WINDOW_PATH = \
@@ -34,7 +33,7 @@ class SettingsWindow(QDialog):
     # TODO LH: harmonize initializers, add on-accept callback
 
     def __init__(self):
-        super(SettingsWindow, self).__init__()
+        super().__init__()
         self.widget_map = {}
         self.key_map = {}
 
@@ -234,10 +233,9 @@ class ApplicationSettingsWindow(SettingsWindow,
 
 
 class ProjectSettingsWindow(SettingsWindow):
-    # TODO LH: adapt to new data model
 
-    def __init__(self, project, **kwargs):
-        super(ProjectSettingsWindow, self).__init__()
+    def __init__(self, project, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.project = project
         self.save_callback = None
@@ -250,105 +248,73 @@ class ProjectSettingsWindow(SettingsWindow):
         self.ui = Ui_ProjectSettingsWindow()
         self.ui.setupUi(self)
 
-        # Add new settings here. This maps each user editable settings key to
-        # it's corresponding widget in the settings window
-        # TODO LH: handle settings on the project itself too (use keypaths?)
-        widget_map = {
-            'fdsnws_enable': self.ui.enableFdsnCheckBox,
-            'fdsnws_url': self.ui.fdsnUrlEdit,
-            'hydws_enable': self.ui.enableHydwsCheckBox,
-            'hydws_url': self.ui.hydwsUrlEdit,
-            'auto_schedule_enable': self.ui.enableAutoSchedulingCheckBox,
-            'forecast_interval': self.ui.forecastIntervalBox,
-            'forecast_length': self.ui.forecastBinTimeBox,
-            'forecast_start': self.ui.firstForecastBox,
-            'seismic_rate_interval': self.ui.rateIntervalBox,
-            'write_fc_results_to_disk': self.ui.writeResultsToFileCheckBox,
-        }
-        self.register_widgets(widget_map)
+        # Register bindings
+        settings = project.settings
+        self.bindings = [
+            AttrBinding(project, 'name', self.ui.projectTitleEdit),
+            AttrBinding(project, 'description', self.ui.descriptionEdit),
+            AttrBinding(project, 'starttime', self.ui.projectStartEdit),
+            AttrBinding(project, 'endtime', self.ui.projectEndEdit),
+            WktPointBinding(project, 'referencepoint', 0, self.ui.refLatEdit),
+            WktPointBinding(project, 'referencepoint', 1, self.ui.refLonEdit),
+            WktPointBinding(project, 'referencepoint', 2, self.ui.refHEdit),
+            DictBinding(settings, 'fdsnws_enable', self.ui.enableFdsnCheckBox),
+            DictBinding(settings, 'fdsnws_url', self.ui.fdsnUrlEdit),
+            DictBinding(settings, 'hydws_url', self.ui.hydwsUrlEdit),
+            DictBinding(settings, 'hydws_enable', self.ui.enableHydwsCheckBox),
+            DictBinding(settings, 'auto_schedule_enable',
+                        self.ui.enableAutoSchedulingCheckBox),
+            DictBinding(settings, 'forecast_interval',
+                        self.ui.forecastIntervalBox),
+            DictBinding(settings, 'forecast_length',
+                        self.ui.forecastBinTimeBox),
+            DictBinding(settings, 'forecast_start', self.ui.firstForecastBox),
+            DictBinding(settings, 'seismic_rate_interval',
+                        self.ui.rateIntervalBox),
+            DictBinding(settings, 'write_fc_results_to_disk',
+                        self.ui.writeResultsToFileCheckBox),
+        ]
+        self.refresh_ui()
 
-        # Hook up buttons
-        self.ui.saveButton.clicked.connect(self.action_save)
-        self.ui.cancelButton.clicked.connect(self.action_cancel)
-        self.ui.selectOutputDirButton.clicked.\
-            connect(self.action_select_output_directory)
-        self.ui.resetToDefaultButton.clicked.connect(self.action_load_defaults)
-        self.ui.rjConfigButton.clicked.connect(
-            self.action_show_rj_model_configuration)
-        self.ui.etasConfigButton.clicked.connect(
-            self.action_show_etas_model_configuration)
-
-        # Hook up checkboxes
-        self.ui.enableRjCheckBox.clicked.connect(self.action_rj_checked)
-        self.ui.enableEtasCheckBox.clicked.connect(self.action_etas_checked)
-
-        self.start_observing_changes()
-        self.load_settings()
-
-    def load_settings(self):
-        """
-        Load the current settings from the settings object and reflect the
-        values in the GUI.
-
-        """
-        for key in self.project.settings.keys():
-            widget = self.widget_map.get(key)
-            if widget is not None:
-                value = self.project.settings[key]
-                control_interface(widget).set_value(value)
-        # Project properties are shown in the settings tab too
-        self.ui.projectTitleEdit.setText(self.project.name)
-        local = utc_to_local(self.project.starttime)
-        self.ui.projectStartEdit.setDateTime(local)
-        if self.project.endtime:
-            local = utc_to_local(self.project.endtime)
-            self.ui.projectEndEdit.setDateTime(local)
-        self.ui.descriptionEdit.setPlainText(self.project.description)
-        ref = self.project.referencepoint
-        if ref:
-            # TODO LH: handle POINTZ type of referencepoint correctly
-            self.ui.refLatEdit.setText('{:.6f}'.format(ref['lat']))
-            self.ui.refLonEdit.setText('{:.6f}'.format(ref['lon']))
-            self.ui.refHEdit.setText('{:.1f}'.format(ref['h']))
-
-    def action_setting_changed(self):
-        widget = self.sender()
-        value = control_interface(widget).get_value()
-        if value is None:
-            return
-        key = self.key_map[widget]
-        # TODO LH: we need a couple hooks here or other mechanisms to handle
-        #  settings that don't map 1:1, e.g. the referencepoint (geometry)
-        #  or the forecast_start time which depends on project.starttime
-        self.project.settings[key] = value
+    def refresh_ui(self):
+        for binding in self.bindings:
+            binding.refresh_ui()
 
     # Button actions
 
-    def action_select_output_directory(self):
-        pass
-
+    @pyqtSlot(name='on_resetToDefaultButton_clicked')
     def action_load_defaults(self):
         self.project.settings.register_default_settings()
-        self.load_settings()
+        self.refresh_ui()
 
+    @pyqtSlot(name='on_saveButton_clicked')
     def action_save(self):
         self.project.settings.commit()
         if self.save_callback:
             self.save_callback()
         self.close()
 
+    @pyqtSlot(name='on_cancelButton_clicked')
+    def action_cancel(self):
+        super().action_cancel()
+
+    # TODO LH: These (below) need to be implemented generically
+
+    @pyqtSlot(name='on_rjConfigButton_clicked')
     def action_show_rj_model_configuration(self):
         if self.rj_model_configuration_window is None:
             self.rj_model_configuration_window = ModelConfigurationWindow(
                 project=self.project, model='rj')
         self.rj_model_configuration_window.show()
 
+    @pyqtSlot(name='on_etasConfigButton_clicked')
     def action_show_etas_model_configuration(self):
         if self.etas_model_configuration_window is None:
             self.etas_model_configuration_window = ModelConfigurationWindow(
                 project=self.project, model='etas')
         self.etas_model_configuration_window.show()
 
+    @pyqtSlot(name='on_enableRjCheckBox_clicked')
     def action_rj_checked(self):
         state = self.ui.enableRjCheckBox.checkState()
         if state:
@@ -356,6 +322,7 @@ class ProjectSettingsWindow(SettingsWindow):
         else:
             self.ui.rjConfigButton.setDisabled(True)
 
+    @pyqtSlot(name='on_enableEtasCheckBox_clicked')
     def action_etas_checked(self):
         state = self.ui.enableEtasCheckBox.checkState()
         if state:

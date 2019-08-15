@@ -24,6 +24,7 @@ pytz==2017.3
 -e git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git#egg=ramsis.datamodel
 requests==2.18.4
 scipy==1.0.0
+shapely
 sip==4.19.7
 six==1.11.0
 SQLAlchemy ~= 1.0

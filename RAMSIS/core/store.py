@@ -8,20 +8,18 @@ and connection engine over the life cycle of the app.
 
 """
 
-import re
 import logging
 import pkgutil
+import re
 import sys
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, RelationshipProperty
-from sqlalchemy.ext.declarative.clsregistry import _ModuleMarker
-import ramsis.datamodel
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.seismics import SeismicCatalog
-from ramsis.datamodel.settings import ProjectSettings
-from ramsis.datamodel.model import Model, ORMBase
 
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+
+import ramsis.datamodel
+from ramsis.datamodel.model import Model, ORMBase
+from ramsis.datamodel.project import Project
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +43,10 @@ class Store:
         starred_url = re.sub("(?<=:)([^@:]+)(?=@[^@]+$)", "***", db_url)
         logger.info(f'Opening DB connection at {starred_url}')
         self.engine = create_engine(db_url)
-        session = sessionmaker(bind=self.engine, expire_on_commit=False)
-        self.session = session()
+        # TODO LH: reconsider the use of expire_on_commit=False
+        self.make_session = sessionmaker(bind=self.engine,
+                                         expire_on_commit=False)
+        self.session = self.make_session()
 
     def init_db(self):
         """
@@ -130,7 +130,7 @@ class Store:
         """
         models = self.session.query(Model)
         if model_type:
-            models.filter(Model._type == model_type)
+            models = models.filter(Model._type == model_type)
         return models.all()
 
     def delete(self, obj):
@@ -157,60 +157,85 @@ class Store:
             return True
         return False
 
-    def is_sane(self):
+
+class EditingContext:
+    """
+    A temporary context for editing data model objects
+
+    The editing context provides temporary copies of data model objects for
+    editing. When the editing context is saved, the changes will be committed
+    to the database. When the editing context is discarded, all changes to
+    objects inside the context will be discarded with it.
+
+    .. note: An `EditingContext` should be discarded after saving.
+
+    """
+
+    def __init__(self, store):
         """
-        Check whether the current database matches our model
 
-        Currently we check that all tables exist with all columns. What is not
-        checked
-
-        * Column types are not verified
-        * Relationships are not verified at all (TODO)
-
-        :return: True if all declared models have corresponding tables and
-            columns.
+        :param store: The main store from which objects to edit are pulled in
         """
+        self._store = store
+        self._editing_session = store.make_session()
+        self._edited = set()
 
-        engine = self.session.get_bind()
-        iengine = inspect(engine)
+    def get(self, obj):
+        """
+        Get a copy of `object` that is ready for editing.
 
-        errors = False
+        .. note: Any edits to related objects will be saved too when invoking
+                 :meth:`save()'.
 
-        tables = iengine.get_table_names()
+        :param obj: Data model object to copy for editing
 
-        # Go through all SQLAlchemy models
-        for name, klass in ORMBase._decl_class_registry.items():
+        """
+        editing_copy = self._editing_session.merge(obj, load=False)
+        self._edited.add(editing_copy)
+        return editing_copy
 
-            if isinstance(klass, _ModuleMarker):
-                # Not a model
-                continue
+    def add(self, obj):
+        """
+        Register a newly created top level object
 
-            table = klass.__tablename__
-            if table in tables:
-                # Check all columns are found
-                # Looks like
-                # [{'default': "nextval('sanity_check_test_id_seq'::regclass)",
-                #   'autoincrement': True, 'nullable': False, 'type': INTEGER(),
-                #   'name': 'id'}]
+        If a new toplevel object is created during editing that has no
+        relation to any object obtained through :meth:`get()`, it needs to be
+        :meth:`add()`ed to the editing context before saving.
 
-                columns = [c["name"] for c in iengine.get_columns(table)]
-                mapper = inspect(klass)
+        :param obj: Data model object to add to the context
 
-                for column_prop in mapper.attrs:
-                    if isinstance(column_prop, RelationshipProperty):
-                        # TODO: Add sanity checks for relations
-                        pass
-                    else:
-                        for column in column_prop.columns:
-                            # Assume normal flat column
-                            if not column.key in columns:
-                                logger.error(f'Model {klass} declares column '
-                                             f'{column.key} which does not exist '
-                                             f'in database {engine}')
-                                errors = True
-            else:
-                logger.error(f'Model {klass} declares table {table} which does not '
-                             f'exist in database {engine}')
-                errors = True
+        """
+        self._edited.add(obj)
 
-        return not errors
+    def delete(self, obj):
+        """
+        Mark a top-level object for deletion
+
+        Usage example:
+
+            editable_project = editing_context.get(project)
+            editing_context.delete(editable_project)
+            editing_context.save()
+
+        .. note: Objects that are reachable through relationships of previously
+                 obtained objects (either through :meth:`add` or :meth:`get`)
+                 usually don't have to be marked for deletion explicitly.
+                 They are typically marked when they become orphans, e.g.:
+
+                     catalog.events.remove(event_x)
+
+        :param obj: Data model object to mark for deletion
+
+        """
+        self._editing_session.delete(obj)
+
+    def save(self):
+        """ Save edits to the main store and the data base """
+        for obj in self._edited:
+            original = self._store.session.merge(obj)
+            # We need to propagate deletes manually since the instance state is
+            # not updated until flush() (and flushing the editing session
+            # causes other issues
+            if obj in self._editing_session.deleted:
+                self._store.delete(original)
+        self._store.save()
