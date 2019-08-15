@@ -53,13 +53,12 @@ class WktPointBinding(AttrBinding):
 
     @property
     def target_value(self):
-        wkb = super().target_value
-        coords = wkt_utils.coordinates_from_wkb_point(wkb)
+        data = super().target_value
+        coords = wkt_utils.coordinates_from_wkb(data)
         return str(coords[self.dimension]) if coords else None
 
     def on_widget_changed(self):
-        wkb = super().target_value
-        coords = list(wkt_utils.coordinates_from_wkb_point(wkb)) or [0, 0, 0]
+        data = super().target_value
+        coords = list(wkt_utils.coordinates_from_wkb(data)) or [0, 0, 0]
         coords[self.dimension] = float(self.widget_value)
-        setattr(self.target, self.attr,
-                wkt_utils.coordinates_to_wkb_point(coords))
+        setattr(self.target, self.attr, wkt_utils.coordinates_to_wkb(coords))

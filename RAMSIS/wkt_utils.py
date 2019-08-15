@@ -1,29 +1,31 @@
 # Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Utilities for working with Well Known Text / Binary (WKT, WKB)
+Utilities for working with Well Known Text / Binary (WKT, WKB) from
+GeoAlchemy2
 
 """
 
-from geoalchemy2.shape import to_shape, from_shape
-from geoalchemy2.elements import WKBElement, WKTElement
-from shapely.geometry import Point
+import binascii
+
+from gdal import ogr
+from geoalchemy2.elements import WKBElement
 
 
 # Methods to parse WKT / WKB
 
-def coordinates_from_wkb_point(wkt):
-    """  Returns the coordinates for POINT wkb or wkt as a list """
-    if isinstance(wkt, (WKTElement, WKBElement)):
-        point = to_shape(wkt)
-        if isinstance(point, Point):
-            return point.coords[0]
-    return []
+def coordinates_from_wkb(wkb_element):
+    """  Returns the coordinates for a POINTZ WKBElement as a list """
+    if wkb_element is None:
+        return []
+    wkb = binascii.unhexlify(wkb_element.desc.encode('utf-8'))
+    p = ogr.CreateGeometryFromWkb(wkb)
+    return [p.GetX(), p.GetY(), p.GetZ()]
 
 
 # Methods to create WKT / WKB representations
 
-def coordinates_to_wkb_point(coordinates, srid=4326):
-    """ Converts a list of coordinates to POINT wkb """
-    point = Point(coordinates)
-    return from_shape(point, srid)
-
+def coordinates_to_wkb(coordinates):
+    """ Converts a list of coordinates to POINT WKBElement """
+    point = ogr.Geometry(ogr.wkbPoint)
+    point.AddPoint(*coordinates)
+    return WKBElement(point.ExportToWkb())
