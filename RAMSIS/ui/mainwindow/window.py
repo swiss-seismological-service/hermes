@@ -22,8 +22,8 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
     QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout
 
 from RAMSIS.core.builder import default_scenario, empty_forecast
-from RAMSIS.core.store import EditingContext
 from RAMSIS.core.simulator import SimulatorState
+from RAMSIS.core.store import EditingContext
 from RAMSIS.core.datasources import CsvEventImporter
 from RAMSIS.ui.projectmanagementwindow import ProjectManagementWindow
 from RAMSIS.ui.settingswindow import (
@@ -189,13 +189,14 @@ class MainWindow(QMainWindow):
     @pyqtSlot(name='on_planNextButton_clicked')
     def on_plan_next_forecast_clicked(self):
         dt = datetime.datetime(2000, 1, 1)
-        config_dialog = ForecastConfigDialog(
+        dlg = ForecastConfigDialog(
             empty_forecast(starttime=dt, endtime=dt),
             min_datetime=self.app.ramsis_core.project.starttime)
-        config_dialog.exec_()
+        dlg.exec_()
 
-        fc = config_dialog.data
-        if fc is not None:
+        if (dlg.result() == QDialog.Accepted and
+                dlg.data is not None):
+            fc = dlg.data
             self.app.ramsis_core.add_forecast(fc)
             self.content_presenter.add_forecast(fc)
 
