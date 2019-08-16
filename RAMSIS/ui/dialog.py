@@ -17,7 +17,7 @@ from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
-from RAMSIS.utils import is_phsf
+from RAMSIS.wkt_utils import is_phsf
 
 
 class DialogError(Error):
