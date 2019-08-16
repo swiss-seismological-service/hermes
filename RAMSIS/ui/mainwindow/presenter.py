@@ -23,7 +23,7 @@ from RAMSIS.core.store import EditingContext
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.base.contextaction import (
     ContextAction, ContextActionDelete, Separator)
-from RAMSIS.ui.dialog import ForecastConfigDialog
+from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
     ForecastTreeModel)
 from RAMSIS.ui.styles import StatusColor
@@ -171,8 +171,12 @@ class ContentPresenter(object):
                     ctx.save()
 
             elif isinstance(item, ForecastScenario):
-                # TODO(damb): Make scenario editable
-                pass
+                ctx = EditingContext(self.ramsis_core.store)
+                dlg = ScenarioConfigDialog(ctx.get(item))
+                dlg.exec_()
+
+                if dlg.result() == QDialog.Accepted:
+                    ctx.save()
 
             else:
                 raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")
