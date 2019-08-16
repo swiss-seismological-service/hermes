@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox
 
 from ramsis.utils.error import Error
 from ramsis.datamodel.forecast import EStage
+from ramsis.datamodel.well import InjectionWell
 
 from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
@@ -172,6 +173,7 @@ class ScenarioConfigDialog(
             raise ValidationError(
                 f'Invalid reservoir geometry passed {wkt_geom!r}')
 
+        well = self._data.well
         # create injection plan
         if (self.ui.injectionStrategyRadioButton1.isChecked() and
                 self.retval_import_from_file_dialog):
@@ -207,6 +209,8 @@ class ScenarioConfigDialog(
                     'Injection plan sucessfully imported.')
 
                 # TODO(damb): validate injection plan
+        elif isinstance(self._data.well, InjectionWell):
+            pass
         else:
             _ = QMessageBox.critical(
                 self, 'RAMSIS',
