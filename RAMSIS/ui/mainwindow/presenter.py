@@ -10,6 +10,8 @@ for individual window elements.
 """
 from datetime import datetime
 
+from PyQt5.QtWidgets import QDialog
+
 from .tabs import ModelTabPresenter, HazardTabPresenter, \
     GeneralTabPresenter
 from .timeline import TimeLinePresenter
@@ -17,6 +19,7 @@ from .timeline import TimeLinePresenter
 from ramsis.datamodel.forecast import Forecast, ForecastScenario
 
 from RAMSIS.core.controller import LaunchMode
+from RAMSIS.core.store import EditingContext
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.base.contextaction import (
     ContextAction, ContextActionDelete, Separator)
@@ -158,10 +161,12 @@ class ContentPresenter(object):
             item = indices[0].data(CustomRoles.RepresentedItemRole)
 
             if isinstance(item, Forecast):
-                dlg = ForecastConfigDialog(item)
+                ctx = EditingContext(self.ramsis_core.store)
+                dlg = ForecastConfigDialog(ctx.get(item))
                 dlg.exec_()
-                if dlg.data is not None:
-                    self.ramsis_core.store.save()
+
+                if dlg.result() == QDialog.Accepted:
+                    ctx.save()
 
             elif isinstance(item, ForecastScenario):
                 # TODO(damb): Make scenario editable
