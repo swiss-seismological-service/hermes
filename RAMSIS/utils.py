@@ -6,8 +6,7 @@ Various utility functions
 import abc
 import functools
 
-from PyQt5.QtCore import QTimer, QObject, QDateTime
-from sqlalchemy import event
+from PyQt5.QtCore import QTimer, QObject
 
 
 def rsetattr(obj, attr, val):
