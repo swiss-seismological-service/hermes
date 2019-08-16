@@ -160,3 +160,11 @@ def coordinates_to_wkb(coordinates):
     point = ogr.Geometry(ogr.wkbPoint)
     point.AddPoint(*coordinates)
     return WKBElement(point.ExportToWkb())
+
+
+def wkb_to_wkt(wkb_element):
+    """
+    Convert a :code:`WKBElement` to the corresponding WKT representation.
+    """
+    wkb = binascii.unhexlify(wkb_element.desc.encode('utf-8'))
+    return ogr.CreateGeometryFromWkb(wkb).ExportToWkt()

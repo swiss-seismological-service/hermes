@@ -17,7 +17,7 @@ from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.ui.utils import UiForm
-from RAMSIS.wkt_utils import is_phsf
+from RAMSIS.wkt_utils import is_phsf, wkb_to_wkt
 
 
 class DialogError(Error):
@@ -89,10 +89,12 @@ class ScenarioConfigDialog(
         self.ui.scenarioEnable.setChecked(scenario.enabled)
         self.ui.nameLineEdit.setText(scenario.name)
 
-        # TODO(damb): Return WKT
-        if str(scenario.reservoirgeom):
-            self.ui.reservoirGeometryPlainTextEdit.setPlainText(
-                str(scenario.reservoirgeom))
+        try:
+            geom = wkb_to_wkt(scenario.reservoirgeom)
+        except Exception:
+            geom = str(scenario.reservoirgeom)
+
+        self.ui.reservoirGeometryPlainTextEdit.setPlainText(geom)
 
         # configure seismicityStageTab
         try:
