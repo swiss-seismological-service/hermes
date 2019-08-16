@@ -160,6 +160,8 @@ class ContentPresenter(object):
         if indices:
             item = indices[0].data(CustomRoles.RepresentedItemRole)
 
+            # TODO(damb): Only allow editing if there are either no results or
+            # a Forecast/ForecastScenario was reset.
             if isinstance(item, Forecast):
                 ctx = EditingContext(self.ramsis_core.store)
                 dlg = ForecastConfigDialog(ctx.get(item))
