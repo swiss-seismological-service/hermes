@@ -136,6 +136,9 @@ class Store:
         try:
             entity = with_polymorphic(Model, _map[model_type])
         except KeyError:
+            if model_type is not None:
+                raise ValueError(f'Unknown model type {model_type!r}')
+
             entity = with_polymorphic(Model, '*')
 
         return self.session.query(entity).all()

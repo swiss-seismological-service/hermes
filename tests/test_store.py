@@ -143,5 +143,5 @@ class TestStoreOperation(unittest.TestCase):
         self.assertEqual(test[0], seismicity_model)
         test = self.store.load_models(model_type=EModel.SEISMICITY)
         self.assertEqual(test[0], seismicity_model)
-        test = self.store.load_models(model_type=EModel.HAZARD)
-        self.assertEqual(len(test), 0)
+        with self.assertRaises(ValueError):
+            _ = self.store.load_models(model_type=EModel.HAZARD)
