@@ -125,8 +125,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
             def demux_data(resp):
                 """
-                Demultiplex the the responses' primary data. :code:`errors` and
-                :code:`meta` is ignored.
+                Demultiplex the responses' primary data. :code:`errors` and
+                :code:`meta` are ignored.
                 """
                 retval = []
                 for r in resp:
