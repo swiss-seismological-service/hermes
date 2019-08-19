@@ -366,7 +366,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         :param payload: Payload sent to the remote worker
         :type payload: :py:class:`SeismicityWorkerHandle.Payload`
-        :param deserializer: Optional deserializer used to load the response
+        :param deserializer: Optional deserializer instance used to load the
+            response
         """
         # TODO(damb): Howto extract the correct hydraulics catalog for the
         # injection well?
@@ -397,7 +398,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         try:
             result = response.json()
             if deserializer:
-                result = deserializer()._loado(result)
+                result = deserializer._loado(result)
         except (ValueError, marshmallow.exceptions.ValidationError) as err:
             raise self.DecodingError(err)
 
