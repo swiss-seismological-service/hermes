@@ -3,7 +3,7 @@ attrs==17.4.0
 certifi==2018.1.18
 chardet==3.0.4
 cycler==0.10.0
-decorator==4.2.1
+decorator==4.3
 future==0.16.0
 idna==2.6
 lxml==3.3.3
@@ -23,7 +23,7 @@ python-dateutil==2.6.1
 pytz==2017.3
 -e git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git#egg=ramsis.datamodel
 requests==2.18.4
-scipy==1.0.0
+scipy==1.0.1
 shapely
 sip==4.19.7
 six==1.11.0
