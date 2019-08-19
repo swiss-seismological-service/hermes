@@ -415,6 +415,23 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
 
+    def test_accepted_msg(self):
+        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
+                                       'omsg-202.json'))
+
+        reference_result = {
+            'data': {
+                'id': uuid.UUID('f51e0208-515d-4099-8d87-bdc0e54f09cb'),
+                'attributes': {
+                    'status_code': 202,
+                    'status': 'TaskAccepted',
+                    'warning': '', }}}
+
+        deserializer = SFMWorkerOMessageDeserializer(proj=None)
+
+        self.assertEqual(deserializer.loads(json_omsg),
+                         reference_result)
+
     def test_ok_msg(self):
         json_omsg = _read(os.path.join(self.PATH_RESOURCES,
                                        'omsg-200.json'))
