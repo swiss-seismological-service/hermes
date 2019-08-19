@@ -9,6 +9,7 @@ import functools
 from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
                          post_load, ValidationError, EXCLUDE)
 
+from geoalchemy2.elements import WKBElement
 from osgeo import ogr, gdal
 
 from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
@@ -18,6 +19,7 @@ from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
                              _IOError, TransformationError, Percentage,
                              Uncertainty)
+from RAMSIS.wkt_utils import wkb_to_wkt
 
 gdal.UseExceptions()
 
@@ -146,6 +148,12 @@ class _ReservoirSchema(_SchemaBase):
 
     # XXX(damb): Currently no sub_geometries are supported.
     # sub_geometries = fields.Nested('self', many=True)
+
+    @pre_dump
+    def wkb_to_wkt(self, data, **kwargs):
+        if 'geom' in data and isinstance(data['geom'], WKBElement):
+            data['geom'] = wkb_to_wkt(data['geom'])
+        return data
 
     @post_dump
     def transform(self, data, **kwargs):

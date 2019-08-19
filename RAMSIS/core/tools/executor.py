@@ -51,7 +51,7 @@ class ExecutionStatus:
 
     class Flag(Enum):
         STARTED = auto()  #: Execution has started successfully
-        UPDATE = auto()  #: Update message during execution
+        RUNNING = auto()   #: Execution is currently processing
         SUCCESS = auto()  #: Execution has finished successfully
         ERROR = auto()    #: Execution has finished with an error
 

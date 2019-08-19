@@ -81,6 +81,9 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     class RemoteWorkerError(WorkerHandleBase.WorkerHandleError):
         """Base worker error ({})."""
 
+    class HTTPError(RemoteWorkerError):
+        """Worker HTTP error (url={!r}, reason={!r})."""
+
     class ConnectionError(RemoteWorkerError):
         """Worker connection error (url={!r}, reason={!r})."""
 
@@ -235,8 +238,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             :param model_parameters: Model specific configuration parameters.
                If :code:`None` parameters are not appended.
             :type model_parameters: dict or None
-            :param serializer: Serializer used to serialize the payload
-            :type serializer: :py:class:`marshmallow.Schema`
+            :param serializer: Serializer instance used to serialize the
+                payload
             """
             self._payload = {
                 'data': {
@@ -251,10 +254,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                     model_parameters
 
             self._serializer = kwargs.get(
-                'serializer', self.DEFAULT_SERIALIZER)
+                'serializer', self.DEFAULT_SERIALIZER())
 
         def dumps(self):
-            return self._serializer().dumps(self._payload)
+            return self._serializer.dumps(self._payload)
 
     def __init__(self, base_url, **kwargs):
         """
@@ -289,7 +292,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         """
         # XXX(damb): Where to get additional configuration options from?
         # model_run.config? model.config? From somewhere else?
-        return cls(model_run.model.url, model_run.model.name)
+        return cls(model_run.model.url, model_id=model_run.model.sfmwid)
 
     @property
     def model(self):
@@ -343,8 +346,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 format(self.model, url, t))
             try:
                 response = requests.get(url, timeout=self._timeout)
-            except requests.exceptions.RequestException as err:
-                raise self.ConnectionError(url, err)
+            except requests.exceptions.HTTPError as err:
+                raise self.HTTPError(self.url, err)
+            except requests.exceptions.ConnectionError as err:
+                raise self.ConnectionError(self.url, err)
+            except requests.exceptions.RequestsError as err:
+                raise self.RemoteWorkerError(err)
 
             self.logger.debug(
                 'Task result (model={!r}, task_id={!r}): {!r}'.format(
@@ -392,8 +399,13 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             response = requests.post(self.url, data=_payload,
                                      headers=headers,
                                      timeout=self._timeout)
-        except requests.exceptions.RequestException as err:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            raise self.HTTPError(self.url, err)
+        except requests.exceptions.ConnectionError as err:
             raise self.ConnectionError(self.url, err)
+        except requests.exceptions.RequestsError as err:
+            raise self.RemoteWorkerError(err)
 
         try:
             result = response.json()
@@ -433,8 +445,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 format(self.model, url, t))
             try:
                 response = requests.delete(url, timeout=self._timeout)
-            except requests.exceptions.RequestException as err:
-                raise self.ConnectionError(url, err)
+            except requests.exceptions.HTTPError as err:
+                raise self.HTTPError(self.url, err)
+            except requests.exceptions.ConnectionError as err:
+                raise self.ConnectionError(self.url, err)
+            except requests.exceptions.RequestsError as err:
+                raise self.RemoteWorkerError(err)
 
             self.logger.debug(
                 'Task removed (model={!r}, task_id={!r}): {!r}'.format(
@@ -457,7 +473,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     def validate_ctor_args(base_url, model_id):
         url = urlparse(base_url)
         if url.path or url.params or url.query or url.fragment:
-            raise ValueError("Invalid URL.")
+            raise ValueError(f"Invalid URL: {url!r}.")
 
         if not model_id:
             raise ValueError("Missing: model id.")
