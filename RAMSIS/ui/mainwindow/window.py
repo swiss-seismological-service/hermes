@@ -159,15 +159,17 @@ class MainWindow(QMainWindow):
         if idx.parent().isValid():
             idx = idx.parent()
 
+        fc = idx.data(CustomRoles.RepresentedItemRole)
+
         dlg = ScenarioConfigDialog(
-            default_scenario(self.app.ramsis_core.store))
+            default_scenario(self.app.ramsis_core.store),
+            fc_duration=(fc.endtime - fc.starttime).total_seconds())
         dlg.exec_()
 
         scenario = dlg.data
         if scenario is not None:
             self.logger.debug(f"Dialog data: {dlg.data!r}")
 
-            fc = idx.data(CustomRoles.RepresentedItemRole)
             fc.append(scenario)
 
             self.app.ramsis_core.store.save()

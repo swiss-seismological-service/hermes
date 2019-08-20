@@ -72,20 +72,26 @@ class ScenarioConfigDialog(
     """
     JSON_INDENT = 2
 
-    def __init__(self, scenario, *args, **kwargs):
+    def __init__(self, scenario, *args, fc_duration=None, **kwargs):
+        """
+        :param scenario: Forecast scenario the dialog is preconfigured with
+        :type scenario: :py:class:`ramsis.datamodel.forecast.ForecastScenario`
+        :param float fc_duration: Forecast duration in seconds
+        """
         super().__init__(*args, **kwargs)
 
         self.retval_import_from_file_dialog = None
 
         self._data = scenario
-        self._configure(scenario)
+        self._configure(scenario, fc_duration)
 
-    def _configure(self, scenario):
+    def _configure(self, scenario, fc_duration=None):
         """
         Preconfigure the dialog with a forecast scenario.
 
         :param scenario: Forecast scenario the dialog is preconfigured with
         :type scenario: :py:class:`ramsis.datamodel.forecast.ForecastScenario`
+        :param float fc_duration: Forecast duration in seconds
         """
         self.ui.scenarioEnable.setChecked(scenario.enabled)
         self.ui.nameLineEdit.setText(scenario.name)
@@ -107,6 +113,14 @@ class ScenarioConfigDialog(
             pass
         else:
             self.ui.seismicityStageEnable.setChecked(stage.enabled)
+
+            if fc_duration is not None:
+                self.ui.predictionBinDurationDoubleSpinBox.setMaximum(
+                    fc_duration)
+
+            if 'prediction_bin_duration' in stage.config:
+                self.ui.predictionBinDurationDoubleSpinBox.setValue(
+                    stage.config['prediction_bin_duration'])
 
             # configure seismicity models
             for r in stage.runs:
@@ -232,6 +246,9 @@ class ScenarioConfigDialog(
             pass
         else:
             stage.enabled = seismicity_stage_enabled
+            stage.config = {
+                'prediction_bin_duration':
+                self.ui.predictionBinDurationDoubleSpinBox.value(), }
             cbox = self.ui.seismicityModelsComboBox
             stage.runs = [cbox.itemData(i) for i in range(cbox.count())]
 

@@ -145,7 +145,7 @@
       <attribute name="title">
        <string>Seismicity Stage</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
+      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0,0">
        <item>
         <widget class="QCheckBox" name="seismicityStageEnable">
          <property name="text">
@@ -154,6 +154,36 @@
          <property name="checked">
           <bool>true</bool>
          </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="widget" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>SFM prediction bin duration:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="predictionBinDurationDoubleSpinBox">
+            <property name="minimum">
+             <double>0.010000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>86400.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>s</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
