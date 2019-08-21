@@ -74,8 +74,6 @@ def default_scenario(store, name='Scenario', **kwargs):
         Create stages from a stage configuration.
 
         :param dict stage_config: Stage configuration
-        :param bool force: Create all stages to be created even when the stage
-            is disabled.
 
         :returns: list of stages
         :rtype: list of :py:class:`ramsis.datamodel.ForecastStage`
