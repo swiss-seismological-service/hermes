@@ -59,13 +59,17 @@ def default_scenario(store, name='Scenario', **kwargs):
     DEFAULT_SCENARIO_CONFIG = {
         'stages': [
             {'seismicity': {
-                'enabled': True, }},
+                'enabled': True,
+                'config': {}, }},
             {'seismicity_skill': {
-                'enabled': False, }},
+                'enabled': False,
+                'config': {}, }},
             {'hazard': {
-                'enabled': True, }},
+                'enabled': True,
+                'config': {}, }},
             {'risk': {
-                'enabled': True, }}
+                'enabled': True,
+                'config': {}, }}
         ]
     }
 

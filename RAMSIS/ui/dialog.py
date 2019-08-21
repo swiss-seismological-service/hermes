@@ -118,7 +118,7 @@ class ScenarioConfigDialog(
                 self.ui.predictionBinDurationDoubleSpinBox.setMaximum(
                     fc_duration)
 
-            if 'prediction_bin_duration' in stage.config:
+            if stage.config and 'prediction_bin_duration' in stage.config:
                 self.ui.predictionBinDurationDoubleSpinBox.setValue(
                     stage.config['prediction_bin_duration'])
 
