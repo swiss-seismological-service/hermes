@@ -2,12 +2,14 @@
 """
 Object creation and building facilities.
 """
+
 import datetime
 import functools
 
 from ramsis.datamodel.forecast import (
-    Forecast, ForecastScenario, ForecastStage, EStage, SeismicityModelRun)
+    Forecast, ForecastScenario, ForecastStage, EStage)
 from ramsis.datamodel.model import EModel
+from ramsis.datamodel.seismicity import SeismicityModelRun
 
 
 # NOTE(damb): The approach chosen is similar to matplotlib's pyplot builder
@@ -15,70 +17,49 @@ from ramsis.datamodel.model import EModel
 # https://python-patterns.guide/gang-of-four/builder/
 # -----------------------------------------------------------------------------
 
-def seismicity_stage(store, models=[], **kwargs):
+def seismicity_stage(**kwargs):
     """
     Build a seismicity forecast stage.
-
-    :param store: Reference to RAMSIS store
-    :type store: :py:class:`RAMSIS.core.store.Store`
     """
-    # TODO(damb): Add models enabled
-    return ForecastStage.create(
-        EStage.SEISMICITY,
-        runs=[SeismicityModelRun(model=m)
-              for m in store._load_models(model_type=EModel.SEISMICITY)
-              if m.enabled])
+    return ForecastStage.create(EStage.SEISMICITY, **kwargs)
 
 
-def seismicity_skill_stage(store):
+def seismicity_skill_stage(**kwargs):
     """
     Build a seismicity skill forecast stage.
-
-    :param store: Reference to RAMSIS store
-    :type store: :py:class:`RAMSIS.core.store.Store`
     """
 
-    return ForecastStage.create(EStage.SEISMICITY_SKILL)
+    return ForecastStage.create(EStage.SEISMICITY_SKILL, **kwargs)
 
 
-def hazard_stage(store):
+def hazard_stage(**kwargs):
     """
     Build a hazard forecast stage.
-
-    :param store: Reference to RAMSIS store
-    :type store: :py:class:`RAMSIS.core.store.Store`
     """
-    return ForecastStage.create(EStage.HAZARD)
+    return ForecastStage.create(EStage.HAZARD, **kwargs)
 
 
-def risk_stage(store):
+def risk_stage(**kwargs):
     """
     Build a risk forecast stage.
-
-    :param store: Reference to RAMSIS store
-    :type store: :py:class:`RAMSIS.core.store.Store`
     """
-    return ForecastStage.create(EStage.RISK)
+    return ForecastStage.create(EStage.RISK, **kwargs)
 
 
-def default_scenario(store, future_wells=[], config=None, name=None, **kwargs):
+def default_scenario(store, name='Scenario', **kwargs):
     """
     Build a *default* forecast scenario.
 
     :param store: Reference to RAMSIS store
     :type store: :py:class:`RAMSIS.core.store.Store`
-    :param future_wells: List of *future* planned wells (with an
-    :py:class:`ramsis.datamodel.hydraulics.InjectionPlan` attached).
-    :type future_wells: list of :py:class:`ramsis.datamodel.well.InjectionWell`
-    :param dict config: scenario configuration dictionary
     :param name: Forecast scenario name
     :type name: str or None
     """
+
     DEFAULT_SCENARIO_CONFIG = {
         'stages': [
             {'seismicity': {
-                'enabled': True,
-                'models': [], }},
+                'enabled': True, }},
             {'seismicity_skill': {
                 'enabled': False, }},
             {'hazard': {
@@ -88,29 +69,69 @@ def default_scenario(store, future_wells=[], config=None, name=None, **kwargs):
         ]
     }
 
-    if not config:
-        config = DEFAULT_SCENARIO_CONFIG
+    def create_stages(store, stage_config):
+        """
+        Create stages from a stage configuration.
 
-    stages = []
-    if 'seismicity' in config and config['seismicity'].get('enabled', True):
-        stages.append(seismicity_stage(store),
-                      models=config['seismicity'].get('models', []))
-    if ('seismicity_skill' in config and
-            config['seismicity_skill'].get('enabled', False)):
-        stages.append(seismicity_skill_stage(store))
-    if 'hazard' in config and config['hazard'].get('enabled', True):
-        stages.append(hazard_stage(store))
-    if 'risk' in config and config['risk'].get('enabled', True):
-        stages.append(risk_stage(store))
+        :param dict stage_config: Stage configuration
+
+        :returns: list of stages
+        :rtype: list of :py:class:`ramsis.datamodel.ForecastStage`
+        """
+
+        retval = []
+        try:
+            seismicity_stage_config = stage_config[0]['seismicity']
+        except (IndexError, KeyError):
+            pass
+        else:
+            enabled = seismicity_stage_config.get('enabled', True)
+            if enabled:
+                runs = [SeismicityModelRun(model=m, enabled=True)
+                        for m in store.load_models(
+                            model_type=EModel.SEISMICITY)
+                        if m.enabled]
+                s = seismicity_stage(runs=runs, **seismicity_stage_config)
+                retval.append(s)
+
+        try:
+            seismicity_skill_stage_config = stage_config[1]['seismicity_skill']
+        except (IndexError, KeyError):
+            pass
+        else:
+            enabled = seismicity_skill_stage_config.get('enabled', False)
+            if enabled:
+                retval.append(seismicity_skill_stage(enabled=enabled))
+
+        try:
+            hazard_stage_config = stage_config[2]['hazard']
+        except (IndexError, KeyError):
+            pass
+        else:
+            enabled = hazard_stage_config.get('enabled', True)
+            if enabled:
+                retval.append(hazard_stage(enabled=enabled))
+
+        try:
+            risk_stage_config = stage_config[3]['risk']
+        except (IndexError, KeyError):
+            pass
+        else:
+            enabled = risk_stage_config.get('enabled', True)
+            if enabled:
+                retval.append(risk_stage(enabled=enabled))
+
+        return retval
 
     return ForecastScenario(
-        config=config,
-        name='Scenario' if name is None else name,
-        stages=stages,
-        wells=future_wells)
+        name=name,
+        config={},
+        enabled=True,
+        stages=create_stages(store, DEFAULT_SCENARIO_CONFIG['stages']))
 
 
-def default_forecast(store, starttime, endtime, num_scenarios=1, name=None):
+def default_forecast(store, starttime, endtime, num_scenarios=1,
+                     name='Forecast'):
     """
     Build a *default* forecast.
 
@@ -124,8 +145,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1, name=None):
     :param name: Name of the forecast
     :type name: str or None
     """
-    return Forecast(name='Forecast' if name is None else name,
-                    starttime=starttime, endtime=endtime,
+    return Forecast(name=name, starttime=starttime, endtime=endtime,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
                     scenarios=[default_scenario(store)
                                for s in range(num_scenarios)])

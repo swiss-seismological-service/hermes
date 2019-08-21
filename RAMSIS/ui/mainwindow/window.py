@@ -11,6 +11,7 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 
+import datetime
 import logging
 import os
 
@@ -20,10 +21,10 @@ from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
     QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView, \
     QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout
 
-from RAMSIS.core.store import EditingContext
+from RAMSIS.core.builder import default_scenario, empty_forecast
 from RAMSIS.core.simulator import SimulatorState
+from RAMSIS.core.store import EditingContext
 from RAMSIS.core.datasources import CsvEventImporter
-
 from RAMSIS.ui.projectmanagementwindow import ProjectManagementWindow
 from RAMSIS.ui.settingswindow import (
     ApplicationSettingsWindow, ProjectSettingsWindow)
@@ -31,10 +32,10 @@ from RAMSIS.ui.simulationwindow import SimulationWindow
 from RAMSIS.ui.reservoirwindow import ReservoirWindow
 from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
+from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 
 from .presenter import ContentPresenter
 from .viewmodels.seismicdatamodel import SeismicDataModel
-from ramsis.datamodel.forecast import ForecastScenario
 
 
 ui_path = os.path.dirname(__file__)
@@ -56,7 +57,7 @@ class StatusBar(QStatusBar):
         self.activityWidget = QLabel('Idle')
         self.current_activity_id = None
         self.addWidget(self.statusWidget)
-        self.addWidget(QLabel(' '*10))
+        self.addWidget(QLabel(' ' * 10))
         self.addWidget(self.timeWidget)
         self.addPermanentWidget(self.activityWidget)
         self.addPermanentWidget(self.progressBar)
@@ -145,21 +146,37 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_addScenarioButton_clicked')
     def on_add_scenario_clicked(self):
-        fc_selection = self.ui.forecastTreeView.selectionModel()
-        idx = fc_selection.currentIndex()
+        selection_model = self.ui.forecastTreeView.selectionModel()
+        idx = selection_model.currentIndex()
+
+        if not idx.isValid():
+            _ = QMessageBox.critical(
+                self, 'RAMSIS', 'No forecast/scenario item selected.',
+                buttons=QMessageBox.Close)
+            return
+
+        # check if child was selected
         if idx.parent().isValid():
-            forecast_idx = idx.parent().row()
-        else:
-            forecast_idx = idx.row()
-        try:
-            forecast_set = self.content_presenter.fc_tree_model.forecast_set
-            forecast = forecast_set.forecasts[forecast_idx]
-            scenario = ForecastScenario()
-            scenario.name = 'new scenario'
-            forecast.add_scenario(scenario)
-            self.app.ramsis_core.project.store.commit()
-        except IndexError as e:
-            raise e
+            idx = idx.parent()
+
+        fc = idx.data(CustomRoles.RepresentedItemRole)
+
+        dlg = ScenarioConfigDialog(
+            default_scenario(self.app.ramsis_core.store),
+            fc_duration=(fc.endtime - fc.starttime).total_seconds())
+        dlg.exec_()
+
+        scenario = dlg.data
+        if scenario is not None:
+            self.logger.debug(f"Dialog data: {dlg.data!r}")
+
+            fc.append(scenario)
+
+            self.app.ramsis_core.store.save()
+
+            self.logger.info(
+                f'Created new scenario {scenario!r} for forecast {fc!r}.')
+            self.content_presenter.fc_tree_model.add_scenario(idx, scenario)
 
     @pyqtSlot(name='on_removeScenarioButton_clicked')
     def on_remove_scenario_clicked(self):
@@ -173,8 +190,16 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(name='on_planNextButton_clicked')
     def on_plan_next_forecast_clicked(self):
-        forecast = self.app.ramsis_core.create_next_future_forecast()
-        self.content_presenter.add_forecast(forecast)
+        dt = datetime.datetime(2000, 1, 1)
+        dlg = ForecastConfigDialog(
+            empty_forecast(starttime=dt, endtime=dt),
+            min_datetime=self.app.ramsis_core.project.starttime)
+        dlg.exec_()
+
+        if dlg.result() == QDialog.Accepted:
+            fc = dlg.data
+            self.app.ramsis_core.add_forecast(fc)
+            self.content_presenter.add_forecast(fc)
 
     @pyqtSlot(name='on_actionApplication_Settings_triggered')
     def show_application_settings(self):

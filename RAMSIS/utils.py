@@ -5,8 +5,9 @@ Various utility functions
 """
 import abc
 import functools
+
 from PyQt5.QtCore import QTimer, QObject
-from sqlalchemy import event
+
 
 def rsetattr(obj, attr, val):
     """

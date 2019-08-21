@@ -13,14 +13,14 @@ from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
 
+from ramsis.datamodel.forecast import Forecast
+from ramsis.datamodel.seismics import SeismicEvent
+from ramsis.datamodel.hydraulics import HydraulicSample
 from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
-from ramsis.datamodel.forecast import Forecast
-from ramsis.datamodel.seismics import SeismicEvent
-from ramsis.datamodel.hydraulics import HydraulicSample
 
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -173,6 +173,21 @@ class Controller(QtCore.QObject):
         self._logger.info(f'Closing project {self.project.name}')
         self.project_will_unload.emit()
         self.project = None
+
+    def update_project(self, obj, mapping={}):
+        """
+        Update an project's object from a mapping.
+
+        :param obj: Object to be updated
+        :param dict mapping: Mapping to be used to update the object's values
+        """
+        for k, v in mapping.items():
+            attr = getattr(obj, k, None)
+            if attr and attr != v:
+                setattr(obj, k, v)
+
+        self.store.save()
+        self.project_data_changed.emit(obj)
 
     # Other user actions
 
@@ -375,6 +390,18 @@ class Controller(QtCore.QObject):
             self.connect(db_url)
 
     # Forecast handling
+
+    def add_forecast(self, fc):
+        """
+        Add a forecast.
+
+        :param fc: Forecast to be added.
+        :type fc: :py:class:`ramsis.datamodel.forecast.Forecast`
+        """
+        self.project.forecasts.append(fc)
+        self.store.save()
+        self.project_data_changed.emit(self.project.forecasts)
+        return fc
 
     def create_next_future_forecast(self):
         """ Adds the next regular forecast to the list of future forecasts """

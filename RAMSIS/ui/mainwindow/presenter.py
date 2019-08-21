@@ -10,24 +10,23 @@ for individual window elements.
 """
 from datetime import datetime
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction, QMenu
+from PyQt5.QtWidgets import QDialog
 
 from .tabs import ModelTabPresenter, HazardTabPresenter, \
-    GeneralTabPresenter, SettingsTabPresenter
+    GeneralTabPresenter
 from .timeline import TimeLinePresenter
 
-from ramsis.datamodel.forecast import Forecast
+from ramsis.datamodel.forecast import Forecast, ForecastScenario
 
 from RAMSIS.core.controller import LaunchMode
+from RAMSIS.core.store import EditingContext
 from RAMSIS.ui.base.roles import CustomRoles
-from RAMSIS.ui.base.contextaction import (ContextAction, ContextActionDelete,
-    Separator)
+from RAMSIS.ui.base.contextaction import (
+    ContextAction, ContextActionDelete, Separator)
+from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
-    ForecastTreeModel, ForecastNode)
+    ForecastTreeModel)
 from RAMSIS.ui.styles import StatusColor
-
-from ramsis.datamodel.forecast import ForecastScenario
 
 
 class ContentPresenter(object):
@@ -53,13 +52,15 @@ class ContentPresenter(object):
 
         def enable_run(idx):
             # TODO LH: support running individual scenarios
-            return len(idx) == 1 and is_lab_mode() \
-                   and idx[0].parent().isValid() is False
+            return (len(idx) == 1 and is_lab_mode() and
+                    idx[0].parent().isValid() is False)
 
-        # Context menu to run a forecast on demand
+        # context menu
         self.ui.forecastTreeView.context_actions = [
             ContextAction('Run now', self.action_run_now, enabler=enable_run),
             Separator(),
+            ContextAction('Edit ...', self.action_edit,
+                          enabler=ContextAction.single_only_enabler),
             ContextActionDelete(self.action_delete,
                                 parent_widget=self.ui.forecastTreeView,
                                 enabler=is_lab_mode)]
@@ -67,7 +68,7 @@ class ContentPresenter(object):
 
         # Presenters for the main window components
         tab_classes = [ModelTabPresenter, HazardTabPresenter,
-                       GeneralTabPresenter, SettingsTabPresenter]
+                       GeneralTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
@@ -155,6 +156,30 @@ class ContentPresenter(object):
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
         self.ramsis_core.engine.run(datetime.utcnow(), forecast)
 
+    def action_edit(self, indices):
+        if indices:
+            item = indices[0].data(CustomRoles.RepresentedItemRole)
+
+            # TODO(damb): Only allow editing under certain conditions.
+            if isinstance(item, Forecast):
+                ctx = EditingContext(self.ramsis_core.store)
+                dlg = ForecastConfigDialog(ctx.get(item))
+                dlg.exec_()
+
+                if dlg.result() == QDialog.Accepted:
+                    ctx.save()
+
+            elif isinstance(item, ForecastScenario):
+                ctx = EditingContext(self.ramsis_core.store)
+                dlg = ScenarioConfigDialog(ctx.get(item))
+                dlg.exec_()
+
+                if dlg.result() == QDialog.Accepted:
+                    ctx.save()
+
+            else:
+                raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")
+
     def action_delete(self, indexes):
         # TODO LH: this will probably crash with more than one index. We need
         #   to go from the highest to the lowest index and remove child nodes
@@ -165,7 +190,6 @@ class ContentPresenter(object):
             self.fc_tree_model.remove_node(idx.internalPointer())
             self.ramsis_core.store.delete(item)
         self.ramsis_core.store.save()
-
 
     # Handlers for signals from the UI
 

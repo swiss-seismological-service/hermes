@@ -14,7 +14,7 @@ The tree view has the following structure:
 
 """
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QSize
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QFont
 from RAMSIS.ui.base.tree.model import TreeModel, Node
 from RAMSIS.ui.base.utils import utc_to_local
@@ -40,7 +40,7 @@ class ScenarioNode(Node):
         if column == 1:
             if role == Qt.DisplayRole:
                 # TODO LH: this doesn't exist in the new model atm
-                #return self.item.summary_status
+                # return self.item.summary_status
                 return 'n/a'
             elif role == Qt.ForegroundRole:
                 return QBrush(Qt.gray)
@@ -64,7 +64,6 @@ class ForecastNode(Node):
         """
         :param Forecast forecast: Forecast object represented by this node
         :param Node parent_node: Parent Node (root node)
-e
         """
         super().__init__(forecast, parent_node)
         self.children = [ScenarioNode(s, self) for s in self.item.scenarios]
@@ -100,3 +99,10 @@ class ForecastTreeModel(TreeModel):
         row = self.project.forecasts.index(forecast)
         node = ForecastNode(forecast, self.root_node)
         self.insert_nodes(self.root_node, row, [node])
+
+    def add_scenario(self, parent_idx, scenario):
+        fc_node = parent_idx.internalPointer()
+        fc_row = parent_idx.row()
+
+        node = ScenarioNode(scenario, fc_node)
+        self.insert_nodes(fc_node, fc_row + fc_node.child_count(), [node])
