@@ -130,7 +130,8 @@ def default_scenario(store, name='Scenario', **kwargs):
         stages=create_stages(store, DEFAULT_SCENARIO_CONFIG['stages']))
 
 
-def default_forecast(store, starttime, endtime, num_scenarios=1, name=None):
+def default_forecast(store, starttime, endtime, num_scenarios=1,
+                     name='Forecast'):
     """
     Build a *default* forecast.
 
@@ -144,8 +145,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1, name=None):
     :param name: Name of the forecast
     :type name: str or None
     """
-    return Forecast(name='Forecast' if name is None else name,
-                    starttime=starttime, endtime=endtime,
+    return Forecast(name=name, starttime=starttime, endtime=endtime,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
                     scenarios=[default_scenario(store)
                                for s in range(num_scenarios)])
