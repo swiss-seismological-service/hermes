@@ -441,7 +441,9 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                 '2019-07-02T14:59:52.508142+00:00'),
             endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142+00:00'),
             b_value=73,
-            rate_value=42)
+            a_value=1.,
+            mc_value=1.5,
+            hydraulicvol_value=10000.)
 
         prediction = ReservoirSeismicityPrediction(
             geom=('POLYHEDRALSURFACE Z '
@@ -502,7 +504,9 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                 '2019-07-02T14:59:52.508142+00:00'),
             endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142+00:00'),
             b_value=73,
-            rate_value=42)
+            a_value=1.,
+            mc_value=1.5,
+            hydraulicvol_value=10000.)
 
         prediction = ReservoirSeismicityPrediction(
             geom=('POLYHEDRALSURFACE Z '
@@ -537,7 +541,9 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                 '2019-07-02T14:59:52.508142+00:00'),
             endtime=dateutil.parser.parse('2019-07-02T14:59:52.508143+00:00'),
             b_value=73.,
-            rate_value=42.)
+            a_value=1.,
+            mc_value=1.5,
+            hydraulicvol=10000.)
 
         prediction = dict(
             geom=('POLYHEDRALSURFACE Z '
