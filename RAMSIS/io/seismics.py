@@ -5,7 +5,6 @@ Utilities for seismic data import.
 
 import datetime
 import io
-import json
 
 from lxml import etree
 from obspy import read_events
@@ -71,8 +70,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         :rtype: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
         """
         if isinstance(data, str):
-            # encode string to bytes
-            data = data.encode(encoding=json.detect_encoding(data))
+            data = data.encode(encoding='utf-8')
 
         if not isinstance(data, (bytes, bytearray)):
             raise TypeError('The data object must be str, bytes or bytearray, '
