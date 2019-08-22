@@ -93,17 +93,35 @@ class _ModelResultSampleSchema(_SchemaBase):
     starttime = fields.DateTime(format='iso')
     endtime = fields.DateTime(format='iso')
 
-    rate_value = fields.Float(required=True)
-    rate_uncertainty = Uncertainty()
-    rate_loweruncertainty = Uncertainty()
-    rate_upperuncertainty = Uncertainty()
-    rate_confidencelevel = Percentage()
+    numberevents_value = fields.Float(required=True)
+    numberevents_uncertainty = Uncertainty()
+    numberevents_loweruncertainty = Uncertainty()
+    numberevents_upperuncertainty = Uncertainty()
+    numberevents_confidencelevel = Percentage()
 
     b_value = fields.Float(required=True)
     b_uncertainy = Uncertainty()
     b_loweruncertainty = Uncertainty()
     b_upperuncertainty = Uncertainty()
     b_confidencelevel = Percentage()
+
+    a_value = fields.Float(required=True)
+    a_uncertainy = Uncertainty()
+    a_loweruncertainty = Uncertainty()
+    a_upperuncertainty = Uncertainty()
+    a_confidencelevel = Percentage()
+
+    mc_value = fields.Float(required=True)
+    mc_uncertainy = Uncertainty()
+    mc_loweruncertainty = Uncertainty()
+    mc_upperuncertainty = Uncertainty()
+    mc_confidencelevel = Percentage()
+
+    hydraulicvol_value = fields.Float(required=True)
+    hydraulicvol_uncertainy = Uncertainty()
+    hydraulicvol_loweruncertainty = Uncertainty()
+    hydraulicvol_upperuncertainty = Uncertainty()
+    hydraulicvol_confidencelevel = Percentage()
 
     @pre_load
     def flatten(self, data, **kwargs):
