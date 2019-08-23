@@ -99,8 +99,7 @@ class ForecastExecutor(SerialExecutor):
         # XXX(damb): We only support one well with a single section at the
         # moment
         self.forecast.well = self.core.project.wells[0].\
-            snapshot(section_filter_cond=filter_future,
-                     sample_filter_cond=filter_future)
+            snapshot(sample_filter_cond=filter_future)
 
     def post_process(self):
         self.core.store.save()
