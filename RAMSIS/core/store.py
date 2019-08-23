@@ -236,7 +236,14 @@ class EditingContext:
         self._editing_session.delete(obj)
 
     def save(self):
-        """ Save edits to the main store and the data base """
+        """
+        Save edits to the main store and the database
+
+        .. note: The editing context should be discarded after saving since all
+                 objects will have been expunged and the underlying session
+                 closed.
+
+        """
         for obj in self._edited:
             original = self._store.session.merge(obj)
             # We need to propagate deletes manually since the instance state is
@@ -244,4 +251,5 @@ class EditingContext:
             # causes other issues
             if obj in self._editing_session.deleted:
                 self._store.delete(original)
+        self._editing_session.close()
         self._store.save()
