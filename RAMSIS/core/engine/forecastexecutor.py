@@ -96,7 +96,8 @@ class ForecastExecutor(SerialExecutor):
         self.forecast.seismiccatalog = self.core.project.seismiccatalog.\
             snapshot(filter_cond=filter_future)
 
-        # XXX(damb): We only support one well at the moment
+        # XXX(damb): We only support one well with a single section at the
+        # moment
         self.forecast.well = self.core.project.wells[0].\
             snapshot(section_filter_cond=filter_future,
                      sample_filter_cond=filter_future)
