@@ -109,7 +109,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             :param resp: SFM worker responses.
             :type resp: list of :py:class:`requests.Response or
                 :py:class:`requests.Response`
-            :param deserializer: Deserializer used
+            :param deserializer: Deserializer used. The deserializer must be
+                configured to deserialize *many* values.
             :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
             """
             def _json(resp):
@@ -309,8 +310,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :param task_ids: List of task identifiers (:py:class:`uuid.UUID`). If
             an empty list is passed all results are requested.
         :type task_ids: list or :py:class:`uuid.UUID`
-        :param deserializer: Deserializer to be used for data deserialization.
-            If :code:`None` no deserialization is performed at all.
+        :param deserializer: Deserializer instance to be used for data
+            deserialization.  If :code:`None` no deserialization is performed
+            at all. The deserializer must be configured to deserialize *many*
+            values.
         :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
         """
         if not task_ids:

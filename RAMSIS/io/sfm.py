@@ -368,6 +368,9 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
     SRS_EPSG = 4326
 
     def __init__(self, proj=None, **kwargs):
+        """
+        :param bool many: Allow the deserialization of many arguments
+        """
         super().__init__(proj=proj, **kwargs)
 
         self._context = kwargs.get('context', {'format': 'orm'})

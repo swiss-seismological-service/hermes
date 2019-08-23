@@ -40,7 +40,7 @@ from RAMSIS.utils import QtABCMeta
 
 
 class ExecutionStatus:
-    """ 
+    """
     Status change notification for :cvar:`~_Executor.status_changed` signals
 
     :param AbstractExecutor or Executor origin: Original sender of the message
@@ -138,8 +138,9 @@ class SerialExecutor(AbstractExecutor):
 
     def on_child_status_changed(self, execution_status):
         super().on_child_status_changed(execution_status)
-        if execution_status.origin in self.children() and \
-                (execution_status.flag in self.proceed_on):
+        if (self._iter is not None and
+            execution_status.origin in self.children() and
+                execution_status.flag in self.proceed_on):
             self._run_next()
 
     def _run_next(self):

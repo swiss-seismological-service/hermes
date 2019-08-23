@@ -339,13 +339,18 @@ class SeismicityModelRunExecutor(Executor):
         self.model_run.runid = resp['data']['id']
         self.status_changed.emit(
             ExecutionStatus(self, flag=ExecutionStatus.Flag.STARTED))
-        self.timer = QTimer.start(self.POLLING_INTERVAL)
-        self.timer.elapsed.connect(self._poll)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._poll)
+        self.timer.start(self.POLLING_INTERVAL)
+        # TODO(damb):
+        # The method returns such that the forecast executor notes that both
+        # the scenario and the forecast are completed.
 
     def _poll(self):
         deserializer = SFMWorkerOMessageDeserializer(
             proj=point_to_proj4(self.project.referencepoint),
-            transform_callback=pymap3d_transform_geodetic2ned)
+            transform_callback=pymap3d_transform_geodetic2ned,
+            many=True)
         resp = self._worker_handle.query(
             task_ids=self.model_run.runid, deserializer=deserializer).first()
 
@@ -366,6 +371,8 @@ class SeismicityModelRunExecutor(Executor):
             else:
                 self.model_run.result = result
 
+        log.info(f'Received response (run={self.model_run!r}, '
+                 f'id={self.model_run.runid}): {resp}')
         self.status_changed.emit(self._resp_to_status(resp))
 
     def _resp_to_status(self, resp):
