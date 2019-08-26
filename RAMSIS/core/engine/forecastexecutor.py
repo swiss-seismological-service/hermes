@@ -304,8 +304,8 @@ class SeismicityModelRunExecutor(Executor):
 
         model_parameters = copy.deepcopy(self.model_run.config)
         model_parameters.update(
-            {'starttime': self.forecast.starttime.isoformat(),
-             'endtime': self.forecast.endtime.isoformat(),
+            {'fc_datetime_start': self.forecast.starttime.isoformat(),
+             'fc_datetime_end': self.forecast.endtime.isoformat(),
              'bin_duration': self.stage.config['prediction_bin_duration']})
 
         # compose payload
