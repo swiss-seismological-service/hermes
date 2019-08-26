@@ -101,6 +101,8 @@ class ForecastExecutor(SerialExecutor):
         self.forecast.well = self.core.project.wells[0].\
             snapshot(sample_filter_cond=filter_future)
 
+        self.core.store.save()
+
     def post_process(self):
         self.core.store.save()
         log.info('Forecast {} completed'.format(self.forecast.starttime))
