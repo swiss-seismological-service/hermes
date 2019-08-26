@@ -542,7 +542,8 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
             b_value=73.,
             a_value=1.,
             mc_value=1.5,
-            hydraulicvol=10000.)
+            numberevents_value=42.,
+            hydraulicvol_value=10000.)
 
         prediction = dict(
             geom=('POLYHEDRALSURFACE Z '
