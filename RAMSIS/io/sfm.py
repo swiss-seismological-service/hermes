@@ -17,8 +17,8 @@ from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
 from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
-                             _IOError, TransformationError, Percentage,
-                             Uncertainty)
+                             _IOError, TransformationError, DateTime,
+                             Percentage, Uncertainty)
 from RAMSIS.wkt_utils import wkb_to_wkt
 
 gdal.UseExceptions()
@@ -92,8 +92,8 @@ class _ModelResultSampleSchema(_SchemaBase):
     """
     Schema representation for a model result sample.
     """
-    starttime = fields.DateTime(format='iso')
-    endtime = fields.DateTime(format='iso')
+    starttime = DateTime(required=True)
+    endtime = DateTime(required=True)
 
     numberevents_value = fields.Float(required=True)
     numberevents_uncertainty = Uncertainty()

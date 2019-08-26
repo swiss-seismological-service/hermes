@@ -14,7 +14,8 @@ from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
 from ramsis.datamodel.well import InjectionWell, WellSection
 from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
                              IOBase, _IOError, TransformationError, Positive,
-                             Percentage, Uncertainty, validate_positive)
+                             DateTime, Percentage, Uncertainty,
+                             validate_positive)
 
 
 # XXX(damb): Additional parameter validation to be implemented.
@@ -94,7 +95,7 @@ class _HydraulicSampleSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     hydraulic sample.
     """
-    datetime_value = fields.DateTime(format='iso', required=True)
+    datetime_value = DateTime(required=True)
     datetime_uncertainty = Uncertainty()
     datetime_loweruncertainty = Uncertainty()
     datetime_uppearuncertainty = Uncertainty()
@@ -182,8 +183,8 @@ class _WellSectionSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for a
     well section.
     """
-    starttime = fields.DateTime(format='iso')
-    endtime = fields.DateTime(format='iso')
+    starttime = DateTime()
+    endtime = DateTime()
 
     toplongitude_value = Longitude(required=True)
     toplongitude_uncertainty = Uncertainty()

@@ -26,6 +26,7 @@ def validate_positive(d):
 
 validate_percentage = validate.Range(min=0, max=100)
 
+DateTime = functools.partial(fields.DateTime, format='%Y-%m-%dT%H:%M:%S.%f')
 Percentage = functools.partial(fields.Float, validate=validate_percentage)
 Positive = functools.partial(fields.Float, validate=validate_positive)
 Uncertainty = Positive
