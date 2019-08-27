@@ -322,14 +322,13 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                     self.model))
             try:
                 resp = requests.get(self.url, timeout=self._timeout)
-            except requests.exceptions.RequestException as err:
+                resp.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                raise self.HTTPError(self.url, err)
+            except requests.exceptions.ConnectionError as err:
                 raise self.ConnectionError(self.url, err)
-
-            if resp.status_code in (StatusCode.TaskNotAvailable.value,
-                                    StatusCode.WorkerError.value):
-                self.logger.warning(
-                    'WorkerError (code={}).'.format(resp.status_code))
-                resp = []
+            except requests.exceptions.RequestsError as err:
+                raise self.RemoteWorkerError(err)
 
             return self.QueryResult.from_requests(
                 resp, deserializer=deserializer)
@@ -349,6 +348,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 format(self.model, url, t))
             try:
                 response = requests.get(url, timeout=self._timeout)
+                response.raise_for_status()
             except requests.exceptions.HTTPError as err:
                 raise self.HTTPError(self.url, err)
             except requests.exceptions.ConnectionError as err:
@@ -359,13 +359,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Task result (model={!r}, task_id={!r}): {!r}'.format(
                     self.model, t, response))
-
-            if response.status_code not in (StatusCode.TaskNotAvailable.value,
-                                            StatusCode.WorkerError.value):
-                resp.append(response)
-            else:
-                self.logger.warning(
-                    'WorkerError (code={}).'.format(response.status_code))
+            resp.append(response)
 
         return self.QueryResult.from_requests(
             resp, deserializer=deserializer)
@@ -448,6 +442,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 format(self.model, url, t))
             try:
                 response = requests.delete(url, timeout=self._timeout)
+                response.raise_for_status()
             except requests.exceptions.HTTPError as err:
                 raise self.HTTPError(self.url, err)
             except requests.exceptions.ConnectionError as err:
@@ -459,12 +454,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Task removed (model={!r}, task_id={!r}): {!r}'.format(
                     self.model, t, response))
 
-            if response.status_code not in (StatusCode.TaskNotAvailable.value,
-                                            StatusCode.WorkerError.value):
-                resp.append(response)
-            else:
-                self.logger.warning(
-                    'WorkerError (code={}).'.format(response.status_code))
+            resp.append(response)
 
         return self.QueryResult.from_requests(resp)
 
