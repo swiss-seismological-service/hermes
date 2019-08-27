@@ -35,7 +35,7 @@ from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
 from RAMSIS.core.worker import WorkerHandle, EWorkerHandle
-from RAMSIS.core.worker.sfm import KEY_DATA
+from RAMSIS.core.worker.sfm import KEY_DATA, RemoteSeismicityWorkerHandle
 from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from RAMSIS.io.sfm import SFMWorkerOMessageDeserializer
@@ -458,7 +458,10 @@ class WorkerClientApp(object):
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
-        worker.compute(payload)
+        try:
+            worker.compute(payload)
+        except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
+            raise InvalidWorkerResponse(err)
 
     def do_list(self, args):
         """
@@ -496,18 +499,17 @@ class WorkerClientApp(object):
 
         self.logger.debug('Filters: {}'.format(filter_conditions))
 
+        deserializer = None
         if self.args.deserialize:
-            try:
-                resp = worker.query(
-                    extract_task_ids(filter_conditions),
-                    deserializer=SFMWorkerOMessageDeserializer(
-                        proj=None, many=True, context={'format': 'dict'}))
-            except ValidationError as err:
-                raise InvalidWorkerResponse(err)
-        else:
+            deserializer = SFMWorkerOMessageDeserializer(
+                proj=None, many=True, context={'format': 'dict'})
+
+        try:
             resp = worker.query(
-                extract_task_ids(filter_conditions),
-                deserializer=None)
+                extract_task_ids(filter_conditions), deserializer=deserializer)
+        except (RemoteSeismicityWorkerHandle.RemoteWorkerError,
+                ValidationError) as err:
+            raise InvalidWorkerResponse(err)
 
         self.logger.debug('Number of query results: {}'.format(resp.count()))
 
@@ -548,11 +550,15 @@ class WorkerClientApp(object):
 
         self.logger.debug('SeismicityWorker handle: {}'.format(worker))
 
-        resp = worker.delete(self.args.task_ids)
-        self.logger.debug('Number of tasks removed: {}'.format(resp.count()))
+        try:
+            resp = worker.delete(self.args.task_ids)
+        except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
+            raise InvalidWorkerResponse(err)
+        else:
+            self.logger.debug(f'Number of tasks removed: {resp.count()}')
 
         for r in resp.all():
-            print(list(r['data'].keys())[0])
+            print(f"{r['data']['id']}")
 
     def _setup_logger(self):
         """
