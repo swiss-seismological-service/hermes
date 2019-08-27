@@ -126,6 +126,22 @@ class _ModelResultSampleSchema(_SchemaBase):
     hydraulicvol_confidencelevel = Percentage()
 
     @pre_load
+    def append_zero_milliseconds(self, data, **kwargs):
+        # XXX(damb): This is a workaround since the DateTime format is being
+        # configured with a date string. Is there a better solution provided by
+        # marshmallow.
+        def _append_zeroes(dt_str):
+            return dt_str + '.000000'
+
+        if 'starttime' in data and '.' not in data['starttime']:
+            data['starttime'] = _append_zeroes(data['starttime'])
+
+        if 'endtime' in data and '.' not in data['endtime']:
+            data['endtime'] = _append_zeroes(data['endtime'])
+
+        return data
+
+    @pre_load
     def flatten(self, data, **kwargs):
         return self._flatten_dict(data)
 
