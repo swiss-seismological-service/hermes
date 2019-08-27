@@ -329,7 +329,8 @@ class SeismicityModelRunExecutor(Executor):
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             log.error(str(err))
             self.status_changed.emit(
-                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR))
+                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR)
+                                info=err)
             return
 
         status = resp['data']['attributes']['status_code']
@@ -353,8 +354,17 @@ class SeismicityModelRunExecutor(Executor):
             proj=point_to_proj4(self.project.referencepoint),
             transform_callback=pymap3d_transform_geodetic2ned,
             many=True)
-        resp = self._worker_handle.query(
-            task_ids=self.model_run.runid, deserializer=deserializer).first()
+        try:
+            resp = self._worker_handle.query(
+                task_ids=self.model_run.runid,
+                deserializer=deserializer).first()
+        except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
+            log.error(str(err))
+            self.status_changed.emit(
+                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
+                                info=err))
+            self.timer.stop()
+            return
 
         status = resp['data']['attributes']['status_code']
 
