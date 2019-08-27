@@ -329,8 +329,8 @@ class SeismicityModelRunExecutor(Executor):
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             log.error(str(err))
             self.status_changed.emit(
-                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR)
-                                info=err)
+                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
+                                info=err))
             return
 
         status = resp['data']['attributes']['status_code']
