@@ -4,6 +4,7 @@ Seismicity forecast model (SFM) worker related facilities.
 """
 
 import enum
+import functools
 import uuid
 
 from urllib.parse import urlparse
@@ -320,15 +321,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Requesting tasks results (model={!r}) (bulk mode).'.format(
                     self.model))
-            try:
-                resp = requests.get(self.url, timeout=self._timeout)
-                resp.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                raise self.HTTPError(self.url, err)
-            except requests.exceptions.ConnectionError as err:
-                raise self.ConnectionError(self.url, err)
-            except requests.exceptions.RequestsError as err:
-                raise self.RemoteWorkerError(err)
+            req = functools.partial(
+                requests.get, self.url, timeout=self._timeout)
+
+            resp = self._handle_exceptions(req)
 
             return self.QueryResult.from_requests(
                 resp, deserializer=deserializer)
@@ -346,15 +342,11 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Requesting result (model={!r}, url={!r}, task_id={!r}).'.
                 format(self.model, url, t))
-            try:
-                response = requests.get(url, timeout=self._timeout)
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                raise self.HTTPError(self.url, err)
-            except requests.exceptions.ConnectionError as err:
-                raise self.ConnectionError(self.url, err)
-            except requests.exceptions.RequestsError as err:
-                raise self.RemoteWorkerError(err)
+
+            req = functools.partial(
+                requests.get, url, timeout=self._timeout)
+
+            response = self._handle_exceptions(req)
 
             self.logger.debug(
                 'Task result (model={!r}, task_id={!r}): {!r}'.format(
@@ -390,19 +382,14 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         self.logger.debug(
             'Sending computation request (model={!r}, url={!r}).'.format(
                 self.model, self.url))
-        try:
-            headers = {'Content-Type': self.MIMETYPE,
-                       'Accept': 'application/json'}
-            response = requests.post(self.url, data=_payload,
-                                     headers=headers,
-                                     timeout=self._timeout)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            raise self.HTTPError(self.url, err)
-        except requests.exceptions.ConnectionError as err:
-            raise self.ConnectionError(self.url, err)
-        except requests.exceptions.RequestsError as err:
-            raise self.RemoteWorkerError(err)
+
+        headers = {'Content-Type': self.MIMETYPE,
+                   'Accept': 'application/json'}
+        req = functools.partial(
+            requests.post, self.url, data=_payload, headers=headers,
+            timeout=self._timeout)
+
+        response = self._handle_exceptions(req)
 
         try:
             result = response.json()
@@ -440,15 +427,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Removing task (model={!r}, url={!r}, task_id={!r}).'.
                 format(self.model, url, t))
-            try:
-                response = requests.delete(url, timeout=self._timeout)
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                raise self.HTTPError(self.url, err)
-            except requests.exceptions.ConnectionError as err:
-                raise self.ConnectionError(self.url, err)
-            except requests.exceptions.RequestsError as err:
-                raise self.RemoteWorkerError(err)
+
+            req = functools.partial(requests.delete, url,
+                                    timeout=self._timeout)
+            response = self._handle_exceptions(req)
 
             self.logger.debug(
                 'Task removed (model={!r}, task_id={!r}): {!r}'.format(
@@ -457,6 +439,30 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             resp.append(response)
 
         return self.QueryResult.from_requests(resp)
+
+    def _handle_exceptions(self, req):
+        """
+        Provide generic exception handling when executing requests.
+
+        :param callable req: :code:`requests` callable to be executed.
+        """
+        try:
+            resp = req()
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            try:
+                self.logger.warning(
+                    f'JSON response (HTTPError): {resp.json()!r}')
+            except Exception:
+                pass
+            finally:
+                raise self.HTTPError(self.url, err)
+        except requests.exceptions.ConnectionError as err:
+            raise self.ConnectionError(self.url, err)
+        except requests.exceptions.RequestsError as err:
+            raise self.RemoteWorkerError(err)
+
+        return resp
 
     def __repr__(self):
         return '<%s (model=%r, url=%r)>' % (type(self).__name__,
