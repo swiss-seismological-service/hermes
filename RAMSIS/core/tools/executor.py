@@ -186,7 +186,10 @@ class ParallelExecutor(AbstractExecutor):
 
     def on_child_status_changed(self, status):
         super().on_child_status_changed(status)
-        if status.origin in self.children():
+        completion_flags = (ExecutionStatus.Flag.SUCCESS,
+                           ExecutionStatus.Flag.ERROR)
+        if status.flag in completion_flags \
+                and status.origin in self.children():
             self._completed[status.origin] = status
         if len(self._completed) == len(self.children()):
             self._wrap_up()
