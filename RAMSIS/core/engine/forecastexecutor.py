@@ -242,9 +242,9 @@ class ScenarioExecutor(SerialExecutor):
         self.scenario = scenario
         self.forecast = scenario.forecast
 
-        self._run()
+        self._setup()
 
-    def _run(self):
+    def _setup(self):
 
         def execute(stage_type, executor):
             try:
