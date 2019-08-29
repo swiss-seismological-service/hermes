@@ -44,13 +44,6 @@ from RAMSIS.wkt_utils import point_to_proj4
 log = logging.getLogger(__name__)
 
 
-# NOTE(damb): Due to the hierarchical architecture of the pipeline
-# implementation below it seemed easier to pass top-level objects to *executor
-# constructors. Clients can exctract what's required to execute their task.
-# Though, this approach contradicts encapsulation taught by OOP (I'm sorry - it
-# wasn't me!).
-
-
 class ExecutorError(ErrorWithTraceback):
     """Base Executor error ({})."""
 
