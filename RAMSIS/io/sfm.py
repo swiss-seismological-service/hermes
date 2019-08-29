@@ -18,7 +18,7 @@ from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
                              _IOError, TransformationError, DateTime,
-                             Percentage, Uncertainty)
+                             Percentage, Uncertainty, append_ms_zeroes)
 from RAMSIS.wkt_utils import wkb_to_wkt
 
 gdal.UseExceptions()
@@ -130,14 +130,11 @@ class _ModelResultSampleSchema(_SchemaBase):
         # XXX(damb): This is a workaround since the DateTime format is being
         # configured with a date string. Is there a better solution provided by
         # marshmallow.
-        def _append_zeroes(dt_str):
-            return dt_str + '.000000'
+        if 'starttime' in data:
+            data['starttime'] = append_ms_zeroes(data['starttime'])
 
-        if 'starttime' in data and '.' not in data['starttime']:
-            data['starttime'] = _append_zeroes(data['starttime'])
-
-        if 'endtime' in data and '.' not in data['endtime']:
-            data['endtime'] = _append_zeroes(data['endtime'])
+        if 'endtime' in data:
+            data['endtime'] = append_ms_zeroes(data['endtime'])
 
         return data
 
