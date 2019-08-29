@@ -28,6 +28,7 @@ import logging
 from PyQt5.QtCore import QTimer
 
 from ramsis.datamodel.forecast import EStage
+from ramsis.datamodel.status import EStatus
 from ramsis.utils.error import ErrorWithTraceback
 
 from RAMSIS.core.tools.executor import (Executor, ParallelExecutor,
@@ -275,14 +276,14 @@ class SeismicityModelRunExecutor(Executor):
     TASK_ACCEPTED = 202
 
     RESP_MAP = {
-        TASK_ACCEPTED: ExecutionStatus.Flag.STARTED,
-        200: ExecutionStatus.Flag.SUCCESS,
-        423: ExecutionStatus.Flag.RUNNING,
-        418: ExecutionStatus.Flag.ERROR,
-        204: ExecutionStatus.Flag.ERROR,
-        405: ExecutionStatus.Flag.ERROR,
-        422: ExecutionStatus.Flag.ERROR,
-        500: ExecutionStatus.Flag.ERROR, }
+        TASK_ACCEPTED: (ExecutionStatus.Flag.STARTED, EStatus.PENDING),
+        200: (ExecutionStatus.Flag.SUCCESS, EStatus.COMPLETE),
+        423: (ExecutionStatus.Flag.RUNNING, EStatus.RUNNING),
+        418: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        204: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        405: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        422: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        500: (ExecutionStatus.Flag.ERROR, EStatus.ERROR), }
 
     def __init__(self, model_run, **kwargs):
         """
@@ -328,6 +329,7 @@ class SeismicityModelRunExecutor(Executor):
                 payload, deserializer=SFMWorkerOMessageDeserializer())
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             log.error(str(err))
+            self.model_run.status.state = EStatus.ERROR
             self.status_changed.emit(
                 ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
                                 info=err))
@@ -336,18 +338,17 @@ class SeismicityModelRunExecutor(Executor):
         status = resp['data']['attributes']['status_code']
 
         if status != self.TASK_ACCEPTED:
+            self._update_orm_status(resp)
             self.status_changed.emit(self._resp_to_status(resp))
             return
 
         self.model_run.runid = resp['data']['id']
+        self.model_run.status.state = EStatus.RUNNING
         self.status_changed.emit(
             ExecutionStatus(self, flag=ExecutionStatus.Flag.STARTED))
         self.timer = QTimer()
         self.timer.timeout.connect(self._poll)
         self.timer.start(self.POLLING_INTERVAL)
-        # TODO(damb):
-        # The method returns such that the forecast executor notes that both
-        # the scenario and the forecast are completed.
 
     def _poll(self):
         deserializer = SFMWorkerOMessageDeserializer(
@@ -378,6 +379,7 @@ class SeismicityModelRunExecutor(Executor):
             try:
                 result = resp['data']['attributes']['forecast']
             except KeyError:
+                self.model_run.status.state = EStatus.ERROR
                 self.status_changed.emit(ExecutionStatus(
                     self, flag=ExecutionStatus.Flag.ERROR))
             else:
@@ -385,7 +387,13 @@ class SeismicityModelRunExecutor(Executor):
 
         log.info(f'Received response (run={self.model_run!r}, '
                  f'id={self.model_run.runid}): {resp}')
+
+        self._update_orm_status(resp)
         self.status_changed.emit(self._resp_to_status(resp))
+
+    def _update_orm_status(self, resp):
+        self.model_run.status.state = \
+            self.RESP_MAP[resp['data']['attributes']['status_code']][1]
 
     def _resp_to_status(self, resp):
         """
@@ -395,4 +403,4 @@ class SeismicityModelRunExecutor(Executor):
         """
         return ExecutionStatus(
             self, info=resp,
-            flag=self.RESP_MAP[resp['data']['attributes']['status_code']])
+            flag=self.RESP_MAP[resp['data']['attributes']['status_code']][0])
