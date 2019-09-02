@@ -354,6 +354,8 @@ class ForecastConfigDialog(
         self.ui.starttimeDateTimeEdit.setDateTime(forecast.starttime)
         self.ui.endtimeDateTimeEdit.setDateTime(forecast.endtime)
 
+        self.ui.enableForecastCheckBox.setChecked(forecast.enabled)
+
     def _on_accept(self):
         start = self.ui.starttimeDateTimeEdit.dateTime()
         end = self.ui.endtimeDateTimeEdit.dateTime()
@@ -371,3 +373,4 @@ class ForecastConfigDialog(
         self._data.name = self.ui.nameLineEdit.text()
         self._data.starttime = start.toPyDateTime()
         self._data.endtime = end.toPyDateTime()
+        self._data.enabled = self.ui.enableForecastCheckBox.isChecked()
