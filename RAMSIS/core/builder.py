@@ -153,6 +153,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
     """
     return Forecast(name=name, starttime=starttime, endtime=endtime,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
+                    enabled=True, config={},
                     scenarios=[default_scenario(store)
                                for s in range(num_scenarios)])
 

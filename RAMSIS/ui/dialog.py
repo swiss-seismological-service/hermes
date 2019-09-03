@@ -327,6 +327,9 @@ class ForecastConfigDialog(
     """
     UI dialog for forecast configuration.
     """
+    DEFAULT_FORECAST_PROTOTYPE_INTERVAL = 21600
+    DEFAULT_FORECAST_PROTOTYPE_TOTAL_INTERVALS = 1
+
     def __init__(self, forecast, *args, min_datetime=None, **kwargs):
         """
         :param min_datetime: minimum datetime for edit fields
@@ -374,3 +377,82 @@ class ForecastConfigDialog(
         self._data.starttime = start.toPyDateTime()
         self._data.endtime = end.toPyDateTime()
         self._data.enabled = self.ui.enableForecastCheckBox.isChecked()
+
+
+class CreateForecastSequenceDialog(
+        DialogBase, UiForm('createforecastsequencedialog.ui')):
+    """
+    UI dialog for duplicating a forecast.
+    """
+    RetVal = collections.namedtuple(
+        'RetVal', ['endtime_fixed', 'interval', 'num_intervals'])
+
+    def __init__(self, forecast, *args, **kwargs):
+        """
+        :param forecast: Forecast prototype to be cloned
+        :type forecast: :py:class:`ramsis.datamodel.forecast.Forecast`
+        """
+        super().__init__(*args, **kwargs)
+        self._forecast = forecast
+        self._project = forecast.project
+
+        self._fc_duration = forecast.duration
+        self._fc_sequence_epoch_project = (
+            self._project.endtime - self._forecast.starttime -
+            self._fc_duration)
+        self._fc_sequence_epoch_fc = self._fc_duration
+
+        self._configure()
+
+    @pyqtSlot(float, name='on_intervalDoubleSpinBox_valueChanged')
+    def update_num_copies(self, interval):
+        if self.ui.fixedEndtimeCheckBox.isChecked():
+            self.ui.numberCopiesDoubleSpinBox.setMaximum(
+                int(self._fc_duration.total_seconds() / interval))
+        else:
+            max_num_copies = ((
+                self._fc_sequence_epoch_project.total_seconds() -
+                self._fc_duration.total_seconds()) / interval)
+
+            self.ui.numberCopiesDoubleSpinBox.setMaximum(max_num_copies)
+
+    @pyqtSlot(float, name='on_numberCopiesDoubleSpinBox_valueChanged')
+    def update_interval(self, num_copies):
+        if self.ui.fixedEndtimeCheckBox.isChecked():
+            self.ui.intervalDoubleSpinBox.setMaximum(
+                int(self._fc_duration.total_seconds() /
+                    (num_copies + 1)))
+        else:
+            fc_sequence_window = (
+                self._project.endtime - self._forecast.starttime -
+                self._fc_duration)
+            self.ui.intervalDoubleSpinBox.setMaximum(
+                int(fc_sequence_window.total_seconds() / (num_copies + 1)))
+
+    @pyqtSlot(int, name='on_fixedEndtimeCheckBox_stateChanged')
+    def update_maximum(self, state):
+        self._configure()
+
+    def _configure(self):
+        # configure defaults
+        if self.ui.fixedEndtimeCheckBox.isChecked():
+            num_intervals = 2
+            interval = self._fc_duration.total_seconds() / num_intervals
+            self.ui.numberCopiesDoubleSpinBox.setMaximum(
+                (self._fc_duration.total_seconds() - interval) /
+                num_intervals)
+            self.ui.intervalDoubleSpinBox.setMaximum(interval)
+        else:
+            interval = 21600.
+            max_num_copies = ((
+                self._fc_sequence_epoch_project.total_seconds() -
+                self._fc_duration.total_seconds()) / interval)
+
+            self.ui.numberCopiesDoubleSpinBox.setMaximum(max_num_copies)
+            self.ui.intervalDoubleSpinBox.setMaximum(interval)
+
+    def _on_accept(self):
+        self._data = self.RetVal(
+            endtime_fixed=self.ui.fixedEndtimeCheckBox.isChecked(),
+            interval=self.ui.intervalDoubleSpinBox.value(),
+            num_intervals=int(self.ui.numberCopiesDoubleSpinBox.value()))

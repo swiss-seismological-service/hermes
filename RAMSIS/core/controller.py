@@ -7,6 +7,7 @@ central coordinator for all core (i.e. non UI) components.
 
 """
 
+import datetime
 import logging
 
 from enum import Enum, auto
@@ -14,7 +15,6 @@ from operator import attrgetter
 
 from PyQt5 import QtCore
 from collections import namedtuple
-
 
 from ramsis.datamodel.seismics import SeismicEvent
 from ramsis.datamodel.hydraulics import HydraulicSample
