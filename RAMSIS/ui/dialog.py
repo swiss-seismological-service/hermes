@@ -72,15 +72,19 @@ class ScenarioConfigDialog(
     """
     JSON_INDENT = 2
 
-    def __init__(self, scenario, *args, fc_duration=None, **kwargs):
+    def __init__(self, scenario, *args, fc_duration=None,
+                 srs=None, **kwargs):
         """
         :param scenario: Forecast scenario the dialog is preconfigured with
         :type scenario: :py:class:`ramsis.datamodel.forecast.ForecastScenario`
         :param float fc_duration: Forecast duration in seconds
+        :param str srs: Spatial reference system identifier (proj4) used for
+            data import
         """
         super().__init__(*args, **kwargs)
 
-        self.retval_import_from_file_dialog = None
+        self._path_plan = None
+        self._srs = srs
 
         self._data = scenario
         self._configure(scenario, fc_duration)
@@ -190,34 +194,32 @@ class ScenarioConfigDialog(
         well = self._data.well
         # create injection plan
         if (self.ui.injectionStrategyRadioButton1.isChecked() and
-                self.retval_import_from_file_dialog):
-            srs = self.retval_import_from_file_dialog['source_srs']
-            fpath = self.retval_import_from_file_dialog['fpath']
+                self._path_plan):
 
             deserializer_args = {'plan': True}
-            if srs and srs != 'None':
-                # TODO(damb): validate SRS
+            # TODO TODO TODO
+            if self._srs:
                 deserializer_args.update({
-                    'proj': srs,
+                    'proj': self._srs,
                     'transform_callback': pymap3d_transform_geodetic2ned})
 
             deserializer = HYDWSBoreholeHydraulicsDeserializer(
                 **deserializer_args)
 
             self.logger.debug(
-                f'Importing injection plan {fpath!r}')
+                f'Importing injection plan {self._path_plan!r}')
 
             try:
-                with open(fpath, 'rb') as ifd:
+                with open(self._path_plan, 'rb') as ifd:
                     well = deserializer.load(ifd)
             except (OSError, json.JSONDecodeError, HYDWSJSONIOError) as err:
                 _ = QMessageBox.critical(
                     self, 'RAMSIS',
-                    (f'Error while importing data from {fpath!r}:'
+                    (f'Error while importing data from {self._path_plan!r}:'
                      f'\n{err}.'),
                     buttons=QMessageBox.Close)
                 raise DialogError(
-                    f'Importing data from {fpath!r} failed ({err}).')
+                    f'Importing data from {self._path_plan!r} failed ({err}).')
             else:
                 self.logger.info(
                     'Injection plan sucessfully imported.')
@@ -268,9 +270,12 @@ class ScenarioConfigDialog(
 
     @pyqtSlot(name='on_injectionStrategyImportFromFilePushButton_clicked')
     def import_plan_from_file(self):
-        import_dialog = ImportInjectionStrategyFromFileDialog(parent=self)
-        import_dialog.exec_()
-        self.retval_import_from_file_dialog = import_dialog.data
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        self._path_plan, _ = QFileDialog.getOpenFileName(
+            QWidget(), "QFileDialog.getOpenFileName()",
+            "", "All Files (*);;Borehole/Hydraulics Scenario (*.json)",
+            options=options)
 
     @pyqtSlot(bool, name='on_injectionStrategyRadioButton1_toggled')
     def on_injection_strategy_rbtn_state_changed(self):
@@ -366,38 +371,3 @@ class ForecastConfigDialog(
         self._data.name = self.ui.nameLineEdit.text()
         self._data.starttime = start.toPyDateTime()
         self._data.endtime = end.toPyDateTime()
-
-
-class ImportInjectionStrategyFromFileDialog(
-        DialogBase, UiForm('importinjectionstrategyfromfile.ui')):
-    """
-    UI dialog to import an injection plan from a file.
-    """
-    LOGGER = 'ramsis.ui.importinjectionstrategyfromfiledialog'
-
-    RetVal = collections.namedtuple(
-        'Retval', ['source_srs', 'fpath'])
-
-    @pyqtSlot(name='on_openPushButton_clicked')
-    def open_file(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        path, _ = QFileDialog.getOpenFileName(
-            QWidget(), "QFileDialog.getOpenFileName()",
-            "", "All Files (*);;Borehole/Hydraulics Scenario (*.json)",
-            options=options)
-
-        self.ui.filePathLineEdit.setText(path)
-
-    @property
-    def data(self):
-        try:
-            return self._data._asdict()
-        except AttributeError:
-            return None
-
-    def _on_accept(self):
-        # TODO(damb): validate input parameters
-        self._data = self.RetVal(
-            source_srs=self.ui.sourceSRSLineEdit.text(),
-            fpath=self.ui.filePathLineEdit.text())
