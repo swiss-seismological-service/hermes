@@ -34,7 +34,7 @@ class TimeLinePresenter(QObject):
         :param ui:
         :param core:
         """
-        super(TimeLinePresenter, self).__init__()
+        super().__init__()
         self.ui = ui
         self.core = core
         self.displayed_time = datetime(1970, 1, 1)
