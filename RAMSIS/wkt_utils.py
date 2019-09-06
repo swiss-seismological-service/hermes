@@ -142,6 +142,20 @@ def is_phsf(wkt_geom, srid=None):
     return True
 
 
+def point_to_proj4(wkb_point):
+    """
+    Return a *pseudo* PROJ4 string from a point.
+
+    :param wkb_point: Point to convert
+    :type wkb_point: :py:class:`geoalchemy2.elements.WKBElement`
+    """
+    if wkb_point is None:
+        return ''
+
+    c = coordinates_from_wkb(wkb_point)
+    return f'+x_0={c[0]} +y_0={c[1]} +z_0={c[2]}'
+
+
 # Methods to parse WKT / WKB
 
 def coordinates_from_wkb(wkb_element):

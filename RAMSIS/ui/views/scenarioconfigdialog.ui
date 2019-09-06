@@ -103,7 +103,7 @@
              <bool>false</bool>
             </property>
             <property name="text">
-             <string>Import ...</string>
+             <string>Open ...</string>
             </property>
             <property name="checkable">
              <bool>false</bool>

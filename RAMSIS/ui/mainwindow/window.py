@@ -33,6 +33,7 @@ from RAMSIS.ui.reservoirwindow import ReservoirWindow
 from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
+from RAMSIS.wkt_utils import point_to_proj4
 
 from .presenter import ContentPresenter
 from .viewmodels.seismicdatamodel import SeismicDataModel
@@ -163,7 +164,9 @@ class MainWindow(QMainWindow):
 
         dlg = ScenarioConfigDialog(
             default_scenario(self.app.ramsis_core.store),
-            fc_duration=(fc.endtime - fc.starttime).total_seconds())
+            fc_duration=(fc.endtime - fc.starttime).total_seconds(),
+            srs=point_to_proj4(
+                self.app.ramsis_core.project.referencepoint) or None)
         dlg.exec_()
 
         scenario = dlg.data
