@@ -338,8 +338,6 @@ class Controller(QtCore.QObject):
         <core.simulator.Simulator.configure>` time range and begin from there.
 
         """
-        # self._profiler = Profiler()
-        # self._profiler.start()
         if self.project is None:
             return
         self._logger.info('Starting simulation')
