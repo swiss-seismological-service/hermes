@@ -18,7 +18,6 @@ from RAMSIS.ui.base.bindings import (AttrBinding, DictBinding)
 from RAMSIS.ui.base.controlinterface import control_interface
 from RAMSIS.ui.base.state import UiStateMachine
 from RAMSIS.ui.utils import UiForm, WktPointBinding
-from .modelconfigurationwindow import ModelConfigurationWindow
 
 ui_path = os.path.dirname(__file__)
 PROJECT_SETTINGS_WINDOW_PATH = \
@@ -208,9 +207,10 @@ class ApplicationSettingsWindow(SettingsWindow,
     @pyqtSlot(str, name='on_dbUserEdit_textChanged')
     @pyqtSlot(str, name='on_dbPasswordEdit_textChanged')
     def validate_db_edits(self, *_):
-        valid = bool(self.ui.dbUrlEdit.text() and self.ui.dbUserEdit.text()
-                     and self.ui.dbPasswordEdit.text()
-                     and self.ui.dbNameEdit.text())
+        valid = bool(self.ui.dbUrlEdit.text() and
+                     self.ui.dbUserEdit.text() and
+                     self.ui.dbPasswordEdit.text() and
+                     self.ui.dbNameEdit.text())
         # Note: edits are disabled when connected so we only need to cover
         # the state transitions below.
         if valid:
