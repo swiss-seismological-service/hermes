@@ -349,7 +349,10 @@ class Controller(QtCore.QObject):
         inf_speed = True if speed == -1 else False
         if inf_speed:
             self._logger.info('Simulating at maximum speed')
-            dt_h = self.project.setting['forecast_interval']
+            # TODO(damb): Simlation at maximum speed needs to be reimplemented.
+            # There is no self.project.setting['forecast_interval'] anymore.
+            #dt_h = self.project.setting['forecast_interval']
+            dt_h = 6
             dt = timedelta(hours=dt_h)
             step_signal = self.engine.forecast_complete
             self.simulator.configure(time_range, step_on=step_signal, dt=dt)
