@@ -118,22 +118,6 @@ class TaskManager:
     def run_forecast(self, t):
         self.logger.info('Forecast initiated at {}'.format(t))
         self.core.engine.run(t, self.forecast_task.next_forecast)
-        # prepare the next regular forecast
-        self._add_next_forecast()
-
-    def _add_next_forecast(self):
-        p = self.core.project
-        dt = timedelta(hours=p.settings['forecast_interval'])
-        if self.forecast_task.next_forecast:
-            t_next = self.forecast_task.next_forecast.starttime + dt
-        else:
-            t_next = p.start_date + dt
-        next_forecast = next((f for f in p.forecasts if f.starttime == t_next),
-                             None)
-        if next_forecast is None:
-            next_forecast = self.core.prepare_interactive_forecast(t_next)
-            p.forecasts.append(next_forecast)
-            self.core.store.save()
 
 
 class ForecastTask(Task):
