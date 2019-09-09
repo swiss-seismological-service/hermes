@@ -351,9 +351,6 @@ class Controller(QtCore.QObject):
         (Re)initialize simulator and scheduler for a new simulation
 
         """
-        # self._logger.info(
-        #     'Deleting any forecasting results from previous runs')
-        # self.project.seismiccatalog.clear()
         inf_speed = True if speed == -1 else False
         if inf_speed:
             self._logger.info('Simulating at maximum speed')
