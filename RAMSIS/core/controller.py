@@ -13,7 +13,7 @@ from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
 
-from ramsis.datamodel.forecast import Forecast
+
 from ramsis.datamodel.seismics import SeismicEvent
 from ramsis.datamodel.hydraulics import HydraulicSample
 from RAMSIS.core.engine.engine import Engine
@@ -351,6 +351,7 @@ class Controller(QtCore.QObject):
             self._logger.info('Simulating at maximum speed')
             # TODO(damb): Simlation at maximum speed needs to be reimplemented.
             # There is no self.project.setting['forecast_interval'] anymore.
+            # 
             #dt_h = self.project.setting['forecast_interval']
             dt_h = 6
             dt = timedelta(hours=dt_h)
@@ -405,21 +406,6 @@ class Controller(QtCore.QObject):
         self.store.save()
         self.project_data_changed.emit(self.project.forecasts)
         return fc
-
-    def create_next_future_forecast(self):
-        """ Adds the next regular forecast to the list of future forecasts """
-        dt = timedelta(hours=self.project.settings['forecast_interval'])
-        if self.project.forecasts:
-            t_last = self.project.forecasts[-1].starttime
-        else:
-            t_last = self.project.settings['forecast_start'] - dt
-        t_next = t_last + dt
-        models = [m for m in self.store.load_models() if m.enabled]
-        forecast = Forecast.create_interactive(t_next, t_next + dt, models)
-        self.project.forecasts.append(forecast)
-        self.store.save()
-        self.project_data_changed.emit(self.project.forecasts)
-        return forecast
 
     # TODO LH: this needs a trigger. It used to react to the settings_changed
     #   signal on project settings.
