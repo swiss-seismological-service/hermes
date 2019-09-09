@@ -8,6 +8,9 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 import os
 import logging
+
+from operator import attrgetter
+
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 
@@ -81,13 +84,20 @@ class SimulationWindow(QDialog):
         """ Refresh displayed data from model """
         project = self.ramsis_core.project
         if project:
-            if project.settings:
-                start = utc_to_local(project.settings['forecast_start'])
-            else:
-                start = utc_to_local(project.starttime)
+            try:
+                start = min(project.forecast_iter(),
+                            key=attrgetter('starttime')).starttime
+            except ValueError:
+                start = project.starttime
+            finally:
+                start = utc_to_local(start)
+
             self.ui.startTimeEdit.setDateTime(start)
-            end = utc_to_local(project.endtime)
-            self.ui.endTimeEdit.setDateTime(end)
+            if project.endtime:
+                end = utc_to_local(project.endtime)
+                self.ui.endTimeEdit.setDateTime(end)
+            else:
+                self.ui.endTimeEdit.setDateTime(start)
 
     # Actions
 
@@ -114,11 +124,6 @@ class SimulationWindow(QDialog):
 
     def on_project_load(self, project):
         self.refresh()
-        # Make sure we get updated on project changes
-        project.will_close.connect(self.on_project_will_close)
-        self.update_controls()
-
-    def on_project_will_close(self, project):
         self.update_controls()
 
     def on_afap_state_change(self):

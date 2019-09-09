@@ -8,7 +8,10 @@ central coordinator for all core (i.e. non UI) components.
 """
 
 import logging
+
 from enum import Enum, auto
+from operator import attrgetter
+
 from PyQt5 import QtCore
 from collections import namedtuple
 from datetime import timedelta
@@ -157,10 +160,17 @@ class Controller(QtCore.QObject):
         if self.project:
             self.close_project()
         self.project = project
+
         if self.launch_mode == LaunchMode.LAB:
-            # TODO LH: always use forecast_start
-            self.clock.reset(project.settings['forecast_start'] or
-                             project.starttime)
+            try:
+                start = min(project.forecast_iter(),
+                            key=attrgetter('starttime')).starttime
+            except ValueError:
+                self._logger.warning(
+                    'No forecasts configured. Use project starttime: '
+                    f'{project.starttime}.')
+                start = project.starttime
+            self.clock.reset(start)
         self.project_loaded.emit(project)
         self._update_data_sources()
         self._logger.info('... done loading project')
