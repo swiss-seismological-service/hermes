@@ -48,9 +48,9 @@ class Engine(QObject):
         # Skip this forecast if the core is busy
         if self.busy:
             self._logger.warning('Attempted to initiate forecast while the '
-                                 'core is still busy with a previously'
+                                 'core is still busy with a previously '
                                  'started forecast. Skipping at '
-                                 't=' + str(forecast.forecast_time))
+                                 f't={forecast.starttime}')
             return
 
         self._logger.info('Initiating forecast scheduled for {} at {}'.format(
