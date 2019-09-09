@@ -262,17 +262,6 @@ class ProjectSettingsWindow(SettingsWindow):
             DictBinding(settings, 'fdsnws_url', self.ui.fdsnUrlEdit),
             DictBinding(settings, 'hydws_url', self.ui.hydwsUrlEdit),
             DictBinding(settings, 'hydws_enable', self.ui.enableHydwsCheckBox),
-            DictBinding(settings, 'auto_schedule_enable',
-                        self.ui.enableAutoSchedulingCheckBox),
-            DictBinding(settings, 'forecast_interval',
-                        self.ui.forecastIntervalBox),
-            DictBinding(settings, 'forecast_length',
-                        self.ui.forecastBinTimeBox),
-            DictBinding(settings, 'forecast_start', self.ui.firstForecastBox),
-            DictBinding(settings, 'seismic_rate_interval',
-                        self.ui.rateIntervalBox),
-            DictBinding(settings, 'write_fc_results_to_disk',
-                        self.ui.writeResultsToFileCheckBox),
         ]
         self.refresh_ui()
 
@@ -297,35 +286,3 @@ class ProjectSettingsWindow(SettingsWindow):
     @pyqtSlot(name='on_cancelButton_clicked')
     def action_cancel(self):
         super().action_cancel()
-
-    # TODO LH: These (below) need to be implemented generically
-
-    @pyqtSlot(name='on_rjConfigButton_clicked')
-    def action_show_rj_model_configuration(self):
-        if self.rj_model_configuration_window is None:
-            self.rj_model_configuration_window = ModelConfigurationWindow(
-                project=self.project, model='rj')
-        self.rj_model_configuration_window.show()
-
-    @pyqtSlot(name='on_etasConfigButton_clicked')
-    def action_show_etas_model_configuration(self):
-        if self.etas_model_configuration_window is None:
-            self.etas_model_configuration_window = ModelConfigurationWindow(
-                project=self.project, model='etas')
-        self.etas_model_configuration_window.show()
-
-    @pyqtSlot(name='on_enableRjCheckBox_clicked')
-    def action_rj_checked(self):
-        state = self.ui.enableRjCheckBox.checkState()
-        if state:
-            self.ui.rjConfigButton.setEnabled(True)
-        else:
-            self.ui.rjConfigButton.setDisabled(True)
-
-    @pyqtSlot(name='on_enableEtasCheckBox_clicked')
-    def action_etas_checked(self):
-        state = self.ui.enableEtasCheckBox.checkState()
-        if state:
-            self.ui.etasConfigButton.setEnabled(True)
-        else:
-            self.ui.etasConfigButton.setDisabled(True)
