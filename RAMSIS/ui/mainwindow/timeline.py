@@ -33,11 +33,6 @@ class TimeLinePresenter(QObject):
     """
 
     def __init__(self, ui, core):
-        """
-
-        :param ui:
-        :param core:
-        """
         super().__init__()
         self.ui = ui
         self.core = core
