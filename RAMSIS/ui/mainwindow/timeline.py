@@ -10,6 +10,7 @@ Copyright (C) 2015, SED (ETH Zurich)
 import logging
 
 from datetime import datetime
+from operator import attrgetter
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QStyleFactory
@@ -75,30 +76,13 @@ class TimeLinePresenter(QObject):
         :type project: :py:class:`ramsis.datamodel.project.Project`
 
         """
-        def get_first_forecast():
-            """
-            Return the earliest forecast from a project.
-            """
-            forecasts = project.forecasts
-
-            if not len(forecasts):
-                return None
-            if len(forecasts) == 1:
-                return forecasts[0]
-
-            retval = forecasts[0]
-            for fc in forecasts[1:]:
-                if retval.starttime > fc.starttime:
-                    retval = fc
-
-            return retval
-
         if project is None:
             return
 
         try:
-            start_time = get_first_forecast().starttime
-        except AttributeError:
+            start_time = min(project.forecast_iter(),
+                             key=attrgetter('starttime')).starttime
+        except ValueError:
             start_time = project.starttime
 
         start = (start_time - DATETIME_POSIX_START).total_seconds()
