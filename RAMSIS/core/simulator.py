@@ -25,16 +25,16 @@ class Simulator(QtCore.QObject):
     the number of milliseconds set in *step_time* has passed. Alternatively,
     an external pyqt signal can be used to trigger time steps which must be
     set by calling step_on_external_signal.
-
-    :param handler: function that is called on each simulation step
-        with the current simulation time.
-
     """
 
     # Signals
     state_changed = QtCore.pyqtSignal(int)
 
     def __init__(self, handler):
+        """
+        :param callable handler: Callable that is called on each simulation step
+            with the current simulation time.
+        """
         super(Simulator, self).__init__()
         self.simulation_interval = 200  # simulate a time step every X ms
         self._speed = 1000
