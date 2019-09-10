@@ -26,6 +26,7 @@ class Simulator(QtCore.QObject):
     an external pyqt signal can be used to trigger time steps which must be
     set by calling step_on_external_signal.
     """
+    SIMULATION_INTERVAL = 200  # simulate a time step every X ms
 
     # Signals
     state_changed = QtCore.pyqtSignal(int)
@@ -36,7 +37,6 @@ class Simulator(QtCore.QObject):
             with the current simulation time.
         """
         super().__init__()
-        self.simulation_interval = 200  # simulate a time step every X ms
         self._speed = 1000
 
         self._handler = handler
@@ -103,7 +103,7 @@ class Simulator(QtCore.QObject):
             # Execute first step immediately after run loop returns
             QtCore.QTimer.singleShot(0, self._simulate_time_step)
         else:
-            self._timer.start(self.simulation_interval)
+            self._timer.start(self.SIMULATION_INTERVAL)
 
     def pause(self):
         """ Pauses the simulation. Unpause by calling `start` again. """
@@ -126,7 +126,7 @@ class Simulator(QtCore.QObject):
 
         simulation_ended = False
         if self._external_signal is None:
-            seconds = self.simulation_interval / 1000.0 * self.speed
+            seconds = self.SIMULATION_INTERVAL / 1000.0 * self.speed
             dt = timedelta(seconds=seconds)
         else:
             dt = self._dt
