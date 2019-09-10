@@ -35,7 +35,7 @@ class Simulator(QtCore.QObject):
         :param callable handler: Callable that is called on each simulation step
             with the current simulation time.
         """
-        super(Simulator, self).__init__()
+        super().__init__()
         self.simulation_interval = 200  # simulate a time step every X ms
         self._speed = 1000
 
