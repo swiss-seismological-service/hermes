@@ -384,6 +384,9 @@ class CreateForecastSequenceDialog(
     """
     UI dialog for duplicating a forecast.
     """
+    MAX_NUM_COPIES = 1000
+    MAX_INTERVAL = 60 * 60 * 24 * 365  # one year
+
     RetVal = collections.namedtuple(
         'RetVal', ['endtime_fixed', 'interval', 'num_intervals'])
 
@@ -397,9 +400,11 @@ class CreateForecastSequenceDialog(
         self._project = forecast.project
 
         self._fc_duration = forecast.duration
-        self._fc_sequence_epoch_project = (
-            self._project.endtime - self._forecast.starttime -
-            self._fc_duration)
+        self._fc_sequence_epoch_project = None
+        if self._project.endtime:
+            self._fc_sequence_epoch_project = (
+                self._project.endtime - self._forecast.starttime -
+                self._fc_duration)
         self._fc_sequence_epoch_fc = self._fc_duration
 
         self._configure()
@@ -410,11 +415,12 @@ class CreateForecastSequenceDialog(
             self.ui.numberCopiesDoubleSpinBox.setMaximum(
                 int(self._fc_duration.total_seconds() / interval))
         else:
-            max_num_copies = ((
-                self._fc_sequence_epoch_project.total_seconds() -
-                self._fc_duration.total_seconds()) / interval)
+            if self._fc_sequence_epoch_project:
+                max_num_copies = ((
+                    self._fc_sequence_epoch_project.total_seconds() -
+                    self._fc_duration.total_seconds()) / interval)
 
-            self.ui.numberCopiesDoubleSpinBox.setMaximum(max_num_copies)
+                self.ui.numberCopiesDoubleSpinBox.setMaximum(max_num_copies)
 
     @pyqtSlot(float, name='on_numberCopiesDoubleSpinBox_valueChanged')
     def update_interval(self, num_copies):
@@ -423,11 +429,10 @@ class CreateForecastSequenceDialog(
                 int(self._fc_duration.total_seconds() /
                     (num_copies + 1)))
         else:
-            fc_sequence_window = (
-                self._project.endtime - self._forecast.starttime -
-                self._fc_duration)
-            self.ui.intervalDoubleSpinBox.setMaximum(
-                int(fc_sequence_window.total_seconds() / (num_copies + 1)))
+            if self._fc_sequence_epoch_project:
+                self.ui.intervalDoubleSpinBox.setMaximum(
+                    int(self._fc_sequence_epoch_project.total_seconds() /
+                        (num_copies + 1)))
 
     @pyqtSlot(int, name='on_fixedEndtimeCheckBox_stateChanged')
     def update_maximum(self, state):
@@ -443,13 +448,18 @@ class CreateForecastSequenceDialog(
                 num_intervals)
             self.ui.intervalDoubleSpinBox.setMaximum(interval)
         else:
-            interval = 21600.
-            max_num_copies = ((
-                self._fc_sequence_epoch_project.total_seconds() -
-                self._fc_duration.total_seconds()) / interval)
+            if self._fc_sequence_epoch_project:
+                interval = 21600.
+                max_num_copies = ((
+                    self._fc_sequence_epoch_project.total_seconds() -
+                    self._fc_duration.total_seconds()) / interval)
 
-            self.ui.numberCopiesDoubleSpinBox.setMaximum(max_num_copies)
-            self.ui.intervalDoubleSpinBox.setMaximum(interval)
+                self.ui.numberCopiesDoubleSpinBox.setMaximum(max_num_copies)
+                self.ui.intervalDoubleSpinBox.setMaximum(interval)
+            else:
+                self.ui.numberCopiesDoubleSpinBox.setMaximum(
+                    self.MAX_NUM_COPIES)
+                self.ui.intervalDoubleSpinBox.setMaximum(self.MAX_INTERVAL)
 
     def _on_accept(self):
         self._data = self.RetVal(
