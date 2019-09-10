@@ -6,25 +6,19 @@ Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-import os
 import logging
 
 from operator import attrgetter
 
-from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 
 from RAMSIS.core.simulator import SimulatorState
 from RAMSIS.ui.base.utils import pyqt_local_to_utc_ua, utc_to_local
-
-ui_path = os.path.dirname(__file__)
-SIM_WINDOW_PATH = os.path.join(ui_path, 'views', 'simulationwindow.ui')
-Ui_SimulationWindow = uic.loadUiType(
-    SIM_WINDOW_PATH,
-    import_from='RAMSIS.ui.views', from_imports=True)[0]
+from RAMSIS.ui.utils import UiForm
 
 
-class SimulationWindow(QDialog):
+class SimulationWindow(
+        QDialog, UiForm('simulationwindow.ui')):
 
     def __init__(self, ramsis_core, **kwargs):
         super().__init__(**kwargs)
@@ -32,10 +26,6 @@ class SimulationWindow(QDialog):
 
         # References
         self.ramsis_core = ramsis_core
-
-        # Setup the user interface
-        self.ui = Ui_SimulationWindow()
-        self.ui.setupUi(self)
 
         # Hook up buttons
         self.ui.startButton.clicked.connect(self.action_start_simulation)
