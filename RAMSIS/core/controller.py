@@ -14,7 +14,6 @@ from operator import attrgetter
 
 from PyQt5 import QtCore
 from collections import namedtuple
-from datetime import timedelta
 
 
 from ramsis.datamodel.seismics import SeismicEvent
@@ -349,22 +348,10 @@ class Controller(QtCore.QObject):
     def _init_simulation(self, time_range, speed):
         """
         (Re)initialize simulator and scheduler for a new simulation
-
         """
-        inf_speed = True if speed == -1 else False
-        if inf_speed:
-            self._logger.info('Simulating at maximum speed')
-            # TODO(damb): Simlation at maximum speed needs to be reimplemented.
-            # There is no self.project.setting['forecast_interval'] anymore.
-            #
-            # dt_h = self.project.setting['forecast_interval']
-            dt_h = 6
-            dt = timedelta(hours=dt_h)
-            step_signal = self.engine.forecast_complete
-            self.simulator.configure(time_range, step_on=step_signal, dt=dt)
-        else:
-            self._logger.info('Simulating at {:.0f}x'.format(speed))
-            self.simulator.configure(time_range, speed=speed)
+        self._logger.info('Simulating at {:.0f}x'.format(speed))
+        self.simulator.configure(time_range, speed=speed)
+
         self.task_manager.reset(time_range[0])
         self.clock.mode = WallClockMode.MANUAL
         self.clock.time = time_range[0]

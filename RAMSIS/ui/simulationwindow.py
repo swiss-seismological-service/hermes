@@ -41,7 +41,6 @@ class SimulationWindow(QDialog):
         self.ui.startButton.clicked.connect(self.action_start_simulation)
         self.ui.stopButton.clicked.connect(self.action_stop_simulation)
         self.ui.pauseButton.clicked.connect(self.action_pause_simulation)
-        self.ui.afapCheckBox.stateChanged.connect(self.on_afap_state_change)
 
         # Hook up signals from the core
         self.ramsis_core.simulator.state_changed.\
@@ -51,34 +50,30 @@ class SimulationWindow(QDialog):
 
     def update_controls(self):
         # TODO LH: use ui state machine
-        afap = self.ui.afapCheckBox.isChecked()
         if not self.ramsis_core.project:
             self.ui.startButton.setEnabled(False)
             self.ui.pauseButton.setEnabled(False)
             self.ui.stopButton.setEnabled(False)
-            self.ui.speedSpinBox.setEnabled(not afap)
-            self.ui.afapCheckBox.setEnabled(True)
+            self.ui.speedSpinBox.setEnabled(False)
             return
+
         sim_state = self.ramsis_core.simulator.state
         if sim_state == SimulatorState.RUNNING:
             self.ui.startButton.setEnabled(False)
             self.ui.pauseButton.setEnabled(True)
             self.ui.stopButton.setEnabled(True)
             self.ui.speedSpinBox.setEnabled(False)
-            self.ui.afapCheckBox.setEnabled(False)
         elif sim_state == SimulatorState.PAUSED:
             self.ui.startButton.setEnabled(True)
             self.ui.pauseButton.setEnabled(False)
             self.ui.stopButton.setEnabled(True)
-            self.ui.speedSpinBox.setEnabled(not afap)
-            self.ui.afapCheckBox.setEnabled(True)
+            self.ui.speedSpinBox.setEnabled(False)
         else:
             # STOPPED
             self.ui.startButton.setEnabled(True)
             self.ui.pauseButton.setEnabled(False)
             self.ui.stopButton.setEnabled(False)
-            self.ui.speedSpinBox.setEnabled(not afap)
-            self.ui.afapCheckBox.setEnabled(True)
+            self.ui.speedSpinBox.setEnabled(True)
 
     def refresh(self):
         """ Refresh displayed data from model """
@@ -107,9 +102,7 @@ class SimulationWindow(QDialog):
         end_time = pyqt_local_to_utc_ua(self.ui.endTimeEdit.dateTime())
 
         time_range = (start_time, end_time)
-        speed = -1 if self.ui.afapCheckBox.isChecked() \
-            else self.ui.speedSpinBox.value()
-        self.ramsis_core.start(time_range, speed)
+        self.ramsis_core.start(time_range, self.ui.speedSpinBox.value())
 
     def action_pause_simulation(self):
         self.ramsis_core.pause()
@@ -124,7 +117,4 @@ class SimulationWindow(QDialog):
 
     def on_project_load(self, project):
         self.refresh()
-        self.update_controls()
-
-    def on_afap_state_change(self):
         self.update_controls()

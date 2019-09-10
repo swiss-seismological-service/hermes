@@ -43,7 +43,6 @@ class Engine(QObject):
         :type forecast: ramsis.datamodel.forecast.Forecast
         """
         assert self.core.project
-        project = self.core.project
 
         # Skip this forecast if the core is busy
         if self.busy:
