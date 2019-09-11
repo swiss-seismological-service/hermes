@@ -17,6 +17,7 @@ class TaskManager:
     Manages the ramsis specific scheduler and tasks
 
     """
+    THRESHOLD_DATASOURCES = timedelta(seconds=60)
 
     def __init__(self, core):
         self.core = core
@@ -72,30 +73,41 @@ class TaskManager:
 
     def fetch_fdsn(self, t):
         """ FDSN task function """
-        if self.core.seismics_data_source is None:
+        if not self.core.project or self.core.seismics_data_source is None:
             return
+
         p = self.core.project
-        if p:
+        try:
             dt = p.settings['fdsnws_interval']
-            end = p.project_time
-            # FIXME: we should have an overlap in our data fetches to catch
-            # updated events
-            start = p.project_time - timedelta(minutes=dt)
-            self.core.seismics_data_source.fetch(starttime=start, endtime=end)
+        except KeyError as err:
+            self.logger.warning(
+                f'Invalid project configuration: {err}')
+        else:
+            start = p.starttime
+            if len(p.seismiccatalog):
+                start = (t - timedelta(minutes=dt) -
+                         self.THRESHOLD_DATASOURCES)
+            self.core.seismics_data_source.fetch(
+                starttime=start, endtime=t)
 
     def fetch_hydws(self, t):
         """ HYDWS task function """
-        if self.core.hydraulics_data_source is None:
+        if self.core.project or self.core.hydraulics_data_source is None:
             return
+
         p = self.core.project
-        if p:
+        try:
             dt = p.settings['hydws_interval']
-            end = p.project_time
-            # FIXME: we should have an overlap in our data fetches to catch
-            # updated events
-            start = p.project_time - timedelta(minutes=dt)
-            self.core.hydraulics_data_source.fetch(starttime=start,
-                                                   endtime=end)
+        except KeyError as err:
+            self.logger.warning(
+                f'Invalid project configuration: {err}')
+        else:
+            start = p.starttime
+            if len(p.wells[0].sections[0].hydraulics):
+                start = (t - timedelta(minutes=dt) -
+                         self.THRESHOLD_DATASOURCES)
+            self.core.hydraulics_data_source.fetch(
+                starttime=start, endtime=t)
 
     def update_rates(self, t):
         """ Rate computation task function """
