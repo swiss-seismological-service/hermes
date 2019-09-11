@@ -10,6 +10,7 @@ from ramsis.datamodel.forecast import (
     Forecast, ForecastScenario, ForecastStage, EStage)
 from ramsis.datamodel.model import EModel
 from ramsis.datamodel.seismicity import SeismicityModelRun
+from ramsis.datamodel.status import Status
 
 
 # NOTE(damb): The approach chosen is similar to matplotlib's pyplot builder
@@ -91,7 +92,8 @@ def default_scenario(store, name='Scenario', **kwargs):
         else:
             enabled = seismicity_stage_config.get('enabled', True)
             if enabled:
-                runs = [SeismicityModelRun(model=m, enabled=True)
+                runs = [SeismicityModelRun(model=m, enabled=True,
+                                           status=Status())
                         for m in store.load_models(
                             model_type=EModel.SEISMICITY)
                         if m.enabled]

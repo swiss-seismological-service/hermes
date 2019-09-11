@@ -22,38 +22,30 @@ stage is managed by a respective StageExecutor class:
 
 """
 
+import copy
 import logging
+
+from PyQt5.QtCore import QTimer
+
+from ramsis.datamodel.forecast import EStage
+from ramsis.datamodel.status import EStatus
+from ramsis.utils.error import ErrorWithTraceback
+
 from RAMSIS.core.tools.executor import (Executor, ParallelExecutor,
                                         SerialExecutor, ExecutionStatus)
-from RAMSIS.core.tools.notifications import (RunningNotification,
-                                             CompleteNotification,
-                                             ErrorNotification,
-                                             OtherNotification)
-from RAMSIS.utils import call_later
-from ramsis.datamodel.forecast import SeismicityForecastStage
+from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
+from RAMSIS.io.sfm import (SFMWorkerIMessageSerializer,
+                           SFMWorkerOMessageDeserializer)
+from RAMSIS.io.utils import (pymap3d_transform_geodetic2ned,
+                             pymap3d_transform_ned2geodetic)
+from RAMSIS.wkt_utils import point_to_proj4
 
 
 log = logging.getLogger(__name__)
 
 
-def _create_execution_status(origin, notification):
-    """
-    Translates a client/worker notification into an execution status
-
-    :param notification: client/worker notification
-    :return: :class:`ExecutionStatus` resulting from notification
-    :rtype: :class:`ExecutionStatus`
-    """
-    # TODO LH: Implement. This is still based on the notifications from the
-    #  previous model client implementation
-    FLAG_MAP = {
-        RunningNotification: ExecutionStatus.Flag.STARTED,
-        CompleteNotification: ExecutionStatus.Flag.SUCCESS,
-        ErrorNotification: ExecutionStatus.Flag.ERROR,
-        OtherNotification: ExecutionStatus.Flag.UPDATE
-    }
-    return ExecutionStatus(origin, FLAG_MAP[type(notification)],
-                           info=notification)
+class ExecutorError(ErrorWithTraceback):
+    """Base Executor error ({})."""
 
 
 class ForecastExecutor(SerialExecutor):
@@ -71,11 +63,12 @@ class ForecastExecutor(SerialExecutor):
 
     def __init__(self, core, forecast, **kwargs):
         super().__init__(**kwargs)
-        self.setObjectName(f'Forecast at {forecast.starttime}')
+        self.setObjectName(f'{forecast!r}')
         self.core = core
         self.forecast = forecast
         for scenario in forecast.scenarios:
-            ScenarioExecutor(scenario, parent=self)
+            if scenario.enabled:
+                ScenarioExecutor(scenario, parent=self)
 
     def pre_process(self):
         """
@@ -90,17 +83,19 @@ class ForecastExecutor(SerialExecutor):
         """
         log.info(f'Executing {self.objectName()}')
 
-        # We may have future events in the live catalog if simulating
+        # We may have future events in the live data if simulating
         def filter_future(event):
             return event.datetime_value < self.forecast.starttime
 
         self.forecast.seismiccatalog = self.core.project.seismiccatalog.\
             snapshot(filter_cond=filter_future)
 
-        # We only support one well at the moment
-        # TODO LH: assign active well at forecast time (once we have those) or
-        #   let the user specify the well at scenario config time.
-        #self.forecast.well = self.core.project.wells[0]
+        # XXX(damb): We only support one well with a single section at the
+        # moment
+        self.forecast.well = self.core.project.wells[0].\
+            snapshot(sample_filter_cond=filter_future)
+
+        self.core.store.save()
 
     def post_process(self):
         self.core.store.save()
@@ -114,34 +109,6 @@ class ForecastExecutor(SerialExecutor):
         super().on_child_status_changed(status)
 
 
-class ScenarioExecutor(SerialExecutor):
-    """
-    Runs seismicity forecast, hazard and risk calculation for a scenario
-
-    :param scenario: Scenario for this job
-    :type scenario: ramsis.datamodel.forecast.ForecastScenario
-    """
-
-    def __init__(self, scenario, **kwargs):
-        super().__init__(**kwargs)
-        self.setObjectName(scenario.name)
-        self.scenario = scenario
-        self.forecast = scenario.forecast
-        cfg = self.scenario.config
-        if cfg['run_is_forecast']:
-            SeismicityForecastStageExecutor(self.scenario, parent=self)
-        if cfg['run_hazard']:
-            HazardStageExecutor(self.scenario, parent=self)
-        if cfg['run_risk']:
-            RiskStageExecutor(self.scenario, parent=self)
-
-    def pre_process(self):
-        log.info(f'Computing scenario: {self.scenario.name}')
-
-    def post_process(self):
-        log.info(f'Scenario "{self.scenario.name}" complete')
-
-
 class SeismicityForecastStageExecutor(ParallelExecutor):
     """
     Implements the seismicity forecast stage.
@@ -152,17 +119,16 @@ class SeismicityForecastStageExecutor(ParallelExecutor):
     :type scenario: ramsis.datamodel.forecast.ForecastScenario
     """
 
-    def __init__(self, scenario, **kwargs):
+    def __init__(self, stage, **kwargs):
         super().__init__(**kwargs)
-        self.setObjectName(scenario.name)
-        self.scenario = scenario
+        self.setObjectName(f'{stage!r}')
+        self.stage = stage
+        self.scenario = stage.scenario
+        self.forecast = stage.scenario.forecast
 
-        # TODO LH: What if there is no forecast stage (if it's disabled - is
-        #   that even allowed)?
-        stage = next((s for s in scenario.stages
-                      if isinstance(s, SeismicityForecastStage)), None)
-        for run in stage.runs:
-            SeismicityModelRunExecutor(run, parent=self)
+        for model_run in self.stage.runs:
+            if model_run.enabled:
+                SeismicityModelRunExecutor(model_run, parent=self)
 
     def pre_process(self):
         log.info(f'Starting seismicity forecast stage for scenario '
@@ -171,58 +137,6 @@ class SeismicityForecastStageExecutor(ParallelExecutor):
     def post_process(self):
         log.info(f'All seismicity forecast models complete for scenario '
                  f'"{self.objectName()}"')
-
-
-class SeismicityModelRunExecutor(Executor):
-    """
-    Executes a single seimicity model run
-
-    The executor instantiates the actual model that is associated with the run,
-    connects to its status update signal and then calls its run method.
-
-    :param seismicity_model_run: Model run to execute
-    :type seismicity_model_run: ramsis.datamodel.seismicity.SeismicityModelRun
-    """
-
-    def __init__(self, seismicity_model_run, **kwargs):
-        super().__init__(**kwargs)
-        self.setObjectName(f'Seismicity Model '
-                           f'{seismicity_model_run.model.name}')
-        self.model_run = seismicity_model_run
-        # TODO: link to (executable) model.
-        #   The previous implementation of ModelClient started a polling timer
-        #   if the request got accepted by the remote worker). Note: someone
-        #   (either this class or the client) has to make sure that we update
-        #   the status even if there's a network issue or the worker hangs.
-        #   I.e. a timeout must be implemented.
-
-        # TODO: this is just pseudocode
-        # model = seismicity_model_run.model
-        # model.status_changed.connect(self.on_model_status_changed)
-
-    def run(self):
-        log.info(f'Running seismicity forecast model {self.objectName()}')
-
-        # TODO: implement. this is just pseudocode (assuming the .model will
-        #   take care of compiling all the relevant input data for the worker)
-        # self.model_run.model.run()
-        # TODO LH: remove, fake instant success for testing :)
-        self.status_changed.emit(ExecutionStatus(self))
-
-    def on_model_status_changed(self, notification):
-        pass
-        # TODO: if the model we're executing is based of
-        #   datamodel.seismicity.SeismicityModel as assumed above, it can
-        #   persist its status itself. We just need to translate it into an
-        #   executor status here and pass it on.
-
-        # TODO: implement. this is just pseudocode
-        # model = self.sender()
-        # execution_status = _create_execution_status(self, notification)
-        # if notification.success:
-        #     self.model_run.result = notification.result
-        #
-        # self.status_changed.emit(execution_status)
 
 
 class HazardStageExecutor(Executor):
@@ -239,9 +153,9 @@ class HazardStageExecutor(Executor):
     #   completely with OQ 3 and the new client/worker classes. Re-add as soon
     #   as we have the new hazard (OQ) client implementation.
 
-    def __init__(self, scenario, **kwargs):
+    def __init__(self, stage, **kwargs):
         super().__init__(**kwargs)
-        self.setObjectName('Hazard Stage')
+        self.setObjectName(f'{stage!r}')
         # stage = next(s for s in scenario.stages
         #                   if isinstance(s, HazardForecastStage))
         # self.model_run = stage.run
@@ -278,9 +192,9 @@ class RiskStageExecutor(Executor):
     #   completely with OQ 3 and the new client/worker classes. Re-add as soon
     #   as we have the new hazard (OQ) client implementation.
 
-    def __init__(self, scenario, **kwargs):
+    def __init__(self, stage, **kwargs):
         super().__init__(**kwargs)
-        self.setObjectName('Risk Stage')
+        self.setObjectName(f'{stage!r}')
         # stage = next(s for s in scenario.stages
         #                   if isinstance(s, RiskForecastStage))
         # self.model_run = stage.run
@@ -301,3 +215,185 @@ class RiskStageExecutor(Executor):
         #     self.model_run.result = notification.result
         #
         # self.finished.emit(execution_status)
+
+
+class ScenarioExecutor(SerialExecutor):
+    """
+    Runs seismicity forecast, hazard and risk calculation for a scenario
+
+    :param scenario: Scenario for this job
+    :type scenario: ramsis.datamodel.forecast.ForecastScenario
+    """
+    _EXEC_MAP = {
+        EStage.SEISMICITY: SeismicityForecastStageExecutor,
+        EStage.HAZARD: HazardStageExecutor,
+        EStage.RISK: RiskStageExecutor, }
+
+    def __init__(self, scenario, **kwargs):
+        super().__init__(**kwargs)
+        self.setObjectName(f'{scenario!r}')
+        self.scenario = scenario
+        self.forecast = scenario.forecast
+
+        self._setup()
+
+    def _setup(self):
+
+        def execute(stage_type, executor):
+            try:
+                stage = self.scenario[stage_type]
+            except KeyError as err:
+                raise ExecutorError(f'Missing stage: {err}')
+            else:
+                if stage.enabled:
+                    executor(stage, parent=self)
+
+        for stage_type, executor in self._EXEC_MAP.items():
+            execute(stage_type, executor)
+
+    def pre_process(self):
+        log.info(f'Computing scenario: {self.scenario.name}')
+
+    def post_process(self):
+        log.info(f'Scenario {self.scenario.name!r} complete')
+
+
+class SeismicityModelRunExecutor(Executor):
+    """
+    Executes a single seimicity model run
+
+    The executor instantiates the actual model that is associated with the run,
+    connects to its status update signal and then calls its run method.
+    """
+    POLLING_INTERVAL = 5000
+    TASK_ACCEPTED = 202
+
+    RESP_MAP = {
+        TASK_ACCEPTED: (ExecutionStatus.Flag.STARTED, EStatus.PENDING),
+        200: (ExecutionStatus.Flag.SUCCESS, EStatus.COMPLETE),
+        423: (ExecutionStatus.Flag.RUNNING, EStatus.RUNNING),
+        418: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        204: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        405: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        422: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
+        500: (ExecutionStatus.Flag.ERROR, EStatus.ERROR), }
+
+    def __init__(self, model_run, **kwargs):
+        """
+        :param run: Model run to execute
+        :type run: :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
+        """
+        super().__init__(**kwargs)
+        self.setObjectName(f'{model_run!r}')
+
+        self.model_run = model_run
+        self.stage = model_run.forecaststage
+        self.scenario = model_run.forecaststage.scenario
+        self.forecast = model_run.forecaststage.scenario.forecast
+        self.project = model_run.forecaststage.scenario.forecast.project
+
+        self._worker_handle = RemoteSeismicityWorkerHandle.from_run(
+            self.model_run)
+
+    def run(self):
+        log.info(f'Running seismicity forecast model {self.objectName()}')
+
+        model_parameters = copy.deepcopy(self.model_run.config)
+        model_parameters.update(
+            {'datetime_start': self.forecast.starttime.isoformat(),
+             'datetime_end': self.forecast.endtime.isoformat(),
+             'epoch_duration': self.stage.config['prediction_bin_duration']})
+
+        # compose payload
+        data = {
+            'seismic_catalog': self.forecast.seismiccatalog,
+            'well': self.forecast.well,
+            'model_parameters': model_parameters,
+            'reservoir': self.scenario.reservoirgeom,
+            'scenario': {'well': self.scenario.well}, }
+
+        serializer = SFMWorkerIMessageSerializer(
+            proj=point_to_proj4(self.project.referencepoint),
+            transform_callback=pymap3d_transform_ned2geodetic)
+        payload = self._worker_handle.Payload(**data, serializer=serializer)
+
+        try:
+            resp = self._worker_handle.compute(
+                payload, deserializer=SFMWorkerOMessageDeserializer())
+        except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
+            log.error(str(err))
+            self.model_run.status.state = EStatus.ERROR
+            self.status_changed.emit(
+                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
+                                info=err))
+            return
+
+        status = resp['data']['attributes']['status_code']
+
+        if status != self.TASK_ACCEPTED:
+            self._update_orm_status(resp)
+            self.status_changed.emit(self._resp_to_status(resp))
+            return
+
+        self.model_run.runid = resp['data']['id']
+        self.model_run.status.state = EStatus.RUNNING
+        self.status_changed.emit(
+            ExecutionStatus(self, flag=ExecutionStatus.Flag.STARTED))
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._poll)
+        self.timer.start(self.POLLING_INTERVAL)
+
+    def _poll(self):
+        deserializer = SFMWorkerOMessageDeserializer(
+            proj=point_to_proj4(self.project.referencepoint),
+            transform_callback=pymap3d_transform_geodetic2ned,
+            many=True)
+        try:
+            resp = self._worker_handle.query(
+                task_ids=self.model_run.runid,
+                deserializer=deserializer).first()
+        except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
+            log.error(str(err))
+            self.status_changed.emit(
+                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
+                                info=err))
+            self.timer.stop()
+            return
+
+        status = resp['data']['attributes']['status_code']
+
+        if status not in (self.TASK_ACCEPTED, 423):
+            self.timer.stop()
+
+        if 200 == status:
+            # process result
+            # TODO(damb): Perform this validation within the corresponding IO
+            # facilities.
+            try:
+                result = resp['data']['attributes']['forecast']
+            except KeyError:
+                self.model_run.status.state = EStatus.ERROR
+                self.status_changed.emit(ExecutionStatus(
+                    self, flag=ExecutionStatus.Flag.ERROR))
+            else:
+                self.model_run.result = result
+
+        log.info(f'Received response (run={self.model_run!r}, '
+                 f'id={self.model_run.runid}): {resp}')
+
+        self._update_orm_status(resp)
+        self.status_changed.emit(self._resp_to_status(resp))
+
+    def _update_orm_status(self, resp):
+        self.model_run.status.state = \
+            self.RESP_MAP[resp['data']['attributes']['status_code']][1]
+
+    def _resp_to_status(self, resp):
+        """
+        Convert a SFM worker response into an :code:`ExecutionStatus`.
+
+        :param dict resp: Response to convert
+        """
+        return ExecutionStatus(
+            self, info=resp,
+            flag=self.RESP_MAP[resp['data']['attributes']['status_code']][0])

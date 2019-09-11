@@ -26,6 +26,7 @@ def validate_positive(d):
 
 validate_percentage = validate.Range(min=0, max=100)
 
+DateTime = functools.partial(fields.DateTime, format='%Y-%m-%dT%H:%M:%S.%f')
 Percentage = functools.partial(fields.Float, validate=validate_percentage)
 Positive = functools.partial(fields.Float, validate=validate_positive)
 Uncertainty = Positive
@@ -207,6 +208,20 @@ class DeserializerBase(abc.ABC):
 
 
 # -----------------------------------------------------------------------------
+def append_ms_zeroes(dt_str):
+    """
+    Utility function zero padding milliseconds.
+
+    :param str dt_str: Date time string to be processed
+
+    :returns: Date time string with padded milliseconds
+    :rtype: str
+    """
+    if '.' in dt_str:
+        return dt_str
+    return dt_str + '.000000'
+
+
 @contextlib.contextmanager
 def binary_request(request, url, params={}, timeout=None, **kwargs):
     """

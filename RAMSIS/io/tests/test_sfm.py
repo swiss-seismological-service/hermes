@@ -71,9 +71,9 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                  '11111111-8d89-4f13-95e7-526ade73cc8b'),
                     'hydraulics': [
                         {'datetime':
-                            {'value': '2019-05-03T13:27:09.117623+00:00'}},
+                            {'value': '2019-05-03T13:27:09.117623'}},
                         {'datetime':
-                            {'value': '2019-05-03T15:27:09.117623+00:00'}}]}],
+                            {'value': '2019-05-03T15:27:09.117623'}}]}],
                     'publicid': ('smi:ch.ethz.sed/bh/'
                                  '11111111-e4a0-4692-bf29-33b5591eb798')},
             'scenario': {
@@ -92,10 +92,10 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                      '11111111-8d89-4f13-95e7-526ade73cc8b'),
                         'hydraulics': [
                             {'datetime':
-                                {'value': '2019-05-03T17:27:09.117623+00:00'}},
+                                {'value': '2019-05-03T17:27:09.117623'}},
                             {'datetime':
                                 {'value': ('2019-05-03T'
-                                           '19:27:09.117623+00:00')}}]}],
+                                           '19:27:09.117623')}}]}],
                         'publicid': ('smi:ch.ethz.sed/bh/'
                                      '11111111-e4a0-4692-bf29-33b5591eb798')}},
                 'reservoir': {'geom':
@@ -265,9 +265,9 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                  '11111111-8d89-4f13-95e7-526ade73cc8b'),
                     'hydraulics': [
                         {'datetime':
-                            {'value': '2019-05-03T13:27:09.117623+00:00'}},
+                            {'value': '2019-05-03T13:27:09.117623'}},
                         {'datetime':
-                            {'value': '2019-05-03T15:27:09.117623+00:00'}}]}],
+                            {'value': '2019-05-03T15:27:09.117623'}}]}],
                     'publicid': ('smi:ch.ethz.sed/bh/'
                                  '11111111-e4a0-4692-bf29-33b5591eb798')},
             'scenario': {
@@ -286,10 +286,9 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                      '11111111-8d89-4f13-95e7-526ade73cc8b'),
                         'hydraulics': [
                             {'datetime':
-                                {'value': '2019-05-03T17:27:09.117623+00:00'}},
+                                {'value': '2019-05-03T17:27:09.117623'}},
                             {'datetime':
-                                {'value': ('2019-05-03T'
-                                           '19:27:09.117623+00:00')}}]}],
+                                {'value': ('2019-05-03T19:27:09.117623')}}]}],
                         'publicid': ('smi:ch.ethz.sed/bh/'
                                      '11111111-e4a0-4692-bf29-33b5591eb798')}},
                 'reservoir': {'geom':
@@ -415,16 +414,35 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
 
+    def test_accepted_msg(self):
+        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
+                                       'omsg-202.json'))
+
+        reference_result = {
+            'data': {
+                'id': uuid.UUID('f51e0208-515d-4099-8d87-bdc0e54f09cb'),
+                'attributes': {
+                    'status_code': 202,
+                    'status': 'TaskAccepted',
+                    'warning': '', }}}
+
+        deserializer = SFMWorkerOMessageDeserializer(proj=None)
+
+        self.assertEqual(deserializer.loads(json_omsg),
+                         reference_result)
+
     def test_ok_msg(self):
         json_omsg = _read(os.path.join(self.PATH_RESOURCES,
                                        'omsg-200.json'))
 
         s0 = SeismicityPredictionBin(
             starttime=dateutil.parser.parse(
-                '2019-07-02T14:59:52.508142+00:00'),
-            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142+00:00'),
+                '2019-07-02T14:59:52.508142'),
+            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142'),
             b_value=73,
-            rate_value=42)
+            a_value=1.,
+            mc_value=1.5,
+            hydraulicvol_value=10000.)
 
         prediction = ReservoirSeismicityPrediction(
             geom=('POLYHEDRALSURFACE Z '
@@ -482,10 +500,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
 
         s0 = SeismicityPredictionBin(
             starttime=dateutil.parser.parse(
-                '2019-07-02T14:59:52.508142+00:00'),
-            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142+00:00'),
+                '2019-07-02T14:59:52.508142'),
+            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142'),
             b_value=73,
-            rate_value=42)
+            a_value=1.,
+            mc_value=1.5,
+            hydraulicvol_value=10000.)
 
         prediction = ReservoirSeismicityPrediction(
             geom=('POLYHEDRALSURFACE Z '
@@ -517,10 +537,13 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
 
         s0 = dict(
             starttime=dateutil.parser.parse(
-                '2019-07-02T14:59:52.508142+00:00'),
-            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508143+00:00'),
+                '2019-07-02T14:59:52.508142'),
+            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508143'),
             b_value=73.,
-            rate_value=42.)
+            a_value=1.,
+            mc_value=1.5,
+            numberevents_value=42.,
+            hydraulicvol_value=10000.)
 
         prediction = dict(
             geom=('POLYHEDRALSURFACE Z '

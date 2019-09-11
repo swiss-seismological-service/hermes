@@ -13,10 +13,9 @@ from .tabs import TabPresenter
 from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget
 
+from ramsis.datamodel.forecast import EStage
+from ramsis.datamodel.status import EStatus
 from RAMSIS.ui.base.utils import utc_to_local
-
-# TODO: readd
-#from ramsis.datamodel.calculationstatus import CalculationStatus as CS
 
 
 class GeneralTabPresenter(TabPresenter):
@@ -77,7 +76,7 @@ class StageStatusPresenter(QObject):
         if scenario is None:
             return
         # TODO LH: reimplement with new model
-        # self._refresh_model_status(scenario)
+        self._refresh_model_status(scenario)
         # self._refresh_hazard_status(scenario)
         # self._refresh_risk_status(scenario)
         # self._refresh_traffic_light(scenario)
@@ -85,23 +84,26 @@ class StageStatusPresenter(QObject):
     def _refresh_model_status(self, scenario):
         widget = self.widgets[0]
         widget.clear_substages()
-        if not scenario.config['run_is_forecast']:
-            widget.disable()
+
+        try:
+            stage = scenario[EStage.SEISMICITY]
+        except KeyError:
             return
-        # substages
-        models = scenario.project.settings['forecast_models']
-        substages = {m: 'Pending' for m in models}
-        for key in substages.keys():
-            if key in scenario.config['disabled_models']:
-                substages[key] = 'Disabled'
-        if scenario.forecast_result:
-            for model_id, mr in scenario.forecast_result.model_results.items():
-                if mr.status:
-                    substages[model_id] = mr.status.state
-        widget.set_substages([(models[k]['title'], v)
-                              for k, v in substages.items()])
+
+        # model runs
+        config = {}
+        for run in stage.runs:
+            if run.enabled:
+                config[run.model.name] = str(run.status.state.name)
+                continue
+            config[run.model.name] = 'Disabled'
+
+        widget.set_substages(list(config.items()))
 
         # TODO LH: revisit overall state
+        #if all(s in (EStatus.COMPLETE, 'Disabled') for s in config.values()):
+        #    state = EStatus.COMPLETE
+        #    widget.set_state(state)
         # if all(s in (CS.COMPLETE, 'Disabled') for s in substages.values()):
         #     state = CS.COMPLETE
         # elif any(s == CS.ERROR for s in substages.values()):

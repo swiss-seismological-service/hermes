@@ -9,6 +9,7 @@ import functools
 from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
                          post_load, ValidationError, EXCLUDE)
 
+from geoalchemy2.elements import WKBElement
 from osgeo import ogr, gdal
 
 from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
@@ -16,8 +17,9 @@ from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
 from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
-                             _IOError, TransformationError, Percentage,
-                             Uncertainty)
+                             _IOError, TransformationError, DateTime,
+                             Percentage, Uncertainty, append_ms_zeroes)
+from RAMSIS.wkt_utils import wkb_to_wkt
 
 gdal.UseExceptions()
 
@@ -90,20 +92,51 @@ class _ModelResultSampleSchema(_SchemaBase):
     """
     Schema representation for a model result sample.
     """
-    starttime = fields.DateTime(format='iso')
-    endtime = fields.DateTime(format='iso')
+    starttime = DateTime(required=True)
+    endtime = DateTime(required=True)
 
-    rate_value = fields.Float(required=True)
-    rate_uncertainty = Uncertainty()
-    rate_loweruncertainty = Uncertainty()
-    rate_upperuncertainty = Uncertainty()
-    rate_confidencelevel = Percentage()
+    numberevents_value = fields.Float(required=True)
+    numberevents_uncertainty = Uncertainty()
+    numberevents_loweruncertainty = Uncertainty()
+    numberevents_upperuncertainty = Uncertainty()
+    numberevents_confidencelevel = Percentage()
 
     b_value = fields.Float(required=True)
     b_uncertainy = Uncertainty()
     b_loweruncertainty = Uncertainty()
     b_upperuncertainty = Uncertainty()
     b_confidencelevel = Percentage()
+
+    a_value = fields.Float(required=True)
+    a_uncertainy = Uncertainty()
+    a_loweruncertainty = Uncertainty()
+    a_upperuncertainty = Uncertainty()
+    a_confidencelevel = Percentage()
+
+    mc_value = fields.Float(required=True)
+    mc_uncertainy = Uncertainty()
+    mc_loweruncertainty = Uncertainty()
+    mc_upperuncertainty = Uncertainty()
+    mc_confidencelevel = Percentage()
+
+    hydraulicvol_value = fields.Float(required=True)
+    hydraulicvol_uncertainy = Uncertainty()
+    hydraulicvol_loweruncertainty = Uncertainty()
+    hydraulicvol_upperuncertainty = Uncertainty()
+    hydraulicvol_confidencelevel = Percentage()
+
+    @pre_load
+    def append_zero_milliseconds(self, data, **kwargs):
+        # XXX(damb): This is a workaround since the DateTime format is being
+        # configured with a date string. Is there a better solution provided by
+        # marshmallow.
+        if 'starttime' in data:
+            data['starttime'] = append_ms_zeroes(data['starttime'])
+
+        if 'endtime' in data:
+            data['endtime'] = append_ms_zeroes(data['endtime'])
+
+        return data
 
     @pre_load
     def flatten(self, data, **kwargs):
@@ -128,6 +161,12 @@ class _ReservoirSchema(_SchemaBase):
 
     # XXX(damb): Currently no sub_geometries are supported.
     # sub_geometries = fields.Nested('self', many=True)
+
+    @pre_dump
+    def wkb_to_wkt(self, data, **kwargs):
+        if 'geom' in data and isinstance(data['geom'], WKBElement):
+            data['geom'] = wkb_to_wkt(data['geom'])
+        return data
 
     @post_dump
     def transform(self, data, **kwargs):
@@ -342,6 +381,9 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
     SRS_EPSG = 4326
 
     def __init__(self, proj=None, **kwargs):
+        """
+        :param bool many: Allow the deserialization of many arguments
+        """
         super().__init__(proj=proj, **kwargs)
 
         self._context = kwargs.get('context', {'format': 'orm'})

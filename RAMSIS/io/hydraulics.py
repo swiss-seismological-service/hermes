@@ -14,7 +14,8 @@ from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
 from ramsis.datamodel.well import InjectionWell, WellSection
 from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
                              IOBase, _IOError, TransformationError, Positive,
-                             Percentage, Uncertainty, validate_positive)
+                             DateTime, Percentage, Uncertainty,
+                             validate_positive, append_ms_zeroes)
 
 
 # XXX(damb): Additional parameter validation to be implemented.
@@ -94,7 +95,7 @@ class _HydraulicSampleSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     hydraulic sample.
     """
-    datetime_value = fields.DateTime(format='iso', required=True)
+    datetime_value = DateTime(required=True)
     datetime_uncertainty = Uncertainty()
     datetime_loweruncertainty = Uncertainty()
     datetime_uppearuncertainty = Uncertainty()
@@ -157,8 +158,12 @@ class _HydraulicSampleSchema(_SchemaBase):
     fluidcomposition = fields.String()
 
     @pre_load
-    def flatten(self, data, **kwargs):
-        return self._flatten_dict(data)
+    def pre_process(self, data, **kwargs):
+        data = self._flatten_dict(data)
+        if 'datetime_value' in data:
+            data['datetime_value'] = append_ms_zeroes(data['datetime_value'])
+
+        return data
 
     @post_load
     def make_object(self, data, **kwargs):
@@ -170,6 +175,9 @@ class _HydraulicSampleSchema(_SchemaBase):
 
     @post_dump
     def nest_fields(self, data, **kwargs):
+        if 'datetime_value' in data:
+            data['datetime_value'] = append_ms_zeroes(data['datetime_value'])
+
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
@@ -182,8 +190,8 @@ class _WellSectionSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for a
     well section.
     """
-    starttime = fields.DateTime(format='iso')
-    endtime = fields.DateTime(format='iso')
+    starttime = DateTime()
+    endtime = DateTime()
 
     toplongitude_value = Longitude(required=True)
     toplongitude_uncertainty = Uncertainty()
@@ -264,11 +272,18 @@ class _WellSectionSchema(_SchemaBase):
             many=True, context=self.context).load(value)
 
     @pre_load
-    def flatten(self, data, **kwargs):
+    def load_preprocess(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            return self._flatten_dict(data)
+            data = self._flatten_dict(data)
+
+        if 'starttime' in data:
+            data['starttime'] = append_ms_zeroes(data['starttime'])
+
+        if 'endtime' in data:
+            data['endtime'] = append_ms_zeroes(data['endtime'])
+
         return data
 
     @post_load
@@ -289,6 +304,13 @@ class _WellSectionSchema(_SchemaBase):
             if self.context.get('proj'):
                 data = self._transform(data)
             return self._nest_dict(self._clear_missing(data))
+
+        if 'starttime' in data:
+            data['starttime'] = append_ms_zeroes(data['starttime'])
+
+        if 'endtime' in data:
+            data['endtime'] = append_ms_zeroes(data['endtime'])
+
         return data
 
     @validates_schema
