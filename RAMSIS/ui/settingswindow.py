@@ -18,7 +18,6 @@ from RAMSIS.ui.base.bindings import (AttrBinding, DictBinding)
 from RAMSIS.ui.base.controlinterface import control_interface
 from RAMSIS.ui.base.state import UiStateMachine
 from RAMSIS.ui.utils import UiForm, WktPointBinding
-from .modelconfigurationwindow import ModelConfigurationWindow
 
 ui_path = os.path.dirname(__file__)
 PROJECT_SETTINGS_WINDOW_PATH = \
@@ -208,9 +207,10 @@ class ApplicationSettingsWindow(SettingsWindow,
     @pyqtSlot(str, name='on_dbUserEdit_textChanged')
     @pyqtSlot(str, name='on_dbPasswordEdit_textChanged')
     def validate_db_edits(self, *_):
-        valid = bool(self.ui.dbUrlEdit.text() and self.ui.dbUserEdit.text()
-                     and self.ui.dbPasswordEdit.text()
-                     and self.ui.dbNameEdit.text())
+        valid = bool(self.ui.dbUrlEdit.text() and
+                     self.ui.dbUserEdit.text() and
+                     self.ui.dbPasswordEdit.text() and
+                     self.ui.dbNameEdit.text())
         # Note: edits are disabled when connected so we only need to cover
         # the state transitions below.
         if valid:
@@ -262,17 +262,6 @@ class ProjectSettingsWindow(SettingsWindow):
             DictBinding(settings, 'fdsnws_url', self.ui.fdsnUrlEdit),
             DictBinding(settings, 'hydws_url', self.ui.hydwsUrlEdit),
             DictBinding(settings, 'hydws_enable', self.ui.enableHydwsCheckBox),
-            DictBinding(settings, 'auto_schedule_enable',
-                        self.ui.enableAutoSchedulingCheckBox),
-            DictBinding(settings, 'forecast_interval',
-                        self.ui.forecastIntervalBox),
-            DictBinding(settings, 'forecast_length',
-                        self.ui.forecastBinTimeBox),
-            DictBinding(settings, 'forecast_start', self.ui.firstForecastBox),
-            DictBinding(settings, 'seismic_rate_interval',
-                        self.ui.rateIntervalBox),
-            DictBinding(settings, 'write_fc_results_to_disk',
-                        self.ui.writeResultsToFileCheckBox),
         ]
         self.refresh_ui()
 
@@ -297,35 +286,3 @@ class ProjectSettingsWindow(SettingsWindow):
     @pyqtSlot(name='on_cancelButton_clicked')
     def action_cancel(self):
         super().action_cancel()
-
-    # TODO LH: These (below) need to be implemented generically
-
-    @pyqtSlot(name='on_rjConfigButton_clicked')
-    def action_show_rj_model_configuration(self):
-        if self.rj_model_configuration_window is None:
-            self.rj_model_configuration_window = ModelConfigurationWindow(
-                project=self.project, model='rj')
-        self.rj_model_configuration_window.show()
-
-    @pyqtSlot(name='on_etasConfigButton_clicked')
-    def action_show_etas_model_configuration(self):
-        if self.etas_model_configuration_window is None:
-            self.etas_model_configuration_window = ModelConfigurationWindow(
-                project=self.project, model='etas')
-        self.etas_model_configuration_window.show()
-
-    @pyqtSlot(name='on_enableRjCheckBox_clicked')
-    def action_rj_checked(self):
-        state = self.ui.enableRjCheckBox.checkState()
-        if state:
-            self.ui.rjConfigButton.setEnabled(True)
-        else:
-            self.ui.rjConfigButton.setDisabled(True)
-
-    @pyqtSlot(name='on_enableEtasCheckBox_clicked')
-    def action_etas_checked(self):
-        state = self.ui.enableEtasCheckBox.checkState()
-        if state:
-            self.ui.etasConfigButton.setEnabled(True)
-        else:
-            self.ui.etasConfigButton.setDisabled(True)

@@ -8,12 +8,14 @@ central coordinator for all core (i.e. non UI) components.
 """
 
 import logging
+
 from enum import Enum, auto
+from operator import attrgetter
+
 from PyQt5 import QtCore
 from collections import namedtuple
-from datetime import timedelta
 
-from ramsis.datamodel.forecast import Forecast
+
 from ramsis.datamodel.seismics import SeismicEvent
 from ramsis.datamodel.hydraulics import HydraulicSample
 from RAMSIS.core.engine.engine import Engine
@@ -157,10 +159,17 @@ class Controller(QtCore.QObject):
         if self.project:
             self.close_project()
         self.project = project
+
         if self.launch_mode == LaunchMode.LAB:
-            # TODO LH: always use forecast_start
-            self.clock.reset(project.settings['forecast_start'] or
-                             project.starttime)
+            try:
+                start = min(project.forecast_iter(),
+                            key=attrgetter('starttime')).starttime
+            except ValueError:
+                self._logger.warning(
+                    'No forecasts configured. Use project starttime: '
+                    f'{project.starttime}.')
+                start = project.starttime
+            self.clock.reset(start)
         self.project_loaded.emit(project)
         self._update_data_sources()
         self._logger.info('... done loading project')
@@ -328,8 +337,6 @@ class Controller(QtCore.QObject):
         <core.simulator.Simulator.configure>` time range and begin from there.
 
         """
-        # self._profiler = Profiler()
-        # self._profiler.start()
         if self.project is None:
             return
         self._logger.info('Starting simulation')
@@ -341,21 +348,10 @@ class Controller(QtCore.QObject):
     def _init_simulation(self, time_range, speed):
         """
         (Re)initialize simulator and scheduler for a new simulation
-
         """
-        # self._logger.info(
-        #     'Deleting any forecasting results from previous runs')
-        # self.project.seismiccatalog.clear()
-        inf_speed = True if speed == -1 else False
-        if inf_speed:
-            self._logger.info('Simulating at maximum speed')
-            dt_h = self.project.setting['forecast_interval']
-            dt = timedelta(hours=dt_h)
-            step_signal = self.engine.forecast_complete
-            self.simulator.configure(time_range, step_on=step_signal, dt=dt)
-        else:
-            self._logger.info('Simulating at {:.0f}x'.format(speed))
-            self.simulator.configure(time_range, speed=speed)
+        self._logger.info('Simulating at {:.0f}x'.format(speed))
+        self.simulator.configure(time_range, speed=speed)
+
         self.task_manager.reset(time_range[0])
         self.clock.mode = WallClockMode.MANUAL
         self.clock.time = time_range[0]
@@ -402,21 +398,6 @@ class Controller(QtCore.QObject):
         self.store.save()
         self.project_data_changed.emit(self.project.forecasts)
         return fc
-
-    def create_next_future_forecast(self):
-        """ Adds the next regular forecast to the list of future forecasts """
-        dt = timedelta(hours=self.project.settings['forecast_interval'])
-        if self.project.forecasts:
-            t_last = self.project.forecasts[-1].starttime
-        else:
-            t_last = self.project.settings['forecast_start'] - dt
-        t_next = t_last + dt
-        models = [m for m in self.store.load_models() if m.enabled]
-        forecast = Forecast.create_interactive(t_next, t_next + dt, models)
-        self.project.forecasts.append(forecast)
-        self.store.save()
-        self.project_data_changed.emit(self.project.forecasts)
-        return forecast
 
     # TODO LH: this needs a trigger. It used to react to the settings_changed
     #   signal on project settings.

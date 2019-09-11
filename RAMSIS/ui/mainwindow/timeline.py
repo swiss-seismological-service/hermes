@@ -3,13 +3,14 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2015, SED (ETH Zurich)
 
 """
 import logging
 
 from datetime import datetime
+from operator import attrgetter
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QStyleFactory
@@ -22,22 +23,20 @@ from ramsis.datamodel.seismics import SeismicCatalog
 
 log = logging.getLogger(__name__)
 
+DATETIME_POSIX_START = datetime(1970, 1, 1)
+
 
 class TimeLinePresenter(QObject):
     """
     A base class for presenting time lines
 
     """
-    def __init__(self, ui, core):
-        """
 
-        :param ui:
-        :param core:
-        """
-        super(TimeLinePresenter, self).__init__()
+    def __init__(self, ui, core):
+        super().__init__()
         self.ui = ui
         self.core = core
-        self.displayed_time = datetime(1970, 1, 1)
+        self.displayed_time = DATETIME_POSIX_START
 
         # configure time line widget (use time_line as shortcut)
         self.time_line = self.ui.timeLineWidget
@@ -60,7 +59,7 @@ class TimeLinePresenter(QObject):
         if core.project:
             self.present_time_line_for_project(core.project)
         else:
-            end = (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()
+            end = (datetime.utcnow() - DATETIME_POSIX_START).total_seconds()
             start = end - 2 * 356 * 24 * 3600
             self.time_line.setRange(xRange=(start, end))
 
@@ -68,17 +67,24 @@ class TimeLinePresenter(QObject):
         """
         Show the events of project in the timeline
 
-        :param Project project: current project
+        :param project: Current project
+        :type project: :py:class:`ramsis.datamodel.project.Project`
 
         """
         if project is None:
             return
-        # TODO LH: This should always be forecast_start once the setting gets
-        #   adjusted automatically to the project starttime.
-        start_time = project.settings['forecast_start'] or project.starttime
-        start = (start_time - datetime(1970, 1, 1)).total_seconds()
+
+        try:
+            start_time = min(project.forecast_iter(),
+                             key=attrgetter('starttime')).starttime
+        except ValueError:
+            start_time = project.starttime
+
+        start = (start_time - DATETIME_POSIX_START).total_seconds()
+        # TODO(damb): Set endtime to either project endtime or latest forecast
+        # endtime
         end_time = project.endtime or datetime.now()
-        end = (end_time - datetime(1970, 1, 1)).total_seconds()
+        end = (end_time - DATETIME_POSIX_START).total_seconds()
         self.time_line.setRange(xRange=(start, end))
         self.replot()
         self.show_current_time(self.core.clock.time)
@@ -88,8 +94,7 @@ class TimeLinePresenter(QObject):
         self.displayed_time = t
         # we do a more efficient relative change if the change is not too big
         if abs(dt) > self.ui.timeLineWidget.display_range:
-            epoch = datetime(1970, 1, 1)
-            pos = (t - epoch).total_seconds()
+            pos = (t - DATETIME_POSIX_START).total_seconds()
             self.time_line.marker_pos = pos
         else:
             self.time_line.advance_time(dt)
@@ -116,9 +121,8 @@ class TimeLinePresenter(QObject):
         #   datetimes that represent UTC (which is what we have). We could
         #   also make sure that the datamodel always returns aware datetimes
         #   with UTC set explicitly.
-        epoch = datetime(1970, 1, 1)
         forecasts = self.core.project.forecasts
-        data = [((f.starttime - epoch).total_seconds(), 1.0)
+        data = [((f.starttime - DATETIME_POSIX_START).total_seconds(), 1.0)
                 for f in forecasts]
         self.time_line.forecasts_plot.setData(pos=data)
 
@@ -164,7 +168,7 @@ class SeismicityPlotter(object):
         self.widget.set_plot(plot, ('Mag', 'Mw'))
 
     def replot(self, project=None, max_time=None):
-        epoch = datetime(1970, 1, 1)
+        epoch = DATETIME_POSIX_START
         if project:
             events = project.seismiccatalog.events
             if max_time:
@@ -191,7 +195,7 @@ class InjectionPlotter(object):
         self.widget.set_plot(plot, ('Flow', 'l/s'))
 
     def replot(self, project=None, max_time=None):
-        epoch = datetime(1970, 1, 1)
+        epoch = DATETIME_POSIX_START
         if project:
             samples = project.injection_history.samples
             if max_time:
