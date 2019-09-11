@@ -28,6 +28,7 @@ from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
 from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
                                 QuakeMLCatalogIOError)
 from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
+from RAMSIS.wkt_utils import point_to_proj4
 
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -393,6 +394,7 @@ class Controller(QtCore.QObject):
         self._update_data_sources()
 
     def _update_data_sources(self):
+        proj = point_to_proj4(self.project.referencepoint) or None
         try:
             enabled = self.project.settings['fdsnws_enable']
             url = self.project.settings['fdsnws_url']
@@ -414,8 +416,7 @@ class Controller(QtCore.QObject):
                             'enabled' if enabled else 'disabled'))
             else:
                 self.seismics_data_source = FDSNWSDataSource(
-                    url, timeout=None,
-                    proj=self.project.spatialreference)
+                    url, timeout=None, proj=proj)
                 self.seismics_data_source.enabled = enabled
                 self.seismics_data_source.data_received.connect(
                     self._on_seismic_data_received)
@@ -443,8 +444,7 @@ class Controller(QtCore.QObject):
                             'enabled' if enabled else 'disabled'))
             else:
                 self.hydraulics_data_source = HYDWSDataSource(
-                    url, timeout=None,
-                    proj=self.project.spatialreference)
+                    url, timeout=None, proj=proj)
                 self.hydraulics_data_source.enabled = enabled
                 self.hydraulics_data_source.data_received.connect(
                     self._on_hydraulic_data_received)
