@@ -73,7 +73,7 @@ class TaskManager:
 
     def fetch_fdsn(self, t):
         """ FDSN task function """
-        if not self.core.project or self.core.seismics_data_source is None:
+        if None in (self.core.project, self.core.seismics_data_source):
             return
 
         p = self.core.project
@@ -92,7 +92,7 @@ class TaskManager:
 
     def fetch_hydws(self, t):
         """ HYDWS task function """
-        if self.core.project or self.core.hydraulics_data_source is None:
+        if None in (self.core.project, self.core.hydraulics_data_source):
             return
 
         p = self.core.project
@@ -103,7 +103,8 @@ class TaskManager:
                 f'Invalid project configuration: {err}')
         else:
             start = p.starttime
-            if len(p.wells[0].sections[0].hydraulics):
+            if (p.wells and p.wells[0].sections and
+                    len(p.wells[0].sections[0].hydraulics)):
                 start = (t - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.hydraulics_data_source.fetch(

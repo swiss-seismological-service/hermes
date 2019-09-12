@@ -29,6 +29,7 @@ class HYDWSDataSource(QtCore.QThread):
     def __init__(self, url, timeout=None, proj=None):
         super().__init__()
         self.url = url
+        self._timeout = timeout
 
         self._args = {}
         self.enabled = False
@@ -52,8 +53,8 @@ class HYDWSDataSource(QtCore.QThread):
         bh = None
 
         self.logger.debug(
-            f"Request seismic catalog from fdsnws-event (url={self._url}, "
-            f"params={self._params}).")
+            f"Request borehole / hydraulic data from hydws (url={self.url}, "
+            f"params={self._args}).")
         try:
             with binary_request(
                 requests.get, self.url, self._args, self._timeout,
@@ -85,7 +86,7 @@ class FDSNWSDataSource(QtCore.QThread):
     def __init__(self, url, timeout=None, proj=None):
         super().__init__()
         self.url = url
-        self._timeout = None
+        self._timeout = timeout
 
         self._args = {}
         self.enabled = False
@@ -109,8 +110,8 @@ class FDSNWSDataSource(QtCore.QThread):
         cat = None
 
         self.logger.debug(
-            f"Request seismic catalog from fdsnws-event (url={self._url}, "
-            f"params={self._params}).")
+            f"Request seismic catalog from fdsnws-event (url={self.url}, "
+            f"params={self._args}).")
         try:
             with binary_request(
                 requests.get, self.url, self._args, self._timeout,
