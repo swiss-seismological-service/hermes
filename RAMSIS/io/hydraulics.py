@@ -382,13 +382,6 @@ class _InjectionWellSchema(_SchemaBase):
             return self._flatten_dict(data)
         return data
 
-    @pre_load
-    def extract_section_with_samples(self, data, **kwargs):
-        # FIXME(damb): This is a workaround
-        data['sections'] = [s for s in data['sections']
-                            if s.get('hydraulics')]
-        return data
-
     @post_load
     def make_object(self, data, **kwargs):
         if ('time' in self.context and
