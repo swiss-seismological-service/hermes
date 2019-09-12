@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>371</width>
-    <height>180</height>
+    <height>150</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Configure forecast(s) in sequence with endtime equal to endtime of the forecast to be cloned:</string>
+         <string>Forecast sequence endtime is same as selected forecast:</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
