@@ -8,7 +8,8 @@ that is not main menu actions etc.). It mostly coordinates between presenters
 for individual window elements.
 
 """
-from datetime import datetime
+import datetime
+import logging
 
 from PyQt5.QtWidgets import QDialog
 
@@ -23,7 +24,8 @@ from RAMSIS.core.store import EditingContext
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.base.contextaction import (
     ContextAction, ContextActionDelete, Separator)
-from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
+from RAMSIS.ui.dialog import (
+    ForecastConfigDialog, CreateForecastSequenceDialog, ScenarioConfigDialog)
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
     ForecastTreeModel)
 from RAMSIS.ui.styles import StatusColor
@@ -35,6 +37,8 @@ class ContentPresenter(object):
 
     """
 
+    LOGGER = __name__
+
     def __init__(self, ramsis_core, ui):
         """
 
@@ -42,6 +46,8 @@ class ContentPresenter(object):
         :type ramsis_core: RAMSIS.core.controller.Controller
         :param ui: reference to the ui form
         """
+        self.logger = logging.getLogger(self.LOGGER)
+
         self.ramsis_core = ramsis_core
         self.ui = ui
 
@@ -55,6 +61,9 @@ class ContentPresenter(object):
             return (len(idx) == 1 and is_lab_mode() and
                     idx[0].parent().isValid() is False)
 
+        def is_forecast(idx):
+            return (len(idx) == 1 and idx[0].parent().isValid() is False)
+
         # context menu
         self.ui.forecastTreeView.context_actions = [
             ContextAction('Run now', self.action_run_now, enabler=enable_run),
@@ -63,7 +72,11 @@ class ContentPresenter(object):
                           enabler=ContextAction.single_only_enabler),
             ContextActionDelete(self.action_delete,
                                 parent_widget=self.ui.forecastTreeView,
-                                enabler=is_lab_mode)]
+                                enabler=is_lab_mode),
+            Separator(),
+            ContextAction('Create Sequence ...', self.action_create_sequence,
+                          enabler=is_forecast), ]
+
         self.current_scenario = None
 
         # Presenters for the main window components
@@ -154,7 +167,35 @@ class ContentPresenter(object):
     def action_run_now(self, indexes):
         """ Run a forecast on demand """
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
-        self.ramsis_core.engine.run(datetime.utcnow(), forecast)
+        self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast)
+
+    def action_create_sequence(self, indices):
+        if indices:
+            item = indices[0].data(CustomRoles.RepresentedItemRole)
+
+            if isinstance(item, Forecast):
+                dlg = CreateForecastSequenceDialog(item)
+                dlg.exec_()
+
+                if dlg.result() == QDialog.Accepted:
+                    self.logger.debug(
+                        f'Create forecast sequence from forecast {item!r} ...')
+
+                    for i in range(1, dlg.data.num_intervals + 1):
+                        cloned = item.clone(with_results=False)
+                        cloned.starttime = (
+                            item.starttime + datetime.timedelta(
+                                seconds=dlg.data.interval * i))
+                        if not dlg.data.endtime_fixed:
+                            cloned.endtime = (
+                                item.endtime + datetime.timedelta(
+                                    seconds=dlg.data.interval * i))
+
+                        self.ramsis_core.add_forecast(cloned)
+                        self.add_forecast(cloned)
+
+            else:
+                raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")
 
     def action_edit(self, indices):
         if indices:
