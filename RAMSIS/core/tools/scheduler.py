@@ -10,13 +10,14 @@ for long periods of time since they are executed on the main thread.
 import logging
 from datetime import timedelta
 
+
 class Task(object):
     """
     Scheduled Task
 
     The task will be executed at run_time by calling task_function and passing
-    it the current time t. Name is purely informational (for logging). One off
-    tasks will be removed from the scheduler after execution.
+    it the current time t. Name is purely informational (for logging).
+    Singleshot tasks will be removed from the scheduler after execution.
 
     """
 
@@ -24,7 +25,10 @@ class Task(object):
         self.name = name
         self.task_function = task_function
         self.run_time = None
-        self.one_off = True
+
+    @property
+    def is_singleshot(self):
+        return True
 
     def is_due(self, t):
         return t >= self.run_time if self.run_time is not None else False
@@ -52,12 +56,13 @@ class PeriodicTask(Task):
     """
 
     def __init__(self, task_function, name='PeriodicTask'):
-        super(PeriodicTask, self).__init__(task_function, name)
+        super().__init__(task_function, name)
         self.t0 = None
         self.dt = None
-        self.run_time = None
-        self.task_function = task_function
-        self.one_off = False
+
+    @property
+    def is_singleshot(self):
+        return False
 
     def run(self, t):
         """
@@ -105,7 +110,7 @@ class TaskScheduler:
 
         """
         self.scheduled_tasks = [task for task in self.scheduled_tasks
-                                if not task.one_off]
+                                if not task.is_singleshot]
         for task in self.scheduled_tasks:
             task.schedule(t)
 
@@ -118,7 +123,7 @@ class TaskScheduler:
     def run_due_tasks(self, t):
         """
         Run all tasks that are due at time t. After running, tasks are
-        scheduled for the next execution and one-off tasks are
+        scheduled for the next execution and *singleshot* tasks are
         removed from the task queue.
 
         :param datetime.datetime t: current time
@@ -128,8 +133,7 @@ class TaskScheduler:
             if task.is_due(t):
                 self._logger.debug('Running Task: ' + task.name)
                 task.run(t)
-                if task.one_off:
+                if task.is_singleshot:
                     self.scheduled_tasks.remove(task)
                 else:
                     task.schedule(t)
-
