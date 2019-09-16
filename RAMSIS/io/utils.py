@@ -12,8 +12,6 @@ import logging
 import pymap3d
 import requests
 
-from urllib.parse import urlparse, urlunparse
-
 from marshmallow import fields, validate
 from osgeo import ogr, osr
 
@@ -236,19 +234,7 @@ def binary_request(request, url, params={}, timeout=None,
     :type timeout: None or int or tuple
 
     :rtype: io.BytesIO
-
-    :raises: :code:`ValueError` for an invalid :code:`url`
     """
-    def validate_args(url, params):
-        _url = urlparse(url)
-
-        if _url.params or _url.query or _url.fragment:
-            raise ValueError(f"Invalid URL: {url}")
-
-        return urlunparse(_url), params
-
-    url, params = validate_args(url, params)
-
     try:
         r = request(url, params=params, timeout=timeout, **kwargs)
         if r.status_code in nocontent_codes:
