@@ -364,7 +364,7 @@ class _InjectionWellSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     injection well.
     """
-    bedrockdepth_value = Depth(required=True)
+    bedrockdepth_value = Depth()
     bedrockdepth_uncertainty = Uncertainty()
     bedrockdepth_loweruncertainty = Uncertainty()
     bedrockdepth_upperuncertainty = Uncertainty()
