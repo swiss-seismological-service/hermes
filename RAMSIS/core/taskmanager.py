@@ -71,8 +71,15 @@ class TaskManager:
 
     # Task Methods
 
-    def fetch_fdsn(self, t):
-        """ FDSN task function """
+    def fetch_fdsn(self, t, last_run=None):
+        """
+        FDSN task function
+
+        :param t: Current execution time
+        :type t: :py:class:`datetime.datetime`
+        :param last_run: Execution time of the previous execution
+        :type last_run: :py:class:`datetime.datetime`
+        """
         if None in (self.core.project, self.core.seismics_data_source):
             return
 
@@ -84,14 +91,21 @@ class TaskManager:
                 f'Invalid project configuration: {err}')
         else:
             start = p.starttime
-            if len(p.seismiccatalog):
-                start = (t - timedelta(minutes=dt) -
+            if len(p.seismiccatalog) and last_run:
+                start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.seismics_data_source.fetch(
                 starttime=start, endtime=t)
 
-    def fetch_hydws(self, t):
-        """ HYDWS task function """
+    def fetch_hydws(self, t, last_run=None):
+        """
+        HYDWS task function
+
+        :param t: Current execution time
+        :type t: :py:class:`datetime.datetime`
+        :param last_run: Execution time of the previous execution
+        :type last_run: :py:class:`datetime.datetime`
+        """
         if None in (self.core.project, self.core.hydraulics_data_source):
             return
 
@@ -104,13 +118,14 @@ class TaskManager:
         else:
             start = p.starttime
             if (p.wells and p.wells[0].sections and
-                    len(p.wells[0].sections[0].hydraulics)):
-                start = (t - timedelta(minutes=dt) -
+                    len(p.wells[0].sections[0].hydraulics) and
+                    last_run):
+                start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.hydraulics_data_source.fetch(
                 starttime=start, endtime=t)
 
-    def update_rates(self, t):
+    def update_rates(self, t, last_run=None):
         """ Rate computation task function """
         # TODO LH: reimplement. We don't have a rate history on the project any
         #   more. However, this should be cheap to compute, so we can probably

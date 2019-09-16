@@ -60,6 +60,8 @@ class PeriodicTask(Task):
         self.t0 = None
         self.dt = None
 
+        self._last_run = None
+
     @property
     def is_singleshot(self):
         return False
@@ -70,7 +72,8 @@ class PeriodicTask(Task):
         which the task is run.
 
         """
-        self.task_function(t)
+        self.task_function(t, last_run=self._last_run)
+        self._last_run = t
 
     def schedule(self, t):
         r = int((t - self.t0).total_seconds()) % int(self.dt.total_seconds())
