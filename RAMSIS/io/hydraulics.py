@@ -322,15 +322,16 @@ class _WellSectionSchema(_SchemaBase):
                 'At least a single sample required.')
 
     def make_object(self, data):
-        if 'time' in self.context and 'hydraulics' in data:
-            if self.context['time'] is self.EContext.PAST:
-                # XXX(damb): Wrap samples with Hydraulics envelope
-                data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
-            elif self.context['time'] is self.EContext.FUTURE:
-                # XXX(damb): Wrap samples with InjectionPlan envelope
-                data['injectionplan'] = InjectionPlan(
-                    samples=data['hydraulics'])
-                del data['hydraulics']
+        if 'time' in self.context:
+            if 'hydraulics' in data:
+                if self.context['time'] is self.EContext.PAST:
+                    # XXX(damb): Wrap samples with Hydraulics envelope
+                    data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
+                elif self.context['time'] is self.EContext.FUTURE:
+                    # XXX(damb): Wrap samples with InjectionPlan envelope
+                    data['injectionplan'] = InjectionPlan(
+                        samples=data['hydraulics'])
+                    del data['hydraulics']
 
             return WellSection(**data)
         return data
@@ -400,7 +401,7 @@ class _InjectionWellSchema(_SchemaBase):
 
     @validates_schema
     def validate_sections(self, data, **kwargs):
-        if len(data['sections']) != 1:
+        if 'sections' not in data or len(data['sections']) != 1:
             raise ValidationError(
                 'InjectionWells are required to have a single section.')
 
