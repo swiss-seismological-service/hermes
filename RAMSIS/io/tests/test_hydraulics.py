@@ -203,6 +203,27 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
         self.assertEqual(s1.datetime_value,
                          datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
 
+    def test_section_without_samples(self):
+
+        deserializer = HYDWSBoreholeHydraulicsDeserializer(proj=None)
+
+        with open(os.path.join(self.PATH_RESOURCES,
+                               'hyd-no-samples.json'), 'rb') as ifs:
+            bh = deserializer.load(ifs)
+
+        bh_section = bh.sections[0]
+        # borehole section coordinates
+        self.assertEqual(bh_section.toplongitude_value, 10.66320713)
+        self.assertEqual(bh_section.toplatitude_value, 10.66320713)
+        self.assertEqual(bh_section.topdepth_value, 0.0)
+        self.assertEqual(bh_section.bottomlongitude_value, 10.66320713)
+        self.assertEqual(bh_section.bottomlatitude_value, 10.66320713)
+        self.assertEqual(bh_section.bottomdepth_value, 1000)
+        # additional borehole section attributes
+        self.assertEqual(
+            bh_section.publicid,
+            'smi:ch.ethz.sed/bh/section/11111111-8d89-4f13-95e7-526ade73cc8b')
+        self.assertEqual(bh_section.holediameter_value, 0.3)
 
 class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
     """
