@@ -9,6 +9,7 @@ import functools
 from ramsis.datamodel.forecast import (
     Forecast, ForecastScenario, ForecastStage, EStage)
 from ramsis.datamodel.model import EModel
+from ramsis.datamodel.project import Project
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.status import Status
 
@@ -159,3 +160,20 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
 
 
 empty_forecast = functools.partial(default_forecast, None, num_scenarios=0)
+
+
+def default_project(name='Project', description='',
+                    starttime=datetime.datetime.utcnow(), endtime=None):
+    """
+    Build a *default* project.
+
+    :param str name: The project's name
+    :param str description: The project's description
+    :param starttime: Starttime of the forecast
+    :type starttime: :py:class:`datetime.datetime`
+    :param endtime: Endtime of the forecast
+    :type endtime: :py:class:`datetime.datetime`
+    """
+    return Project(name=name, description=description, starttime=starttime,
+                   endtime=endtime, spatialreference='',
+                   creationinfo_creationtime=datetime.datetime.utcnow())
