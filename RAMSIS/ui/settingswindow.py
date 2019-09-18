@@ -280,7 +280,7 @@ class ProjectSettingsWindow(SettingsWindow):
     def action_save(self):
         self.project.settings.commit()
         if self.save_callback:
-            self.save_callback()
+            self.save_callback(self.project)
         self.close()
 
     @pyqtSlot(name='on_cancelButton_clicked')

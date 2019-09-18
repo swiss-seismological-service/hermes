@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
         editing_context = EditingContext(self.app.ramsis_core.store)
         editable_project = editing_context.get(self.app.ramsis_core.project)
 
-        def on_save():
+        def on_save(project):
             editing_context.save()
 
         window = ProjectSettingsWindow(project=editable_project)
