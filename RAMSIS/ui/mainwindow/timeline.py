@@ -169,7 +169,7 @@ class SeismicityPlotter(object):
 
     def replot(self, project=None, max_time=None):
         epoch = DATETIME_POSIX_START
-        if project:
+        if project and project.seismiccatalog:
             events = project.seismiccatalog.events
             if max_time:
                 data = [((e.datetime_value - epoch).total_seconds(),
