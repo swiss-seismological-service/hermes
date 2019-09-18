@@ -464,6 +464,23 @@ class Controller(QtCore.QObject):
 
     def _on_hydraulic_data_received(self, well):
         if well is not None:
-            self.project.wells[0].merge(well)
+            try:
+                well_project = self.project.wells[0]
+            except (TypeError, AttributeError):
+                self.project.wells = [well]
+            else:
+                well_project.merge(well)
+
             self.store.save()
+
+            if well_project.sections:
+                msg = ('Project borehole data '
+                       f'(sections={len(well_project.sections)}')
+                if well_project.sections[0].hydraulics:
+                    msg += (', samples='
+                            f'{len(well_project.sections[0].hydraulics)}')
+                msg += ').'
+
+                self._logger.debug(msg)
+
             self.project_data_changed.emit(self.project.wells[0])

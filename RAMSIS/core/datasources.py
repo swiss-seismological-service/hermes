@@ -68,8 +68,13 @@ class HYDWSDataSource(QtCore.QThread):
         except HYDWSJSONIOError as err:
             self.logger.error(f"Error while deserializing data ({err}).")
         else:
-            self.logger.info(
-                f"Received borehole data with {len(bh)} sections.")
+            if bh.sections:
+                msg = f'Received borehole data (sections={len(bh.sections)}'
+                if bh.sections[0].hydraulics:
+                    msg += f', samples={len(bh.sections[0].hydraulics)}'
+                msg += ').'
+
+                self.logger.info(msg)
 
         self.data_received.emit(bh)
 

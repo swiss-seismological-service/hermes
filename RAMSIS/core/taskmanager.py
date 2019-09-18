@@ -118,7 +118,7 @@ class TaskManager:
         else:
             start = p.starttime
             if (p.wells and p.wells[0].sections and
-                    len(p.wells[0].sections[0].hydraulics) and
+                p.wells[0].sections[0].hydraulics and
                     last_run):
                 start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
