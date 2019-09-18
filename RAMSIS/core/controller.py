@@ -457,6 +457,9 @@ class Controller(QtCore.QObject):
                 self.project.seismiccatalog.merge(cat)
 
             self.store.save()
+
+            self._logger.debug(
+                f'Project seismic data ({self.project.seismiccatalog}).')
             self.project_data_changed.emit(self.project.seismiccatalog)
 
     def _on_hydraulic_data_received(self, well):
