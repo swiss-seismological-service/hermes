@@ -192,20 +192,23 @@ class InjectionPlotter(object):
         self.widget = widget
         self.project = None
         plot = pg.PlotCurveItem()
-        self.widget.set_plot(plot, ('Flow', 'l/s'))
+        self.widget.set_plot(plot, ('Flow', 'm^3/s'))
 
     def replot(self, project=None, max_time=None):
         epoch = DATETIME_POSIX_START
         if project:
-            samples = project.injection_history.samples
+            try:
+                hydraulics = project.wells[0].sections[0].hydraulics
+            except (TypeError, AttributeError):
+                hydraulics = []
+
             if max_time:
                 data = [((s.datetime_value - epoch).total_seconds(),
                          s.topflow_value)
-                        for s in samples if s.datetime_value < max_time]
+                        for s in hydraulics if s.datetime_value < max_time]
             else:
                 data = [((s.datetime_value - epoch).total_seconds(),
-                         s.topflow_value)
-                        for s in samples]
+                         s.topflow_value) for s in hydraulics]
         else:
             data = []
 
