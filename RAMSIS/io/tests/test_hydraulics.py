@@ -246,6 +246,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                 'bottomclosed': False,
                 'publicid': ('smi:ch.ethz.sed/bh/section/'
                              '11111111-8d89-4f13-95e7-526ade73cc8b')}],
+                'altitude': {'value': 100.0},
                 'publicid': ('smi:ch.ethz.sed/bh/'
                              '11111111-e4a0-4692-bf29-33b5591eb798')}
 
@@ -264,6 +265,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
             hydraulics=None)
         bh = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
+            altitude_value=100.0,
             sections=[sec, ])
         serializer = HYDWSBoreholeHydraulicsSerializer(proj=None)
 
@@ -291,6 +293,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                         {'value': '2019-05-03T13:27:09.117623'}},
                     {'datetime':
                         {'value': '2019-05-03T15:27:09.117623'}}]}],
+                'altitude': {'value': 100.0},
                 'publicid': ('smi:ch.ethz.sed/bh/'
                              '11111111-e4a0-4692-bf29-33b5591eb798')}
 
@@ -317,6 +320,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
 
         bh = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
+            altitude_value=100.0,
             sections=[sec])
 
         proj = '+x_0=8.5417 +y_0=47.3769 +z_0=408'
@@ -346,6 +350,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                         {'value': '2019-05-03T13:27:09.117623'}},
                     {'datetime':
                         {'value': '2019-05-03T15:27:09.117623'}}]}],
+                'altitude': {'value': 100.0},
                 'publicid': ('smi:ch.ethz.sed/bh/'
                              '11111111-e4a0-4692-bf29-33b5591eb798')}
 
@@ -372,6 +377,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
 
         bh = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
+            altitude_value=100.0,
             sections=[sec])
 
         proj = '+x_0=8.5417 +y_0=47.3769 +z_0=408'
@@ -400,6 +406,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                         {'value': '2019-05-03T13:27:09.117623'}},
                     {'datetime':
                         {'value': '2019-05-03T15:27:09.117623'}}]}],
+                'altitude': {'value': 100.0},
                 'publicid': ('smi:ch.ethz.sed/bh/'
                              '11111111-e4a0-4692-bf29-33b5591eb798')}
 
@@ -426,6 +433,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
 
         bh = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
+            altitude_value=100.0,
             sections=[sec])
 
         serializer = HYDWSBoreholeHydraulicsSerializer(proj=None)
@@ -451,6 +459,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                         {'value': '2019-05-03T13:27:09.117623'}},
                     {'datetime':
                         {'value': '2019-05-03T15:27:09.117623'}}]}],
+                'altitude': {'value': 100.0},
                 'publicid': ('smi:ch.ethz.sed/bh/'
                              '11111111-e4a0-4692-bf29-33b5591eb798')}
 
@@ -477,6 +486,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
 
         bh = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
+            altitude_value=100.0,
             sections=[sec])
 
         serializer = HYDWSBoreholeHydraulicsSerializer(proj=None, plan=True)

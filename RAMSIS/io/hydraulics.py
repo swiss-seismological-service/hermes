@@ -372,6 +372,12 @@ class _InjectionWellSchema(_SchemaBase):
     bedrockdepth_upperuncertainty = Uncertainty()
     bedrockdepth_confidencelevel = Percentage()
 
+    altitude_value = fields.Float(required=True)
+    altitude_uncertainty = Uncertainty()
+    altitude_loweruncertainty = Uncertainty()
+    altitude_upperuncertainty = Uncertainty()
+    altitude_confidencelevel = Percentage()
+
     publicid = fields.String()
 
     sections = fields.Nested(_WellSectionSchema, many=True)
