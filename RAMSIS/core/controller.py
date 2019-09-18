@@ -451,7 +451,11 @@ class Controller(QtCore.QObject):
 
     def _on_seismic_data_received(self, cat):
         if cat is not None:
-            self.project.seismiccatalog.merge(cat)
+            if not self.project.seismiccatalog:
+                self.project.seismiccatalog = cat
+            else:
+                self.project.seismiccatalog.merge(cat)
+
             self.store.save()
             self.project_data_changed.emit(self.project.seismiccatalog)
 
