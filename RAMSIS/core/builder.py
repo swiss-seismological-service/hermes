@@ -169,9 +169,9 @@ def default_project(name='Project', description='',
 
     :param str name: The project's name
     :param str description: The project's description
-    :param starttime: Starttime of the forecast
+    :param starttime: Starttime of the project
     :type starttime: :py:class:`datetime.datetime`
-    :param endtime: Endtime of the forecast
+    :param endtime: Optional project endtime
     :type endtime: :py:class:`datetime.datetime`
     """
     return Project(name=name, description=description, starttime=starttime,
