@@ -7,7 +7,7 @@ GeoAlchemy2
 
 import binascii
 
-from osgeo import ogr, osr
+from osgeo import ogr
 from geoalchemy2.elements import WKBElement
 
 
@@ -118,19 +118,9 @@ def is_phsf(wkt_geom, srid=None):
 
         return phsf.Equals(geom)
 
-    try:
-        geom = ogr.CreateGeometryFromWkt(wkt_geom)
-    except Exception as err:
-        raise ValueError(err)
-
-    if srid is not None:
-        try:
-            spatial_ref = osr.SpatialReference()
-            spatial_ref.ImportFromEPSG(srid)
-
-            geom.AssignSpatialReference(spatial_ref)
-        except Exception as err:
-            raise ValueError(f'While assigning SRID parameter: {err}')
+    geom = ogr.CreateGeometryFromWkt(wkt_geom)
+    if geom is None:
+        return False
 
     geom.CloseRings()
 
