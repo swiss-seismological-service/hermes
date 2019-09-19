@@ -7,7 +7,6 @@ central coordinator for all core (i.e. non UI) components.
 
 """
 
-import datetime
 import logging
 
 from enum import Enum
@@ -16,18 +15,12 @@ from operator import attrgetter
 from PyQt5 import QtCore
 from collections import namedtuple
 
-from RAMSIS.core import CoreError
 from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
-from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
-                                  HYDWSJSONIOError)
-from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
-                                QuakeMLCatalogIOError)
-from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
 from RAMSIS.wkt_utils import point_to_proj4
 
 
@@ -205,81 +198,6 @@ class Controller(QtCore.QObject):
         self.project_data_changed.emit(obj)
 
     # Other user actions
-
-    def import_seismic_catalog(self, ifd, cat_format='quakeml', force=False):
-        """
-        Import a seismic catalog manually.
-
-        :param ifd: A :code:`read()` supporting file-like object
-        :param str cat_format: Data format of the seismic catalog. Currently
-            :code:`'quakeml'` only.
-        :param bool force: If :code:`True` overwrite the existing catalog.
-        """
-
-        if cat_format != 'quakeml':
-            raise ValueError(
-                f'Invalid catalog format specified: {cat_format!r}')
-
-        deserializer = QuakeMLCatalogDeserializer(
-            proj=self.project.spacialreference,
-            transform_callback=pymap3d_transform_geodetic2ned)
-
-        try:
-            cat = deserializer.load(ifd)
-        except QuakeMLCatalogIOError as err:
-            self.logger.error(
-                f'Error while importing seismic data: {err}')
-            raise CoreError(err)
-
-        if not force:
-            self.project.seismiccatalog.merge(cat)
-        else:
-            self.project.seismiccatalog = cat
-
-        self.store.save()
-        self.project_data_changed.emit(self.project.seismiccatalog)
-
-    def import_hydraulics(self, ifd, force=False):
-        """
-        Import borehole/hydraulics manually
-
-        :param ifd: A :code:`read()` supporting file-like object
-        :param bool force: If :code:`True` overwrite the existing
-            borehole/hydraulics.
-        """
-        deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=self.project.spacialreference,
-            transform_callback=pymap3d_transform_geodetic2ned)
-
-        try:
-            bh = deserializer.load(ifd)
-        except HYDWSJSONIOError as err:
-            self.logger.error(
-                f'Error while importing hydraulic data: {err}')
-            raise CoreError(err)
-
-        if not force:
-            self.project.wells[0].merge(bh)
-        else:
-            self.project.wells[0] = bh
-
-        self.store.save()
-        self.project_data_changed.emit(bh)
-
-    def reset_forecasts(self):
-        """
-        Delete forecast results and intermediate products
-
-        This basically returns all forecasts to their 'configured but not yet
-        executed' state so that the user can re-run them.
-
-        """
-        self._logger.info('Resetting all forecasts')
-        for forecast in self.project.forecasts:
-            forecast.reset()
-        self.store.save()
-
-    # Running
 
     def start(self, time_range=None, speed=1):
         """

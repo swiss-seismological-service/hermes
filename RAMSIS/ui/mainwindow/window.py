@@ -17,9 +17,9 @@ import os
 
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSlot, QDateTime
-from PyQt5.QtWidgets import QSizePolicy, QWidget, QStatusBar, QLabel, \
-    QMessageBox, QProgressBar, QMainWindow, QAction, QFileDialog, QTableView, \
-    QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout
+from PyQt5.QtWidgets import (
+    QSizePolicy, QWidget, QStatusBar, QLabel, QMessageBox, QProgressBar,
+    QMainWindow, QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout)
 
 from RAMSIS.core.builder import default_scenario, empty_forecast
 from RAMSIS.core.simulator import SimulatorState
@@ -35,7 +35,6 @@ from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 from RAMSIS.wkt_utils import point_to_proj4
 
 from .presenter import ContentPresenter
-from .viewmodels.seismicdatamodel import SeismicDataModel
 
 
 ui_path = os.path.dirname(__file__)
@@ -228,59 +227,6 @@ class MainWindow(QMainWindow):
         window.show()
         self.app.gui.manage_window(window)
 
-    @pyqtSlot(name='on_actionFetch_from_fdsnws_triggered')
-    def action_fetch_seismic_data(self):
-        self.status_bar.show_activity('Fetching seismic data...',
-                                      id='fdsn_fetch')
-        self.app.ramsis_core.fetch_seismic_events()
-
-    @pyqtSlot(name='on_actionImport_Seismic_Data_triggered')
-    def action_import_seismic_data(self):
-        """
-        Import seismic data manually
-        """
-        path = QFileDialog.getOpenFileName(None,
-                                           'Open seismic data file',
-                                           os.path.expanduser("~"))
-
-        if not path or path[0] == '':
-            return
-
-        with open(path[0]) as ifd:
-            self.app.ramsis_core.import_seismic_catalog(ifd)
-
-    @pyqtSlot(name='on_actionFetch_from_hydws_triggered')
-    def action_fetch_hydraulic_data(self):
-        self.status_bar.show_activity('Fetching hydraulic data...',
-                                      id='hydws_fetch')
-        self.app.ramsis_core.fetch_hydraulic_events()
-
-    @pyqtSlot(name='on_actionImport_Hydraulic_Data_triggered')
-    def action_import_hydraulic_data(self):
-        """ Import hydraulic data manually """
-        # TODO LH: re-implement using io.
-        home = os.path.expanduser("~")
-        path = QFileDialog.getOpenFileName(None,
-                                           'Open hydraulic data file',
-                                           home)
-        if not path or path[0] == '':
-            return
-
-        with open(path[0]) as ifd:
-            self.app.ramsis_core.import_hydraulics(ifd)
-
-    @pyqtSlot(name='on_actionDelete_Results_triggered')
-    def action_delete_results(self):
-        reply = QMessageBox.question(
-            self,
-            "Delete results",
-            "Are you sure you want to delete all forecast results? This "
-            "cannot be undone!",
-            QMessageBox.Yes | QMessageBox.No
-        )
-        if reply == QMessageBox.Yes:
-            self.app.ramsis_core.reset_forecasts()
-
     @pyqtSlot(name='on_actionSimulation_triggered')
     def action_show_sim_controls(self):
         if self.simulation_window is None:
@@ -293,15 +239,6 @@ class MainWindow(QMainWindow):
         self.reservoir_window = ReservoirWindow(self.app.ramsis_core)
         self.reservoir_window.show()
         self.reservoir_window.draw_catalog()
-
-    @pyqtSlot(name='on_actionView_Data_triggered')
-    def action_view_seismic_data(self):
-        if self.table_view is None:
-            self.table_view = QTableView()
-            model = SeismicDataModel(self.app.ramsis_core.project.
-                                     seismiccatalog)
-            self.table_view.setModel(model)
-            self.table_view.show()
 
     # ... Simulation
 
@@ -324,7 +261,6 @@ class MainWindow(QMainWindow):
     def update_controls(self):
         # TODO LH: Use a UiStateMachine to manage control states
         enable_with_project = [
-            'menuProject',
             'actionShow_3D', 'actionSimulation',
             'actionScenario', 'planNextButton', 'addScenarioButton',
             'removeScenarioButton',
