@@ -16,16 +16,17 @@ mock_geoalchemy = types.ModuleType('geoalchemy2')
 mock_geoalchemy.Geometry = MagicMock(return_value=String)
 sys.modules['geoalchemy2'] = mock_geoalchemy
 
-from RAMSIS.core.store import Store, EditingContext
 from ramsis.datamodel.seismicity import SeismicityModel, EModel
 from ramsis.datamodel.project import Project
-from ramsis.datamodel.seismics import SeismicEvent
+from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
+from RAMSIS.core.builder import default_project
+from RAMSIS.core.store import Store, EditingContext
 
 
 def make_event(m):
-    now = datetime.now()
+    now = datetime.utcnow()
     return SeismicEvent(magnitude_value=m, x_value=0, y_value=0, z_value=0,
-                          datetime_value=now, quakeml=b'')
+                        datetime_value=now, quakeml=b'')
 
 
 class TestEditingContext(unittest.TestCase):
@@ -35,10 +36,14 @@ class TestEditingContext(unittest.TestCase):
         # Mock any geometry columns
 
         self.store.init_db()
-        # We use a simple 1:* relation for these tests
-        self.project = self.store.create_project({'starttime': datetime.now(),
-                                                  'spatialreference': '4326'})
-        self.project.seismiccatalog.events = [make_event(m) for m in range(5)]
+
+        # We use a simple 1..* relation for these tests
+        self.project = default_project(name='TestProject',
+                                       starttime=datetime.utcnow())
+        self.project.seismiccatalog = SeismicCatalog(
+            events=[make_event(m) for m in range(5)])
+        self.store.add(self.project)
+
         self.store.save()
         self.editing_context = EditingContext(self.store)
 
@@ -113,26 +118,28 @@ class TestStoreOperation(unittest.TestCase):
         self.store.init_db()
 
     def test_project_creation(self):
-        project = self.store.create_project({'starttime': datetime.now(),
-                                             'spatialreference': '4326'})
+        project = default_project(name='TestProject',
+                                  starttime=datetime.utcnow())
+        self.store.add(project)
         all_projects = self.store.all_projects()
         self.assertEqual(len(all_projects), 1)
         self.assertEqual(all_projects[0], project)
 
     def test_load_by_name(self):
-        project = self.store.create_project({'name': 'test_project',
-                                             'starttime': datetime.now(),
-                                             'spatialreference': '4326'})
-        test = self.store.load_project('test_project')
+        project = default_project(name='TestProject',
+                                  starttime=datetime.utcnow())
+        self.store.add(project)
+        test = self.store.load_project('TestProject')
         self.assertEqual(test, project)
 
     def test_saving(self):
-        project = self.store.create_project({'name': 'test_project',
-                                             'starttime': datetime.now(),
-                                             'spatialreference': '4326'})
-        project.name = 'new name'
+        project = default_project(name='TestProject',
+                                  starttime=datetime.utcnow())
+        self.store.add(project)
+
+        project.name = 'NewProject'
         self.store.save()
-        test = self.store.load_project('new name')
+        test = self.store.load_project('NewProject')
         self.assertEqual(test, project)
 
     def test_model_loading(self):
