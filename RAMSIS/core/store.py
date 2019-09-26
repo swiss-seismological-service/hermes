@@ -13,6 +13,8 @@ import pkgutil
 import re
 import sys
 
+from functools import wraps
+
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, with_polymorphic
@@ -29,10 +31,25 @@ logger = logging.getLogger(__name__)
 # for the ORMBase meta data to be complete
 # Make sure ORMBase has all the metadata
 pkg = ramsis.datamodel
-modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__+'.')
+modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
 for finder, module_name, _ in modules:
     if module_name not in sys.modules:
         finder.find_module(module_name).load_module(module_name)
+
+
+def with_session_validation(func):
+    """
+    Method decorator performing a session validation.
+    """
+
+    @wraps(func)
+    def decorator(self, *args, **kwargs):
+        if not self._editing_session:
+            raise ValueError(f'Invalid session: {self._editing_session}.')
+
+        return func(self, *args, **kwargs)
+
+    return decorator
 
 
 class Store:
@@ -186,6 +203,7 @@ class EditingContext:
         self._editing_session = store.make_session()
         self._edited = set()
 
+    @with_session_validation
     def get(self, obj):
         """
         Get a copy of `object` that is ready for editing.
@@ -200,6 +218,7 @@ class EditingContext:
         self._edited.add(editing_copy)
         return editing_copy
 
+    @with_session_validation
     def add(self, obj):
         """
         Register a newly created top level object
@@ -213,6 +232,7 @@ class EditingContext:
         """
         self._edited.add(obj)
 
+    @with_session_validation
     def delete(self, obj):
         """
         Mark a top-level object for deletion
@@ -235,6 +255,7 @@ class EditingContext:
         """
         self._editing_session.delete(obj)
 
+    @with_session_validation
     def save(self):
         """
         Save edits to the main store and the database
@@ -252,4 +273,5 @@ class EditingContext:
             if obj in self._editing_session.deleted:
                 self._store.delete(original)
         self._editing_session.close()
+        self._editing_session = None
         self._store.save()
