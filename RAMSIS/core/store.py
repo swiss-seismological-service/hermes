@@ -67,6 +67,22 @@ class Store:
             return False
         return True
 
+    def add(self, obj):
+        """
+        Register a newly created object
+
+        :param obj: Data model object to be added
+        """
+        self.session.add(obj)
+
+    def delete(self, obj):
+        """
+        Delete any object from the store
+        
+        :param obj: Data model object to be deleted 
+        """
+        self.session.delete(obj)
+
     def save(self):
         self.session.commit()
 
@@ -101,25 +117,6 @@ class Store:
             first()
         return project
 
-    def create_project(self, init_args):
-        """
-        Create a new project and return it.
-
-        Creates and bootstraps a new project structure. If a project with the
-        same name exists it will be replaced.
-
-        :param dict init_args: Dictionary containing initialization arguments
-            for the project
-        :return: Newly created project
-        :rtype: ramsis.datamodel.project.Project
-
-        """
-        logger.info(f'Creating project {init_args.get("name", "unnamed")}')
-        project = Project(**init_args)
-        self.session.add(project)
-        self.session.commit()
-        return project
-
     def load_models(self, model_type=None):
         """
         Load all models by model type.
@@ -145,10 +142,6 @@ class Store:
 
     def load_models_by(self, entity, **kwargs):
         return self.session.query(entity).filter_by(**kwargs).all()
-
-    def delete(self, obj):
-        """ Delete any object from the store """
-        self.session.delete(obj)
 
     def test_connection(self):
         try:

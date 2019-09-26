@@ -5,11 +5,12 @@ UI to create, edit and load projects.
 """
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QWidget
+from RAMSIS.core.builder import default_project
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.base.state import UiStateMachine
 from RAMSIS.ui.utils import UiForm
 from RAMSIS.ui.viewmodels.projectstablemodel import ProjectsTableModel
-from RAMSIS.ui.createprojectdialog import CreateProjectDialog
+from RAMSIS.ui.settingswindow import ProjectSettingsWindow
 
 
 class ProjectManagementWindow(QWidget, UiForm('projectmanagementwindow.ui')):
@@ -55,21 +56,14 @@ class ProjectManagementWindow(QWidget, UiForm('projectmanagementwindow.ui')):
     @pyqtSlot(name='on_createProjectButton_clicked')
     def create_project(self):
 
-        def do_create(dialog):
-            init_args = {
-                'name': dialog.ui.nameEdit.text(),
-                'description': dialog.ui.descriptionEdit.toPlainText(),
-                'starttime': dialog.ui.startDateEdit.dateTime().
-                    toPyDateTime(),
-                # TODO LH: should this be default on the datamodel? will there
-                #   ever be a reason to allow something else?
-                'spatialreference': '4326'
-            }
-            project = self.app.ramsis_core.store.create_project(init_args)
+        def do_create(project):
+            self.app.ramsis_core.store.add(project)
+            self.app.ramsis_core.store.save()
             self.ui.projectsTable.model().add_item(project)
 
-        edit_dialog = CreateProjectDialog(callback=do_create, parent=self)
-        edit_dialog.show()
+        dlg = ProjectSettingsWindow(project=default_project())
+        dlg.save_callback = do_create
+        dlg.exec_()
 
     @pyqtSlot(name='on_openProjectButton_clicked')
     def open_project(self):
