@@ -17,7 +17,7 @@ from RAMSIS.ui.utils import UiForm
 class ReservoirWindow(QWidget, UiForm('reservoirwindow.ui')):
 
     def __init__(self, core):
-        super(ReservoirWindow, self).__init__()
+        super().__init__()
         self.core = core
 
         self.ui.scaleSpinBox.valueChanged.connect(self.on_scaling_changed)
