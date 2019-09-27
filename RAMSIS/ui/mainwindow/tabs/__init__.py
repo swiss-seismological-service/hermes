@@ -1,4 +1,4 @@
-from .hazardtab import HazardTabPresenter
-from .modeltab import ModelTabPresenter
-#from .risktab import RiskTabPresenter
-from .generaltab import GeneralTabPresenter
+from .hazardtab import HazardTabPresenter  # noqa
+from .modeltab import ModelTabPresenter  # noqa
+# from .risktab import RiskTabPresenter
+from .generaltab import GeneralTabPresenter  # noqa
