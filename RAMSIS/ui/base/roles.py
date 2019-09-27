@@ -1,9 +1,8 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Custom roles definitions
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
+
 from PyQt5.QtCore import Qt
 
 
