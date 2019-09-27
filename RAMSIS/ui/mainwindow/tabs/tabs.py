@@ -1,13 +1,11 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Presentation classes for each of the tabs shown in the main area of the
 forecast window
-    
-Copyright (C) 2016, SED (ETH Zurich)
-
 """
 
 import logging
+
 from PyQt5.QtCore import QObject
 
 
