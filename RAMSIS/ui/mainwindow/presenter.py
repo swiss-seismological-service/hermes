@@ -13,7 +13,7 @@ import logging
 
 from PyQt5.QtWidgets import QDialog
 
-from .tabs import ModelTabPresenter, GeneralTabPresenter
+from .tabs import GeneralTabPresenter
 from .timeline import TimeLinePresenter
 
 from ramsis.datamodel.forecast import Forecast, ForecastScenario
@@ -79,7 +79,7 @@ class ContentPresenter(object):
         self.current_scenario = None
 
         # Presenters for the main window components
-        tab_classes = [ModelTabPresenter, GeneralTabPresenter]
+        tab_classes = [GeneralTabPresenter]
         self.tab_presenters = [Klass(self.ui) for Klass in tab_classes]
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
