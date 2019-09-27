@@ -95,8 +95,8 @@ class Store:
     def delete(self, obj):
         """
         Delete any object from the store
-        
-        :param obj: Data model object to be deleted 
+
+        :param obj: Data model object to be deleted
         """
         self.session.delete(obj)
 
