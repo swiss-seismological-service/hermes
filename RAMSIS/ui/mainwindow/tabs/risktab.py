@@ -3,7 +3,7 @@
 Short Description
 
 Long Description
-    
+
 Copyright (C) 2015, SED (ETH Zurich)
 
 """
@@ -13,7 +13,6 @@ from PyQt5 import QtGui
 from qgis.core import QgsVectorLayer, QgsMapLayerRegistry, QgsRectangle
 from qgis.gui import QgsMapCanvasLayer
 from .tabs import TabPresenter
-from RAMSIS.ui.mainwindow.qgislayers import RamsisLossPoeLayer
 
 # Map service that provides the background map
 MAP_SOURCE_URL = 'http://server.arcgisonline.com/ArcGIS/rest/services/'\
@@ -62,8 +61,8 @@ class RiskTabPresenter(TabPresenter):
                 QgsMapLayerRegistry.instance().addMapLayer(layer)
 
         # Commented out for testing without QGIS initialization
-        #self.loss_layer = RamsisLossPoeLayer('Loss')
-        #layers.append(self.loss_layer)
+        # self.loss_layer = RamsisLossPoeLayer('Loss')
+        # layers.append(self.loss_layer)
 
         # Set layers
 
