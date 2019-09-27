@@ -1,9 +1,7 @@
 """
 Base TableView model class and associated model layer classes
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
+
 import dateutil.parser
 from datetime import datetime
 from sqlalchemy.orm import object_session
