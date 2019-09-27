@@ -4,8 +4,8 @@ Keeper of time
 
 The wall clock keeps the current time, real or simulated, and emits a signal
 whenever the time has advanced significantly.
-
 """
+
 from enum import Enum, auto
 from datetime import timedelta, datetime
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
