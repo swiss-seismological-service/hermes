@@ -28,8 +28,8 @@ from ramsis.datamodel.seismicity import SeismicityModel
 logger = logging.getLogger(__name__)
 
 # We need to make sure all datamodel modules are imported at least once
-# for the ORMBase meta data to be complete
-# Make sure ORMBase has all the metadata
+# for the ORMBase meta data to be complete; ensure that ORMBase has all the
+# metadata
 pkg = ramsis.datamodel
 modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
 for finder, module_name, _ in modules:
@@ -37,19 +37,19 @@ for finder, module_name, _ in modules:
         finder.find_module(module_name).load_module(module_name)
 
 
-def with_session_validation(func):
+def with_session_validation(method):
     """
     Method decorator performing a session validation.
     """
 
-    @wraps(func)
-    def decorator(self, *args, **kwargs):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
         if not self._editing_session:
-            raise ValueError(f'Invalid session: {self._editing_session}.')
+            raise RuntimeError(f'Invalid session: {self._editing_session}.')
 
-        return func(self, *args, **kwargs)
+        return method(self, *args, **kwargs)
 
-    return decorator
+    return wrapper
 
 
 class Store:
