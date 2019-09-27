@@ -18,7 +18,7 @@ class ModelTabPresenter(TabPresenter):
         :type ui: Ui_ForecastsWindow
         """
 
-        super(ModelTabPresenter, self).__init__(ui)
+        super().__init__(ui)
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
 
