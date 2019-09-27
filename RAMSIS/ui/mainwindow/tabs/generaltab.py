@@ -9,7 +9,6 @@ from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget
 
 from ramsis.datamodel.forecast import EStage
-from ramsis.datamodel.status import EStatus
 from RAMSIS.ui.base.utils import utc_to_local
 
 
