@@ -1,7 +1,7 @@
 # Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Presentation classes for each of the tabs shown in the main area of the
-forecast window
+forecast window.
 """
 
 import logging
@@ -11,11 +11,9 @@ from PyQt5.QtCore import QObject
 
 class TabPresenter(QObject):
     """
-    Handles a tabs content
-
-    This is an abstract class
-
+    Abstract base class handling tab content
     """
+
     def __init__(self, ui):
         """
         :param ui: reference to the Qt UI
@@ -34,7 +32,7 @@ class TabPresenter(QObject):
         We also listen to changes to the currently displayed result to update
         the tabs content accordingly
 
-        :param Scenario scenario: forecast scenario
+        :param scenario: forecast scenario
 
         """
         # TODO LH: these signals don't exist anymore. find another way
@@ -50,10 +48,3 @@ class TabPresenter(QObject):
 
     def _on_change(self, obj):
         self.refresh()
-
-
-
-
-
-
-
