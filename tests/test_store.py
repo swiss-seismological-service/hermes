@@ -89,6 +89,14 @@ class TestEditingContext(unittest.TestCase):
         self.editing_context.save()
         self.assertEqual(len(self.store.all_projects()), 0)
 
+    def test_discarded(self):
+        project = self.editing_context.get(self.project)
+        project.name = 'Foo'
+        self.editing_context.save()
+
+        with self.assertRaises(RuntimeError):
+            self.editing_context.get(self.project)
+
 
 class TestStoreInitialization(unittest.TestCase):
 
