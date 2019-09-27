@@ -1,9 +1,8 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Actions installed in context menus for TableView rows
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
+
 from PyQt5.QtWidgets import QAction, QMessageBox, QMenu
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
