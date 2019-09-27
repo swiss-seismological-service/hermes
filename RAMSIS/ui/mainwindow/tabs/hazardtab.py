@@ -1,11 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
-
-Long Description
-    
-Copyright (C) 2015, SED (ETH Zurich)
-
+Hazard tab UI facilities
 """
 
 import numpy as np
