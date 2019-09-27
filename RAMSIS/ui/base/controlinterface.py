@@ -100,7 +100,7 @@ class QDateTimeEditInterface(ControlInterface):
         return self.control.editingFinished
 
 
-class  QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
+class QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
     """
     Local time interface for QDateTimeEdit
 
