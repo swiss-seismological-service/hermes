@@ -10,9 +10,7 @@ class does not become too big.
 
 import datetime
 import logging
-import os
 
-from PyQt5 import uic
 from PyQt5.QtCore import pyqtSlot, QDateTime
 from PyQt5.QtWidgets import (
     QSizePolicy, QWidget, QStatusBar, QLabel, QMessageBox, QProgressBar,
@@ -29,16 +27,10 @@ from RAMSIS.ui.reservoirwindow import ReservoirWindow
 from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
+from RAMSIS.ui.utils import UiForm
 from RAMSIS.wkt_utils import point_to_proj4
 
 from .presenter import ContentPresenter
-
-
-ui_path = os.path.dirname(__file__)
-MAIN_WINDOW_PATH = os.path.join(ui_path, '..', 'views', 'mainwindow.ui')
-Ui_MainWindow = uic.loadUiType(
-    MAIN_WINDOW_PATH,
-    import_from='RAMSIS.ui.views', from_imports=True)[0]
 
 
 class StatusBar(QStatusBar):
@@ -94,7 +86,7 @@ class StatusBar(QStatusBar):
             self.current_activity_id = None
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QMainWindow, UiForm('mainwindow.ui')):
 
     def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,9 +105,6 @@ class MainWindow(QMainWindow):
         self.app = app
         self.application_settings = app.app_settings
 
-        # Setup the user interface
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
         # ...additional setup
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
