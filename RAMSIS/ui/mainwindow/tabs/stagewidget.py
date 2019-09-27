@@ -10,9 +10,6 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
 from RAMSIS.ui.styles import StatusColor
 
-#TODO: readd
-#from ramsis.datamodel.calculationstatus import CalculationStatus
-
 ui_path = os.path.dirname(__file__)
 STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
                                  'stagestatus.ui')
