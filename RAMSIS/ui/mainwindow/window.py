@@ -326,10 +326,10 @@ class MainWindow(QMainWindow, UiForm('mainwindow.ui')):
         self.content_presenter.show_project()
         self.status_bar.set_status(project.name)
         self.status_bar.set_time(self.app.ramsis_core.clock.time)
-        #project.settings.settings_changed.connect(
-        #    self.on_project_settings_changed)
-        #project.seismiccatalog.history_changed.connect(
-        #    self.on_catalog_changed)
+        # project.settings.settings_changed.connect(
+        #     self.on_project_settings_changed)
+        # project.seismiccatalog.history_changed.connect(
+        #     self.on_catalog_changed)
         self.update_controls()
 
     def on_project_will_unload(self, _):
