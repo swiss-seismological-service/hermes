@@ -177,7 +177,7 @@
           <enum>QTabWidget::Rounded</enum>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <property name="elideMode">
           <enum>Qt::ElideRight</enum>
@@ -711,23 +711,7 @@ color:white;
     </property>
     <addaction name="actionShow_3D"/>
    </widget>
-   <widget class="QMenu" name="menuProject">
-    <property name="title">
-     <string>Data</string>
-    </property>
-    <addaction name="actionSeismic_Data"/>
-    <addaction name="actionFetch_from_fdsnws"/>
-    <addaction name="actionImport_Seismic_Data"/>
-    <addaction name="actionView_Data"/>
-    <addaction name="separator"/>
-    <addaction name="actionHydraulic_Data"/>
-    <addaction name="actionFetch_from_hydws"/>
-    <addaction name="actionImport_Hydraulic_Data"/>
-    <addaction name="separator"/>
-    <addaction name="actionDelete_Results"/>
-   </widget>
    <addaction name="menu_File"/>
-   <addaction name="menuProject"/>
    <addaction name="menuSimulation"/>
    <addaction name="menuWindow"/>
   </widget>

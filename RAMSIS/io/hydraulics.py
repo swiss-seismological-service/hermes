@@ -322,15 +322,16 @@ class _WellSectionSchema(_SchemaBase):
                 'At least a single sample required.')
 
     def make_object(self, data):
-        if 'time' in self.context and 'hydraulics' in data:
-            if self.context['time'] is self.EContext.PAST:
-                # XXX(damb): Wrap samples with Hydraulics envelope
-                data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
-            elif self.context['time'] is self.EContext.FUTURE:
-                # XXX(damb): Wrap samples with InjectionPlan envelope
-                data['injectionplan'] = InjectionPlan(
-                    samples=data['hydraulics'])
-                del data['hydraulics']
+        if 'time' in self.context:
+            if 'hydraulics' in data:
+                if self.context['time'] is self.EContext.PAST:
+                    # XXX(damb): Wrap samples with Hydraulics envelope
+                    data['hydraulics'] = Hydraulics(samples=data['hydraulics'])
+                elif self.context['time'] is self.EContext.FUTURE:
+                    # XXX(damb): Wrap samples with InjectionPlan envelope
+                    data['injectionplan'] = InjectionPlan(
+                        samples=data['hydraulics'])
+                    del data['hydraulics']
 
             return WellSection(**data)
         return data
@@ -364,7 +365,7 @@ class _InjectionWellSchema(_SchemaBase):
     `Marshmallow <https://marshmallow.readthedocs.io/en/3.0/>`_ schema for an
     injection well.
     """
-    bedrockdepth_value = Depth(required=True)
+    bedrockdepth_value = Depth()
     bedrockdepth_uncertainty = Uncertainty()
     bedrockdepth_loweruncertainty = Uncertainty()
     bedrockdepth_upperuncertainty = Uncertainty()
@@ -380,13 +381,6 @@ class _InjectionWellSchema(_SchemaBase):
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
             return self._flatten_dict(data)
-        return data
-
-    @pre_load
-    def extract_section_with_samples(self, data, **kwargs):
-        # FIXME(damb): This is a workaround
-        data['sections'] = [s for s in data['sections']
-                            if s.get('hydraulics')]
         return data
 
     @post_load
@@ -407,7 +401,7 @@ class _InjectionWellSchema(_SchemaBase):
 
     @validates_schema
     def validate_sections(self, data, **kwargs):
-        if len(data['sections']) != 1:
+        if 'sections' not in data or len(data['sections']) != 1:
             raise ValidationError(
                 'InjectionWells are required to have a single section.')
 
@@ -465,8 +459,13 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
 
         :returns: Borehole ORM representation
         :rtype: :py:class:`ramsis.datamodel.well.InjectionWell`
+
+        :raises: :py:class:`HYDWSJSONIOError` if deserialization fails
         """
-        return _InjectionWellSchema(context=self._ctx).loads(data)
+        try:
+            return _InjectionWellSchema(context=self._ctx).loads(data)
+        except ValidationError as err:
+            raise HYDWSJSONIOError(err)
 
     def _loado(self, data):
         return _InjectionWellSchema(context=self._ctx).load(data)

@@ -12,8 +12,6 @@ import logging
 import pymap3d
 import requests
 
-from urllib.parse import urlparse, urlunparse
-
 from marshmallow import fields, validate
 from osgeo import ogr, osr
 
@@ -223,7 +221,8 @@ def append_ms_zeroes(dt_str):
 
 
 @contextlib.contextmanager
-def binary_request(request, url, params={}, timeout=None, **kwargs):
+def binary_request(request, url, params={}, timeout=None,
+                   nocontent_codes=(204,), **kwargs):
     """
     Make a binary request
 
@@ -235,23 +234,10 @@ def binary_request(request, url, params={}, timeout=None, **kwargs):
     :type timeout: None or int or tuple
 
     :rtype: io.BytesIO
-
-    :raises: :code:`ValueError` for an invalid :code:`url`
     """
-    def validate_args(url, params):
-        _url = urlparse(url)
-
-        if _url.params or _url.query or _url.fragment:
-            raise ValueError(f"Invalid URL: {url}")
-
-        return urlunparse(_url), params
-
-    url, params = validate_args(url, params)
-
     try:
         r = request(url, params=params, timeout=timeout, **kwargs)
-        # TODO(damb): Move codes to a generic settings variable
-        if r.status_code in (204, 404):
+        if r.status_code in nocontent_codes:
             raise NoContent(r.url, r.status_code, response=r)
 
         r.raise_for_status()

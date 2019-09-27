@@ -7,22 +7,21 @@ central coordinator for all core (i.e. non UI) components.
 
 """
 
-import datetime
 import logging
 
-from enum import Enum, auto
+from enum import Enum
 from operator import attrgetter
 
 from PyQt5 import QtCore
 from collections import namedtuple
 
-from ramsis.datamodel.seismics import SeismicEvent
-from ramsis.datamodel.hydraulics import HydraulicSample
 from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
+from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
+from RAMSIS.wkt_utils import point_to_proj4
 
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -200,98 +199,6 @@ class Controller(QtCore.QObject):
 
     # Other user actions
 
-    def fetch_seismic_events(self):
-        """
-        Reload seismic catalog by fetching all events from the
-        seismic data source.
-
-        """
-        self._logger.info('Re-fetching seismic data from data source')
-        # TODO LH: re-add using io. A signal should be emitted when done
-        #   so we can update activity messages in the gui.
-        #self.seismics_data_source.fetch()
-        self.project_data_changed.emit(self.project.seismiccatalog)
-
-    def import_seismic_events(self, importer):
-        """ Import seismic events manually """
-        # TODO LH: re-add using io and convert wgs84 to cartesian
-        try:
-            events = [SeismicEvent(datetime_value=date,
-                                   x_value=float(fields['lon']),
-                                   y_value=float(fields['lat']),
-                                   z_value=float(fields['depth']),
-                                   magnitude_value=float(fields['mag']),
-                                   quakeml=b'')
-                      for date, fields in importer]
-        except KeyError as e:
-            self._logger.error('Failed to import seismic events. Make sure '
-                               'the data contains lat, lon, depth, and mag '
-                               'fields and that the date field has the format '
-                               'dd.mm.yyyyTHH:MM:SS. The original error was ' +
-                               str(e))
-        else:
-            # TODO LH: for some reason this is extremely slow when replacing
-            #   the collection directly. Seemingly spending a lot of time
-            #   in SeismicEvent.__eq__
-            self.project.seismiccatalog.events = []
-            self.project.seismiccatalog.events = events
-            self.store.save()
-        self.project_data_changed.emit(self.project.seismiccatalog)
-
-    def fetch_hydraulic_events(self):
-        """
-        Reload hydraulic history by fetching all events from the
-        hydraulic data source.
-
-        """
-        self._logger.info('Re-fetching hydraulic data from data source')
-        hydraulics = self.project.wells[0].sections[-1].hydraulics
-        # TODO LH: re-add using io. A signal should be emitted when done
-        #   so we can update activity messages in the gui.
-        #self.hydraulics_data_source.fetch()
-        self.project_data_changed.emit(hydraulics)
-
-    def import_hydraulics_events(self, importer):
-        """ Import seismic events manually """
-        # TODO LH: re-add using io. Also, we need to think of a way to
-        #   specify the well/wellsection instead of hardcoding it
-        try:
-            samples = [HydraulicSample(datetime_value=date,
-                                       bottomflow_value=float(
-                                           fields.get('flow_dh') or 0),
-                                       topflow_value=float(
-                                           fields.get('flow_xt') or 0),
-                                       bottompressure_value=float(
-                                           fields.get('pr_dh') or 0),
-                                       toppressure=float(
-                                           fields.get('pr_xt') or 0))
-                       for date, fields in importer]
-        except KeyError as e:
-            self._logger.error('Failed to import hydraulic events. Make sure '
-                               'the .csv file contains top and bottom hole '
-                               'flow and pressure fields and that the date '
-                               'field has the format dd.mm.yyyyTHH:MM:SS. The '
-                               'original error was ' + str(e))
-        else:
-            self.project.wells[0].sections[-1].hydraulics.samples = samples
-            self.store.save()
-        self.project_data_changed.emit(hydraulics)
-
-    def reset_forecasts(self):
-        """
-        Delete forecast results and intermediate products
-
-        This basically returns all forecasts to their 'configured but not yet
-        executed' state so that the user can re-run them.
-
-        """
-        self._logger.info('Resetting all forecasts')
-        for forecast in self.project.forecasts:
-            forecast.reset()
-        self.store.save()
-
-    # Running
-
     def start(self, time_range=None, speed=1):
         """
         Start the core
@@ -405,59 +312,94 @@ class Controller(QtCore.QObject):
         self._update_data_sources()
 
     def _update_data_sources(self):
-        pass
-        # TODO LH: reimplement once daniels services are integrated
-        # # Seismic
-        # new_url = self.project.settings['fdsnws_url']
-        # en = self.project.settings['fdsnws_enable']
-        # if new_url is None:
-        #     self.seismics_data_source = None
-        # elif self.seismics_data_source:
-        #     if self.seismics_data_source.url != new_url:
-        #         self.seismics_data_source.url = new_url
-        #         self._logger.info('Seismic data source changed to {}'
-        #                          .format(new_url))
-        #     if self.seismics_data_source.enabled != en:
-        #         self.seismics_data_source.enabled = en
-        #         self._logger.info('Seismic data source {}'
-        #                           .format('enabled' if en else 'disabled'))
-        # else:
-        #     self.seismics_data_source = FDSNWSDataSource(new_url)
-        #     self.seismics_data_source.enabled = en
-        #     self.seismics_data_source.data_received.connect(
-        #         self._on_seismic_data_received)
-        # # Hydraulic
-        # new_url = self.project.settings['hydws_url']
-        # en = self.project.settings['hydws_enable']
-        # if new_url is None:
-        #     self.hydraulics_data_source = None
-        # elif self.hydraulics_data_source:
-        #     if self.hydraulics_data_source.url != new_url:
-        #         self.hydraulics_data_source.url = new_url
-        #         self._logger.info('Hydraulic data source changed to {}'
-        #                           .format(new_url))
-        #     if self.hydraulics_data_source.enabled != en:
-        #         self.hydraulics_data_source.enabled = en
-        #         self._logger.info('Hydraulic data source {}'
-        #                           .format('enabled' if en else 'disabled'))
-        # else:
-        #     self.hydraulics_data_source = HYDWSDataSource(new_url)
-        #     self.hydraulics_data_source.enabled = en
-        #     self.hydraulics_data_source.data_received.connect(
-        #         self._on_hydraulic_data_received)
+        proj = point_to_proj4(self.project.referencepoint) or None
+        try:
+            enabled = self.project.settings['fdsnws_enable']
+            url = self.project.settings['fdsnws_url']
+        except KeyError as err:
+            self._logger.warning(
+                f'Invalid project configuration: {err}')
+        else:
+            if url is None:
+                self.seismics_data_source = None
+            elif self.seismics_data_source:
+                if self.seismics_data_source.url != url:
+                    self.seismics_data_source.url = url
+                    self._logger.info(
+                        f'fdsnws-event changed to {url}.')
+                if self.seismics_data_source.enabled != enabled:
+                    self.seismics_data_source.enabled = enabled
+                    self._logger.info(
+                        'fdsnws-event {}.'.format(
+                            'enabled' if enabled else 'disabled'))
+            else:
+                self.seismics_data_source = FDSNWSDataSource(
+                    url, timeout=None, proj=proj)
+                self.seismics_data_source.enabled = enabled
+                self.seismics_data_source.data_received.connect(
+                    self._on_seismic_data_received)
 
-    def _on_seismic_data_received(self, result):
-        if result is not None:
-            tr = result['time_range']
-            importer = result['importer']
-            self.project.seismiccatalog.clear_events(tr)
-            self.project.seismiccatalog.import_events(importer)
-            self.project.store.commit()
+        try:
+            enabled = self.project.settings['hydws_enable']
+            url = self.project.settings['hydws_url']
+        except KeyError as err:
+            self._logger.warning(
+                f'Invalid project configuration: {err}')
+        else:
+            # XXX(damb): Borehole is specified in the hydws URL; for
+            # multiple boreholes add a list of borehole identifiers
+            if url is None:
+                self.hydraulics_data_source = None
+            elif self.hydraulics_data_source:
+                if self.hydraulics_data_source.url != url:
+                    self.hydraulics_data_source.url = url
+                    self._logger.info(
+                        f'hydws changed to {url}.')
+                if self.hydraulics_data_source.enabled != enabled:
+                    self.hydraulics_data_source.enabled = enabled
+                    self._logger.info(
+                        'hydws {}'.format(
+                            'enabled' if enabled else 'disabled'))
+            else:
+                self.hydraulics_data_source = HYDWSDataSource(
+                    url, timeout=None, proj=proj)
+                self.hydraulics_data_source.enabled = enabled
+                self.hydraulics_data_source.data_received.connect(
+                    self._on_hydraulic_data_received)
 
-    def _on_hydraulic_data_received(self, result):
-        if result is not None:
-            tr = result['time_range']
-            importer = result['importer']
-            self.project.injection_history.clear_events(tr)
-            self.project.injection_history.import_events(importer)
-            self.project.store.commit()
+    def _on_seismic_data_received(self, cat):
+        if cat is not None:
+            if not self.project.seismiccatalog:
+                self.project.seismiccatalog = cat
+            else:
+                self.project.seismiccatalog.merge(cat)
+
+            self.store.save()
+
+            self._logger.debug(
+                f'Project seismic data ({self.project.seismiccatalog}).')
+            self.project_data_changed.emit(self.project.seismiccatalog)
+
+    def _on_hydraulic_data_received(self, well):
+        if well is not None:
+            try:
+                well_project = self.project.wells[0]
+            except (TypeError, AttributeError, IndexError):
+                self.project.wells = [well]
+                well_project = self.project.wells[0]
+            else:
+                well_project.merge(well)
+
+            self.store.save()
+
+            if well_project.sections:
+                msg = ('Project borehole data '
+                       f'(sections={len(well_project.sections)}')
+                if well_project.sections[0].hydraulics:
+                    msg += (', samples='
+                            f'{len(well_project.sections[0].hydraulics)}')
+                msg += ').'
+
+                self._logger.debug(msg)
+
+            self.project_data_changed.emit(self.project.wells[0])

@@ -17,6 +17,7 @@ class TaskManager:
     Manages the ramsis specific scheduler and tasks
 
     """
+    THRESHOLD_DATASOURCES = timedelta(seconds=60)
 
     def __init__(self, core):
         self.core = core
@@ -70,34 +71,61 @@ class TaskManager:
 
     # Task Methods
 
-    def fetch_fdsn(self, t):
-        """ FDSN task function """
-        if self.core.seismics_data_source is None:
+    def fetch_fdsn(self, t, last_run=None):
+        """
+        FDSN task function
+
+        :param t: Current execution time
+        :type t: :py:class:`datetime.datetime`
+        :param last_run: Execution time of the previous execution
+        :type last_run: :py:class:`datetime.datetime`
+        """
+        if None in (self.core.project, self.core.seismics_data_source):
             return
+
         p = self.core.project
-        if p:
+        try:
             dt = p.settings['fdsnws_interval']
-            end = p.project_time
-            # FIXME: we should have an overlap in our data fetches to catch
-            # updated events
-            start = p.project_time - timedelta(minutes=dt)
-            self.core.seismics_data_source.fetch(starttime=start, endtime=end)
+        except KeyError as err:
+            self.logger.warning(
+                f'Invalid project configuration: {err}')
+        else:
+            start = p.starttime
+            if len(p.seismiccatalog) and last_run:
+                start = (last_run - timedelta(minutes=dt) -
+                         self.THRESHOLD_DATASOURCES)
+            self.core.seismics_data_source.fetch(
+                starttime=start, endtime=t)
 
-    def fetch_hydws(self, t):
-        """ HYDWS task function """
-        if self.core.hydraulics_data_source is None:
+    def fetch_hydws(self, t, last_run=None):
+        """
+        HYDWS task function
+
+        :param t: Current execution time
+        :type t: :py:class:`datetime.datetime`
+        :param last_run: Execution time of the previous execution
+        :type last_run: :py:class:`datetime.datetime`
+        """
+        if None in (self.core.project, self.core.hydraulics_data_source):
             return
-        p = self.core.project
-        if p:
-            dt = p.settings['hydws_interval']
-            end = p.project_time
-            # FIXME: we should have an overlap in our data fetches to catch
-            # updated events
-            start = p.project_time - timedelta(minutes=dt)
-            self.core.hydraulics_data_source.fetch(starttime=start,
-                                                   endtime=end)
 
-    def update_rates(self, t):
+        p = self.core.project
+        try:
+            dt = p.settings['hydws_interval']
+        except KeyError as err:
+            self.logger.warning(
+                f'Invalid project configuration: {err}')
+        else:
+            start = p.starttime
+            if (p.wells and p.wells[0].sections and
+                p.wells[0].sections[0].hydraulics and
+                    last_run):
+                start = (last_run - timedelta(minutes=dt) -
+                         self.THRESHOLD_DATASOURCES)
+            self.core.hydraulics_data_source.fetch(
+                starttime=start, endtime=t)
+
+    def update_rates(self, t, last_run=None):
         """ Rate computation task function """
         # TODO LH: reimplement. We don't have a rate history on the project any
         #   more. However, this should be cheap to compute, so we can probably
