@@ -5,27 +5,21 @@ Controller class for the stage status widget
 
 import os
 
-from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
 from RAMSIS.ui.styles import StatusColor
+from RAMSIS.ui.utils import UiForm
 
-ui_path = os.path.dirname(__file__)
-STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
-                                 'stagestatus.ui')
-Ui_StageWidget = uic.loadUiType(
-    STAGE_WIDGET_PATH,
-    import_from='RAMSIS.ui.views', from_imports=True)[0]
+FORM_BASE_PATH = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'views')
 
 
-class StageWidget(QWidget):
+class StageWidget(
+        QWidget, UiForm('stagestatus.ui', form_base_path=FORM_BASE_PATH)):
 
     def __init__(self, title, **kwargs):
         super().__init__(**kwargs)
 
-        # Setup the user interface
-        self.ui = Ui_StageWidget()
-        self.ui.setupUi(self)
         self.ui.titleLabel.setText(title)
         self.clear_substages()
 
