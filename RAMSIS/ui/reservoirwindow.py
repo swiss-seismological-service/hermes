@@ -6,30 +6,20 @@ Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 
 """
 
-import os
 from datetime import datetime
-from pymap3d import geodetic2ned
-from PyQt5 import uic
 import numpy as np
-
-ui_path = os.path.dirname(__file__)
-FC_WINDOW_PATH = os.path.join(ui_path, 'views', 'reservoirwindow.ui')
-Ui_ReservoirWindow = uic.loadUiType(
-    FC_WINDOW_PATH,
-    import_from='RAMSIS.ui.views', from_imports=True)[0]
 
 from PyQt5.QtWidgets import QWidget
 
+from RAMSIS.ui.utils import UiForm
 
-class ReservoirWindow(QWidget):
+
+class ReservoirWindow(QWidget, UiForm('reservoirwindow.ui')):
 
     def __init__(self, core):
         super(ReservoirWindow, self).__init__()
         self.core = core
 
-        # Setup the user interface
-        self.ui = Ui_ReservoirWindow()
-        self.ui.setupUi(self)
         self.ui.scaleSpinBox.valueChanged.connect(self.on_scaling_changed)
 
         core.project_loaded.connect(self.on_project_loaded)
