@@ -1,12 +1,8 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
-
-Long Description
-
-Copyright (C) 2015, SED (ETH Zurich)
-
+Time line presenter controlling facilities.
 """
+
 import logging
 
 from datetime import datetime
