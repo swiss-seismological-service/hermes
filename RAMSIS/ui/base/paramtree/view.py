@@ -1,8 +1,6 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 View level classes for parameter tree views
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
 
 from PyQt5.QtCore import pyqtSignal
