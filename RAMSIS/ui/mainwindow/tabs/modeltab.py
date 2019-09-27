@@ -10,17 +10,7 @@ from .tabs import TabPresenter
 class ModelTabPresenter(TabPresenter):
     """
     Handles the Induced Seismicity tabs content
-
     """
-    def __init__(self, ui):
-        """
-        :param ui: reference to the Qt UI
-        :type ui: Ui_ForecastsWindow
-        """
-
-        super().__init__(ui)
-        self.ui.modelSelectorComboBox.currentIndexChanged.connect(
-            self.action_model_selection_changed)
 
     def refresh(self):
         pass
@@ -141,10 +131,3 @@ class ModelTabPresenter(TabPresenter):
             self.ui.modelSelectorComboBox.insertItem(i, title, m.model_id)
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
-
-    # Button Actions
-
-    def action_model_selection_changed(self, _):
-        fc_result = self.scenario.forecast_result
-        model_result = self._get_selected_model_result(fc_result)
-        self._present_model_result(model_result)
