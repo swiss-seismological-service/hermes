@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Controller class for the main window
 
@@ -6,9 +6,6 @@ Takes care of setting up the main GUI, handling any menu actions and updating
 top level controls as necessary.
 We delegate the presentation of content to a content presenter so that this
 class does not become too big.
-
-Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import datetime
