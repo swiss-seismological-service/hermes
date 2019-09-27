@@ -1,9 +1,8 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Base TableView class and associated view layer classes
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
+
 from PyQt5.QtCore import QObject, Qt, QSortFilterProxyModel
 from PyQt5.QtWidgets import QMenu, QAction, QTableView, QStyledItemDelegate
 from PyQt5.QtGui import QCursor
