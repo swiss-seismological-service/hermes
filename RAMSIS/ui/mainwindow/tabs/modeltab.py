@@ -23,10 +23,7 @@ class ModelTabPresenter(TabPresenter):
             self.action_model_selection_changed)
 
     def refresh(self):
-        """
-        Refresh everything
-
-        """
+        pass
         # TODO LH: the rabbit hole is now much deeper. adapt.
         # fc_result = self.scenario.forecast_result
         # self._update_models_list(fc_result)
