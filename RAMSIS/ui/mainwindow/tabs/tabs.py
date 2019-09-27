@@ -22,7 +22,7 @@ class TabPresenter(QObject):
         :type ui: Ui_ForecastsWindow
 
         """
-        super(TabPresenter, self).__init__()
+        super().__init__()
         self.ui = ui
         self.scenario = None
         self.logger = logging.getLogger(__name__)
