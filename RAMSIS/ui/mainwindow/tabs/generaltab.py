@@ -95,7 +95,7 @@ class StageStatusPresenter(QObject):
         widget.set_substages(list(config.items()))
 
         # TODO LH: revisit overall state
-        #if all(s in (EStatus.COMPLETE, 'Disabled') for s in config.values()):
+        # if all(s in (EStatus.COMPLETE, 'Disabled') for s in config.values()):
         #    state = EStatus.COMPLETE
         #    widget.set_state(state)
         # if all(s in (CS.COMPLETE, 'Disabled') for s in substages.values()):
@@ -137,12 +137,10 @@ class StageStatusPresenter(QObject):
         # TODO: implement
         try:
             status = scenario.forecast_result.risk_result.status
-        except:
+        except Exception:
             self.tlWidget.off()
         else:
             if status.finished:
                 self.tlWidget.green()
             else:
                 self.tlWidget.off()
-
-
