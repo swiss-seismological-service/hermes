@@ -19,7 +19,7 @@ class GeneralTabPresenter(TabPresenter):
     """
 
     def __init__(self, ui):
-        super(GeneralTabPresenter, self).__init__(ui)
+        super().__init__(ui)
         self.status_presenter = StageStatusPresenter(ui)
 
     def refresh(self):
@@ -43,7 +43,7 @@ class StageStatusPresenter(QObject):
     """
 
     def __init__(self, ui):
-        super(StageStatusPresenter, self).__init__()
+        super().__init__()
         self.ui = ui
 
         # Add stage status widgets
