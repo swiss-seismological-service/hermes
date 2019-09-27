@@ -1,8 +1,6 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Short Description
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
 from PyQt5.QtCore import Qt, QAbstractTableModel
 from PyQt5.QtGui import QFont

@@ -1,9 +1,8 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 A form built from a two column table
-    
-Copyright (C) 2018, SED (ETH Zurich)
-
 """
+
 from PyQt5.QtWidgets import QTableView, QAbstractItemView, \
     QHeaderView
 
