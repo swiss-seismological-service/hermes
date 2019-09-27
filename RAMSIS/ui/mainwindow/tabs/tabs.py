@@ -46,7 +46,7 @@ class TabPresenter(QObject):
         self.refresh()
 
     def refresh(self):
-        raise NotImplementedError("Please Implement this method")
+        raise NotImplementedError
 
     def _on_change(self, obj):
         self.refresh()
