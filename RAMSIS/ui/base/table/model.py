@@ -1,3 +1,4 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Base TableView model class and associated model layer classes
 """
