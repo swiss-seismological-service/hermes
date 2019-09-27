@@ -1,11 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
-
-Long Description
-    
-Copyright (C) 2015, SED (ETH Zurich)
-
+Status tab presenting facilities.
 """
 
 import numpy as np
@@ -21,8 +16,8 @@ class ModelTabPresenter(TabPresenter):
         """
         :param ui: reference to the Qt UI
         :type ui: Ui_ForecastsWindow
-
         """
+
         super(ModelTabPresenter, self).__init__(ui)
         self.ui.modelSelectorComboBox.currentIndexChanged.connect(
             self.action_model_selection_changed)
