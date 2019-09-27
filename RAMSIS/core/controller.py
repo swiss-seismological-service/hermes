@@ -384,8 +384,9 @@ class Controller(QtCore.QObject):
         if well is not None:
             try:
                 well_project = self.project.wells[0]
-            except (TypeError, AttributeError):
+            except (TypeError, AttributeError, IndexError):
                 self.project.wells = [well]
+                well_project = self.project.wells[0]
             else:
                 well_project.merge(well)
 
