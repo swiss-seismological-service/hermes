@@ -1,7 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Custom QtWidgets for plotting
-   
 """
 
 import pyqtgraph as pg
