@@ -21,7 +21,7 @@ Ui_StageWidget = uic.loadUiType(
 class StageWidget(QWidget):
 
     def __init__(self, title, **kwargs):
-        super(StageWidget, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Setup the user interface
         self.ui = Ui_StageWidget()
