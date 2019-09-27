@@ -4,8 +4,6 @@ GUI helpers
 """
 
 from dateutil.tz import tzlocal, tzutc
-from PyQt5.QtCore import QDateTime
-
 
 
 def utc_to_local(utc):
