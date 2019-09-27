@@ -17,10 +17,6 @@ from PyQt5.QtWidgets import QStyleFactory
 
 import pyqtgraph as pg
 
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.settings import ProjectSettings
-from ramsis.datamodel.seismics import SeismicCatalog
-
 log = logging.getLogger(__name__)
 
 DATETIME_POSIX_START = datetime(1970, 1, 1)
