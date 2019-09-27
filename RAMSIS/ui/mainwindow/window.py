@@ -10,6 +10,7 @@ class does not become too big.
 
 import datetime
 import logging
+import os
 
 from PyQt5.QtCore import pyqtSlot, QDateTime
 from PyQt5.QtWidgets import (
@@ -31,6 +32,9 @@ from RAMSIS.ui.utils import UiForm
 from RAMSIS.wkt_utils import point_to_proj4
 
 from .presenter import ContentPresenter
+
+
+_FORM_BASE_PATH = os.path.join(os.path.dirname(__file__), '..', 'views')
 
 
 class StatusBar(QStatusBar):
@@ -86,7 +90,8 @@ class StatusBar(QStatusBar):
             self.current_activity_id = None
 
 
-class MainWindow(QMainWindow, UiForm('mainwindow.ui')):
+class MainWindow(QMainWindow,
+                 UiForm('mainwindow.ui', form_base_path=_FORM_BASE_PATH)):
 
     def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
