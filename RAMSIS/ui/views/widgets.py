@@ -30,9 +30,7 @@ class TimePlotWidget(pg.PlotWidget):
 
     def __init__(self, parent=None, **kargs):
         axis = pg.DateAxisItem(orientation='bottom')
-        super(TimePlotWidget, self).__init__(parent,
-                                             axisItems={'bottom': axis},
-                                             **kargs)
+        super().__init__(parent, axisItems={'bottom': axis}, **kargs)
 
         self.setMouseEnabled(y=False)
         self._range = DisplayRange.DEFAULT
@@ -117,7 +115,7 @@ class TimeLinePlotWidget(TimePlotWidget):
     """
 
     def __init__(self, parent=None, **kargs):
-        super(TimeLinePlotWidget, self).__init__(parent, **kargs)
+        super().__init__(parent, **kargs)
         self.plot = None
 
         self.symbol_view = pg.ViewBox()
@@ -153,7 +151,7 @@ class TimeLinePlotWidget(TimePlotWidget):
 
 class VoxelViewWidget(gl.GLViewWidget):
     def __init__(self, parent=None, **kargs):
-        super(VoxelViewWidget, self).__init__(parent, **kargs)
+        super().__init__(parent, **kargs)
         self._grid_items = None
         self._voxel_item = None
         self._add_grid()
@@ -212,7 +210,7 @@ class VoxelViewWidget(gl.GLViewWidget):
 
 class Event3DViewWidget(gl.GLViewWidget):
     def __init__(self, parent=None, **kargs):
-        super(Event3DViewWidget, self).__init__(parent, **kargs)
+        super().__init__(parent, **kargs)
         self._grid_items = None
         self._events_item = None
         self.setWindowTitle('3D Event View')
