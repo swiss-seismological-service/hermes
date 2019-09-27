@@ -60,9 +60,8 @@ class ContextAction(QAction):
 
     # Enablers
 
-    # TODO(damb): If cls is not used - make it static
-    @classmethod
-    def single_only_enabler(self, idx):
+    @staticmethod
+    def single_only_enabler(idx):
         return len(idx) == 1
 
 
