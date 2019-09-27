@@ -8,8 +8,6 @@ from PyQt5.QtWidgets import QStyledItemDelegate, QPushButton
 from .model import ExtendNode
 
 
-# Parameter Tree View
-
 class ExtensibleNodeDelegate(QStyledItemDelegate):
 
     extend = pyqtSignal(object)
