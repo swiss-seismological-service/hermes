@@ -225,6 +225,7 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
             'smi:ch.ethz.sed/bh/section/11111111-8d89-4f13-95e7-526ade73cc8b')
         self.assertEqual(bh_section.holediameter_value, 0.3)
 
+
 class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
     """
     Test for the
