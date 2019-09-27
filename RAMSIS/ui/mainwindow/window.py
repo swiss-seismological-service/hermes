@@ -12,10 +12,10 @@ import datetime
 import logging
 import os
 
-from PyQt5.QtCore import pyqtSlot, QDateTime
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import (
     QSizePolicy, QWidget, QStatusBar, QLabel, QMessageBox, QProgressBar,
-    QMainWindow, QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout)
+    QMainWindow, QDialog)
 
 from RAMSIS.core.builder import default_scenario, empty_forecast
 from RAMSIS.core.simulator import SimulatorState
