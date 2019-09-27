@@ -70,7 +70,7 @@ class StageWidget(QWidget):
     def set_state(self, state):
         """
         Show the status of a calculation in this stage
-        
+
         :param string state: Defined CalculationStatus state
 
         """
@@ -91,4 +91,3 @@ class StageWidget(QWidget):
         # self.ui.imageLabel.setPixmap(
         #     QPixmap(':/stage_images/images/{}'.format(image)))
         # self.ui.statusLabel.setText(text)
-
