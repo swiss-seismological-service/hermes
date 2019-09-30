@@ -1,3 +1,8 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
+"""
+TreeView model facilities.
+"""
+
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt
 from RAMSIS.ui.base.roles import CustomRoles
 
