@@ -27,7 +27,7 @@ class Engine(QObject):
         :param RAMSIS.core.controller.Controller core: Reference to the core
         """
 
-        super(Engine, self).__init__()
+        super().__init__()
         self.busy = False
         self.core = core
         self._forecast = None
