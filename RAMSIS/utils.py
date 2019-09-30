@@ -1,8 +1,8 @@
 # Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Various utility functions
-
 """
+
 import abc
 import collections
 import enum
