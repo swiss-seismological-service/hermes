@@ -1,9 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Controller class for the settings window
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import logging
