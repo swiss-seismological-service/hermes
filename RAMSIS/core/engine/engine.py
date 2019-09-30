@@ -14,8 +14,6 @@ from RAMSIS.core.engine.forecastexecutor import ForecastExecutor
 class Engine(QObject):
     """
     The engine is responsible for running forecasts
-
-
     """
 
     #: Emitted when a forecast computation has completed
@@ -26,9 +24,9 @@ class Engine(QObject):
 
     def __init__(self, core):
         """
-
         :param RAMSIS.core.controller.Controller core: Reference to the core
         """
+
         super(Engine, self).__init__()
         self.busy = False
         self.core = core
