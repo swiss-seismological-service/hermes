@@ -1,9 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Provides a class to manage Ramsis project data
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import collections

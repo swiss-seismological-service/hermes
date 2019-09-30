@@ -1,3 +1,8 @@
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
+"""
+Forecast executing related engine facilities.
+"""
+
 import logging
 
 from PyQt5.QtCore import pyqtSignal, QObject

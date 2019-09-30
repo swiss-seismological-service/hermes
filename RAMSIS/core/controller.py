@@ -1,10 +1,9 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 RAMSIS Core Controller.
 
 This module defines a single class `Controller` which acts as the
 central coordinator for all core (i.e. non UI) components.
-
 """
 
 import logging

@@ -1,10 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Manages scheduled tasks in ramsis
-
-
-Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import logging

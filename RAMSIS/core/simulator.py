@@ -1,7 +1,8 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Simulator facilities
 """
+
 import logging
 from datetime import timedelta
 
