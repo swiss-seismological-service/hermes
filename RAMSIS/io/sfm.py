@@ -6,10 +6,11 @@ Utilities for SFM-Worker data import/export.
 import base64
 import functools
 
+import geoalchemy2
+
+from geoalchemy2 import WKBElement
 from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
                          post_load, ValidationError, EXCLUDE)
-
-from geoalchemy2.elements import WKBElement
 from osgeo import ogr, gdal
 
 from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,

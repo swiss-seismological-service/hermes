@@ -8,7 +8,7 @@ GeoAlchemy2
 import binascii
 
 from osgeo import ogr
-from geoalchemy2.elements import WKBElement
+from geoalchemy2 import WKBElement
 
 
 def is_phsf(wkt_geom, srid=None):
@@ -137,7 +137,7 @@ def point_to_proj4(wkb_point):
     Return a *pseudo* PROJ4 string from a point.
 
     :param wkb_point: Point to convert
-    :type wkb_point: :py:class:`geoalchemy2.elements.WKBElement`
+    :type wkb_point: :py:class:`geoalchemy2.WKBElement`
     """
     if wkb_point is None:
         return ''
