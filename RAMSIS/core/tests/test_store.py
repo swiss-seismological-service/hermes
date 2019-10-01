@@ -120,7 +120,8 @@ class TestStoreInitialization(unittest.TestCase):
                          'have a session bound to its engine after creation')
 
     # XXX(damb): Enable SPATIALITE test cases with:
-    # $ export RAMSIS_TEST_SPATIALITE="True"; python setup.py test --addopts="-r s"
+    # $ export RAMSIS_TEST_SPATIALITE="True"; \
+    #   python setup.py test --addopts="-r s"
     @unittest.skipUnless(
         os.getenv('RAMSIS_TEST_SPATIALITE', 'False') == 'True',
         "'RAMSIS_TEST_SPATIALITE' envvar not 'True'")
