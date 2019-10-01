@@ -6,8 +6,9 @@ Utilities for hydraulics data import/export.
 import enum
 import functools
 
-from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
-                         validate, validates_schema, ValidationError, EXCLUDE)
+from marshmallow import (Schema, fields, pre_load, post_load, pre_dump,
+                         post_dump, validate, validates_schema,
+                         ValidationError, EXCLUDE)
 
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
                                          HydraulicSample)
@@ -340,21 +341,28 @@ class _WellSectionSchema(_SchemaBase):
     def _transform(self, data):
         if 'transform_callback' not in self.context:
             return data
-
         transform_func = self.context['transform_callback']
+        if 'altitude_value' not in self.context.keys():
+            raise ValidationError(
+                'Transformation of well coordinates cannot take place'
+                ' as altitude is not given')
+        altitude_value = self.context['altitude_value']
+        topheight_value = altitude_value - data['topdepth_value']
+        bottomheight_value = altitude_value - data['bottomdepth_value']
+
         try:
             data['toplongitude_value'], \
                 data['toplatitude_value'], \
                 data['topdepth_value'] = transform_func(
                 data['toplongitude_value'],
                 data['toplatitude_value'],
-                data['topdepth_value'])
+                topheight_value)
             data['bottomlongitude_value'], \
                 data['bottomlatitude_value'], \
                 data['bottomdepth_value'] = transform_func(
                 data['bottomlongitude_value'],
                 data['bottomlatitude_value'],
-                data['bottomdepth_value'])
+                bottomheight_value)
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
 
@@ -382,12 +390,17 @@ class _InjectionWellSchema(_SchemaBase):
 
     sections = fields.Nested(_WellSectionSchema, many=True)
 
+    def update_context(self, key, value):
+        self.context[key] = value
+
     @pre_load
     def flatten(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            return self._flatten_dict(data)
+            data = self._flatten_dict(data)
+        if 'altitude_value' in data.keys():
+            self.update_context('altitude_value', data['altitude_value'])
         return data
 
     @post_load
@@ -396,6 +409,13 @@ class _InjectionWellSchema(_SchemaBase):
                 self.context['time'] in (self.EContext.PAST,
                                          self.EContext.FUTURE)):
             return InjectionWell(**data)
+        return data
+
+    @pre_dump
+    def add_altitude_context(self, data, **kwargs):
+        altitude_value = getattr(data, 'altitude_value')
+        if altitude_value:
+            self.update_context('altitude_value', altitude_value)
         return data
 
     @post_dump
