@@ -433,8 +433,6 @@ color:white;
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionScenario"/>
-   <addaction name="separator"/>
    <addaction name="actionSimulation"/>
    <addaction name="actionShow_3D"/>
   </widget>
@@ -506,7 +504,7 @@ color:white;
   </action>
   <action name="actionScenario">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset>
      <normaloff>:/toolbar-buttons/images/scenario-toolbar-button.png</normaloff>:/toolbar-buttons/images/scenario-toolbar-button.png</iconset>
    </property>
    <property name="text">

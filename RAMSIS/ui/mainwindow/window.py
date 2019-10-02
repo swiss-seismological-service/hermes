@@ -253,8 +253,7 @@ class MainWindow(QMainWindow,
         # TODO LH: Use a UiStateMachine to manage control states
         enable_with_project = [
             'actionShow_3D', 'actionSimulation',
-            'actionScenario', 'planNextButton', 'addScenarioButton',
-            'removeScenarioButton',
+            'planNextButton', 'addScenarioButton', 'removeScenarioButton',
         ]
         enable = True if self.app.ramsis_core.project is not None else False
         for ui_element in enable_with_project:
