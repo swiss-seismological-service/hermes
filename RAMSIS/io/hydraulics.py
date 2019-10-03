@@ -294,7 +294,7 @@ class _WellSectionSchema(_SchemaBase):
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
             if self.context.get('proj'):
-                data = self._transform(data)
+                data = self._transform_load(data)
             return self.make_object(data)
         return data
 
@@ -304,7 +304,7 @@ class _WellSectionSchema(_SchemaBase):
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
             if self.context.get('proj'):
-                data = self._transform(data)
+                data = self._transform_dump(data)
             return self._nest_dict(self._clear_missing(data))
 
         if 'starttime' in data:
@@ -338,7 +338,7 @@ class _WellSectionSchema(_SchemaBase):
             return WellSection(**data)
         return data
 
-    def _transform(self, data):
+    def _transform_load(self, data):
         if 'transform_callback' not in self.context:
             return data
         transform_func = self.context['transform_callback']
@@ -346,6 +346,7 @@ class _WellSectionSchema(_SchemaBase):
             raise ValidationError(
                 'Transformation of well coordinates cannot take place'
                 ' as altitude is not given')
+
         altitude_value = self.context['altitude_value']
         topheight_value = altitude_value - data['topdepth_value']
         bottomheight_value = altitude_value - data['bottomdepth_value']
@@ -365,7 +366,35 @@ class _WellSectionSchema(_SchemaBase):
                 bottomheight_value)
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
+        return data
 
+    def _transform_dump(self, data):
+        if 'transform_callback' not in self.context:
+            return data
+        transform_func = self.context['transform_callback']
+        if 'altitude_value' not in self.context.keys():
+            raise ValidationError(
+                'Transformation of well coordinates cannot take place'
+                ' as altitude is not given')
+        try:
+            data['toplongitude_value'], \
+                data['toplatitude_value'], \
+                topheight_value = transform_func(
+                data['toplongitude_value'],
+                data['toplatitude_value'],
+                data['topdepth_value'])
+            data['bottomlongitude_value'], \
+                data['bottomlatitude_value'], \
+                bottomheight_value = transform_func(
+                data['bottomlongitude_value'],
+                data['bottomlatitude_value'],
+                data['bottomdepth_value'])
+        except (TypeError, ValueError, AttributeError) as err:
+            raise TransformationError(f"{err}")
+
+        altitude_value = self.context['altitude_value']
+        data['topdepth_value'] = altitude_value - topheight_value
+        data['bottomdepth_value'] = altitude_value - bottomheight_value
         return data
 
 
@@ -413,8 +442,12 @@ class _InjectionWellSchema(_SchemaBase):
 
     @pre_dump
     def add_altitude_context(self, data, **kwargs):
-        altitude_value = getattr(data, 'altitude_value')
-        if altitude_value:
+        try:
+            altitude_value = data.altitude_value
+        except AttributeError as err:
+            raise ValidationError(
+                f'Injection well has no altitude value. {err}')
+        if altitude_value is not None:
             self.update_context('altitude_value', altitude_value)
         return data
 
@@ -514,7 +547,6 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
             into local coordinate system
         """
         super().__init__(proj=proj, **kwargs)
-
         self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
                       if kwargs.get('plan', False) else
                       {'time': _SchemaBase.EContext.PAST})
