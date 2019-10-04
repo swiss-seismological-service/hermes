@@ -26,10 +26,6 @@ class TaskManager:
         self.scheduler.add_task(self.forecast_task)
 
         self.periodic_tasks = {
-            'Rate update': {
-                'dt_setting': 'seismic_rate_interval',
-                'function': self.update_rates
-            },
             'FDSNWS': {
                 'dt_setting': 'fdsnws_interval',
                 'function': self.fetch_fdsn
@@ -120,24 +116,6 @@ class TaskManager:
                          self.THRESHOLD_DATASOURCES)
             self.core.hydraulics_data_source.fetch(
                 starttime=start, endtime=t)
-
-    def update_rates(self, t, last_run=None):
-        """ Rate computation task function """
-        # TODO LH: reimplement. We don't have a rate history on the project any
-        #   more. However, this should be cheap to compute, so we can probably
-        #   just implement a RateComputer that recomputes all rates on the fly
-        #   (and allows filtering on magnitude bins).
-        # t_run = info.t_project
-        # seismic_events = self.project.seismic_catalog.events_before(t_run)
-        # data = [(e.date_time, e.magnitude) for e in seismic_events]
-        # if len(data) == 0:
-        #     return
-        # t, m = zip(*data)
-        # t = list(t)
-        # m = list(m)
-        # rates = self.project.rate_history.compute_and_add(m, t, [t_run])
-        # self._logger.debug('New rate computed: ' + str(rates[0].rate))
-        pass
 
     def run_forecast(self, t):
         self.logger.info('Forecast initiated at {}'.format(t))
