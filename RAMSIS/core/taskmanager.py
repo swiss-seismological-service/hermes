@@ -157,8 +157,6 @@ class ForecastTask(Task):
     def __init__(self, task_function, core):
         super(ForecastTask, self).__init__(task_function, name='ForecastTask')
         self.next_forecast = None
-        self.run_time = None
-        self.one_off = False
         self.core = core
 
     def schedule(self, t):

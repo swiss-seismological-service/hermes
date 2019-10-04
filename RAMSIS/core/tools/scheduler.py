@@ -26,10 +26,6 @@ class Task(object):
         self.task_function = task_function
         self.run_time = None
 
-    @property
-    def is_singleshot(self):
-        return True
-
     def is_due(self, t):
         return t >= self.run_time if self.run_time is not None else False
 
@@ -61,10 +57,6 @@ class PeriodicTask(Task):
         self.dt = None
 
         self._last_run = None
-
-    @property
-    def is_singleshot(self):
-        return False
 
     def run(self, t):
         """
@@ -109,11 +101,9 @@ class TaskScheduler:
     def reset(self, t):
         """
         Reset the scheduled times by scheduling the first runs for all
-        repeating tasks based on `t0`. One-off tasks are removed.
+        repeating tasks based on `t0`.
 
         """
-        self.scheduled_tasks = [task for task in self.scheduled_tasks
-                                if not task.is_singleshot]
         for task in self.scheduled_tasks:
             task.schedule(t)
 
@@ -126,8 +116,7 @@ class TaskScheduler:
     def run_due_tasks(self, t):
         """
         Run all tasks that are due at time t. After running, tasks are
-        scheduled for the next execution and *singleshot* tasks are
-        removed from the task queue.
+        scheduled for the next execution.
 
         :param datetime.datetime t: current time
 
@@ -136,7 +125,4 @@ class TaskScheduler:
             if task.is_due(t):
                 self._logger.debug('Running Task: ' + task.name)
                 task.run(t)
-                if task.is_singleshot:
-                    self.scheduled_tasks.remove(task)
-                else:
-                    task.schedule(t)
+                task.schedule(t)
