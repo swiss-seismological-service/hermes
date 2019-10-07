@@ -16,11 +16,11 @@ mock_geoalchemy = types.ModuleType('geoalchemy2')
 mock_geoalchemy.Geometry = MagicMock(return_value=String)
 sys.modules['geoalchemy2'] = mock_geoalchemy
 
-from ramsis.datamodel.seismicity import SeismicityModel, EModel
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
-from RAMSIS.core.builder import default_project
-from RAMSIS.core.store import Store, EditingContext
+from ramsis.datamodel.seismicity import SeismicityModel, EModel  # noqa
+from ramsis.datamodel.project import Project  # noqa
+from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from RAMSIS.core.builder import default_project  # noqa
+from RAMSIS.core.store import Store, EditingContext  # noqa
 
 
 def make_event(m):
@@ -88,6 +88,14 @@ class TestEditingContext(unittest.TestCase):
         self.editing_context.delete(project)
         self.editing_context.save()
         self.assertEqual(len(self.store.all_projects()), 0)
+
+    def test_discarded(self):
+        project = self.editing_context.get(self.project)
+        project.name = 'Foo'
+        self.editing_context.save()
+
+        with self.assertRaises(RuntimeError):
+            self.editing_context.get(self.project)
 
 
 class TestStoreInitialization(unittest.TestCase):

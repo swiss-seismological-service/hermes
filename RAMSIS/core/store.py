@@ -13,6 +13,8 @@ import pkgutil
 import re
 import sys
 
+from functools import wraps
+
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, with_polymorphic
@@ -26,13 +28,28 @@ from ramsis.datamodel.seismicity import SeismicityModel
 logger = logging.getLogger(__name__)
 
 # We need to make sure all datamodel modules are imported at least once
-# for the ORMBase meta data to be complete
-# Make sure ORMBase has all the metadata
+# for the ORMBase meta data to be complete; ensure that ORMBase has all the
+# metadata
 pkg = ramsis.datamodel
-modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__+'.')
+modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
 for finder, module_name, _ in modules:
     if module_name not in sys.modules:
         finder.find_module(module_name).load_module(module_name)
+
+
+def with_session_validation(method):
+    """
+    Method decorator performing a session validation.
+    """
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self._editing_session:
+            raise RuntimeError(f'Invalid session: {self._editing_session}.')
+
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Store:
@@ -78,8 +95,8 @@ class Store:
     def delete(self, obj):
         """
         Delete any object from the store
-        
-        :param obj: Data model object to be deleted 
+
+        :param obj: Data model object to be deleted
         """
         self.session.delete(obj)
 
@@ -186,6 +203,7 @@ class EditingContext:
         self._editing_session = store.make_session()
         self._edited = set()
 
+    @with_session_validation
     def get(self, obj):
         """
         Get a copy of `object` that is ready for editing.
@@ -200,6 +218,7 @@ class EditingContext:
         self._edited.add(editing_copy)
         return editing_copy
 
+    @with_session_validation
     def add(self, obj):
         """
         Register a newly created top level object
@@ -213,6 +232,7 @@ class EditingContext:
         """
         self._edited.add(obj)
 
+    @with_session_validation
     def delete(self, obj):
         """
         Mark a top-level object for deletion
@@ -235,8 +255,16 @@ class EditingContext:
         """
         self._editing_session.delete(obj)
 
+    @with_session_validation
     def save(self):
-        """ Save edits to the main store and the data base """
+        """
+        Save edits to the main store and the database
+
+        .. note: The editing context should be discarded after saving since all
+                 objects will have been expunged and the underlying session
+                 closed.
+
+        """
         for obj in self._edited:
             original = self._store.session.merge(obj)
             # We need to propagate deletes manually since the instance state is
@@ -244,4 +272,6 @@ class EditingContext:
             # causes other issues
             if obj in self._editing_session.deleted:
                 self._store.delete(original)
+        self._editing_session.close()
+        self._editing_session = None
         self._store.save()
