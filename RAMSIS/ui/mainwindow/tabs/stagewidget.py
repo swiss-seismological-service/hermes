@@ -1,37 +1,25 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Controller class for the stage status widget
-
-Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import os
 
-from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
 from RAMSIS.ui.styles import StatusColor
+from RAMSIS.ui.utils import UiForm
 
-#TODO: readd
-#from ramsis.datamodel.calculationstatus import CalculationStatus
-
-ui_path = os.path.dirname(__file__)
-STAGE_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
-                                 'stagestatus.ui')
-Ui_StageWidget = uic.loadUiType(
-    STAGE_WIDGET_PATH,
-    import_from='RAMSIS.ui.views', from_imports=True)[0]
+FORM_BASE_PATH = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'views')
 
 
-class StageWidget(QWidget):
+class StageWidget(
+        QWidget, UiForm('stagestatus.ui', form_base_path=FORM_BASE_PATH)):
 
     def __init__(self, title, **kwargs):
-        super(StageWidget, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
-        # Setup the user interface
-        self.ui = Ui_StageWidget()
-        self.ui.setupUi(self)
         self.ui.titleLabel.setText(title)
         self.clear_substages()
 
@@ -76,7 +64,7 @@ class StageWidget(QWidget):
     def set_state(self, state):
         """
         Show the status of a calculation in this stage
-        
+
         :param string state: Defined CalculationStatus state
 
         """
@@ -97,4 +85,3 @@ class StageWidget(QWidget):
         # self.ui.imageLabel.setPixmap(
         #     QPixmap(':/stage_images/images/{}'.format(image)))
         # self.ui.statusLabel.setText(text)
-

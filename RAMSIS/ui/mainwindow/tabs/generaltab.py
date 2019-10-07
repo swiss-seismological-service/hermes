@@ -1,11 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
-
-Long Description
-    
-Copyright (C) 2015, SED (ETH Zurich)
-
+General tab facilitites.
 """
 
 from PyQt5.QtCore import QObject
@@ -14,7 +9,6 @@ from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget
 
 from ramsis.datamodel.forecast import EStage
-from ramsis.datamodel.status import EStatus
 from RAMSIS.ui.base.utils import utc_to_local
 
 
@@ -25,7 +19,7 @@ class GeneralTabPresenter(TabPresenter):
     """
 
     def __init__(self, ui):
-        super(GeneralTabPresenter, self).__init__(ui)
+        super().__init__(ui)
         self.status_presenter = StageStatusPresenter(ui)
 
     def refresh(self):
@@ -49,7 +43,7 @@ class StageStatusPresenter(QObject):
     """
 
     def __init__(self, ui):
-        super(StageStatusPresenter, self).__init__()
+        super().__init__()
         self.ui = ui
 
         # Add stage status widgets
@@ -101,7 +95,7 @@ class StageStatusPresenter(QObject):
         widget.set_substages(list(config.items()))
 
         # TODO LH: revisit overall state
-        #if all(s in (EStatus.COMPLETE, 'Disabled') for s in config.values()):
+        # if all(s in (EStatus.COMPLETE, 'Disabled') for s in config.values()):
         #    state = EStatus.COMPLETE
         #    widget.set_state(state)
         # if all(s in (CS.COMPLETE, 'Disabled') for s in substages.values()):
@@ -143,12 +137,10 @@ class StageStatusPresenter(QObject):
         # TODO: implement
         try:
             status = scenario.forecast_result.risk_result.status
-        except:
+        except Exception:
             self.tlWidget.off()
         else:
             if status.finished:
                 self.tlWidget.green()
             else:
                 self.tlWidget.off()
-
-

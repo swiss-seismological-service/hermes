@@ -15,19 +15,22 @@ from RAMSIS.ui.base.bindings import AttrBinding
 FORM_BASE_PATH = os.path.join(os.path.dirname(__file__), 'views')
 
 
-def UiForm(ui_path):
+def UiForm(ui_path, form_base_path=FORM_BASE_PATH):
     """
     Mixin to load a ui from a QtCreator .ui file
 
     The mixin will load the ui elements into the `ui` member of the target
     object.
 
-    :param str ui_path: Path to the ui form. Will be prefixed with the module
-        wide `form_base_path`
+    :param str ui_path: Path to the ui form. Will be prefixed with
+        :code:`form_base_path`
+    :param str form_base_path: Base path to UI forms
 
     """
-    form_path = os.path.join(FORM_BASE_PATH, ui_path)
-    Ui_Form = uic.loadUiType(form_path)[0]
+    form_path = os.path.join(form_base_path, ui_path)
+    Ui_Form = uic.loadUiType(
+        form_path,
+        import_from='RAMSIS.ui.views', from_imports=True)[0]
 
     class UiFormMixin:
         def __init__(self, *args, **kwargs):

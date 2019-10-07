@@ -1,12 +1,8 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Short Description
-
-Long Description
-
-Copyright (C) 2015, SED (ETH Zurich)
-
+Time line presenter controlling facilities.
 """
+
 import logging
 
 from datetime import datetime
@@ -16,10 +12,6 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QStyleFactory
 
 import pyqtgraph as pg
-
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.settings import ProjectSettings
-from ramsis.datamodel.seismics import SeismicCatalog
 
 log = logging.getLogger(__name__)
 

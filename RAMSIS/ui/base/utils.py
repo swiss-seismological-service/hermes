@@ -1,14 +1,9 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 GUI helpers
-
-Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 from dateutil.tz import tzlocal, tzutc
-from PyQt5.QtCore import QDateTime
-
 
 
 def utc_to_local(utc):

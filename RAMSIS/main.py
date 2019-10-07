@@ -1,9 +1,8 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Main file
 
 The Main file sets up the user interface and bootstraps the application
-
 """
 
 import argparse

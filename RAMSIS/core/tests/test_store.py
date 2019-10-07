@@ -4,17 +4,13 @@ Tests for the ramsis store module
 
 """
 
-import sys
-import types
+import os
 import unittest
+
 from datetime import datetime
-from unittest.mock import MagicMock
 
-from sqlalchemy import String
-
-mock_geoalchemy = types.ModuleType('geoalchemy2')
-mock_geoalchemy.Geometry = MagicMock(return_value=String)
-sys.modules['geoalchemy2'] = mock_geoalchemy
+from sqlalchemy import event
+from sqlalchemy.sql import select, func
 
 from ramsis.datamodel.seismicity import SeismicityModel, EModel  # noqa
 from ramsis.datamodel.project import Project  # noqa
@@ -29,11 +25,29 @@ def make_event(m):
                         datetime_value=now, quakeml=b'')
 
 
+def load_spatialite(dbapi_conn, connection_record):
+    """
+    Load spatialite extention.
+    """
+    # XXX(damb): sudo apt-get install libsqlite3-mod-spatialite
+    dbapi_conn.enable_load_extension(True)
+    dbapi_conn.load_extension('/usr/lib/x86_64-linux-gnu/mod_spatialite.so')
+
+
+# XXX(damb): Enable SPATIALITE test cases with:
+# $ export RAMSIS_TEST_SPATIALITE="True"; python setup.py test --addopts="-r s"
+@unittest.skipUnless(
+    os.getenv('RAMSIS_TEST_SPATIALITE', 'False') == 'True',
+    "'RAMSIS_TEST_SPATIALITE' envvar not 'True'")
 class TestEditingContext(unittest.TestCase):
 
     def setUp(self):
         self.store = Store('sqlite://')
-        # Mock any geometry columns
+        event.listen(self.store.engine, 'connect', load_spatialite)
+
+        conn = self.store.engine.connect()
+        conn.execute(select([func.InitSpatialMetaData()]))
+        conn.close()
 
         self.store.init_db()
 
@@ -105,8 +119,20 @@ class TestStoreInitialization(unittest.TestCase):
         self.assertEqual(store.session.get_bind(), store.engine, 'Store must '
                          'have a session bound to its engine after creation')
 
+    # XXX(damb): Enable SPATIALITE test cases with:
+    # $ export RAMSIS_TEST_SPATIALITE="True"; \
+    #   python setup.py test --addopts="-r s"
+    @unittest.skipUnless(
+        os.getenv('RAMSIS_TEST_SPATIALITE', 'False') == 'True',
+        "'RAMSIS_TEST_SPATIALITE' envvar not 'True'")
     def test_init(self):
         store = Store('sqlite://')
+        event.listen(store.engine, 'connect', load_spatialite)
+
+        conn = store.engine.connect()
+        conn.execute(select([func.InitSpatialMetaData()]))
+        conn.close()
+
         self.assertFalse(store.is_db_initialized(), 'DB is expected to be '
                          'uninitialized after Store creation')
         store.init_db()
@@ -119,10 +145,21 @@ class TestStoreInitialization(unittest.TestCase):
         self.assertIsNone(store.session)
 
 
+# XXX(damb): Enable SPATIALITE test cases with:
+# $ export RAMSIS_TEST_SPATIALITE="True"; python setup.py test --addopts="-r s"
+@unittest.skipUnless(
+    os.getenv('RAMSIS_TEST_SPATIALITE', 'False') == 'True',
+    "'RAMSIS_TEST_SPATIALITE' envvar not 'True'")
 class TestStoreOperation(unittest.TestCase):
 
     def setUp(self):
         self.store = Store('sqlite://')
+        event.listen(self.store.engine, 'connect', load_spatialite)
+
+        conn = self.store.engine.connect()
+        conn.execute(select([func.InitSpatialMetaData()]))
+        conn.close()
+
         self.store.init_db()
 
     def test_project_creation(self):

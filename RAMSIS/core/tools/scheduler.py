@@ -1,10 +1,8 @@
-# -*- encoding: utf-8 -*-
 # Copyright (C) 2013, ETH Zurich - Swiss Seismological Service SED
 """
 The classes in this module implement a simple task scheduler that executes
 tasks at certain points in time or at regular intervals. Tasks should not run
 for long periods of time since they are executed on the main thread.
-
 """
 
 import logging

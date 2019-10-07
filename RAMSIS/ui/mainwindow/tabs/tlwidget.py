@@ -1,36 +1,26 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Controller class for the traffic light widget
-
-Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import os
 
-from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget
 
-ui_path = os.path.dirname(__file__)
-TL_WIDGET_PATH = os.path.join(ui_path, '..', '..', 'views',
-                              'trafficlight.ui')
-Ui_TlWidget = uic.loadUiType(
-    TL_WIDGET_PATH, import_from='RAMSIS.ui.views',
-    from_imports=True)[0]
+from RAMSIS.ui.utils import UiForm
+
+
+FORM_BASE_PATH = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'views')
 
 
 def _pixmap(name):
     return QPixmap(':/traffic_light/images/' + name)
 
 
-class TrafficLightWidget(QWidget):
-
-    def __init__(self, **kwargs):
-        super(TrafficLightWidget, self).__init__(**kwargs)
-        # Setup the user interface
-        self.ui = Ui_TlWidget()
-        self.ui.setupUi(self)
+class TrafficLightWidget(
+        QWidget, UiForm('trafficlight.ui', form_base_path=FORM_BASE_PATH)):
 
     def red(self):
         self.off()
@@ -49,5 +39,3 @@ class TrafficLightWidget(QWidget):
         self.ui.topLabel.setPixmap(off_img)
         self.ui.midLabel.setPixmap(off_img)
         self.ui.bottomLabel.setPixmap(off_img)
-
-

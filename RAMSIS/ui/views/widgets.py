@@ -1,7 +1,6 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Custom QtWidgets for plotting
-   
 """
 
 import pyqtgraph as pg
@@ -20,9 +19,9 @@ PAST_FC_PEN = (80, 80, 80, 255)
 
 
 class DisplayRange(object):
-    DAY = 24*3600
-    WEEK = 7*24*3600
-    MONTH = 30*7*24*3600
+    DAY = 24 * 3600
+    WEEK = 7 * 24 * 3600
+    MONTH = 30 * 7 * 24 * 3600
     DEFAULT = WEEK
 
 
@@ -31,9 +30,7 @@ class TimePlotWidget(pg.PlotWidget):
 
     def __init__(self, parent=None, **kargs):
         axis = pg.DateAxisItem(orientation='bottom')
-        super(TimePlotWidget, self).__init__(parent,
-                                             axisItems={'bottom': axis},
-                                             **kargs)
+        super().__init__(parent, axisItems={'bottom': axis}, **kargs)
 
         self.setMouseEnabled(y=False)
         self._range = DisplayRange.DEFAULT
@@ -97,7 +94,7 @@ class TimePlotWidget(pg.PlotWidget):
 
     def get_bottom_axis_units(self):
         xmin, xmax = [datetime.utcfromtimestamp(v - time.timezone)
-                          for v in self.viewRange()[0]]
+                      for v in self.viewRange()[0]]
         if xmin.year != xmax.year:
             return ''
         if xmin.month != xmax.month:
@@ -118,7 +115,7 @@ class TimeLinePlotWidget(TimePlotWidget):
     """
 
     def __init__(self, parent=None, **kargs):
-        super(TimeLinePlotWidget, self).__init__(parent, **kargs)
+        super().__init__(parent, **kargs)
         self.plot = None
 
         self.symbol_view = pg.ViewBox()
@@ -154,18 +151,18 @@ class TimeLinePlotWidget(TimePlotWidget):
 
 class VoxelViewWidget(gl.GLViewWidget):
     def __init__(self, parent=None, **kargs):
-        super(VoxelViewWidget, self).__init__(parent, **kargs)
+        super().__init__(parent, **kargs)
         self._grid_items = None
         self._voxel_item = None
         self._add_grid()
         self.setCameraPosition(distance=1000)
         pos = np.array([0, 1.0])
-        color = np.array([[  0,   0,   0,   0],
-                          [  0, 255,   0, 150]], dtype=np.ubyte)
+        color = np.array([[0, 0, 0, 0],
+                          [0, 255, 0, 150]], dtype=np.ubyte)
         self.color_map = pg.ColorMap(pos, color)
 
     def _add_grid(self):
-        ## create three grids, add each to the view
+        # create three grids, add each to the view
         x_grid = gl.GLGridItem()
         y_grid = gl.GLGridItem()
         z_grid = gl.GLGridItem()
@@ -174,11 +171,11 @@ class VoxelViewWidget(gl.GLViewWidget):
         self.addItem(z_grid)
         self._grid_items = [x_grid, y_grid, z_grid]
 
-        ## rotate x and y grids to face the correct direction
+        # rotate x and y grids to face the correct direction
         x_grid.rotate(90, 0, 1, 0)
         y_grid.rotate(90, 1, 0, 0)
 
-        ## scale each grid differently
+        # scale each grid differently
         x_grid.scale(40, 20, 20)
         y_grid.scale(40, 20, 20)
         z_grid.scale(20, 40, 20)
@@ -198,30 +195,30 @@ class VoxelViewWidget(gl.GLViewWidget):
 
         # FIXME: this depends on the voxel length defined in MATLAB
         scale = 100.0
-        voxels = self.color_map.map(data/np.amax(data).astype(np.float32))
+        voxels = self.color_map.map(data / np.amax(data).astype(np.float32))
 
-        l = round(len(data)**(1/3.0))
-        voxels = voxels.reshape((l,l,l,4), order='F')
+        ll = round(len(data)**(1 / 3.0))
+        voxels = voxels.reshape((ll, ll, ll, 4), order='F')
 
-        self._voxel_item = gl.GLVolumeItem(voxels, smooth=True, sliceDensity=10)
-        t = -l / 2 * scale
+        self._voxel_item = gl.GLVolumeItem(
+            voxels, smooth=True, sliceDensity=10)
+        t = -ll / 2 * scale
         self._voxel_item.translate(t, t, t)
-        self._voxel_item.scale(scale,scale,scale)
+        self._voxel_item.scale(scale, scale, scale)
         self.addItem(self._voxel_item)
 
 
 class Event3DViewWidget(gl.GLViewWidget):
     def __init__(self, parent=None, **kargs):
-        super(Event3DViewWidget, self).__init__(parent, **kargs)
+        super().__init__(parent, **kargs)
         self._grid_items = None
         self._events_item = None
         self.setWindowTitle('3D Event View')
         self._add_grid()
         self.setCameraPosition(distance=2000)
 
-
     def _add_grid(self):
-        ## create three grids, add each to the view
+        # create three grids, add each to the view
         x_grid = gl.GLGridItem()
         y_grid = gl.GLGridItem()
         z_grid = gl.GLGridItem()
@@ -230,11 +227,11 @@ class Event3DViewWidget(gl.GLViewWidget):
         self.addItem(z_grid)
         self._grid_items = [x_grid, y_grid, z_grid]
 
-        ## rotate x and y grids to face the correct direction
+        # rotate x and y grids to face the correct direction
         x_grid.rotate(90, 0, 1, 0)
         y_grid.rotate(90, 1, 0, 0)
 
-        ## scale each grid differently
+        # scale each grid differently
         x_grid.scale(40, 20, 20)
         y_grid.scale(40, 20, 20)
         z_grid.scale(20, 40, 20)
@@ -254,7 +251,7 @@ class Event3DViewWidget(gl.GLViewWidget):
         """
         self.clear()
         self._events_item = gl.GLScatterPlotItem()
-        self._events_item.setData(pos=pos, size=10*size)
+        self._events_item.setData(pos=pos, size=10 * size)
         self.addItem(self._events_item)
 
 

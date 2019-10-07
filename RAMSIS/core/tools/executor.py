@@ -33,7 +33,6 @@ complex dependencies.
 """
 
 import abc
-import logging
 from enum import Enum, auto
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from RAMSIS.utils import QtABCMeta

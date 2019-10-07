@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Controller class for the main window
 
@@ -6,20 +6,16 @@ Takes care of setting up the main GUI, handling any menu actions and updating
 top level controls as necessary.
 We delegate the presentation of content to a content presenter so that this
 class does not become too big.
-
-Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
-
 """
 
 import datetime
 import logging
 import os
 
-from PyQt5 import uic
-from PyQt5.QtCore import pyqtSlot, QDateTime
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import (
     QSizePolicy, QWidget, QStatusBar, QLabel, QMessageBox, QProgressBar,
-    QMainWindow, QDateTimeEdit, QDialogButtonBox, QDialog, QVBoxLayout)
+    QMainWindow, QDialog)
 
 from RAMSIS.core.builder import default_scenario, empty_forecast
 from RAMSIS.core.simulator import SimulatorState
@@ -32,16 +28,13 @@ from RAMSIS.ui.reservoirwindow import ReservoirWindow
 from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
+from RAMSIS.ui.utils import UiForm
 from RAMSIS.wkt_utils import point_to_proj4
 
 from .presenter import ContentPresenter
 
 
-ui_path = os.path.dirname(__file__)
-MAIN_WINDOW_PATH = os.path.join(ui_path, '..', 'views', 'mainwindow.ui')
-Ui_MainWindow = uic.loadUiType(
-    MAIN_WINDOW_PATH,
-    import_from='RAMSIS.ui.views', from_imports=True)[0]
+_FORM_BASE_PATH = os.path.join(os.path.dirname(__file__), '..', 'views')
 
 
 class StatusBar(QStatusBar):
@@ -97,7 +90,8 @@ class StatusBar(QStatusBar):
             self.current_activity_id = None
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QMainWindow,
+                 UiForm('mainwindow.ui', form_base_path=_FORM_BASE_PATH)):
 
     def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -116,9 +110,6 @@ class MainWindow(QMainWindow):
         self.app = app
         self.application_settings = app.app_settings
 
-        # Setup the user interface
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
         # ...additional setup
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -262,8 +253,7 @@ class MainWindow(QMainWindow):
         # TODO LH: Use a UiStateMachine to manage control states
         enable_with_project = [
             'actionShow_3D', 'actionSimulation',
-            'actionScenario', 'planNextButton', 'addScenarioButton',
-            'removeScenarioButton',
+            'planNextButton', 'addScenarioButton', 'removeScenarioButton',
         ]
         enable = True if self.app.ramsis_core.project is not None else False
         for ui_element in enable_with_project:
@@ -340,10 +330,10 @@ class MainWindow(QMainWindow):
         self.content_presenter.show_project()
         self.status_bar.set_status(project.name)
         self.status_bar.set_time(self.app.ramsis_core.clock.time)
-        #project.settings.settings_changed.connect(
-        #    self.on_project_settings_changed)
-        #project.seismiccatalog.history_changed.connect(
-        #    self.on_catalog_changed)
+        # project.settings.settings_changed.connect(
+        #     self.on_project_settings_changed)
+        # project.seismiccatalog.history_changed.connect(
+        #     self.on_catalog_changed)
         self.update_controls()
 
     def on_project_will_unload(self, _):
@@ -363,44 +353,3 @@ class MainWindow(QMainWindow):
         self.status_bar.set_status(self.app.ramsis_core.project.name)
         # TODO LH: update presenters since project settings are not observable
         #   anymore
-
-
-class DateDialog(QDialog):
-    def __init__(self, parent=None):
-        super(DateDialog, self).__init__(parent)
-
-        layout = QVBoxLayout(self)
-
-        # info text
-        self.label = QLabel(
-            text='The file appears to contain relative dates.\n'
-                 'Please specify a reference date.')
-        layout.addWidget(self.label)
-
-        # nice widget for editing the date
-        self.datetime = QDateTimeEdit(self)
-        self.datetime.setCalendarPopup(True)
-        self.datetime.setDisplayFormat('yyyy-MM-dd hh:mm:ss')
-        self.datetime.setDateTime(QDateTime.currentDateTime())
-        layout.addWidget(self.datetime)
-
-        # OK and Cancel buttons
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok |
-                                        QDialogButtonBox.Cancel)
-        self.buttons.accepted.connect(self.accept)
-        self.buttons.rejected.connect(self.reject)
-
-        layout.addWidget(self.buttons)
-        self.setLayout(layout)
-
-    # get current date and time from the dialog
-    def date_time(self):
-        return self.datetime.dateTime()
-
-    # static method to create the dialog and return (date, time, accepted)
-    @staticmethod
-    def get_date_time(parent=None):
-        dialog = DateDialog(parent)
-        result = dialog.exec_()
-        date = dialog.date_time()
-        return date.toPyDateTime(), result == QDialog.Accepted
