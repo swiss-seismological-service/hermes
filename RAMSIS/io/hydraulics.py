@@ -160,6 +160,7 @@ class _HydraulicSampleSchema(_SchemaBase):
     @pre_load
     def pre_process(self, data, **kwargs):
         data = self._flatten_dict(data)
+        data = self._clear_missing(data)
         if 'datetime_value' in data:
             data['datetime_value'] = append_ms_zeroes(data['datetime_value'])
 
