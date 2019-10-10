@@ -90,8 +90,7 @@ class StageStatusPresenter(QObject):
             if run.enabled:
                 config[run.model.name] = str(run.status.state.name)
                 continue
-            config[run.model.name] = 'Disabled'
-
+            config[run.model.name] = 'DISABLED'
         widget.set_substages(list(config.items()))
 
         # TODO LH: revisit overall state
