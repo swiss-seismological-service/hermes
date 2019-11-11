@@ -58,6 +58,9 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
             'seismic_catalog': {
                 'quakeml': reference_catalog},
             'well': {
+                'altitude': {'value': 408.0},
+                'publicid': ('smi:ch.ethz.sed/bh/'
+                             '11111111-e4a0-4692-bf29-33b5591eb798'),
                 'sections': [{
                     'toplongitude': {'value': 8.525519556860086},
                     'toplatitude': {'value': 47.37029681274552},
@@ -74,12 +77,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                         {'datetime':
                             {'value': '2019-05-03T13:27:09.117623'}},
                         {'datetime':
-                            {'value': '2019-05-03T15:27:09.117623'}}]}],
-                    'altitude': {'value': 408.0},
-                    'publicid': ('smi:ch.ethz.sed/bh/'
-                                 '11111111-e4a0-4692-bf29-33b5591eb798')},
+                            {'value': '2019-05-03T15:27:09.117623'}}]}]},
             'scenario': {
                 'well': {
+                    'altitude': {'value': 408.0},
+                    'publicid': ('smi:ch.ethz.sed/bh/'
+                                 '11111111-e4a0-4692-bf29-33b5591eb798'),
                     'sections': [{
                         'toplongitude': {'value': 8.525519556860086},
                         'toplatitude': {'value': 47.37029681274552},
@@ -91,56 +94,53 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                         'topclosed': False,
                         'bottomclosed': False,
                         'publicid': ('smi:ch.ethz.sed/bh/section/'
-                                     '11111111-8d89-4f13-95e7-526ade73cc8b'),
+                                 '11111111-8d89-4f13-95e7-526ade73cc8b'),
                         'hydraulics': [
                             {'datetime':
                                 {'value': '2019-05-03T17:27:09.117623'}},
                             {'datetime':
-                                {'value': ('2019-05-03T'
-                                           '19:27:09.117623')}}]}],
-                        'altitude': {'value': 408.0},
-                        'publicid': ('smi:ch.ethz.sed/bh/'
-                                     '11111111-e4a0-4692-bf29-33b5591eb798')}},
-                        'reservoir': {
-                            'geom':
-                            'POLYHEDRALSURFACE Z (((8.5189 47.3658 '
-                            '408.000000000195,8.5189 47.3747940041495 '
-                            '408.07848751312,8.53214023892212 '
-                            '47.3747932395126 408.156733124078,'
-                            '8.5321379883561 47.3657992356023 '
-                            '408.078245651413,8.5189 47.3658 '
-                            '408.000000000195)),((8.5189 47.3658 '
-                            '408.000000000195,8.5189 47.3747940041495 '
-                            '408.07848751312,8.5189 47.3747954162037 '
-                            '-591.921500164234,8.5189 47.3658 '
-                            '-591.999999998976,8.5189 47.3658 '
-                            '408.000000000195)),((8.5189 47.3658 '
-                            '408.000000000195,8.5321379883561 '
-                            '47.3657992356023 408.078245651413,'
-                            '8.53214006031033 47.3657992353626 '
-                            '-591.921742101994,8.5189 47.3658 '
-                            '-591.999999998976,8.5189 47.3658 '
-                            '408.000000000195)),((8.53214231158096 '
-                            '47.374794651327 -591.843242307722,'
-                            '8.53214006031033 47.3657992353626 '
-                            '-591.921742101994,8.5189 47.3658 '
-                            '-591.999999998976,8.5189 47.3747954162037 '
-                            '-591.921500164234,8.53214231158096 '
-                            '47.374794651327 -591.843242307722)),'
-                            '((8.53214231158096 47.374794651327 '
-                            '-591.843242307722,8.53214006031033 '
-                            '47.3657992353626 -591.921742101994,'
-                            '8.5321379883561 47.3657992356023 '
-                            '408.078245651413,8.53214023892212 '
-                            '47.3747932395126 408.156733124078,'
-                            '8.53214231158096 47.374794651327 '
-                            '-591.843242307722)),((8.53214231158096 '
-                            '47.374794651327 -591.843242307722,'
-                            '8.53214023892212 47.3747932395126 '
-                            '408.156733124078,8.5189 47.3747940041495 '
-                            '408.07848751312,8.5189 47.3747954162037 '
-                            '-591.921500164234,8.53214231158096 '
-                            '47.374794651327 -591.843242307722)))'}}
+                                {'value': '2019-05-03T19:27:09.117623'}}]}]}},
+                'reservoir': {'geom':
+                              ('POLYHEDRALSURFACE Z ('
+                               '((8.5189 47.3658 408.000000000195,'
+                               '8.5189 47.3747940041495 '
+                               '408.07848751312,8.53214023892212 '
+                               '47.3747932395126 408.156733124078,'
+                               '8.5321379883561 47.3657992356023 '
+                               '408.078245651413,8.5189 47.3658 '
+                               '408.000000000195)),'
+                               '((8.5189 47.3658 408.000000000195,'
+                               '8.5189 47.3747940041495 408.07848751312,'
+                               '8.5189 47.3747954162037 -591.921500164234,'
+                               '8.5189 47.3658 -591.999999998976,'
+                               '8.5189 47.3658 408.000000000195)),'
+                               '((8.5189 47.3658 408.000000000195,'
+                               '8.5321379883561 47.3657992356023 '
+                               '408.078245651413,8.53214006031033 '
+                               '47.3657992353626 -591.921742101994,'
+                               '8.5189 47.3658 -591.999999998976,'
+                               '8.5189 47.3658 408.000000000195)),'
+                               '((8.53214231158096 47.374794651327 '
+                               '-591.843242307722,8.53214006031033 '
+                               '47.3657992353626 -591.921742101994,'
+                               '8.5189 47.3658 -591.999999998976,'
+                               '8.5189 47.3747954162037 -591.921500164234,'
+                               '8.53214231158096 47.374794651327 '
+                               '-591.843242307722)),((8.53214231158096 '
+                               '47.374794651327 -591.843242307722,'
+                               '8.53214006031033 47.3657992353626 '
+                               '-591.921742101994,8.5321379883561 '
+                               '47.3657992356023 408.078245651413,'
+                               '8.53214023892212 47.3747932395126 '
+                               '408.156733124078,8.53214231158096 '
+                               '47.374794651327 -591.843242307722)),'
+                               '((8.53214231158096 47.374794651327 '
+                               '-591.843242307722,8.53214023892212 '
+                               '47.3747932395126 408.156733124078,'
+                               '8.5189 47.3747940041495 408.07848751312,'
+                               '8.5189 47.3747954162037 -591.921500164234,'
+                               '8.53214231158096 47.374794651327 '
+                               '-591.843242307722)))')}}
 
         reference_result = {
             'data': {
@@ -185,12 +185,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=500.0,
-            toplatitude_value=500.0,
-            topdepth_value=0,
-            bottomlongitude_value=500,
-            bottomlatitude_value=500,
-            bottomdepth_value=800,
+            topx_value=500.0,
+            topy_value=500.0,
+            topz_value=0,
+            bottomx_value=500,
+            bottomy_value=500,
+            bottomz_value=800,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -205,12 +205,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         sec_scenario = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=500.0,
-            toplatitude_value=500.0,
-            topdepth_value=0,
-            bottomlongitude_value=500,
-            bottomlatitude_value=500,
-            bottomdepth_value=800.0,
+            topx_value=500.0,
+            topy_value=500.0,
+            topz_value=0,
+            bottomx_value=500,
+            bottomy_value=500,
+            bottomz_value=800,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -335,12 +335,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=10.663207130000002,
-            toplatitude_value=10.66320713,
-            topdepth_value=0.0,
-            bottomlongitude_value=10.66320713,
-            bottomlatitude_value=10.66320713,
-            bottomdepth_value=1000.0,
+            topx_value=10.663207130000002,
+            topy_value=10.66320713,
+            topz_value=0.0,
+            bottomx_value=10.66320713,
+            bottomy_value=10.66320713,
+            bottomz_value=1000.0,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -356,12 +356,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         sec_scenario = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=10.663207130000002,
-            toplatitude_value=10.66320713,
-            topdepth_value=0.0,
-            bottomlongitude_value=10.66320713,
-            bottomlatitude_value=10.66320713,
-            bottomdepth_value=1000.0,
+            topx_value=10.663207130000002,
+            topy_value=10.66320713,
+            topz_value=0.0,
+            bottomx_value=10.66320713,
+            bottomy_value=10.66320713,
+            bottomz_value=1000.0,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -382,9 +382,10 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                     'scenario': {'well': bh_scenario},
                     'reservoir': {'geom': reservoir},
                     'model_parameters': {}}}}
-
+        serialized = serializer.dumps(payload)
+        serialized = json.loads(serialized)
         self.assertEqual(reference_result,
-                         json.loads(serializer.dumps(payload)))
+                         serialized)
 
 
 class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):

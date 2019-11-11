@@ -52,12 +52,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.toplongitude_value, 1159953.8384112194)
-        self.assertEqual(bh_section.toplatitude_value, 1172434.598892671)
-        self.assertEqual(bh_section.topdepth_value, 217573.10967553407)
-        self.assertEqual(bh_section.bottomlongitude_value, 1159771.9980531002)
-        self.assertEqual(bh_section.bottomlatitude_value, 1172249.5633069365)
-        self.assertEqual(bh_section.bottomdepth_value, 218538.87150754593)
+        self.assertEqual(bh_section.topx_value, 1159953.8384112194)
+        self.assertEqual(bh_section.topy_value, 1172434.598892671)
+        self.assertEqual(bh_section.topz_value, 217573.10967553407)
+        self.assertEqual(bh_section.bottomx_value, 1159771.9980531002)
+        self.assertEqual(bh_section.bottomy_value, 1172249.5633069365)
+        self.assertEqual(bh_section.bottomz_value, 218538.87150754593)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.hydraulics.samples), 2)
         self.assertEqual(
@@ -112,12 +112,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.toplongitude_value, 1159953.8384112194)
-        self.assertEqual(bh_section.toplatitude_value, 1172434.598892671)
-        self.assertEqual(bh_section.topdepth_value, 217573.10967553407)
-        self.assertEqual(bh_section.bottomlongitude_value, 1159771.9980531002)
-        self.assertEqual(bh_section.bottomlatitude_value, 1172249.5633069365)
-        self.assertEqual(bh_section.bottomdepth_value, 218538.87150754593)
+        self.assertEqual(bh_section.topx_value, 1159953.8384112194)
+        self.assertEqual(bh_section.topy_value, 1172434.598892671)
+        self.assertEqual(bh_section.topz_value, 217573.10967553407)
+        self.assertEqual(bh_section.bottomx_value, 1159771.9980531002)
+        self.assertEqual(bh_section.bottomy_value, 1172249.5633069365)
+        self.assertEqual(bh_section.bottomz_value, 218538.87150754593)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.hydraulics.samples), 2)
         self.assertEqual(
@@ -149,12 +149,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.toplongitude_value, 1159953.8384112194)
-        self.assertEqual(bh_section.toplatitude_value, 1172434.598892671)
-        self.assertEqual(bh_section.topdepth_value, 217573.10967553407)
-        self.assertEqual(bh_section.bottomlongitude_value, 1159771.9980531002)
-        self.assertEqual(bh_section.bottomlatitude_value, 1172249.5633069365)
-        self.assertEqual(bh_section.bottomdepth_value, 218538.87150754593)
+        self.assertEqual(bh_section.topx_value, 1159953.8384112194)
+        self.assertEqual(bh_section.topy_value, 1172434.598892671)
+        self.assertEqual(bh_section.topz_value, 217573.10967553407)
+        self.assertEqual(bh_section.bottomx_value, 1159771.9980531002)
+        self.assertEqual(bh_section.bottomy_value, 1172249.5633069365)
+        self.assertEqual(bh_section.bottomz_value, 218538.87150754593)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.injectionplan.samples), 2)
         self.assertEqual(
@@ -183,12 +183,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.toplongitude_value, 10.66320713)
-        self.assertEqual(bh_section.toplatitude_value, 10.66320713)
-        self.assertEqual(bh_section.topdepth_value, 0.0)
-        self.assertEqual(bh_section.bottomlongitude_value, 10.66320713)
-        self.assertEqual(bh_section.bottomlatitude_value, 10.66320713)
-        self.assertEqual(bh_section.bottomdepth_value, 1000)
+        self.assertEqual(bh_section.topx_value, 10.66320713)
+        self.assertEqual(bh_section.topy_value, 10.66320713)
+        self.assertEqual(bh_section.topz_value, 0.0)
+        self.assertEqual(bh_section.bottomx_value, 10.66320713)
+        self.assertEqual(bh_section.bottomy_value, 10.66320713)
+        self.assertEqual(bh_section.bottomz_value, 1000)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.hydraulics.samples), 2)
         self.assertEqual(
@@ -214,12 +214,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.toplongitude_value, 10.66320713)
-        self.assertEqual(bh_section.toplatitude_value, 10.66320713)
-        self.assertEqual(bh_section.topdepth_value, 0.0)
-        self.assertEqual(bh_section.bottomlongitude_value, 10.66320713)
-        self.assertEqual(bh_section.bottomlatitude_value, 10.66320713)
-        self.assertEqual(bh_section.bottomdepth_value, 1000)
+        self.assertEqual(bh_section.topx_value, 10.66320713)
+        self.assertEqual(bh_section.topy_value, 10.66320713)
+        self.assertEqual(bh_section.topz_value, 0.0)
+        self.assertEqual(bh_section.bottomx_value, 10.66320713)
+        self.assertEqual(bh_section.bottomy_value, 10.66320713)
+        self.assertEqual(bh_section.bottomz_value, 1000)
         # additional borehole section attributes
         self.assertEqual(
             bh_section.publicid,
@@ -256,12 +256,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=10.663207130000002,
-            toplatitude_value=10.66320713,
-            topdepth_value=0.0,
-            bottomlongitude_value=10.66320713,
-            bottomlatitude_value=10.66320713,
-            bottomdepth_value=1000.0,
+            topx_value=10.663207130000002,
+            topy_value=10.66320713,
+            topz_value=0.0,
+            bottomx_value=10.66320713,
+            bottomy_value=10.66320713,
+            bottomz_value=1000.0,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -284,7 +284,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                 'toplatitude': {'value': 47.38139680392223},
                 'topdepth': {'value': -408.03918324151323},
                 'bottomlongitude': {'value': 8.548321775220474},
-                'bottomlatitude': {'value': 47.381397368676694},
+                'bottomlatitude': {'value': 47.38139736867669},
                 'bottomdepth': {'value': 391.96081184524866},
                 'holediameter': {'value': 0.3},
                 'topclosed': False,
@@ -310,12 +310,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=500,
-            toplatitude_value=500,
-            topdepth_value=0,
-            bottomlongitude_value=500,
-            bottomlatitude_value=500,
-            bottomdepth_value=800,
+            topx_value=500,
+            topy_value=500,
+            topz_value=0,
+            bottomx_value=500,
+            bottomy_value=500,
+            bottomz_value=800,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -341,7 +341,7 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
                 'toplatitude': {'value': 47.38139680392223},
                 'topdepth': {'value': -408.03918324151323},
                 'bottomlongitude': {'value': 8.548321775220474},
-                'bottomlatitude': {'value': 47.381397368676694},
+                'bottomlatitude': {'value': 47.38139736867669},
                 'bottomdepth': {'value': 391.96081184524866},
                 'holediameter': {'value': 0.3},
                 'topclosed': False,
@@ -367,12 +367,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=500,
-            toplatitude_value=500,
-            topdepth_value=0,
-            bottomlongitude_value=500,
-            bottomlatitude_value=500,
-            bottomdepth_value=800,
+            topx_value=500,
+            topy_value=500,
+            topz_value=0,
+            bottomx_value=500,
+            bottomy_value=500,
+            bottomz_value=800,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -423,12 +423,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=10.663207130000002,
-            toplatitude_value=10.66320713,
-            topdepth_value=0.0,
-            bottomlongitude_value=10.66320713,
-            bottomlatitude_value=10.66320713,
-            bottomdepth_value=1000.0,
+            topx_value=10.663207130000002,
+            topy_value=10.66320713,
+            topz_value=0.0,
+            bottomx_value=10.66320713,
+            bottomy_value=10.66320713,
+            bottomz_value=1000.0,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -477,12 +477,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            toplongitude_value=10.663207130000002,
-            toplatitude_value=10.66320713,
-            topdepth_value=0.0,
-            bottomlongitude_value=10.66320713,
-            bottomlatitude_value=10.66320713,
-            bottomdepth_value=1000.0,
+            topx_value=10.663207130000002,
+            topy_value=10.66320713,
+            topz_value=0.0,
+            bottomx_value=10.66320713,
+            bottomy_value=10.66320713,
+            bottomz_value=1000.0,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
