@@ -6,8 +6,9 @@ Utilities for hydraulics data import/export.
 import enum
 import functools
 
-from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
-                         validate, validates_schema, ValidationError, EXCLUDE)
+from marshmallow import (Schema, fields, pre_load, post_load, pre_dump,
+                         post_dump, validate, validates_schema,
+                         ValidationError, EXCLUDE)
 
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
                                          HydraulicSample)
@@ -293,7 +294,7 @@ class _WellSectionSchema(_SchemaBase):
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
             if self.context.get('proj'):
-                data = self._transform(data)
+                data = self._transform_load(data)
             return self.make_object(data)
         return data
 
@@ -303,7 +304,7 @@ class _WellSectionSchema(_SchemaBase):
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
             if self.context.get('proj'):
-                data = self._transform(data)
+                data = self._transform_dump(data)
             return self._nest_dict(self._clear_missing(data))
 
         if 'starttime' in data:
@@ -337,27 +338,63 @@ class _WellSectionSchema(_SchemaBase):
             return WellSection(**data)
         return data
 
-    def _transform(self, data):
+    def _transform_load(self, data):
         if 'transform_callback' not in self.context:
             return data
-
         transform_func = self.context['transform_callback']
+        if 'altitude_value' not in self.context.keys():
+            raise ValidationError(
+                'Transformation of well coordinates cannot take place'
+                ' as altitude is not given')
+
+        altitude_value = self.context['altitude_value']
+        topheight_value = altitude_value - data['topdepth_value']
+        bottomheight_value = altitude_value - data['bottomdepth_value']
+
         try:
             data['toplongitude_value'], \
                 data['toplatitude_value'], \
                 data['topdepth_value'] = transform_func(
                 data['toplongitude_value'],
                 data['toplatitude_value'],
-                data['topdepth_value'])
+                topheight_value)
             data['bottomlongitude_value'], \
                 data['bottomlatitude_value'], \
                 data['bottomdepth_value'] = transform_func(
+                data['bottomlongitude_value'],
+                data['bottomlatitude_value'],
+                bottomheight_value)
+        except (TypeError, ValueError, AttributeError) as err:
+            raise TransformationError(f"{err}")
+        return data
+
+    def _transform_dump(self, data):
+        if 'transform_callback' not in self.context:
+            return data
+        transform_func = self.context['transform_callback']
+        if 'altitude_value' not in self.context.keys():
+            raise ValidationError(
+                'Transformation of well coordinates cannot take place'
+                ' as altitude is not given')
+        try:
+            data['toplongitude_value'], \
+                data['toplatitude_value'], \
+                topheight_value = transform_func(
+                data['toplongitude_value'],
+                data['toplatitude_value'],
+                data['topdepth_value'])
+            data['bottomlongitude_value'], \
+                data['bottomlatitude_value'], \
+                bottomheight_value = transform_func(
                 data['bottomlongitude_value'],
                 data['bottomlatitude_value'],
                 data['bottomdepth_value'])
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
 
+        altitude_value = self.context['altitude_value']
+        data['topdepth_value'] = altitude_value - topheight_value
+        data['bottomdepth_value'] = altitude_value - bottomheight_value
         return data
 
 
@@ -372,16 +409,27 @@ class _InjectionWellSchema(_SchemaBase):
     bedrockdepth_upperuncertainty = Uncertainty()
     bedrockdepth_confidencelevel = Percentage()
 
+    altitude_value = fields.Float(required=True)
+    altitude_uncertainty = Uncertainty()
+    altitude_loweruncertainty = Uncertainty()
+    altitude_upperuncertainty = Uncertainty()
+    altitude_confidencelevel = Percentage()
+
     publicid = fields.String()
 
     sections = fields.Nested(_WellSectionSchema, many=True)
+
+    def update_context(self, key, value):
+        self.context[key] = value
 
     @pre_load
     def flatten(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            return self._flatten_dict(data)
+            data = self._flatten_dict(data)
+        if 'altitude_value' in data.keys():
+            self.update_context('altitude_value', data['altitude_value'])
         return data
 
     @post_load
@@ -390,6 +438,17 @@ class _InjectionWellSchema(_SchemaBase):
                 self.context['time'] in (self.EContext.PAST,
                                          self.EContext.FUTURE)):
             return InjectionWell(**data)
+        return data
+
+    @pre_dump
+    def add_altitude_context(self, data, **kwargs):
+        try:
+            altitude_value = data.altitude_value
+        except AttributeError as err:
+            raise ValidationError(
+                f'Injection well has no altitude value. {err}')
+        if altitude_value is not None:
+            self.update_context('altitude_value', altitude_value)
         return data
 
     @post_dump
@@ -488,7 +547,6 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
             into local coordinate system
         """
         super().__init__(proj=proj, **kwargs)
-
         self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
                       if kwargs.get('plan', False) else
                       {'time': _SchemaBase.EContext.PAST})
