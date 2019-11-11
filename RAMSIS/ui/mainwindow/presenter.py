@@ -84,7 +84,11 @@ class ContentPresenter(object):
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
         # Essential signals from the core
+        self.ramsis_core.engine.forecast_status_update.\
+            connect(self.on_execution_status_update)
         self.ramsis_core.engine.execution_status_update.\
+            connect(self.on_execution_status_update)
+        self.ramsis_core.model_results.model_run_status_update.\
             connect(self.on_execution_status_update)
 
     # Display update methods for individual window components
@@ -165,13 +169,15 @@ class ContentPresenter(object):
     def action_run_now(self, indexes):
         """ Run a forecast on demand """
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
-        self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast)
+        self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast.id)
 
     def action_create_sequence(self, indices):
         if indices:
             item = indices[0].data(CustomRoles.RepresentedItemRole)
 
             if isinstance(item, Forecast):
+                item = self.ramsis_core.store.get_fresh(item)
+                print("item: ", item)
                 dlg = CreateForecastSequenceDialog(item)
                 dlg.exec_()
 
@@ -253,9 +259,12 @@ class ContentPresenter(object):
         self._refresh_scenario_status()
 
     # Signals from the core
-
-    def on_execution_status_update(self, _):
+    def on_execution_status_update(self, status):
         general_tab = next(t for t in self.tab_presenters
                            if isinstance(t, GeneralTabPresenter))
-        general_tab.refresh_status()
+        self.current_scenario = self.ramsis_core.store.\
+            get_fresh(self.current_scenario)
+        self.ramsis_core.store.add(self.current_scenario)
+        general_tab.refresh_status(self.current_scenario)
         self._refresh_scenario_status()
+        self.ramsis_core.store.session.expunge(self.current_scenario)

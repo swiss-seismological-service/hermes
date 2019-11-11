@@ -125,7 +125,8 @@ class SerialExecutor(AbstractExecutor):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.proceed_on = [ExecutionStatus.Flag.SUCCESS]
+        self.proceed_on = [ExecutionStatus.Flag.SUCCESS,
+                           ExecutionStatus.Flag.RUNNING]
         self._iter = None
 
     def run(self):
@@ -137,21 +138,27 @@ class SerialExecutor(AbstractExecutor):
 
     def on_child_status_changed(self, execution_status):
         super().on_child_status_changed(execution_status)
+        #print("$$$ on_child_status_changed: ", self.children(), "iter: ", self._iter, self._iter is not None, "execution status origin", execution_status.origin, execution_status.origin in self.children(), "self.proceed_on", execution_status.flag, self.proceed_on, execution_status.flag in self.proceed_on, type(execution_status.flag), type(self.proceed_on[0]))
         if (self._iter is not None and
             execution_status.origin in self.children() and
                 execution_status.flag in self.proceed_on):
             self._run_next()
+        else:
+            print("not running anything next")
 
     def _run_next(self):
+        print("_run_next in Serial executor", self.children)
         try:
             executor = next(self._iter)
             executor.status_changed.connect(self.on_child_status_changed,
                                             Qt.UniqueConnection)
         except StopIteration:
+            print("stop iteration")
             self._iter = None
             self.post_process()
             self.status_changed.emit(ExecutionStatus(self))
         else:
+            print("_run_next is running executor", executor)
             executor.run()
 
 
@@ -186,6 +193,7 @@ class ParallelExecutor(AbstractExecutor):
     def on_child_status_changed(self, status):
         super().on_child_status_changed(status)
         completion_flags = (ExecutionStatus.Flag.SUCCESS,
+                            ExecutionStatus.Flag.RUNNING,
                             ExecutionStatus.Flag.ERROR)
         if status.flag in completion_flags \
                 and status.origin in self.children():

@@ -22,18 +22,19 @@ class GeneralTabPresenter(TabPresenter):
         super().__init__(ui)
         self.status_presenter = StageStatusPresenter(ui)
 
-    def refresh(self):
-        if self.scenario:
-            t = self.scenario.forecast.starttime
+    def refresh(self, scenario=None):
+        if scenario:
+            t = scenario.forecast.starttime
             t_str = utc_to_local(t).strftime('%d.%m.%Y %H:%M')
-            title = 'Forecast {}    {}'.format(t_str, self.scenario.name)
+            title = 'Forecast {}    {}'.format(t_str, scenario.name)
         else:
             title = 'Nothing selected'
+            scenario = self.scenario
         self.ui.scenarioTitleLabel.setText(title)
-        self.refresh_status()
+        self.refresh_status(scenario)
 
-    def refresh_status(self):
-        self.status_presenter.refresh_status(self.scenario)
+    def refresh_status(self, scenario):
+        self.status_presenter.refresh_status(scenario)
 
 
 class StageStatusPresenter(QObject):

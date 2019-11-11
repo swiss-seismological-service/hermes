@@ -72,7 +72,7 @@ class ScenarioConfigDialog(
     """
     JSON_INDENT = 2
 
-    def __init__(self, scenario, *args, fc_duration=None,
+    def __init__(self, scenario, session, *args, fc_duration=None,
                  srs=None, **kwargs):
         """
         :param scenario: Forecast scenario the dialog is preconfigured with
@@ -85,7 +85,7 @@ class ScenarioConfigDialog(
 
         self._path_plan = None
         self._srs = srs
-
+        self._session = session
         self._data = scenario
         self._configure(scenario, fc_duration)
 
@@ -240,7 +240,7 @@ class ScenarioConfigDialog(
         self._data.config = {}
         self._data.name = self.ui.nameLineEdit.text()
         self._data.reservoirgeom = wkt_geom
-        self._data.well = well
+        self._data.well_history = [well]
 
         try:
             stage = self._data[EStage.SEISMICITY]
@@ -341,7 +341,7 @@ class ForecastConfigDialog(
             self.ui.starttimeDateTimeEdit.setMinimumDateTime(min_datetime)
             self.ui.endtimeDateTimeEdit.setMinimumDateTime(min_datetime)
 
-        self._data = forecast
+        self._data = self.core.store.get_fresh(forecast)
         self._configure(forecast)
 
     def _configure(self, forecast):
