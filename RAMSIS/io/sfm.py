@@ -31,6 +31,9 @@ class _SchemaBase(Schema):
     """
     Schema base class.
     """
+    class Meta:
+        ordered = True
+
     @classmethod
     def _clear_missing(cls, data):
         retval = data.copy()

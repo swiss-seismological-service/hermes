@@ -1,4 +1,4 @@
-# Copyright 2019, ETH Zurich - Swiss Seismological Service SED
+# Copyright i2019, ETH Zurich - Swiss Seismological Service SED
 """
 Utilities for hydraulics data import/export.
 """
@@ -6,8 +6,8 @@ Utilities for hydraulics data import/export.
 import enum
 import functools
 
-from marshmallow import (Schema, fields, pre_load, post_load, pre_dump,
-                         post_dump, validate, validates_schema,
+from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
+                         pre_dump, validate, validates_schema,
                          ValidationError, EXCLUDE)
 
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
@@ -42,6 +42,9 @@ class _SchemaBase(Schema):
     """
     Schema base class.
     """
+    class Meta:
+        ordered = True
+
     class EContext(enum.Enum):
         """
         Enum collecting schema related contexts.
@@ -195,41 +198,65 @@ class _WellSectionSchema(_SchemaBase):
     starttime = DateTime()
     endtime = DateTime()
 
-    toplongitude_value = Longitude(required=True)
-    toplongitude_uncertainty = Uncertainty()
-    toplongitude_loweruncertainty = Uncertainty()
-    toplongitude_upperuncertainty = Uncertainty()
-    toplongitude_confidencelevel = Percentage()
+    topx_value = Longitude(required=True, data_key='toplongitude_value')
+    topx_uncertainty = Uncertainty(data_key='toplongitude_uncertainty')
+    topx_loweruncertainty = Uncertainty(
+        data_key='toplongitude_loweruncertainty')
+    topx_upperuncertainty = Uncertainty(
+        data_key='toplongitude_upperuncertainty')
+    topx_confidencelevel = Percentage(
+        data_key='toplongitude_confidencelevel')
 
-    toplatitude_value = Latitude(required=True)
-    toplatitude_uncertainty = Uncertainty()
-    toplatitude_loweruncertainty = Uncertainty()
-    toplatitude_upperuncertainty = Uncertainty()
-    toplatitude_confidencelevel = Percentage()
+    topy_value = Latitude(required=True, data_key='toplatitude_value')
+    topy_uncertainty = Uncertainty(
+        data_key='toplatitude_uncertainty')
+    topy_loweruncertainty = Uncertainty(
+        data_key='toplatitude_loweruncertainty')
+    topy_upperuncertainty = Uncertainty(
+        data_key='toplatitude_upperuncertainty')
+    topy_confidencelevel = Percentage(data_key='toplatitude_confidencelevel')
 
-    topdepth_value = Depth(required=True)
-    topdepth_uncertainty = Uncertainty()
-    topdepth_loweruncertainty = Uncertainty()
-    topdepth_upperuncertainty = Uncertainty()
-    topdepth_confidencelevel = Percentage()
+    topz_value = Depth(required=True, data_key='topdepth_value')
+    topz_uncertainty = Uncertainty(data_key='topdepth_uncertainty')
+    topz_loweruncertainty = Uncertainty(
+        data_key='topdepth_loweruncertainty')
+    topz_upperuncertainty = Uncertainty(
+        data_key='topdepth_upperuncertainty')
+    topz_confidencelevel = Percentage(
+        data_key='topdepth_confidencelevel')
 
-    bottomlongitude_value = Longitude(required=True)
-    bottomlongitude_uncertainty = Uncertainty()
-    bottomlongitude_loweruncertainty = Uncertainty()
-    bottomlongitude_upperuncertainty = Uncertainty()
-    bottomlongitude_confidencelevel = Percentage()
+    bottomx_value = Longitude(
+        required=True, data_key='bottomlongitude_value')
+    bottomx_uncertainty = Uncertainty(
+        data_key='bottomlongitude_uncertainty')
+    bottomx_loweruncertainty = Uncertainty(
+        data_key='bottomlongitude_loweruncertainty')
+    bottomx_upperuncertainty = Uncertainty(
+        data_key='bottomlongitude_upperuncertainty')
+    bottomx_confidencelevel = Percentage(
+        data_key='bottomlongitude_confidencelevel')
 
-    bottomlatitude_value = Latitude(required=True)
-    bottomlatitude_uncertainty = Uncertainty()
-    bottomlatitude_loweruncertainty = Uncertainty()
-    bottomlatitude_upperuncertainty = Uncertainty()
-    bottomlatitude_confidencelevel = Percentage()
+    bottomy_value = Latitude(
+        required=True, data_key='bottomlatitude_value')
+    bottomy_uncertainty = Uncertainty(
+        data_key='bottomlatitude_uncertainty')
+    bottomy_loweruncertainty = Uncertainty(
+        data_key='bottomlatitude_loweruncertainty')
+    bottomy_upperuncertainty = Uncertainty(
+        data_key='bottomlatitude_upperuncertainty')
+    bottomy_confidencelevel = Percentage(
+        data_key='bottomlatitude_confidencelevel')
 
-    bottomdepth_value = Depth(required=True)
-    bottomdepth_uncertainty = Uncertainty()
-    bottomdepth_loweruncertainty = Uncertainty()
-    bottomdepth_upperuncertainty = Uncertainty()
-    bottomdepth_confidencelevel = Percentage()
+    bottomz_value = Depth(
+        required=True, data_key='bottomdepth_value')
+    bottomz_uncertainty = Uncertainty(
+        data_key='bottomdepth_uncertainty')
+    bottomz_loweruncertainty = Uncertainty(
+        data_key='bottomdepth_loweruncertainty')
+    bottomz_upperuncertainty = Uncertainty(
+        data_key='bottomdepth_upperuncertainty')
+    bottomz_confidencelevel = Percentage(
+        data_key='bottomdepth_confidencelevel')
 
     holediameter_value = Diameter()
     holediameter_uncertainty = Uncertainty()
@@ -293,9 +320,21 @@ class _WellSectionSchema(_SchemaBase):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            if self.context.get('proj'):
+            data = self.make_object(data)
+
+            if (self.context.get('proj') and
+                    self.context.get('transform_callback')):
                 data = self._transform_load(data)
-            return self.make_object(data)
+        return data
+
+    @pre_dump
+    def dump_preprocess(self, data, **kwargs):
+        if ('time' in self.context and
+            self.context['time'] in (self.EContext.PAST,
+                                     self.EContext.FUTURE)):
+            if (self.context.get('proj') and
+                    self.context.get('transform_callback')):
+                data = self._transform_dump(data)
         return data
 
     @post_dump
@@ -303,8 +342,6 @@ class _WellSectionSchema(_SchemaBase):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            if self.context.get('proj'):
-                data = self._transform_dump(data)
             return self._nest_dict(self._clear_missing(data))
 
         if 'starttime' in data:
@@ -312,7 +349,6 @@ class _WellSectionSchema(_SchemaBase):
 
         if 'endtime' in data:
             data['endtime'] = append_ms_zeroes(data['endtime'])
-
         return data
 
     @validates_schema
@@ -339,8 +375,6 @@ class _WellSectionSchema(_SchemaBase):
         return data
 
     def _transform_load(self, data):
-        if 'transform_callback' not in self.context:
-            return data
         transform_func = self.context['transform_callback']
         if 'altitude_value' not in self.context.keys():
             raise ValidationError(
@@ -348,53 +382,52 @@ class _WellSectionSchema(_SchemaBase):
                 ' as altitude is not given')
 
         altitude_value = self.context['altitude_value']
-        topheight_value = altitude_value - data['topdepth_value']
-        bottomheight_value = altitude_value - data['bottomdepth_value']
+        topheight_value = altitude_value - data.topz_value
+        bottomheight_value = altitude_value - data.bottomz_value
 
         try:
-            data['toplongitude_value'], \
-                data['toplatitude_value'], \
-                data['topdepth_value'] = transform_func(
-                data['toplongitude_value'],
-                data['toplatitude_value'],
+            (data.topx_value,
+             data.topy_value,
+             data.topz_value) = transform_func(
+                data.topx_value,
+                data.topy_value,
                 topheight_value)
-            data['bottomlongitude_value'], \
-                data['bottomlatitude_value'], \
-                data['bottomdepth_value'] = transform_func(
-                data['bottomlongitude_value'],
-                data['bottomlatitude_value'],
+            (data.bottomx_value,
+             data.bottomy_value,
+             data.bottomz_value) = transform_func(
+                data.bottomx_value,
+                data.bottomy_value,
                 bottomheight_value)
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
         return data
 
     def _transform_dump(self, data):
-        if 'transform_callback' not in self.context:
-            return data
         transform_func = self.context['transform_callback']
         if 'altitude_value' not in self.context.keys():
             raise ValidationError(
                 'Transformation of well coordinates cannot take place'
                 ' as altitude is not given')
         try:
-            data['toplongitude_value'], \
-                data['toplatitude_value'], \
-                topheight_value = transform_func(
-                data['toplongitude_value'],
-                data['toplatitude_value'],
-                data['topdepth_value'])
-            data['bottomlongitude_value'], \
-                data['bottomlatitude_value'], \
-                bottomheight_value = transform_func(
-                data['bottomlongitude_value'],
-                data['bottomlatitude_value'],
-                data['bottomdepth_value'])
+            (data.topx_value,
+             data.topy_value,
+             topheight_value) = transform_func(
+                data.topx_value,
+                data.topy_value,
+                data.topz_value)
+            (data.bottomx_value,
+             data.bottomy_value,
+             bottomheight_value) = transform_func(
+                data.bottomx_value,
+                data.bottomy_value,
+                data.bottomz_value)
+
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
 
         altitude_value = self.context['altitude_value']
-        data['topdepth_value'] = altitude_value - topheight_value
-        data['bottomdepth_value'] = altitude_value - bottomheight_value
+        data.topz_value = altitude_value - topheight_value
+        data.bottomz_value = altitude_value - bottomheight_value
         return data
 
 
