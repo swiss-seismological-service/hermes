@@ -7,7 +7,6 @@ import os
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
-from RAMSIS.ui.styles import StatusColor
 from RAMSIS.ui.utils import UiForm
 
 FORM_BASE_PATH = os.path.join(
@@ -37,8 +36,11 @@ class StageWidget(
 
     def set_substages(self, substages):
         colors = {
-            'Error': StatusColor.ERROR,
-            'Disabled': StatusColor.DISABLED,
+            'COMPLETE': 'green',
+            'DISABLED': 'gray',
+            'RUNNING': 'black',
+            'ERROR': 'red',
+            'PENDING': 'orange',
         }
         for i, stage in enumerate(substages):
             stage_label = QLabel(stage[0])
