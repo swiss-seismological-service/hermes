@@ -7,7 +7,6 @@ import os
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QLabel
-from RAMSIS.ui.styles import StatusColor
 from RAMSIS.ui.utils import UiForm
 
 FORM_BASE_PATH = os.path.join(
