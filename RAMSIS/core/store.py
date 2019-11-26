@@ -7,14 +7,16 @@ to query and create top level data-model entities. It handles the db session
 and connection engine over the life cycle of the app.
 
 """
-
+import os
 import logging
 import pkgutil
 import re
 import sys
 
 from functools import wraps
-
+import sqlalchemy
+from sqlalchemy import event
+from sqlalchemy import exc
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, with_polymorphic, scoped_session
@@ -51,6 +53,34 @@ def with_session_validation(method):
 
     return wrapper
 
+def add_engine_pidguard(engine):
+    """Add multiprocessing guards.
+
+    Forces a connection to be reconnected if it is detected
+    as having been shared to a sub-process.
+
+    """
+
+    @event.listens_for(engine, "connect")
+    def connect(dbapi_connection, connection_record):
+        connection_record.info['pid'] = os.getpid()
+
+    @event.listens_for(engine, "checkout")
+    def checkout(dbapi_connection, connection_record, connection_proxy):
+        pid = os.getpid()
+        if connection_record.info['pid'] != pid:
+            # substitute log.debug() or similar here as desired
+            warnings.warn(
+                "Parent process %(orig)s forked (%(newproc)s) with an open "
+                "database connection, "
+                "which is being discarded and recreated." %
+                {"newproc": pid, "orig": connection_record.info['pid']})
+            connection_record.connection = connection_proxy.connection = None
+            raise exc.DisconnectionError(
+                "Connection record belongs to pid %s, "
+                "attempting to check out in pid %s" %
+                (connection_record.info['pid'], pid)
+            )
 
 class Store:
 
@@ -62,6 +92,7 @@ class Store:
         starred_url = re.sub("(?<=:)([^@:]+)(?=@[^@]+$)", "***", db_url)
         logger.info(f'Opening DB connection at {starred_url}')
         self.engine = create_engine(db_url, echo=False)
+        add_engine_pidguard(self.engine)
         # TODO LH: reconsider the use of expire_on_commit=False
         self.make_session = scoped_session(sessionmaker(
             bind=self.engine, expire_on_commit=False,

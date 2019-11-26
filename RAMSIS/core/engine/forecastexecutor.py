@@ -22,19 +22,25 @@ stage is managed by a respective StageExecutor class:
 
 """
 
+import time
 import copy
 import logging
+from prefect import task, Task, Flow
+import prefect
+from prefect.engine.signals import LOOP, SUCCESS, FAIL, RETRY, SKIP
 
 from PyQt5.QtCore import pyqtSignal, QObject
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.forecast import (Forecast, EStage,
                                        ForecastScenario,
                                        ForecastStage)
+from sqlalchemy.orm import sessionmaker
 from ramsis.datamodel.status import EStatus
 from ramsis.utils.error import ErrorWithTraceback
 
 from RAMSIS.core.tools.executor import (Executor, ParallelExecutor,
-                                        SerialExecutor, ExecutionStatus)
+                                        SerialExecutor, ExecutionStatus,
+                                        AbstractExecutor)
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
 from RAMSIS.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
@@ -49,8 +55,65 @@ log = logging.getLogger(__name__)
 class ExecutorError(ErrorWithTraceback):
     """Base Executor error ({})."""
 
+def forecast_state_handler(obj, old_state, new_state):
+    msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
+    #obj.name = f"{obj.name}_altered"
+    return new_state
 
-class ForecastExecutor(SerialExecutor):
+def filter_future(event):
+    return event.datetime_value < forecast.starttime
+
+class DataSnapshot(Task):
+    def run(self, forecast, dttime):
+        def filter_future(event):
+            return event.datetime_value < forecast.starttime
+
+        self.forecast_starttime = forecast.starttime
+        logger = prefect.context.get("logger")
+        logger.info(f"In snapshot task with forecast.id: {forecast.id}")
+        seismiccatalog = forecast.project.seismiccatalog.\
+            snapshot(filter_cond=filter_future)
+        seismiccatalog.forecast_id = forecast.id
+        seismiccatalog.creationinfo_creationtime = dttime
+        forecast.seismiccatalog_history.append(seismiccatalog)
+        # XXX(damb): We only support one well with a single section at the
+        # moment
+        well = forecast.project.well.\
+            snapshot(sample_filter_cond=filter_future)
+        well.creationinfo_creationtime = dttime
+        print('data snapshot', well.creationinfo_creationtime)
+        well.forecast_id = forecast.id
+        forecast.well_history.append(well)
+        #forecast.scenario.well_history.append(well)
+        print("securing the creationtime for well history: ", [i.creationinfo_creationtime for i in forecast.well_history])
+        return forecast, well, seismiccatalog
+
+@task
+def data_snapshot(forecast):
+    def filter_future(event):
+        return event.datetime_value < forecast.starttime
+    logger = prefect.context.get("logger")
+    seismiccatalog = forecast.project.seismiccatalog.\
+        snapshot(filter_cond=filter_future)
+    seismiccatalog.forecast_id = forecast.id
+    forecast.seismiccatalog_history.append(seismiccatalog)
+    # XXX(damb): We only support one well with a single section at the
+    # moment
+    well = forecast.project.well.\
+        snapshot(sample_filter_cond=filter_future)
+    well.forecast_id = forecast.id
+    forecast.well_history.append(well)
+    return forecast
+
+@task
+def forecast_scenarios(forecast_data):
+    forecast, _, _ = forecast_data
+    print("forecast sceanrions the creationtime for well history: ", [i.creationinfo_creationtime for i in forecast.well_history])
+    logger = prefect.context.get("logger")
+    scenarios = [s for s in forecast.scenarios if s.enabled]
+    return scenarios
+
+class ForecastExecutor(Task):
     """
     Executes a forecast
 
@@ -62,31 +125,27 @@ class ForecastExecutor(SerialExecutor):
     :type forecast: ramsis.datamodel.forecast.ForecastScenario
 
     """
-    forecast_submitted = pyqtSignal(object)
+    #forecast_submitted = pyqtSignal(object)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.forecast_id = None
+        self.status = ExecutionStatus(self, flag=ExecutionStatus.Flag.STARTED)
+        prefect.context['forecast_id'] = None
+        print("####in forecast executor, dir.. ", dir(prefect.context))
 
-    def __init__(self, core, forecast_id, **kwargs):
-        super().__init__(**kwargs)
-        self.setObjectName(f'{forecast_id!r}')
-        self.core = core
-        self.forecast = self.core.store.session.query(Forecast).\
-            filter(Forecast.id == forecast_id).one_or_none()
+    def run(self, session, forecast_id):
+        self.logger.info(f"Running forecast task for forecast_id: {forecast_id}")
+        prefect.context['forecast_id'] = forecast_id
         self.forecast_id = forecast_id
-        self.session = self.core.store.session
+        self.forecast = session.query(Forecast).\
+            filter(Forecast.id == forecast_id).one_or_none()
+        self.pre_process(session, self.forecast)
         scenario_ids = [s.id for s in self.forecast.scenarios if s.enabled]
-        self.core.store.session.expunge(self.forecast)
-        for scenario_id in scenario_ids:
-            ScenarioExecutor(scenario_id, self.session, parent=self)
+        session.expunge(self.forecast)
+        return scenario_ids
+        
 
-    def run(self, progress_callback):
-        super().run()
-    #    progress_callback.emit(ExecutionStatus(self,
-    #                           ExecutionStatus.Flag.STARTED))
-    #    self._iter = iter(self.children())
-    #    self.pre_process()
-    #    log.info("before run_next {}".format(self.children))
-    #    self._run_next()
-
-    def pre_process(self):
+    def pre_process(self, session, forecast):
         """
         Prepares a forecast for running
 
@@ -97,30 +156,30 @@ class ForecastExecutor(SerialExecutor):
         :param datetime run_time: Time at which forecast is run
 
         """
-        log.info(f'Executing {self.objectName()}')
-        forecast = self.core.store.session.query(Forecast).\
-            filter(Forecast.id == self.forecast_id).one_or_none()
-        self.core.store.session.add(forecast)
+        #log.info(f'Executing {self.objectName()}')
+        #session.add(forecast)
+        #session.add(forecast.project)
 
         # We may have future events in the live data if simulating
         def filter_future(event):
             return event.datetime_value < forecast.starttime
 
-        seismiccatalog = self.core.project.seismiccatalog.\
+        seismiccatalog = forecast.project.seismiccatalog.\
             snapshot(filter_cond=filter_future)
-        seismiccatalog.forecast_id = self.forecast_id
+        seismiccatalog.forecast_id = self.forecast.id
         forecast.seismiccatalog_history.append(seismiccatalog)
         # XXX(damb): We only support one well with a single section at the
         # moment
-        well = self.core.project.well.\
+        well = forecast.project.well.\
             snapshot(sample_filter_cond=filter_future)
-        well.forecast_id = self.forecast_id
+        well.forecast_id = self.forecast.id
         forecast.well_history.append(well)
-        self.session.commit()
-        self.session.expunge(forecast)
+        session.commit()
+        #session.expunge(forecast)
+        session.expunge(forecast.project)
 
 
-class SeismicityForecastStageExecutor(ParallelExecutor):
+class SeismicityForecastStageExecutor(Task):
     """
     Implements the seismicity forecast stage.
 
@@ -129,28 +188,49 @@ class SeismicityForecastStageExecutor(ParallelExecutor):
     :param scenario: Scenario for which to execute model forecasts
     :type scenario: ramsis.datamodel.forecast.ForecastScenario
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.scenario_id = None
+        self.status = ExecutionStatus(self, flag=ExecutionStatus.Flag.STARTED)
 
-    def __init__(self, stage_id, session, **kwargs):
-        super().__init__(**kwargs)
+    def run(self, session, scenario_id):
+        self.scenario_id = scenario_id
         self.session = session
-        self.setObjectName(f'{stage_id!r}')
-        self.stage = session.query(ForecastStage).filter(
-            ForecastStage.id == stage_id).one_or_none()
-        model_run_ids = [r.id for r in self.stage.runs if r.enabled]
-        self.session.expunge(self.stage)
-        for model_run_id in model_run_ids:
-            SeismicityModelRunExecutor(model_run_id, self.session, parent=self)
+        model_run_ids = []
+        #self.setObjectName(f'{stage_id!r}')
+        self.scenario = session.query(ForecastScenario).\
+            filter(ForecastScenario.id == scenario_id).one_or_none()
+   
+        try:
+            # sarsonl: Will there only ever be one of each
+            # stage type in a scenario?
+            self.stage = self.scenario[EStage.SEISMICITY]
+            stage_id = self.stage.id
+            stage_enabled = self.stage.enabled
+        except KeyError as err:
+           pass 
+        else:
+            if stage_enabled:
+                 model_run_ids = [r.id for r in self.stage.runs if r.enabled]
+        self.session.expunge(self.scenario)
+        return model_run_ids
 
-    def pre_process(self):
-        log.info(f'Starting seismicity forecast stage for scenario '
-                 f'"{self.objectName()}"')
+@task
+def seismicity_models(scenario):
+    model_runs = []
+    try:
+        stage = scenario[EStage.SEISMICITY]
+        stage_id = stage.id
+        stage_enabled = stage.enabled
+    except KeyError as err:
+       pass 
+    else:
+        if stage_enabled:
+             model_runs = [r for r in stage.runs if r.enabled]
+    return model_runs
+    
 
-    def post_process(self):
-        log.info(f'All seismicity forecast models complete for scenario '
-                 f'"{self.objectName()}"')
-
-
-class HazardStageExecutor(Executor):
+class HazardStageExecutor(Task):
     """
     Executes the hazard stage
 
@@ -164,21 +244,13 @@ class HazardStageExecutor(Executor):
     #   completely with OQ 3 and the new client/worker classes. Re-add as soon
     #   as we have the new hazard (OQ) client implementation.
 
-    def __init__(self, session, stage, **kwargs):
-        super().__init__(**kwargs)
-        self.setObjectName(f'{stage!r}')
-        self.session = session
-        # stage = next(s for s in scenario.stages
-        #                   if isinstance(s, HazardForecastStage))
-        # self.model_run = stage.run
-        # self.model_run.model.status_changed.connect(
-        #     self.on_model_status_changed)
 
     def run(self):
         # TODO LH: implement
         # self.model_run.model.run()
         # TODO LH: remove, fake instant success for testing :)
-        self.status_changed.emit(ExecutionStatus(self))
+        #self.status_changed.emit(ExecutionStatus(self))
+        pass
 
     def on_model_status_changed(self, notification):
         pass
@@ -191,7 +263,7 @@ class HazardStageExecutor(Executor):
         # self.status_changed.emit(execution_status)
 
 
-class RiskStageExecutor(Executor):
+class RiskStageExecutor(Task):
     """
     Executes the risk stage
 
@@ -205,21 +277,12 @@ class RiskStageExecutor(Executor):
     #   completely with OQ 3 and the new client/worker classes. Re-add as soon
     #   as we have the new hazard (OQ) client implementation.
 
-    def __init__(self, stage, session, **kwargs):
-        super().__init__(**kwargs)
-        self.setObjectName(f'{stage!r}')
-        self.session = session
-        # stage = next(s for s in scenario.stages
-        #                   if isinstance(s, RiskForecastStage))
-        # self.model_run = stage.run
-        # self.model_run.model.status_changed.connect(
-        #     self.on_model_status_changed)
-
     def run(self):
         # TODO LH: implement
         # self.model_run.model.run()
         # TODO LH: remove, fake instant success for testing :)
-        self.status_changed.emit(ExecutionStatus(self))
+        #self.status_changed.emit(ExecutionStatus(self))
+        pass
 
     def on_model_status_changed(self, notification):
         pass
@@ -231,59 +294,68 @@ class RiskStageExecutor(Executor):
         # self.finished.emit(execution_status)
 
 
-class ScenarioExecutor(SerialExecutor):
-    """
-    Runs seismicity forecast, hazard and risk calculation for a scenario
+#class ScenarioStageExecutor(SerialExecutor):
+#    """
+#    Runs seismicity forecast, hazard and risk calculation for a scenario
+#
+#    :param scenario: Scenario for this job
+#    :type scenario: ramsis.datamodel.forecast.ForecastScenario
+#    """
+#    _EXEC_MAP = {
+#        EStage.SEISMICITY: SeismicityForecastStageExecutor,
+#        EStage.HAZARD: HazardStageExecutor,
+#        EStage.RISK: RiskStageExecutor, }
+#
+#    def run(self, session, scenario_id, stage_type):
+#        self.scenario = session.query(ForecastScenario).\
+#            filter(ForecastScenario.id == scenario_id).one_or_none()
+#   
+#       try:
+#           stage = self.scenario[stage_type]
+#           stage_id = stage.id
+#           stage_enabled = stage.enabled
+#           self.session.expunge(stage)
+#       except KeyError as err:
+#          pass 
+#       else:
+#           if stage_enabled:
+#               stage_
+#        for stage_type, executor in self._EXEC_MAP.items():
+#            execute(stage_type, executor)
+#        self.session.expunge(self.scenario)
+#        return run_ids
+#    def _setup(self):
+#
+#        def execute(stage_type, executor):
+#            try:
+#                stage = self.scenario[stage_type]
+#                stage_id = stage.id
+#                stage_enabled = stage.enabled
+#                self.session.expunge(stage)
+#            except KeyError as err:
+#                raise ExecutorError(f'Missing stage: {err}')
+#            else:
+#                if stage_enabled:
+#                    executor(stage_id, self.session, parent=self)
+#
+#        for stage_type, executor in self._EXEC_MAP.items():
+#            execute(stage_type, executor)
+#        self.session.expunge(self.scenario)
+#
+#    def pre_process(self):
+#        log.info(f'Computing scenario: {self.scenario.name}')
+#
+#    def post_process(self):
+#        log.info(f'Scenario {self.scenario.name!r} complete')
+#
 
-    :param scenario: Scenario for this job
-    :type scenario: ramsis.datamodel.forecast.ForecastScenario
-    """
-    _EXEC_MAP = {
-        EStage.SEISMICITY: SeismicityForecastStageExecutor,
-        EStage.HAZARD: HazardStageExecutor,
-        EStage.RISK: RiskStageExecutor, }
-
-    def __init__(self, scenario_id, session, **kwargs):
-        super().__init__(**kwargs)
-        self.setObjectName(f'{scenario_id!r}')
-        self.scenario = session.query(ForecastScenario).\
-            filter(ForecastScenario.id == scenario_id).one_or_none()
-        self.session = session
-        self._setup()
-
-    def _setup(self):
-
-        def execute(stage_type, executor):
-            try:
-                stage = self.scenario[stage_type]
-                stage_id = stage.id
-                stage_enabled = stage.enabled
-                self.session.expunge(stage)
-            except KeyError as err:
-                raise ExecutorError(f'Missing stage: {err}')
-            else:
-                if stage_enabled:
-                    executor(stage_id, self.session, parent=self)
-
-        for stage_type, executor in self._EXEC_MAP.items():
-            execute(stage_type, executor)
-        self.session.expunge(self.scenario)
-
-    def pre_process(self):
-        log.info(f'Computing scenario: {self.scenario.name}')
-
-    def post_process(self):
-        log.info(f'Scenario {self.scenario.name!r} complete')
-
-
-class SeismicityModelRunExecutor(Executor):
+class SeismicityModelRunExecutor(Task):
     """
     Executes a single seimicity model run
 
     The executor instantiates the actual model that is associated with the run,
     connects to its status update signal and then calls its run method.
     """
-    POLLING_INTERVAL = 5000
     TASK_ACCEPTED = 202
 
     RESP_MAP = {
@@ -296,94 +368,84 @@ class SeismicityModelRunExecutor(Executor):
         422: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
         500: (ExecutionStatus.Flag.ERROR, EStatus.ERROR), }
 
-    def __init__(self, model_run_id, session, **kwargs):
-        """
-        :param run: Model run to execute
-        :type run: :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
-        """
-        super().__init__(**kwargs)
-        self.setObjectName(f'{model_run_id!r}')
-        self.session = session
-        self.model_run_id = model_run_id
+    #def __init__(self, *args, **kwargs):
+    #    super().__init__(*args, **kwargs)
+    #    self.model_run_id = None
 
-    def run(self):
-        self.model_run = self.session.query(SeismicityModelRun).\
-            filter(SeismicityModelRun.id == self.model_run_id).one_or_none()
-        self.stage = self.model_run.forecaststage
-        self.scenario = self.model_run.forecaststage.scenario
-        self.forecast = self.model_run.forecaststage.scenario.forecast
+    def run(self, forecast_data, model_run=None):
+        
+        forecast, well, seismiccatalog = forecast_data
+        print("forecast.well,sections", forecast.well.sections)
+        print("model_run.forecaststage.scenario.well,sections", model_run.forecaststage.scenario.well.sections)
+        logger = prefect.context.get('logger')
+        stage = model_run.forecaststage
+        scenario = model_run.forecaststage.scenario
+        #forecast = model_run.forecaststage.scenario.forecast
+        project = forecast.project
+        #project = model_run.forecaststage.scenario.forecast.project
 
-        self.project = self.model_run.forecaststage.scenario.forecast.project
-
-        self._worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            self.model_run)
-        log.info(f'Running seismicity forecast model {self.objectName()}')
-        model_parameters = copy.deepcopy(self.model_run.config)
+        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
+            model_run)
+        model_parameters = copy.deepcopy(model_run.config)
         model_parameters.update(
-            {'datetime_start': self.forecast.starttime.isoformat(),
-             'datetime_end': self.forecast.endtime.isoformat(),
-             'epoch_duration': self.stage.config['prediction_bin_duration']})
+            {'datetime_start': forecast.starttime.isoformat(),
+             'datetime_end': forecast.endtime.isoformat(),
+             'epoch_duration': stage.config['prediction_bin_duration']})
         data = {
-            'seismic_catalog': self.forecast.seismiccatalog,
-            'well': self.forecast.well,
+            'seismic_catalog': forecast.seismiccatalog,
+            'well': forecast.well,
             'model_parameters': model_parameters,
-            'reservoir': self.scenario.reservoirgeom,
-            'scenario': {'well': self.scenario.well}, }
+            'reservoir': scenario.reservoirgeom,
+            'scenario': {'well': scenario.well}, }
 
         serializer = SFMWorkerIMessageSerializer(
-            proj=point_to_proj4(self.project.referencepoint),
+            proj=point_to_proj4(project.referencepoint),
             transform_callback=pymap3d_transform_ned2geodetic)
-        payload = self._worker_handle.Payload(**data, serializer=serializer)
+        payload = _worker_handle.Payload(**data, serializer=serializer)
 
         try:
-            resp = self._worker_handle.compute(
+            resp = _worker_handle.compute(
                 payload, deserializer=SFMWorkerOMessageDeserializer())
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             log.error(str(err))
-            self.model_run.status.state = EStatus.ERROR
-            self.status_changed.emit(
-                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
-                                info=err))
-            return
+            raise FAIL(message="model run submission has failed with error: {err}")
 
         status = resp['data']['attributes']['status_code']
 
         if status != self.TASK_ACCEPTED:
-            self._update_orm_status(resp)
-            self.status_changed.emit(self._resp_to_status(resp))
-            return
+            raise FAIL(message=f"model run {resp['data']['id']} has returned an error: {resp}")
 
-        self.model_run.runid = resp['data']['id']
-        self.model_run.status.state = EStatus.RUNNING
-        self.session.commit()
-        self.session.expunge(self.model_run)
-        self.status_changed.emit(
-            ExecutionStatus(self, flag=ExecutionStatus.Flag.RUNNING))
+        
+        model_run.runid = resp['data']['id']
+        print("resp from model worker: ", resp, type(resp))
+        #raise SUCCESS(
+        #    message=f"model run {resp['data']['id']}"
+        #    f" has been submitted to the remote worker: {resp}")
 
-    def _update_orm_status(self, resp):
-        self.model_run.status.state = \
-            self.RESP_MAP[resp['data']['attributes']['status_code']][1]
+        return model_run
 
-    def _resp_to_status(self, resp):
-        """
-        Convert a SFM worker response into an :code:`ExecutionStatus`.
+@task
+def dispatched_seismicity_model_runs(forecast_data):
+    
+    forecast, _, _ = forecast_data
+    seismicity_stages = [s[EStage.SEISMICITY] for s in forecast.scenarios if s.enabled]
+    seismicity_stages = [stage for stage in seismicity_stages if stage.enabled]
+    #[item for sublist in l for item in sublist]
+    model_runs = []
+    for stage in seismicity_stages:
+        runs = stage.runs
+        model_runs.extend([run for run in runs if run.runid])
+    #model_runs = [run for sublist in seismicity_stages for run in stage.runs]
+    return model_runs
 
-        :param dict resp: Response to convert
-        """
-        return ExecutionStatus(
-            self, info=resp,
-            flag=self.RESP_MAP[resp['data']['attributes']['status_code']][0])
 
-
-class SeismicityModelRunPoller(QObject):
+class SeismicityModelRunPoller(Task):
     """
     Executes a single seimicity model run
 
     The executor instantiates the actual model that is associated with the run,
     connects to its status update signal and then calls its run method.
     """
-    status_changed = pyqtSignal(object)
-    POLLING_INTERVAL = 5000
     TASK_ACCEPTED = 202
 
     STATUS = {'ACCEPTED': 1,
@@ -399,68 +461,60 @@ class SeismicityModelRunPoller(QObject):
         422: (ExecutionStatus.Flag.ERROR, EStatus.ERROR),
         500: (ExecutionStatus.Flag.ERROR, EStatus.ERROR), }
 
-    def __init__(self, session, model_run_id, **kwargs):
+    def run(self, forecast_data, model_run):
         """
         :param run: Model run to execute
         :type run: :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
         """
-        super().__init__(**kwargs)
-        log.info("In seismicity model poller")
-        self.session = session
-        self.model_run = self.session.query(SeismicityModelRun).\
-            filter(SeismicityModelRun.runid == model_run_id).one_or_none()
-        self.project = self.model_run.forecaststage.scenario.forecast.project
+        logger = prefect.context.get('logger')
+        forecast, _, _ = forecast_data
+        project = forecast.project
 
-        self._worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            self.model_run)
+        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
+            model_run)
 
-    def poll(self):
-        log.info("in poll")
         deserializer = SFMWorkerOMessageDeserializer(
-            proj=point_to_proj4(self.project.referencepoint),
+            proj=point_to_proj4(project.referencepoint),
             transform_callback=pymap3d_transform_geodetic2ned,
             many=True)
         try:
-            resp = self._worker_handle.query(
-                task_ids=self.model_run.runid,
+            resp = _worker_handle.query(
+                task_ids=model_run.runid,
                 deserializer=deserializer).first()
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
-            log.error(str(err))
-            self.status_changed.emit(
-                ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR,
-                                info=err))
-            return
+            logger.error(str(err))
+            raise FAIL()
+        else:
+            status = resp['data']['attributes']['status_code']
 
-        status = resp['data']['attributes']['status_code']
+            if status in (self.TASK_ACCEPTED, 423):
+                time.sleep(15)
+                raise LOOP()
 
-        if status in (self.TASK_ACCEPTED, 423):
-            self.task_status = self.STATUS['ACCEPTED']
-            return
+            logger.info(f'Received response (run={model_run!r}, '
+                     f'id={model_run.runid}): {resp}')
+            if status == 200:
+                # process result
+                # TODO(damb): Perform this validation within the corresponding IO
+                # facilities.
+                try:
+                    result = resp['data']['attributes']['forecast']
+                except KeyError:
+                    #self.model_run.status.state = EStatus.ERROR
+                    status = ExecutionStatus(self, flag=ExecutionStatus.Flag.ERROR)
+                    raise FAIL("Remote Seismicity Worker has not returned "
+                            "a forecast (runid={}: {})".format(model_run.runid, resp))
+                else:
+                    model_run.result = result
 
-        if 200 == status:
-            # process result
-            # TODO(damb): Perform this validation within the corresponding IO
-            # facilities.
-            try:
-                result = resp['data']['attributes']['forecast']
-            except KeyError:
-                self.model_run.status.state = EStatus.ERROR
-                self.status_changed.emit(ExecutionStatus(
-                    self, flag=ExecutionStatus.Flag.ERROR))
+                    return model_run, result
             else:
-                self.model_run.result = result
-                self.task_status = self.STATUS['SUCCESS']
-
-        log.info(f'Received response (run={self.model_run!r}, '
-                 f'id={self.model_run.runid}): {resp}')
-
-        self._update_orm_status(resp)
-        self.status_changed.emit(self._resp_to_status(resp))
-        self.session.commit()
+                raise FAIL(message="Remote Seismicity Model Worker"
+                        " has returned an unsuccessful response. (runid={}: {})".\
+                                format(model_run.runid, resp))
 
     def _update_orm_status(self, resp):
-        self.model_run.status.state = \
-            self.RESP_MAP[resp['data']['attributes']['status_code']][1]
+        return self.RESP_MAP[resp['data']['attributes']['status_code']][1]
 
     def _resp_to_status(self, resp):
         """

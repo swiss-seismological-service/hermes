@@ -15,6 +15,9 @@ class Node:
         self.visible = True
         self.children = []
 
+    def update_children(self):
+        pass
+
     def row(self):
         """ return our row position under parent """
         if self.parent_node:
@@ -169,7 +172,8 @@ class TreeModel(QAbstractItemModel):
         parent_node.children[pos:pos] = nodes
         self.endInsertRows()
 
-    def remove_node(self, node):
+    def remove_node(self, node, project):
+        #node.parent_node.update_children(project)
         index_path = node.parent_node.index_path()
         #print('remove_node index path', index_path, len(index_path))
         parent_idx = QModelIndex()

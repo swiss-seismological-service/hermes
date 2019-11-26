@@ -317,7 +317,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             values.
         :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
         """
-        self.logger.info("in worker query: {}, {}".format(task_ids, deserializer))
         if not task_ids:
             self.logger.debug(
                 'Requesting tasks results (model={!r}) (bulk mode).'.format(
@@ -353,7 +352,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Task result (model={!r}, task_id={!r}): {!r}'.format(
                     self.model, t, response))
             resp.append(response)
-        self.logger.info("!!!!!!!!! have response from worker: {}".format(resp))
         return self.QueryResult.from_requests(
             resp, deserializer=deserializer)
 

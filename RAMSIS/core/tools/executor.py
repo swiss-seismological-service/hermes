@@ -34,9 +34,25 @@ complex dependencies.
 
 import abc
 from enum import Enum, auto
+from prefect.engine.state import State
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from RAMSIS.utils import QtABCMeta
 
+
+class ExecutionStatusPrefect(State):
+    """
+    Status change notification for :cvar:`~_Executor.status_changed` signals
+
+    :param AbstractExecutor or Executor origin: Original sender of the message
+    :param ExecutionStatus.Flag flag: Status flag indicating the new status
+    :param info: Additional Executor specific info
+
+    """
+
+    def __init__(self, origin, *args, info=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.origin = origin
+        self.info = info
 
 class ExecutionStatus:
     """

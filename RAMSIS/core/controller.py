@@ -301,7 +301,12 @@ class Controller(QtCore.QObject):
         :param fc: Forecast to be added.
         :type fc: :py:class:`ramsis.datamodel.forecast.Forecast`
         """
-        self.project = self.store.get_fresh(self.project)
+        print("core, add_forecast before get_fresh", id(self.project))
+
+        project = self.store.get_fresh(self.project)
+        self.project = None
+        self.project = project
+        print("core, add_forecast after get_fresh", id(self.project))
         self.project.forecasts.append(fc)
         self.store.save()
         self.project_data_changed.emit(self.project.forecasts)
