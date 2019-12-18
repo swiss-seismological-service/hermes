@@ -84,18 +84,12 @@ class ContentPresenter(object):
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
         # Essential signals from the core
-        #self.ramsis_core.engine.forecast_handler.bind_to(self.on_execution_status_update)
-        self.ramsis_core.engine.forecast_handler.execution_status_update.connect(self.on_execution_status_update)
-        #self.ramsis_core.engine.forecast_status_update.\
-        #    connect(self.on_execution_status_update)
-        #self.ramsis_core.engine.execution_status_update.\
-        #    connect(self.on_execution_status_update)
-        #self.ramsis_core.model_results.model_run_status_update.\
-        #    connect(self.on_execution_status_update)
+        self.ramsis_core.engine.forecast_handler.execution_status_update.\
+            connect(self.on_execution_status_update)
+
     # Display update methods for individual window components
 
     def show_project(self):
-        #project = self.ramsis_core.project
         self.fc_tree_model = ForecastTreeModel(self.ramsis_core)
         self.ui.forecastTreeView.setModel(self.fc_tree_model)
         # observe selection changes
@@ -121,7 +115,8 @@ class ContentPresenter(object):
         color = StatusColor.OTHER
         errors = False
         msg = ''
-
+        self.current_scenario = self.ramsis_core.store.get_fresh(
+            self.current_scenario)
         scenario = self.current_scenario
         if scenario is None:
             msg = 'No scenario selected'
@@ -215,7 +210,6 @@ class ContentPresenter(object):
 
                 if dlg.result() == QDialog.Accepted:
                     ctx.save()
-                    item = self.ramsis_core.store.get_fresh(item)
 
             elif isinstance(item, ForecastScenario):
                 ctx = EditingContext(self.ramsis_core.store)
@@ -224,7 +218,7 @@ class ContentPresenter(object):
 
                 if dlg.result() == QDialog.Accepted:
                     ctx.save()
-                    item = self.ramsis_core.store.get_fresh(item)
+                    self._refresh_scenario_status()
 
             else:
                 raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")
@@ -235,10 +229,11 @@ class ContentPresenter(object):
         #   before parent notes. All this should be taken care of by the base
         #   tree model.
         for idx in indexes:
-            
+
             item = idx.data(CustomRoles.RepresentedItemRole)
             item = self.ramsis_core.store.get_fresh(item)
-            self.fc_tree_model.remove_node(idx.internalPointer(), self.ramsis_core.project)
+            self.fc_tree_model.remove_node(idx.internalPointer(),
+                                           self.ramsis_core.project)
             self.ramsis_core.store.delete(item)
         self.ramsis_core.store.save()
 
@@ -269,7 +264,8 @@ class ContentPresenter(object):
         if self.current_scenario:
             self.ramsis_core.store.add(self.current_scenario)
         for tab_presenter in self.tab_presenters:
-            self.current_scenario = self.ramsis_core.store.get_fresh(self.current_scenario)
+            self.current_scenario = self.ramsis_core.store.get_fresh(
+                self.current_scenario)
             tab_presenter.present_scenario(self.current_scenario)
         self._refresh_scenario_status()
 

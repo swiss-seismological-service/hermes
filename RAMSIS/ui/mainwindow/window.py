@@ -178,8 +178,9 @@ class MainWindow(QMainWindow,
         if not idx.parent().isValid():
             return
         scenario = idx.data(role=CustomRoles.RepresentedItemRole)
-        
-        scenario.forecast = self.app.ramsis_core.store.get_fresh(scenario.forecast)
+
+        scenario.forecast = self.app.ramsis_core.store.\
+            get_fresh(scenario.forecast)
         scenario.forecast.scenarios.remove(scenario)
         self.app.ramsis_core.store.save()
 
@@ -194,7 +195,6 @@ class MainWindow(QMainWindow,
         if dlg.result() == QDialog.Accepted:
             fc = dlg.data
             self.app.ramsis_core.add_forecast(fc)
-            print("in mainwindow window", id(self.app.ramsis_core.project))
             self.content_presenter.add_forecast(fc)
 
     @pyqtSlot(name='on_actionApplication_Settings_triggered')

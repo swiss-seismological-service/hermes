@@ -3,61 +3,42 @@
 Forecast executing related engine facilities.
 """
 from copy import deepcopy
-import logging
 import traceback
 import sys
 from datetime import datetime
 
-import sqlalchemy
-from sqlalchemy.orm import joinedload, joinedload_all, subqueryload, contains_eager
-from random import randint
+from sqlalchemy.orm import joinedload, subqueryload
 from PyQt5.QtCore import (pyqtSignal, QObject, QThreadPool, QRunnable,
-                          QTimer, QEventLoop, QThread, pyqtSlot)
+                          pyqtSlot)
 
-from RAMSIS.core.tools.executor import ExecutionStatus, ExecutionStatusPrefect
-from RAMSIS.core.engine.forecastexecutor import ForecastExecutor,\
-    SeismicityForecastStageExecutor,\
+from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
-    seismicity_models, forecast_scenarios, data_snapshot,\
-    dispatched_seismicity_model_runs, DataSnapshot
+    SeismicityModels, forecast_scenarios,\
+    dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot
 from ramsis.datamodel.seismicity import SeismicityModelRun
-from ramsis.datamodel.forecast import Forecast, ForecastScenario, EStage, SeismicityForecastStage
-from ramsis.datamodel.status import Status, EStatus
+from ramsis.datamodel.forecast import Forecast, ForecastScenario, \
+    EStage, SeismicityForecastStage
+from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismics import SeismicCatalog
 from ramsis.datamodel.well import InjectionWell, WellSection
-from ramsis.datamodel.hydraulics import HydraulicSample, InjectionPlan, Hydraulics
+from ramsis.datamodel.hydraulics import InjectionPlan, Hydraulics
 from ramsis.datamodel.project import Project
 import prefect
-from prefect import task, Task, Flow, Parameter, unmapped
-from datetime import timedelta
-from prefect.schedules import IntervalSchedule
-from prefect.engine.executors import DaskExecutor, LocalDaskExecutor
-from dask.distributed import Client
-from prefect.engine.result_handlers.result_handler import ResultHandler
+from prefect import task, Flow, Parameter, unmapped
+from prefect.engine.executors import LocalDaskExecutor
 
-class ForecastResultHandler(ResultHandler):
-    def __init__(self, session):
-        super().__init__()
-    def read(self, forecast):
-        print("in result handler read", forecast)
-        return forecast
-    def write(self, forecast):
-        print("in result handler!", forecast)
-        return forecast
 
 def prefect_estatus_conversion(prefect_status, context=None):
     status_dict = {
         prefect_status.is_pending: EStatus.PENDING,
         prefect_status.is_running: EStatus.RUNNING,
         prefect_status.is_successful: EStatus.COMPLETE,
-        prefect_status.is_failed: EStatus.ERROR
-                                           }
+        prefect_status.is_failed: EStatus.ERROR}
     model_run_status_dict = {
         prefect_status.is_pending: EStatus.PENDING,
         prefect_status.is_running: EStatus.RUNNING,
         prefect_status.is_successful: EStatus.RUNNING,
-        prefect_status.is_failed: EStatus.ERROR
-                                           }
+        prefect_status.is_failed: EStatus.ERROR}
 
     use_dict = model_run_status_dict if context == 'model_run' else status_dict
     estatus = None
@@ -65,37 +46,16 @@ def prefect_estatus_conversion(prefect_status, context=None):
         if fnc():
             estatus = val
 
-    # model runs that have been submitted to a remote worker
-    # should show a status of RUNNING if this task completed.
-    #if context == 'model_run':
-    #    if prefect == EStatus.RUNNING:
-    #        estatus = EStatus.PENDING
-    #    elif estatus == EStatus.COMPLETE:
-    #        print("setting model_run to have estatus of RUNNING rather than COMPLETE")
-    #        estatus = EStatus.RUNNING
-
-    #estatus = status_dict.get()
-    #if prefect_status.is_pending():
-    #    estatus = EStatus.PENDING
-    #elif prefect_status.is_running():
-    #    estatus = EStatus.RUNNING
-    #elif prefect_status.is_successful():
-    #    if context == 'model_run':
-    #        estatus = EStatus.RUNNING
-    #    else:
-    #        estatus = EStatus.COMPLETE
-    #elif prefect_status.is_failed():
-    #    estatus = EStatus.ERROR
     if not estatus:
         print(f"WARNING: prefect status is not handled: {prefect_status}")
     return estatus
-
 
 
 @task
 def flatten_task(nested_list):
     flattened_list = [item for sublist in nested_list for item in sublist]
     return flattened_list
+
 
 class WorkerSignals(QObject):
     '''
@@ -167,59 +127,101 @@ class Worker(QRunnable):
         finally:
             self.signals.finished.emit()  # Done
 
+
 # For usage when forecast actually has a status.
 def get_forecast_no_children(forecast_id, session):
     forecast = session.query(Forecast).\
-            options(
-                    joinedload(Forecast.status)).\
-            filter(Forecast.id == forecast_id)
+        options(joinedload(Forecast.status)).\
+        filter(Forecast.id == forecast_id)
     return forecast.one()
 
-#schedule = IntervalSchedule(interval=timedelta(minutes=1))
+
 def get_forecast_seismicity(forecast_id, session):
+    session.remove()
     forecast_query = session.query(Forecast).\
-            options(
-                    subqueryload(Forecast.project).\
-                    subqueryload(Project.wells).\
-                    subqueryload(InjectionWell.sections).\
-                    subqueryload(WellSection.hydraulics).\
-                    subqueryload(Hydraulics.samples)
-                    ).\
-            options(
-                    subqueryload(Forecast.project).\
-                    subqueryload(Project.wells).\
-                    subqueryload(InjectionWell.sections).\
-                    subqueryload(WellSection.injectionplan).\
-                    subqueryload(InjectionPlan.samples)
-                    ).\
-            options(
-                    subqueryload(Forecast.scenarios).\
-                    subqueryload(ForecastScenario.\
-                                 stages.of_type(SeismicityForecastStage)).\
-                    subqueryload(SeismicityForecastStage.runs).\
-                    subqueryload(SeismicityModelRun.result)
-                    ).\
-            options(
-                    subqueryload(Forecast.seismiccatalog_history)).\
-            options(subqueryload(Forecast.well_history)).\
-            options(subqueryload(Forecast.scenarios).\
-                    subqueryload(ForecastScenario.well_history).\
-                    subqueryload(InjectionWell.sections).\
-                    subqueryload(WellSection.injectionplan).\
-                    subqueryload(InjectionPlan.samples)).\
-            filter(Forecast.id == forecast_id)
+        options(
+            # Load catalogs linked to forecast and project
+            subqueryload(Forecast.seismiccatalog).\
+            subqueryload(SeismicCatalog.events)).\
+        options(
+            subqueryload(Forecast.project).\
+            subqueryload(Project.seismiccatalogs).\
+            subqueryload(SeismicCatalog.events)).\
+        options(
+            # Load well and injection plan linked to project
+            subqueryload(Forecast.project).\
+            subqueryload(Project.wells).\
+            subqueryload(InjectionWell.sections).\
+            subqueryload(WellSection.hydraulics).\
+            subqueryload(Hydraulics.samples)).\
+        options(
+            subqueryload(Forecast.project).\
+            subqueryload(Project.wells).\
+            subqueryload(InjectionWell.sections).\
+            subqueryload(WellSection.injectionplan).\
+            subqueryload(InjectionPlan.samples)).\
+        options(
+            # Load status of seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.status)).\
+        options(
+            # Load models from seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.model)).\
+        options(
+            # Load model run status from seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.status)).\
+        options(
+            # Load result attributes for model runs (these will be written to)
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.result)).\
+        options(
+            # Load well attached to forecast
+            subqueryload(Forecast.well).\
+            subqueryload(InjectionWell.sections).\
+            subqueryload(WellSection.hydraulics).\
+            subqueryload(Hydraulics.samples)).\
+        options(
+            # Load injection plan attached to scenario
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.well).\
+            subqueryload(InjectionWell.sections).\
+            subqueryload(WellSection.injectionplan).\
+            subqueryload(InjectionPlan.samples)).\
+        filter(Forecast.id == forecast_id)
     forecast = forecast_query.one()
     forecast_copy = deepcopy(forecast)
-    session.expunge(forecast)
+    session.remove()
     return forecast_copy
 
-class ForecastStatus(object):
-    def __init__(self, forecast_id, status):
-        self.forecast_id
-        self.status = status
 
 class ForecastHandler(QObject):
+    """
+    Handles status changes and results emitted from prefect
+    flows. SQLalchemy model objects that are returned are
+    merged back into the database and pyqt signals alert the
+    GUI to display changes.
 
+    This class is initialized at the same time as the Engine,
+    so the session is attached later.
+
+    Prefect status handlers follow the form:
+    :param obj: The task that the status update is from
+    :param old_state: prefect.engine.state
+    :param new_state: prefect.engine.state
+    """
     execution_status_update = pyqtSignal(object)
     forecast_status_update = pyqtSignal(object)
 
@@ -227,114 +229,254 @@ class ForecastHandler(QObject):
         super().__init__()
         self.session = None
 
-    def model_run_state_handler(self, obj, old_state, new_state):
-        msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-        print("In model run state handler...", msg.format(obj, old_state, new_state), new_state.result)
-        #forecast_status = ForecastStatus(obj.id, new_status)
-        if new_state.is_finished():
-            if new_state.is_successful() and not new_state.is_mapped(): 
-                old_model_run = self.session.query(SeismicityModelRun).filter(SeismicityModelRun.id==new_state.result.id).one()
-                #print("have got the old model_run object: ", old_model_run, old_model_run.id)
-                print("attempting to merge the modelrun object: ", new_state.result)
-                self.session.merge(new_state.result)
+    def update_db(self):
+        if self.session.dirty:
+            self.session.commit()
+            self.session.remove()
+
+    @staticmethod
+    def scenario_stage_status(scenario):
+        # If all stages are complete without error, then the
+        # scenario is a success
+        stage_success = all([
+            True if stage.status.state == EStatus.COMPLETE else False
+            for stage in scenario.stages])
+        if stage_success:
+            scenario.status.state = EStatus.COMPLETE
+        else:
+            scenario.status.state = EStatus.ERROR
+
+        stage = scenario[EStage.SEISMICITY]
+        # If all model runs are complete without error, then the
+        # stage is a success
+        model_success = all([
+            True if model.status.state == EStatus.COMPLETE else False
+            for model in stage.runs])
+        if model_success:
+            stage.status.state = EStatus.COMPLETE
+        else:
+            stage.status.state = EStatus.ERROR
+        return scenario
+
+    def flow_state_handler(self, obj, old_state, new_state):
+        """
+        Set the forecast state according to the end state
+        of the flow.
+        """
+        logger = prefect.context.get("logger")
+        forecast_id = prefect.context.forecast_id
+        forecast = self.session.query(Forecast).filter(
+            Forecast.id == forecast_id).first()
+
+        if new_state.is_running():
+            forecast.status.state = EStatus.RUNNING
+            self.update_db()
+        elif new_state.is_finished():
+            if new_state.is_failed():
+                forecast.status.state = EStatus.ERROR
+            elif new_state.is_successful():
+                forecast.status.state = EStatus.COMPLETE
+                logger.info(f"Forecast {forecast_id} is complete.")
+            for scenario in forecast.scenarios:
+                self.session.merge(self.scenario_stage_status(scenario))
                 self.session.commit()
-                self.session.remove()
-            self.execution_status_update.emit(new_state.result)
+            self.update_db()
+        self.session.remove()
+        return new_state
+
+    def scenario_models_state_handler(self, obj, old_state, new_state):
+        """
+        Set the model runs status to RUNNING when this task suceeds.
+        """
+        if (new_state.is_finished() and
+                new_state.is_successful() and not
+                new_state.is_mapped()):
+            model_runs = new_state.result
+            for run in model_runs:
+                run.status.state = EStatus.RUNNING
+                self.session.merge(run)
+                self.session.commit()
+            self.update_db()
+        return new_state
+
+    def model_run_state_handler(self, obj, old_state, new_state):
+        """
+        The seismicity model run task sends a Sucessful state
+        when the remote model worker has accepted a task.
+        A Failed state is sent from the task otherwise.
+
+        A pyqt signal will be sent on success or failure of the task.
+        """
+        logger = prefect.context.get("logger")
+
+        if new_state.is_finished() and not new_state.is_mapped():
+            if new_state.is_successful():
+                model_run = new_state.result
+                logger.info(f"Model run with runid={model_run.runid}"
+                            "has been dispatched to the remote worker.")
+                model_run.status.state = EStatus.DISPATCHED
+                self.session.merge(model_run)
+            elif not new_state.is_successful():
+                # prefect Fail should be raised with model_run as a result
+                model_run = new_state.result.result
+                model_run.status.state = EStatus.ERROR
+                self.session.merge(model_run)
+            # The sent status is not used, as the whole scenario must
+            # be refreshed from the db in the gui thread.
+            self.update_db()
+            self.execution_status_update.emit(new_state)
         return new_state
 
     def poll_seismicity_state_handler(self, obj, old_state, new_state):
-        msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-        print("In model run state handler...", msg.format(obj, old_state, new_state), new_state.result)
-        #forecast_status = ForecastStatus(obj.id, new_status)
-        if new_state.is_finished():
-            if new_state.is_successful() and not new_state.is_mapped(): 
-                model_run, model_result = new_state.result
-                # Make sure old model run is in session before merging new one in.
-                print("getting old model run: ", model_run)
-                self.session.query(SeismicityModelRun).filter(SeismicityModelRun.id==model_run.id).one()
-                print("About to merge model run")
-                self.session.merge(model_run)
-                print("About to add model result: ", model_result)
-                self.session.merge(model_result)
-                self.session.commit()
-                self.session.remove()
-            self.execution_status_update.emit(new_state.result)
-        return new_state
+        """
+        The polling task sends a Sucessful state when the remote
+        model worker has returned a forecast and this has been
+        deserialized sucessfully. A Failed state is sent from the
+        task otherwise.
+        A pyqt signal will be sent on success or failure of the task.
+        """
+        logger = prefect.context.get("logger")
 
-    def snapshot_state_handler(self, obj, old_state, new_state):
-        msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-        print("In snapshot state handler...", msg.format(obj, old_state, new_state), new_state.result)
-        print(dir(new_state), type(new_state))
-        if new_state.is_finished():
+        if (new_state.is_finished() and not
+                new_state.is_mapped() and not
+                new_state.is_looped()):
             if new_state.is_successful():
-                forecast, seismiccatalog, well = new_state.result
-                #self.session.query(Forecast).filter(Forecast.id==new_state.result.id).one()
-                # Is merging correct to do here and does it merge children?
-                print("forecast in session", forecast in self.session())
-                print("well in session", well in self.session())
-                print("catalog in session", seismiccatalog in self.session())
-                self.session.merge(forecast)
-                print("2 forecast in session", forecast in self.session())
-                self.session.add(seismiccatalog)
-                print("2, catalog in session", seismiccatalog in self.session())
-                self.session.add(well)
-                print("2 well in session", well in self.session())
-                self.session.commit()
-                self.session.remove()
-                print("3 forecast in session", forecast in self.session())
-            self.execution_status_update.emit(new_state.result)
+                model_run, model_result = new_state.result
+                logger.info(f"Model with runid={model_run.runid} "
+                            "has returned without error from the "
+                            "remote worker.")
+                model_run.status.state = EStatus.COMPLETE
+                self.session.merge(model_run)
+            elif new_state.is_failed():
+                model_run = new_state.result
+                logger.error(f"Model with runid={model_run.runid}"
+                             "has returned an error from the "
+                             "remote worker.")
+                model_run.status.state = EStatus.ERROR
+                self.session.merge(model_run)
+            self.update_db()
+            self.execution_status_update.emit(new_state)
         return new_state
 
-    def forecast_state_handler(self, obj, old_state, new_state):
-        msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-        print("In state handler...", msg.format(obj, old_state, new_state), new_state.result)
-        print(dir(new_state), type(new_state))
-        if new_state.is_finished():
-            self.session.query(Forecast).filter(Forecast.id==new_state.result.id).one()
-            self.session.merge(new_state.result)
-            self.session.commit()
-            self.session.remove()
-        self.execution_status_update.emit(new_state.result)
+    def catalog_snapshot_state_handler(self, obj, old_state, new_state):
+        """
+        When the catalog snapshot task has been skipped, then the forecast
+        already has a catalog snapshot and this is not overwritten.
+        If this task has completed successfully, the new snapshot is added
+        to the session and forecast merged as an attribute was modified.
+        """
+        logger = prefect.context.get("logger")
+        if new_state.is_finished() and new_state.is_successful():
+            forecast = new_state.result
+            if new_state.is_skipped():
+                logger.info(f"Forecast id={forecast.id} already a snapshot"
+                            " of the seismic catalog attached.")
+            else:
+                logger.info(f"Forecast id={forecast.id} has made a snapshot"
+                            " of the seismic catalog")
+                # A forecast may only have one seismiccatalog associated
+                # This is enforced in code rather than at db level.
+                assert(len(forecast.seismiccatalog) == 1)
+                self.session.add(forecast.seismiccatalog[0])
+                self.session.commit()
+                self.session.merge(forecast)
+                self.update_db()
         return new_state
+
+    def well_snapshot_state_handler(self, obj, old_state, new_state):
+        """
+        When the well snapshot task has been skipped, then the forecast
+        already has a well snapshot and this is not overwritten.
+        If this task has completed successfully, the new snapshot is added
+        to the session and forecast merged as an attribute was modified.
+        """
+        logger = prefect.context.get("logger")
+        if new_state.is_finished() and new_state.is_successful():
+            forecast = new_state.result
+            if new_state.is_skipped():
+                logger.info(f"Forecast id={forecast.id} already a snapshot"
+                            " of hydraulic well attached.")
+            else:
+                logger.info(f"Forecast id={forecast.id} has made a snapshot"
+                            " of the hydraulic well")
+                # A forecast may only have one well associated
+                # This is enforced in code rather than at db level.
+                assert(len(forecast.well) == 1)
+                self.session.add(forecast.well[0])
+                self.session.commit()
+                self.session.merge(forecast)
+                self.update_db()
+        return new_state
+
 
 class ForecastFlow(QObject):
+    """
+    Contains prefect flow logic for creating DAG.
+    A flow is created for every forecast that is run by the
+    engine.
+    """
     def __init__(self, forecast, system_time, forecast_handler):
-        self.forecast = forecast
         self.system_time = system_time
         self.forecast_handler = forecast_handler
+        self.forecast = forecast
 
     def run(self, progress_callback):
-        with Flow("Seismicity_Execution") as seismicity_flow:
-            data_snapshot = DataSnapshot(
-                state_handlers=[self.forecast_handler.snapshot_state_handler])
-            forecast_data = data_snapshot(self.forecast, self.system_time)
+        with Flow("Seismicity_Execution",
+                  state_handlers=[self.forecast_handler.flow_state_handler]
+                  ) as seismicity_flow:
+            forecast = Parameter('forecast')
+            catalog_snapshot = CatalogSnapshot(
+                skip_on_upstream_skip=False,
+                state_handlers=[self.forecast_handler.
+                                catalog_snapshot_state_handler])
+            forecast_data = catalog_snapshot(forecast, self.system_time)
+
+            well_snapshot = WellSnapshot(
+                skip_on_upstream_skip=False,
+                state_handlers=[self.forecast_handler.
+                                well_snapshot_state_handler])
+            forecast_data = well_snapshot(forecast_data, self.system_time)
+
             scenarios = forecast_scenarios(
                 forecast_data)
+            seismicity_models = SeismicityModels(
+                skip_on_upstream_skip=False,
+                state_handlers=[self.forecast_handler.
+                                scenario_models_state_handler])
             model_runs = seismicity_models.map(
                 scenarios)
 
             model_runs_flattened = flatten_task(model_runs)
-            
             model_run_executor = SeismicityModelRunExecutor(
-                state_handlers=[self.forecast_handler.model_run_state_handler])
-            #seismicity_flow.add_edge(model_run_executor.map(
-            #    unmapped(self.session), model_runs_flattened),
-            #    
-            #    model_run_poller.map(unmapped(self.session), model_runs_flattened))
-            models = dispatched_seismicity_model_runs(forecast_data)
-            executed_model_runs = model_run_executor.map(unmapped(forecast_data), models)
-            seismicity_flow.add_edge(seismicity_flow.get_tasks('flatten_task')[0],
-                    seismicity_flow.get_tasks('dispatched_seismicity_model_runs')[0])
-                #forecast_data).set_upstream(dispatched_seismicity_model_runs(forecast_data), mapped=True, key='model_run')
-            model_run_poller = SeismicityModelRunPoller(state_handlers=[self.forecast_handler.poll_seismicity_state_handler])
-            poll_results = model_run_poller.map(unmapped(forecast_data), executed_model_runs)
+                state_handlers=[self.forecast_handler.model_run_state_handler],
+                skip_on_upstream_skip=False)
 
-        #seismicity_flow.visualize()
-        
-        #client = Client(n_workers=1, threads_per_worker=2)
+            _ = model_run_executor.map(
+                unmapped(forecast_data), model_runs_flattened)
+
+            dispatched_model_runs = dispatched_seismicity_model_runs(
+                forecast_data)
+
+            # Add dependency so that SeismicityModelRunExecutor must complete
+            # before checking for model runs with DISPATCHED status.
+            seismicity_flow.add_edge(
+                seismicity_flow.get_tasks('SeismicityModelRunExecutor')[0],
+                seismicity_flow.get_tasks(
+                    'dispatched_seismicity_model_runs')[0])
+
+            model_run_poller = SeismicityModelRunPoller(
+                state_handlers=[
+                    self.forecast_handler.poll_seismicity_state_handler],
+                skip_on_upstream_skip=False)
+            _ = model_run_poller.map(unmapped(forecast_data),
+                                     dispatched_model_runs)
+
+        # (sarsonl) To view DAG: seismicity_flow.visualize()
+
         executor = LocalDaskExecutor(scheduler='threads')
-        #executor = DaskExecutor(address=client.scheduler.address)
-        seismicity_flow.run(executor=executor)
+        with prefect.context(forecast_id=self.forecast.id):
+            seismicity_flow.run(parameters=dict(forecast=self.forecast),
+                                executor=executor)
 
 
 class Engine(QObject):
@@ -351,21 +493,16 @@ class Engine(QObject):
         """
         :param RAMSIS.core.controller.Controller core: Reference to the core
         """
-
         super().__init__()
         self.threadpool = QThreadPool()
         self.busy = False
         self.core = core
         self.session = None
-        self._forecast_id = None
-        self._forecast_executor = None
         self.forecast_handler = ForecastHandler()
-        #self._logger = logging.getLogger(__name__)
-
 
     def run(self, t, forecast_id):
         """
-        Runs the forecast
+        Runs the forecast with a prefect flow.
 
         The :class:`~RAMSIS.core.taskmanager.ForecastTask` invokes this
         whenever a new forecast is due.
@@ -378,127 +515,12 @@ class Engine(QObject):
         if not self.session:
             self.session = self.core.store.session
             self.forecast_handler.session = self.session
-        forecast_input = get_forecast_seismicity(forecast_id, self.session)#self.session.query(Forecast).filter(Forecast.id==forecast_id).first()
-        #forecast_input = deepcopy(forecast)
-        #print("printing the seismiccatalog hybrid", [i.creationinfo_creationtime for i in forecast.seismiccatalog_history], forecast.seismiccatalog)
+        forecast_input = get_forecast_seismicity(forecast_id, self.session)
 
+        # The current time is required for snapshots of catalog and well data
+        # TODO (sarsonl) should get this from the scheduler module.
         system_time = datetime.now()
-        #seismicity_flow = Flow("Seismicity_Execution")
-        #data_snapshot = DataSnapshot(
-        #    state_handlers=[self.forecast_handler.snapshot_state_handler])
-        #    model_run_executor = SeismicityModelRunExecutor(
-        #        state_handlers=[self.forecast_handler.model_run_state_handler])
-        #seismicity_flow.chain(
-        #    data_snapshot(forecast, system_time),
-        #    forecast_scenarios()
-                
-        #        )
-        forecast_flow = ForecastFlow(forecast_input, system_time, self.forecast_handler) 
+        forecast_flow = ForecastFlow(forecast_input, system_time,
+                                     self.forecast_handler)
         worker = Worker(forecast_flow.run)
         self.threadpool.start(worker)
-
-    def flow_state_handler(self, obj, old_state, new_state):
-        msg = "\nForecast state has changed from {0}:\n{1} to {2}\n"
-        #print("In state handler...", msg.format(obj, old_state, new_state))
-
-    def seismicity_stage_state_handler(self, obj, old_state, new_state):
-        msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-        #print("In state handler...", msg.format(obj, old_state, new_state), obj.status)
-        #self.execution_status_update.emit(obj.status)
-        #return new_state
-
-    #def forecast_state_handler(self, obj, old_state, new_state):
-    #    msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-    #    print("In state handler...", msg.format(obj, old_state, new_state), obj.status, new_state.result)
-    #    self.execution_status_update.emit(obj.status)
-    #    return new_state
-
-    #
-    #def model_run_state_handler(self, obj, old_state, new_state):
-    #    msg = "\nTask state has changed from {0}:\n{1} to {2}\n"
-    #    if obj.model_run_id:
-    #        estatus = prefect_estatus_conversion(new_state, context='model_run')
-    #        if estatus:
-    #            # Completion of tasks means that model is running.
-    #            model_run = self.session.query(SeismicityModelRun).filter(
-    #                SeismicityModelRun.id == obj.model_run_id).one_or_none()
-    #            model_run.status.state = estatus
-    #            self.session.add(model_run)
-    #            self.session.commit()
-    #            self.session.expunge(model_run)
-    #            self.execution_status_update.emit(new_state)
-    #    return new_state
-
-
-    #def on_forecast_status_changed(self, status):
-    #    if isinstance(status.origin, ForecastExecutor):
-    #        if status.flag == ExecutionStatus.Flag.SUCCESS:
-    #            self.threadpool.waitForDone()
-    #            self.core.store.close()
-    #            self.forecast_status_update.emit(ExecutionStatus(
-    #                self.forecast, flag=ExecutionStatus.Flag.RUNNING))
-    #    if isinstance(status.origin, SeismicityModelRunExecutor):
-    #        if status.flag == ExecutionStatus.Flag.RUNNING:
-    #            if not self.core.model_results.running:
-    #                self.core.model_results.start()
-    #    self.execution_status_update.emit(status)
-
-
-class DataCaptureThread(QThread):
-
-    model_run_status_update = pyqtSignal(object)
-
-    def __init__(self, core):
-        """
-        :param RAMSIS.core.controller.Controller core: Reference to the core
-        """
-        super().__init__()
-        self.core = core
-        self.running = False
-        self.session = None
-        self._logger = logging.getLogger("DataCaptureThread")
-        QThread.__init__(self)
-        self.dataCollectionTimer = QTimer()
-        self.dataCollectionTimer.moveToThread(self)
-        self.dataCollectionTimer.timeout.connect(self.collectProcessData)
-
-    def accepted_model_runs(self):
-
-        model_runs = self.session.query(SeismicityModelRun).join(
-            SeismicityModelRun.status).filter(
-                Status.state.in_([EStatus.RUNNING])).all()
-        for run in model_runs:
-            self.session.expunge(run)
-        model_run_ids = [run.runid for run in model_runs]
-        return model_run_ids
-
-    def collectProcessData(self):
-        if self.session is not None:
-            pass
-        else:
-            self.session = self.core.store
-
-        # To be removed when better solution in place
-        accepted_model_run_ids = self.accepted_model_runs()
-        self._logger.info("Waiting model runs: {}".format(
-            accepted_model_run_ids))
-        for run in accepted_model_run_ids:
-            self._logger.info("model run ids {}".format(run))
-            poller = SeismicityModelRunPoller(self.session, run)
-            poller.status_changed.connect(
-                self.on_model_run_status_changed)
-            poller.poll()
-        if not accepted_model_run_ids:
-            self.loop.exit()
-            self.running = False
-
-    def run(self):
-        self.session = self.core.store.session
-        self.running = True
-        self.dataCollectionTimer.start(3000)
-        self.loop = QEventLoop()
-        self.loop.exec_()
-
-    def on_model_run_status_changed(self, status):
-        if isinstance(status.origin, SeismicityModelRunPoller):
-            self.model_run_status_update.emit(status)

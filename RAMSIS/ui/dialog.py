@@ -239,7 +239,7 @@ class ScenarioConfigDialog(
         self._data.config = {}
         self._data.name = self.ui.nameLineEdit.text()
         self._data.reservoirgeom = wkt_geom
-        self._data.well_history = [well]
+        self._data.well = well
 
         try:
             stage = self._data[EStage.SEISMICITY]
@@ -340,7 +340,7 @@ class ForecastConfigDialog(
             self.ui.starttimeDateTimeEdit.setMinimumDateTime(min_datetime)
             self.ui.endtimeDateTimeEdit.setMinimumDateTime(min_datetime)
 
-        self._data = forecast#self.core.store.get_fresh(forecast)
+        self._data = forecast
         self._configure(forecast)
 
     def _configure(self, forecast):

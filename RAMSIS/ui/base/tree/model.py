@@ -127,7 +127,6 @@ class TreeModel(QAbstractItemModel):
         return parent_node.child_count()
 
     def index(self, row, column, parent):
-        #print('in index', parent.isValid(), row, column)
         if not parent.isValid():
             # we're at a top level node under root
             parent_node = self.root_node
@@ -164,7 +163,6 @@ class TreeModel(QAbstractItemModel):
 
     def insert_nodes(self, parent_node, pos, nodes):
         index_path = parent_node.index_path()
-        #print('insert_node index path', index_path, len(index_path))
         parent_idx = QModelIndex()
         for row in index_path:
             parent_idx = self.index(row, 0, parent_idx)
@@ -173,9 +171,7 @@ class TreeModel(QAbstractItemModel):
         self.endInsertRows()
 
     def remove_node(self, node, project):
-        #node.parent_node.update_children(project)
         index_path = node.parent_node.index_path()
-        #print('remove_node index path', index_path, len(index_path))
         parent_idx = QModelIndex()
         for row in index_path:
             parent_idx = self.index(row, 0, parent_idx)
@@ -183,4 +179,3 @@ class TreeModel(QAbstractItemModel):
         self.beginRemoveRows(parent_idx, row, row)
         node.parent_node.children.remove(node)
         self.endRemoveRows()
-        #print('end of remove_node', row, parent_idx)

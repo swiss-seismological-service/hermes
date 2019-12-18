@@ -14,7 +14,7 @@ from operator import attrgetter
 from PyQt5 import QtCore
 from collections import namedtuple
 
-from RAMSIS.core.engine.engine import Engine, DataCaptureThread
+from RAMSIS.core.engine.engine import Engine
 from RAMSIS.core.wallclock import WallClock, WallClockMode
 from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
@@ -87,7 +87,6 @@ class Controller(QtCore.QObject):
         self.hydws_previous_end_time = None
         self.seismics_data_source = None
         self.hydraulics_data_source = None
-        self.model_results = DataCaptureThread(self)
 
         # Core components for real time and simulation operation
         self.engine = Engine(self)
@@ -301,12 +300,10 @@ class Controller(QtCore.QObject):
         :param fc: Forecast to be added.
         :type fc: :py:class:`ramsis.datamodel.forecast.Forecast`
         """
-        print("core, add_forecast before get_fresh", id(self.project))
 
         project = self.store.get_fresh(self.project)
         self.project = None
         self.project = project
-        print("core, add_forecast after get_fresh", id(self.project))
         self.project.forecasts.append(fc)
         self.store.save()
         self.project_data_changed.emit(self.project.forecasts)
