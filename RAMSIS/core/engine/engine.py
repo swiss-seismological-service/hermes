@@ -14,7 +14,8 @@ from PyQt5.QtCore import (pyqtSignal, QObject, QThreadPool, QRunnable,
 from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     SeismicityModels, forecast_scenarios,\
-    dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot
+    dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot,\
+    flatten_task
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.forecast import Forecast, ForecastScenario, \
     EStage, SeismicityForecastStage
@@ -24,37 +25,8 @@ from ramsis.datamodel.well import InjectionWell, WellSection
 from ramsis.datamodel.hydraulics import InjectionPlan, Hydraulics
 from ramsis.datamodel.project import Project
 import prefect
-from prefect import task, Flow, Parameter, unmapped
+from prefect import Flow, Parameter, unmapped
 from prefect.engine.executors import LocalDaskExecutor
-
-
-def prefect_estatus_conversion(prefect_status, context=None):
-    status_dict = {
-        prefect_status.is_pending: EStatus.PENDING,
-        prefect_status.is_running: EStatus.RUNNING,
-        prefect_status.is_successful: EStatus.COMPLETE,
-        prefect_status.is_failed: EStatus.ERROR}
-    model_run_status_dict = {
-        prefect_status.is_pending: EStatus.PENDING,
-        prefect_status.is_running: EStatus.RUNNING,
-        prefect_status.is_successful: EStatus.RUNNING,
-        prefect_status.is_failed: EStatus.ERROR}
-
-    use_dict = model_run_status_dict if context == 'model_run' else status_dict
-    estatus = None
-    for fnc, val in use_dict.items():
-        if fnc():
-            estatus = val
-
-    if not estatus:
-        print(f"WARNING: prefect status is not handled: {prefect_status}")
-    return estatus
-
-
-@task
-def flatten_task(nested_list):
-    flattened_list = [item for sublist in nested_list for item in sublist]
-    return flattened_list
 
 
 class WorkerSignals(QObject):
@@ -139,6 +111,9 @@ def get_forecast_no_children(forecast_id, session):
 def get_forecast_seismicity(forecast_id, session):
     session.remove()
     forecast_query = session.query(Forecast).\
+        options(
+            # Load catalogs linked to forecast and project
+            subqueryload(Forecast.status)).\
         options(
             # Load catalogs linked to forecast and project
             subqueryload(Forecast.seismiccatalog).\
@@ -236,26 +211,27 @@ class ForecastHandler(QObject):
 
     @staticmethod
     def scenario_stage_status(scenario):
+        # If all model runs are complete without error, then the
+        stage = scenario[EStage.SEISMICITY]
+        # stage is a success
+        model_success = all([
+            True if model.status.state == EStatus.COMPLETE else False
+            for model in [r for r in stage.runs if r.enabled]])
+        if model_success:
+            stage.status.state = EStatus.COMPLETE
+        else:
+            stage.status.state = EStatus.ERROR
+
         # If all stages are complete without error, then the
         # scenario is a success
         stage_success = all([
             True if stage.status.state == EStatus.COMPLETE else False
-            for stage in scenario.stages])
+            for stage in [s for s in scenario.stages if s.enabled]])
         if stage_success:
             scenario.status.state = EStatus.COMPLETE
         else:
             scenario.status.state = EStatus.ERROR
 
-        stage = scenario[EStage.SEISMICITY]
-        # If all model runs are complete without error, then the
-        # stage is a success
-        model_success = all([
-            True if model.status.state == EStatus.COMPLETE else False
-            for model in stage.runs])
-        if model_success:
-            stage.status.state = EStatus.COMPLETE
-        else:
-            stage.status.state = EStatus.ERROR
         return scenario
 
     def flow_state_handler(self, obj, old_state, new_state):
@@ -263,20 +239,22 @@ class ForecastHandler(QObject):
         Set the forecast state according to the end state
         of the flow.
         """
-        logger = prefect.context.get("logger")
         forecast_id = prefect.context.forecast_id
         forecast = self.session.query(Forecast).filter(
             Forecast.id == forecast_id).first()
 
         if new_state.is_running():
             forecast.status.state = EStatus.RUNNING
+            for scenario in forecast.scenarios:
+                if scenario.enabled:
+                    scenario.status.state = EStatus.RUNNING
             self.update_db()
+
         elif new_state.is_finished():
             if new_state.is_failed():
                 forecast.status.state = EStatus.ERROR
             elif new_state.is_successful():
                 forecast.status.state = EStatus.COMPLETE
-                logger.info(f"Forecast {forecast_id} is complete.")
             for scenario in forecast.scenarios:
                 self.session.merge(self.scenario_stage_status(scenario))
                 self.session.commit()
@@ -288,12 +266,14 @@ class ForecastHandler(QObject):
         """
         Set the model runs status to RUNNING when this task suceeds.
         """
+        print("scenario_models_state_handler: ", new_state)
         if (new_state.is_finished() and
                 new_state.is_successful() and not
                 new_state.is_mapped()):
             model_runs = new_state.result
             for run in model_runs:
                 run.status.state = EStatus.RUNNING
+                print("model run is running")
                 self.session.merge(run)
                 self.session.commit()
             self.update_db()
@@ -318,13 +298,15 @@ class ForecastHandler(QObject):
                 self.session.merge(model_run)
             elif not new_state.is_successful():
                 # prefect Fail should be raised with model_run as a result
-                model_run = new_state.result.result
+                model_run = new_state.result
                 model_run.status.state = EStatus.ERROR
                 self.session.merge(model_run)
             # The sent status is not used, as the whole scenario must
             # be refreshed from the db in the gui thread.
             self.update_db()
-            self.execution_status_update.emit(new_state)
+            self.execution_status_update.emit((
+                new_state, type(model_run),
+                model_run.id))
         return new_state
 
     def poll_seismicity_state_handler(self, obj, old_state, new_state):
@@ -355,7 +337,9 @@ class ForecastHandler(QObject):
                 model_run.status.state = EStatus.ERROR
                 self.session.merge(model_run)
             self.update_db()
-            self.execution_status_update.emit(new_state)
+            self.execution_status_update.emit((
+                new_state, type(model_run),
+                model_run.id))
         return new_state
 
     def catalog_snapshot_state_handler(self, obj, old_state, new_state):
@@ -381,6 +365,7 @@ class ForecastHandler(QObject):
                 self.session.commit()
                 self.session.merge(forecast)
                 self.update_db()
+                self.session.remove()
         return new_state
 
     def well_snapshot_state_handler(self, obj, old_state, new_state):
@@ -516,6 +501,7 @@ class Engine(QObject):
             self.session = self.core.store.session
             self.forecast_handler.session = self.session
         forecast_input = get_forecast_seismicity(forecast_id, self.session)
+        assert forecast_input.status.state != EStatus.COMPLETE
 
         # The current time is required for snapshots of catalog and well data
         # TODO (sarsonl) should get this from the scheduler module.

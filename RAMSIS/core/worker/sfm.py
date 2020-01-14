@@ -22,6 +22,12 @@ KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'
 
 
+class MyGreatClass:
+    def fetch_json(self, url):
+        response = requests.get(url)
+        return response.json()
+
+
 class StatusCode(enum.Enum):
     """
     SFM-Worker status code enum.
@@ -321,6 +327,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Requesting tasks results (model={!r}) (bulk mode).'.format(
                     self.model))
+            print("1 requests.get", requests.get)
             req = functools.partial(
                 requests.get, self.url, timeout=self._timeout)
 
@@ -343,6 +350,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Requesting result (model={!r}, url={!r}, task_id={!r}).'.
                 format(self.model, url, t))
 
+            print("2 requests.get", requests.get)
             req = functools.partial(
                 requests.get, url, timeout=self._timeout)
 
@@ -384,15 +392,16 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         headers = {'Content-Type': self.MIMETYPE,
                    'Accept': 'application/json'}
+        print("requests post", requests.post, self.url)
         req = functools.partial(
             requests.post, self.url, data=_payload, headers=headers,
             timeout=self._timeout)
-
         response = self._handle_exceptions(req)
 
         try:
             result = response.json()
             if deserializer:
+                print("in deserialization", result)
                 result = deserializer._loado(result)
         except (ValueError, marshmallow.exceptions.ValidationError) as err:
             raise self.DecodingError(err)

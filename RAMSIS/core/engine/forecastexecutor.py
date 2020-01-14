@@ -44,6 +44,12 @@ from RAMSIS.wkt_utils import point_to_proj4
 log = logging.getLogger(__name__)
 
 
+@task
+def flatten_task(nested_list):
+    flattened_list = [item for sublist in nested_list for item in sublist]
+    return flattened_list
+
+
 class WellSnapshot(Task):
     """
     Prefect task to attach snapshot in time of the
@@ -111,6 +117,16 @@ def forecast_scenarios(forecast):
 
 
 class SeismicityModels(Task):
+    # model_run status should have been set to RUNNING
+    # but as long as is is not already DISPATCHED (sent to
+    # remote worker and need to get response) COMPLETED
+    # (already successfully run) or ERROR (many types of error
+    # are included), the model_run is allowed to
+    # rerun.
+    STATUS_POSTED = [EStatus.DISPATCHED,
+                     EStatus.COMPLETE,
+                     EStatus.ERROR]
+
     def run(self, scenario):
         model_runs = []
         try:
@@ -120,7 +136,8 @@ class SeismicityModels(Task):
             pass
         else:
             if stage_enabled:
-                model_runs = [r for r in stage.runs if r.enabled]
+                model_runs = [r for r in stage.runs if r.enabled and
+                              r.status.state not in self.STATUS_POSTED]
         return model_runs
 
 
@@ -228,8 +245,8 @@ class SeismicityModelRunExecutor(Task):
             resp = _worker_handle.compute(
                 payload, deserializer=SFMWorkerOMessageDeserializer())
         except RemoteSeismicityWorkerHandle.RemoteWorkerError:
-            raise FAIL(message="model run submission has failed with error: "
-                       "{err}", result=model_run)
+            raise FAIL(message="model run submission has failed with error: ",
+                       result=model_run)
 
         status = resp['data']['attributes']['status_code']
 
@@ -252,6 +269,7 @@ def dispatched_seismicity_model_runs(forecast):
         runs = stage.runs
         model_runs.extend([run for run in runs if run.runid and
                            run.status.state == EStatus.DISPATCHED])
+
     return model_runs
 
 
