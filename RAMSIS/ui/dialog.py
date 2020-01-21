@@ -85,7 +85,6 @@ class ScenarioConfigDialog(
 
         self._path_plan = None
         self._srs = srs
-
         self._data = scenario
         self._configure(scenario, fc_duration)
 

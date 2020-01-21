@@ -162,6 +162,7 @@ class MainWindow(QMainWindow,
         if scenario is not None:
             self.logger.debug(f"Dialog data: {dlg.data!r}")
 
+            fc = self.app.ramsis_core.store.get_fresh(fc)
             fc.append(scenario)
 
             self.app.ramsis_core.store.save()
@@ -177,6 +178,9 @@ class MainWindow(QMainWindow,
         if not idx.parent().isValid():
             return
         scenario = idx.data(role=CustomRoles.RepresentedItemRole)
+
+        scenario.forecast = self.app.ramsis_core.store.\
+            get_fresh(scenario.forecast)
         scenario.forecast.scenarios.remove(scenario)
         self.app.ramsis_core.store.save()
 

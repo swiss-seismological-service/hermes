@@ -1,4 +1,4 @@
-# Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
+# Cepyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 """
 Content presentation logic for the main window
 
@@ -17,7 +17,7 @@ from .tabs import GeneralTabPresenter
 from .timeline import TimeLinePresenter
 
 from ramsis.datamodel.forecast import Forecast, ForecastScenario
-
+from ramsis.datamodel.forecast import EStage
 from RAMSIS.core.controller import LaunchMode
 from RAMSIS.core.store import EditingContext
 from RAMSIS.ui.base.roles import CustomRoles
@@ -84,20 +84,20 @@ class ContentPresenter(object):
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
         # Essential signals from the core
-        self.ramsis_core.engine.execution_status_update.\
+        self.ramsis_core.engine.forecast_handler.execution_status_update.\
             connect(self.on_execution_status_update)
 
     # Display update methods for individual window components
 
     def show_project(self):
-        project = self.ramsis_core.project
-        self.fc_tree_model = ForecastTreeModel(project)
+        self.fc_tree_model = ForecastTreeModel(self.ramsis_core)
         self.ui.forecastTreeView.setModel(self.fc_tree_model)
         # observe selection changes
         fc_selection = self.ui.forecastTreeView.selectionModel()
         fc_selection.selectionChanged.connect(self.on_fc_selection_change)
 
     def add_forecast(self, forecast):
+        print("in mainwindow presenter", id(self.ramsis_core.project))
         self.fc_tree_model.add_forecast(forecast)
 
     def clear_project(self):
@@ -115,7 +115,8 @@ class ContentPresenter(object):
         color = StatusColor.OTHER
         errors = False
         msg = ''
-
+        self.current_scenario = self.ramsis_core.store.get_fresh(
+            self.current_scenario)
         scenario = self.current_scenario
         if scenario is None:
             msg = 'No scenario selected'
@@ -165,13 +166,15 @@ class ContentPresenter(object):
     def action_run_now(self, indexes):
         """ Run a forecast on demand """
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
-        self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast)
+        self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast.id)
 
     def action_create_sequence(self, indices):
         if indices:
             item = indices[0].data(CustomRoles.RepresentedItemRole)
 
             if isinstance(item, Forecast):
+                item = self.ramsis_core.store.get_fresh(item)
+                print("item: ", item)
                 dlg = CreateForecastSequenceDialog(item)
                 dlg.exec_()
 
@@ -215,6 +218,7 @@ class ContentPresenter(object):
 
                 if dlg.result() == QDialog.Accepted:
                     ctx.save()
+                    self._refresh_scenario_status()
 
             else:
                 raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")
@@ -225,8 +229,11 @@ class ContentPresenter(object):
         #   before parent notes. All this should be taken care of by the base
         #   tree model.
         for idx in indexes:
+
             item = idx.data(CustomRoles.RepresentedItemRole)
-            self.fc_tree_model.remove_node(idx.internalPointer())
+            item = self.ramsis_core.store.get_fresh(item)
+            self.fc_tree_model.remove_node(idx.internalPointer(),
+                                           self.ramsis_core.project)
             self.ramsis_core.store.delete(item)
         self.ramsis_core.store.save()
 
@@ -241,21 +248,38 @@ class ContentPresenter(object):
 
     def on_fc_selection_change(self, selection):
         idx = selection.indexes()[0]
-
+        if (self.current_scenario and
+                self.current_scenario in
+                self.ramsis_core.store.session()):
+            self.ramsis_core.store.session.expunge(self.current_scenario)
         if idx.parent().isValid():
             scenario = idx.data(role=CustomRoles.RepresentedItemRole)
         else:
             forecast = idx.data(role=CustomRoles.RepresentedItemRole)
             scenario = forecast.scenarios[0] if forecast.scenarios else None
         self.current_scenario = scenario
+        if self.current_scenario:
+            self.current_scenario = self.ramsis_core.\
+                store.get_fresh(self.current_scenario)
+        if self.current_scenario:
+            self.ramsis_core.store.add(self.current_scenario)
         for tab_presenter in self.tab_presenters:
+            self.current_scenario = self.ramsis_core.store.get_fresh(
+                self.current_scenario)
             tab_presenter.present_scenario(self.current_scenario)
         self._refresh_scenario_status()
 
     # Signals from the core
-
-    def on_execution_status_update(self, _):
+    def on_execution_status_update(self, status):
         general_tab = next(t for t in self.tab_presenters
                            if isinstance(t, GeneralTabPresenter))
-        general_tab.refresh_status()
+        self.current_scenario = self.ramsis_core.store.\
+            get_fresh(self.current_scenario)
+        if self.current_scenario:
+            for run in self.current_scenario[EStage.SEISMICITY].runs:
+                self.ramsis_core.store.session.add(run)
+            self.ramsis_core.store.add(self.current_scenario)
+        general_tab.refresh_status(self.current_scenario)
         self._refresh_scenario_status()
+        if self.current_scenario:
+            self.ramsis_core.store.session.expunge(self.current_scenario)

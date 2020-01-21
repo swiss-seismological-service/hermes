@@ -7,17 +7,15 @@ to query and create top level data-model entities. It handles the db session
 and connection engine over the life cycle of the app.
 
 """
-
 import logging
 import pkgutil
 import re
 import sys
 
 from functools import wraps
-
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, with_polymorphic
+from sqlalchemy.orm import sessionmaker, with_polymorphic, scoped_session
 
 import ramsis.datamodel
 from ramsis.datamodel.base import ORMBase
@@ -61,11 +59,12 @@ class Store:
         """
         starred_url = re.sub("(?<=:)([^@:]+)(?=@[^@]+$)", "***", db_url)
         logger.info(f'Opening DB connection at {starred_url}')
-        self.engine = create_engine(db_url)
+        self.engine = create_engine(db_url, echo=False)
         # TODO LH: reconsider the use of expire_on_commit=False
-        self.make_session = sessionmaker(bind=self.engine,
-                                         expire_on_commit=False)
-        self.session = self.make_session()
+        self.make_session = scoped_session(sessionmaker(
+            bind=self.engine, expire_on_commit=False,
+            autocommit=False, autoflush=True))
+        self.session = self.make_session
 
     def init_db(self):
         """
@@ -84,6 +83,26 @@ class Store:
             return False
         return True
 
+    def get_fresh(self, obj):
+        """
+        Refresh the objects
+
+        :param obj: Data model object to be added
+        """
+        if obj:
+            new_obj = self.session.query(type(obj)).\
+                populate_existing().get(obj.id)
+            return new_obj
+
+    def merge(self, obj):
+        """
+        Register a newly created object by merging it with already existing
+        instances of the object. This avoids duplicate primary key errors.
+
+        :param obj: Data model object to be added
+        """
+        self.session.merge(obj)
+
     def add(self, obj):
         """
         Register a newly created object
@@ -100,13 +119,23 @@ class Store:
         """
         self.session.delete(obj)
 
+    def flush(self):
+        """
+        Flush the session changes
+        """
+        self.session.flush()
+
     def save(self):
+        """
+        Save the session changes with commit
+        """
         self.session.commit()
 
     def close(self):
-        logger.info(f'Closing DB connection')
-        self.session.close()
-        self.session = None
+        """
+        Close session by removing it
+        """
+        self.session.remove()
 
     def all_projects(self):
         """
@@ -214,7 +243,7 @@ class EditingContext:
         :param obj: Data model object to copy for editing
 
         """
-        editing_copy = self._editing_session.merge(obj, load=False)
+        editing_copy = self._editing_session.merge(obj, load=True)
         self._edited.add(editing_copy)
         return editing_copy
 
@@ -272,6 +301,6 @@ class EditingContext:
             # causes other issues
             if obj in self._editing_session.deleted:
                 self._store.delete(original)
+        self._editing_session.commit()
         self._editing_session.close()
-        self._editing_session = None
         self._store.save()

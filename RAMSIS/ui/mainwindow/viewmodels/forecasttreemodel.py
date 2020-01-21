@@ -75,6 +75,9 @@ class ForecastNode(Node):
             return local.strftime('%Y-%m-%d %H:%M')
         return default
 
+    def update_children(self, project):
+        self.children = [ScenarioNode(s, self) for s in self.item.scenarios]
+
 
 class ForecastsRootNode(Node):
     """
@@ -87,15 +90,22 @@ class ForecastsRootNode(Node):
         super().__init__(COLUMNS, parent_node=None)
         self.children = [ForecastNode(f, self) for f in project.forecasts]
 
+    def update_children(self, project):
+        self.children = [ForecastNode(f, self) for f in project.forecasts]
+
 
 class ForecastTreeModel(TreeModel):
 
-    def __init__(self, project):
-        self.project = project
-        self.root_node = ForecastsRootNode(project)
+    def __init__(self, ramsis_core):
+        self.ramsis_core = ramsis_core
+        self.project = ramsis_core.project
+        self.root_node = ForecastsRootNode(self.project)
         super(ForecastTreeModel, self).__init__(root_node=self.root_node)
 
     def add_forecast(self, forecast):
+
+        self.project = self.ramsis_core.store.get_fresh(
+            self.ramsis_core.project)
         row = self.project.forecasts.index(forecast)
         node = ForecastNode(forecast, self.root_node)
         self.insert_nodes(self.root_node, row, [node])

@@ -119,7 +119,9 @@ class TaskManager:
 
     def run_forecast(self, t):
         self.logger.info('Forecast initiated at {}'.format(t))
-        self.core.engine.run(t, self.forecast_task.next_forecast)
+        for ind, forecast in enumerate(self.forecast_task.forecasts):
+            self.logger.info('forecasts #{}'.format(ind))
+            self.core.engine.run(t, forecast.id)
 
 
 class ForecastTask(Task):
@@ -130,7 +132,7 @@ class ForecastTask(Task):
 
     def __init__(self, task_function, core):
         super(ForecastTask, self).__init__(task_function, name='ForecastTask')
-        self.next_forecast = None
+        self.forecasts = []
         self.core = core
 
     def schedule(self, t):
@@ -147,8 +149,10 @@ class ForecastTask(Task):
 
         forecasts = self.core.project.forecasts
         try:
-            self.next_forecast = next(f for f in forecasts if f.starttime > t)
-            self.run_time = self.next_forecast.starttime
-        except StopIteration:
-            self.next_forecast = None
+            self.forecasts = [f for f in forecasts if f.starttime > t]
+            # If any forecasts have a starttime that is less than the wallclock
+            # time, run task.
+            self.run_time = min([f.starttime for f in self.forecasts])
+        except (StopIteration, ValueError):
+            self.forecasts = []
             self.run_time = None

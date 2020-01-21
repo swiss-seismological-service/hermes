@@ -23,7 +23,7 @@ def seismicity_stage(**kwargs):
     """
     Build a seismicity forecast stage.
     """
-    return ForecastStage.create(EStage.SEISMICITY, **kwargs)
+    return ForecastStage.create(EStage.SEISMICITY, status=Status(), **kwargs)
 
 
 def seismicity_skill_stage(**kwargs):
@@ -31,21 +31,22 @@ def seismicity_skill_stage(**kwargs):
     Build a seismicity skill forecast stage.
     """
 
-    return ForecastStage.create(EStage.SEISMICITY_SKILL, **kwargs)
+    return ForecastStage.create(EStage.SEISMICITY_SKILL, status=Status(),
+                                **kwargs)
 
 
 def hazard_stage(**kwargs):
     """
     Build a hazard forecast stage.
     """
-    return ForecastStage.create(EStage.HAZARD, **kwargs)
+    return ForecastStage.create(EStage.HAZARD, status=Status(), **kwargs)
 
 
 def risk_stage(**kwargs):
     """
     Build a risk forecast stage.
     """
-    return ForecastStage.create(EStage.RISK, **kwargs)
+    return ForecastStage.create(EStage.RISK, status=Status(), **kwargs)
 
 
 def default_scenario(store, name='Scenario', **kwargs):
@@ -135,6 +136,7 @@ def default_scenario(store, name='Scenario', **kwargs):
         name=name,
         config={},
         enabled=True,
+        status=Status(),
         stages=create_stages(store, DEFAULT_SCENARIO_CONFIG['stages']))
 
 
@@ -156,6 +158,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
     return Forecast(name=name, starttime=starttime, endtime=endtime,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
                     enabled=True, config={},
+                    status=Status(),
                     scenarios=[default_scenario(store)
                                for s in range(num_scenarios)])
 

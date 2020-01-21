@@ -475,8 +475,10 @@ class _InjectionWellSchema(_SchemaBase):
 
     @pre_dump
     def add_altitude_context(self, data, **kwargs):
+        altitude_value = None
         try:
-            altitude_value = data.altitude_value
+            if data:
+                altitude_value = data.altitude_value
         except AttributeError as err:
             raise ValidationError(
                 f'Injection well has no altitude value. {err}')
