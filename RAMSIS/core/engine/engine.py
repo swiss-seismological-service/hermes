@@ -15,7 +15,7 @@ from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     SeismicityModels, forecast_scenarios,\
     dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot,\
-    flatten_task
+    flatten_task, check_stage_enabled
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.forecast import Forecast, ForecastScenario, \
     EStage, SeismicityForecastStage
@@ -25,9 +25,10 @@ from ramsis.datamodel.well import InjectionWell, WellSection
 from ramsis.datamodel.hydraulics import InjectionPlan, Hydraulics
 from ramsis.datamodel.project import Project
 import prefect
-from prefect import Flow, Parameter, unmapped
+from prefect import Flow, Parameter, unmapped, task
 from prefect.engine.executors import LocalDaskExecutor
-
+from prefect.tasks.control_flow.conditional import ifelse, merge
+from prefect.engine.result import NoResultType
 
 class WorkerSignals(QObject):
     '''
@@ -258,14 +259,15 @@ class ForecastHandler(QObject):
             for scenario in forecast.scenarios:
                 scenario = self.scenario_stage_status(scenario)
             self.update_db()
-        self.session.remove()
+            self.session.remove()
         return new_state
 
     def scenario_models_state_handler(self, obj, old_state, new_state):
         """
         Set the model runs status to RUNNING when this task suceeds.
         """
-        if (new_state.is_finished() and
+        if (not isinstance(new_state.result, NoResultType) and
+                new_state.is_finished() and
                 new_state.is_successful() and not
                 new_state.is_mapped()):
             model_runs = new_state.result
@@ -285,7 +287,7 @@ class ForecastHandler(QObject):
         """
         logger = prefect.context.get("logger")
 
-        if new_state.is_finished() and not new_state.is_mapped():
+        if new_state.is_finished() and not new_state.is_mapped() and not isinstance(new_state.result, NoResultType):
             if new_state.is_successful():
                 model_run = new_state.result
                 update_model_run = self.session.query(SeismicityModelRun).\
@@ -296,6 +298,8 @@ class ForecastHandler(QObject):
                 update_model_run.status.state = model_run.status.state
             elif not new_state.is_successful():
                 # prefect Fail should be raised with model_run as a result
+                logger.warning(f"Model run has failed: {new_state.result}. "
+                               f"Message: {new_state.message}")
                 model_run = new_state.result
                 update_model_run = self.session.query(SeismicityModelRun).\
                     filter(SeismicityModelRun.id == model_run.id).first()
@@ -319,7 +323,8 @@ class ForecastHandler(QObject):
         """
         logger = prefect.context.get("logger")
 
-        if (new_state.is_finished() and not
+        if (not isinstance(new_state.result, NoResultType) and 
+                new_state.is_finished() and not
                 new_state.is_mapped() and not
                 new_state.is_looped()):
             if new_state.is_successful():
@@ -355,22 +360,24 @@ class ForecastHandler(QObject):
         to the session and forecast merged as an attribute was modified.
         """
         logger = prefect.context.get("logger")
-        if new_state.is_finished() and new_state.is_successful():
+        print(new_state, new_state.result, type(new_state.result))
+        if not isinstance(new_state.result, NoResultType) and new_state.is_finished() and new_state.is_successful():
             forecast = new_state.result
-            if new_state.is_skipped():
-                logger.info(f"Forecast id={forecast.id} already a snapshot"
-                            " of the seismic catalog attached.")
-            else:
-                logger.info(f"Forecast id={forecast.id} has made a snapshot"
-                            " of the seismic catalog")
-                # A forecast may only have one seismiccatalog associated
-                # This is enforced in code rather than at db level.
-                assert(len(forecast.seismiccatalog) == 1)
+            # A forecast may only have one seismiccatalog associated
+            # This is enforced in code rather than at db level.
+            assert(len(forecast.seismiccatalog) == 1)
+            if forecast.seismiccatalog[0] not in self.session():
                 self.session.add(forecast.seismiccatalog[0])
                 self.session.commit()
                 self.session.merge(forecast)
                 self.update_db()
-                self.session.remove()
+                logger.info(f"Forecast id={forecast.id} has made a snapshot"
+                            " of the seismic catalog")
+            else:
+                logger.info(f"Forecast id={forecast.id} already has a snapshot"
+                            " of the seismic catalog. "
+                            "No new snapshot is being made.")
+        self.session.remove()
         return new_state
 
     def well_snapshot_state_handler(self, obj, old_state, new_state):
@@ -381,23 +388,51 @@ class ForecastHandler(QObject):
         to the session and forecast merged as an attribute was modified.
         """
         logger = prefect.context.get("logger")
-        if new_state.is_finished() and new_state.is_successful():
+        if not isinstance(new_state.result, NoResultType) and new_state.is_finished() and new_state.is_successful():
             forecast = new_state.result
-            if new_state.is_skipped():
-                logger.info(f"Forecast id={forecast.id} already a snapshot"
-                            " of hydraulic well attached.")
-            else:
-                logger.info(f"Forecast id={forecast.id} has made a snapshot"
-                            " of the hydraulic well")
-                # A forecast may only have one well associated
-                # This is enforced in code rather than at db level.
-                assert(len(forecast.well) == 1)
+            # A forecast may only have one well associated
+            # This is enforced in code rather than at db level.
+            assert(len(forecast.well) == 1)
+            if forecast.seismiccatalog[0] not in self.session():
                 self.session.add(forecast.well[0])
                 self.session.commit()
                 self.session.merge(forecast)
+                logger.info(f"Forecast id={forecast.id} already has a snapshot"
+                            " of the well. "
+                            "No new snapshot is being made.")
                 self.update_db()
         return new_state
 
+
+@task
+def skip_seismicity_stage(forecast):
+    logger = prefect.context.get('logger')
+    logger.info('Seismicity stage has been skipped'
+                f' for forecast_id: {forecast.id}'
+                ' as no tasks are required to be done.')
+
+@task
+def seismicity_stage_complete(forecast):
+    
+    status_work_required = [
+        EStatus.DISPATCHED,
+        EStatus.PENDING]
+
+    seismicity_stage_done = True
+    for scenario in forecast.scenarios:
+        try:
+            stage = scenario[EStage.SEISMICITY]
+            stage_enabled = stage.enabled
+        except KeyError:
+            continue
+        else:
+            if stage_enabled:
+                for r in stage.runs:
+                    if r.status.state in status_work_required:
+                        seismicity_stage_done = False
+                        continue
+        print("seismicity stage is done: ", seismicity_stage_done)
+        return seismicity_stage_done
 
 class ForecastFlow(QObject):
     """
@@ -415,22 +450,25 @@ class ForecastFlow(QObject):
                   state_handlers=[self.forecast_handler.flow_state_handler]
                   ) as seismicity_flow:
             forecast = Parameter('forecast')
+            # If there is no work to be done on seismicity stages, skip tasks until merge.
+            seismicity_stage_conditional = seismicity_stage_complete(
+                forecast)
+            skip_seismicity = skip_seismicity_stage(forecast)
             catalog_snapshot = CatalogSnapshot(
-                skip_on_upstream_skip=False,
                 state_handlers=[self.forecast_handler.
                                 catalog_snapshot_state_handler])
-            forecast_data = catalog_snapshot(forecast, self.system_time)
+            forecast = catalog_snapshot(forecast, self.system_time)
+            
+            ifelse(seismicity_stage_conditional, skip_seismicity, forecast) 
 
             well_snapshot = WellSnapshot(
-                skip_on_upstream_skip=False,
                 state_handlers=[self.forecast_handler.
                                 well_snapshot_state_handler])
-            forecast_data = well_snapshot(forecast_data, self.system_time)
-
+            forecast = well_snapshot(forecast, self.system_time)
             scenarios = forecast_scenarios(
-                forecast_data)
+                forecast)
+            # Seismicity stage enabled is checked in seismicity_models task
             seismicity_models = SeismicityModels(
-                skip_on_upstream_skip=False,
                 state_handlers=[self.forecast_handler.
                                 scenario_models_state_handler])
             model_runs = seismicity_models.map(
@@ -438,14 +476,13 @@ class ForecastFlow(QObject):
 
             model_runs_flattened = flatten_task(model_runs)
             model_run_executor = SeismicityModelRunExecutor(
-                state_handlers=[self.forecast_handler.model_run_state_handler],
-                skip_on_upstream_skip=False)
+                state_handlers=[self.forecast_handler.model_run_state_handler])
 
             _ = model_run_executor.map(
-                unmapped(forecast_data), model_runs_flattened)
+                unmapped(forecast), model_runs_flattened)
 
             dispatched_model_runs = dispatched_seismicity_model_runs(
-                forecast_data)
+                forecast)
 
             # Add dependency so that SeismicityModelRunExecutor must complete
             # before checking for model runs with DISPATCHED status.
@@ -456,12 +493,21 @@ class ForecastFlow(QObject):
 
             model_run_poller = SeismicityModelRunPoller(
                 state_handlers=[
-                    self.forecast_handler.poll_seismicity_state_handler],
-                skip_on_upstream_skip=False)
-            _ = model_run_poller.map(unmapped(forecast_data),
+                    self.forecast_handler.poll_seismicity_state_handler])
+            poller = model_run_poller.map(unmapped(forecast),
                                      dispatched_model_runs)
 
+            seismicity_stage_end = merge(poller, skip_seismicity)
+            # Start Hazard stage
+            # Collect scenarios which may have been updated
+            scenarios = forecast_scenarios(
+                forecast)
+            # Load config and validate
+
+
+
         # (sarsonl) To view DAG: seismicity_flow.visualize()
+        seismicity_flow.visualize()
 
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(forecast_id=self.forecast.id):

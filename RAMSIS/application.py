@@ -25,6 +25,9 @@ from RAMSIS import __version__
 from RAMSIS.ui.ramsisgui import RamsisGui
 from RAMSIS.core.controller import Controller, LaunchMode
 
+APP_SETTINGS_FILENAME = 'settings.yml'
+OQ_CONFIG_FILENAME = 'openquake_config.yml'
+
 
 class AppSettings:
     """
@@ -33,7 +36,6 @@ class AppSettings:
     To access settings through this class.
 
     """
-
     def __init__(self, settings_file=None):
         """
         Load either the default settings or, if a file name is
@@ -119,10 +121,15 @@ class Application(QtCore.QObject):
         # Load application settings
         locations = QStandardPaths.\
             standardLocations(QStandardPaths.AppConfigLocation)
-        paths = (os.path.join(loc, 'settings.yml') for loc in locations)
+        paths = (os.path.join(loc, APP_SETTINGS_FILENAME) for loc in locations)
         settings_file = next((p for p in paths if os.path.isfile(p)),
-                             'settings.yml')
+                             APP_SETTINGS_FILENAME)
         self.app_settings = AppSettings(settings_file)
+        # Get openquake config file path
+        oq_config_paths = (os.path.join(loc, OQ_CONFIG_FILENAME)
+                           for loc in locations)
+        self.oq_config_file = next((p for p in oq_config_paths if
+                                    os.path.isfile(p)), None)
         # Enable Ctrl-C
         signal.signal(signal.SIGINT, self._on_sigint)
         # Once the Qt event loop is running, we need a timer to periodically

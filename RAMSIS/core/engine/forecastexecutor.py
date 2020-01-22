@@ -44,6 +44,14 @@ def flatten_task(nested_list):
     flattened_list = [item for sublist in nested_list for item in sublist]
     return flattened_list
 
+@task
+def check_stage_enabled(scenario, estage):
+    try:
+        stage_enabled = scenario[estage].enabled
+    except (KeyError, AttributeError):
+        stage_enabled = False
+    return stage_enabled
+
 
 class WellSnapshot(Task):
     """
@@ -63,8 +71,7 @@ class WellSnapshot(Task):
             # If a snapshot is already attached, skip task
             # (sarsonl) bug in prefect meaning that raise SKIP
             # cannot be used, this is the work-around.
-            skip = Skipped("skipping", result=forecast)
-            raise ENDRUN(state=skip)
+            pass
         else:
             well = forecast.project.well.\
                 snapshot(sample_filter_cond=filter_future)
@@ -92,8 +99,9 @@ class CatalogSnapshot(Task):
 
         if forecast.seismiccatalog:
             # If a snapshot is already attached, skip task
-            skip = Skipped("skipping", result=forecast)
-            raise ENDRUN(state=skip)
+            #skip = Skipped("skipping", result=forecast)
+            #raise ENDRUN(state=skip)
+            pass
         else:
             seismiccatalog = forecast.project.seismiccatalog.\
                 snapshot(filter_cond=filter_future)
@@ -105,7 +113,7 @@ class CatalogSnapshot(Task):
         return forecast
 
 
-@task(skip_on_upstream_skip=False)
+@task
 def forecast_scenarios(forecast):
     scenarios = [s for s in forecast.scenarios if s.enabled]
     return scenarios
@@ -254,7 +262,7 @@ class SeismicityModelRunExecutor(Task):
                     ref_northing=project.referencepoint_y,
                     transform_func_name='pyproj_transform_to_local_coords'))
         except RemoteSeismicityWorkerHandle.RemoteWorkerError:
-            raise FAIL(message="model run submission has failed with error: ",
+            raise FAIL(message="model run submission has failed with error: RemoteWorkerError. Check if remote worker is accepting requests.",
                        result=model_run)
 
         status = resp['data']['attributes']['status_code']
@@ -269,7 +277,7 @@ class SeismicityModelRunExecutor(Task):
         return model_run
 
 
-@task(skip_on_upstream_skip=False)
+@task
 def dispatched_seismicity_model_runs(forecast):
     logger = prefect.context.get('logger')
     seismicity_stages = [s[EStage.SEISMICITY] for s in forecast.scenarios
