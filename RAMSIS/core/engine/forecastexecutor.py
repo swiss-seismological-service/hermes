@@ -1,4 +1,4 @@
-# Copyright (c) 2019, ETH Zurich, Swiss Seismological Service
+# Copyright (c) 2019, ETH Zurich, Swiss Seismological Service # Noqa
 """
 Classes to execute a forecast
 
@@ -36,10 +36,6 @@ from ramsis.datamodel.forecast import EStage
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
 from RAMSIS.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
-from RAMSIS.io.utils import (pymap3d_transform_geodetic2ned,
-                             pymap3d_transform_ned2geodetic)
-from RAMSIS.wkt_utils import point_to_proj4
-
 
 log = logging.getLogger(__name__)
 
@@ -210,7 +206,9 @@ class SeismicityModelRunExecutor(Task):
     TASK_ACCEPTED = 202
 
     def run(self, forecast, model_run):
-
+        # Deepcopy items that are transformed, otherwise
+        # die to concurrency, the same object gets transformed
+        # multiple times.
         stage = model_run.forecaststage
         scenario = model_run.forecaststage.scenario
         project = forecast.project
@@ -218,9 +216,9 @@ class SeismicityModelRunExecutor(Task):
         # allow one to one relationship between forecast-well
         # and forecast-seismiccatalog. Work-around is to leave
         # as one to many relationship and assume just one item in list.
-        well = forecast.well[0]
-        injection_plan = scenario.well
-        seismiccatalog = forecast.seismiccatalog[0]
+        well = forecast.well[0].snapshot()
+        injection_plan = scenario.well.snapshot()
+        seismiccatalog = forecast.seismiccatalog[0].snapshot()
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
@@ -234,16 +232,27 @@ class SeismicityModelRunExecutor(Task):
             'well': well,
             'model_parameters': model_parameters,
             'reservoir': scenario.reservoirgeom,
+            'spatialreference': project.spatialreference,
+            'referencepoint_x': project.referencepoint_x,
+            'referencepoint_y': project.referencepoint_y,
             'scenario': {'well': injection_plan}, }
 
         serializer = SFMWorkerIMessageSerializer(
-            proj=point_to_proj4(project.referencepoint),
-            transform_callback=pymap3d_transform_ned2geodetic)
+            ramsis_proj=project.spatialreference,
+            external_proj="epsg:4326",
+            ref_easting=project.referencepoint_x,
+            ref_northing=project.referencepoint_y,
+            transform_func_name='pyproj_transform_from_local_coords')
         payload = _worker_handle.Payload(**data, serializer=serializer)
 
         try:
             resp = _worker_handle.compute(
-                payload, deserializer=SFMWorkerOMessageDeserializer())
+                payload, deserializer=SFMWorkerOMessageDeserializer(
+                    ramsis_proj=project.spatialreference,
+                    external_proj="epsg:4326",
+                    ref_easting=project.referencepoint_x,
+                    ref_northing=project.referencepoint_y,
+                    transform_func_name='pyproj_transform_to_local_coords'))
         except RemoteSeismicityWorkerHandle.RemoteWorkerError:
             raise FAIL(message="model run submission has failed with error: ",
                        result=model_run)
@@ -260,6 +269,9 @@ class SeismicityModelRunExecutor(Task):
 
 @task(skip_on_upstream_skip=False)
 def dispatched_seismicity_model_runs(forecast):
+    logger = prefect.context.get('logger')
+    logger.info('started dispatched seismicity models')
+    wait_timeout = 3
 
     seismicity_stages = [s[EStage.SEISMICITY] for s in forecast.scenarios
                          if s.enabled]
@@ -267,9 +279,26 @@ def dispatched_seismicity_model_runs(forecast):
     model_runs = []
     for stage in seismicity_stages:
         runs = stage.runs
+        # If not all the runs have been set to DISPATCHED, they are still
+        # in a RUNNING state, which is changed by the state handler. However
+        # this may not happen quickly enough to update here.
+        for wait in range(wait_timeout):
+            if [run for run in runs if
+                    run.status.state == EStatus.RUNNING]:
+                time.sleep(1)
+            else:
+                continue
+            if wait == wait_timeout - 1:
+                logger = prefect.context.get('logger')
+                logger.warning(
+                    'Some model runs are not in the DISPATCHED state'
+                    ' and will not be polled for. Please run the'
+                    ' forecast again to poll for these.')
+
         model_runs.extend([run for run in runs if run.runid and
                            run.status.state == EStatus.DISPATCHED])
 
+    logger.info('returning model runs from dispatched task')
     return model_runs
 
 
@@ -298,8 +327,11 @@ class SeismicityModelRunPoller(Task):
             model_run)
 
         deserializer = SFMWorkerOMessageDeserializer(
-            proj=point_to_proj4(project.referencepoint),
-            transform_callback=pymap3d_transform_geodetic2ned,
+            ramsis_proj=project.spatialreference,
+            external_proj="epsg:4326",
+            ref_easting=project.referencepoint_x,
+            ref_northing=project.referencepoint_y,
+            transform_func_name='pyproj_transform_to_local_coords',
             many=True)
         try:
             resp = _worker_handle.query(
@@ -312,6 +344,7 @@ class SeismicityModelRunPoller(Task):
             status = resp['data']['attributes']['status_code']
 
             if status in (self.TASK_ACCEPTED, self.TASK_PROCESSING):
+                logger.info("sleeping")
                 time.sleep(15)
                 raise LOOP(
                     message=f"(forecast{forecast.id})(scenario.id="

@@ -15,7 +15,6 @@ import requests
 from marshmallow import Schema, fields, validate
 
 from RAMSIS.core.worker import WorkerHandleBase
-from RAMSIS.io.sfm import SFMWorkerIMessageSerializer
 
 
 KEY_DATA = 'data'
@@ -227,10 +226,9 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             scenario).
         """
 
-        DEFAULT_SERIALIZER = SFMWorkerIMessageSerializer
-
         def __init__(self, seismic_catalog, well, scenario, reservoir,
-                     model_parameters=None, **kwargs):
+                     referencepoint_x, referencepoint_y,
+                     spatialreference, model_parameters=None, **kwargs):
             """
             :param str seismic_catalog: Snapshot of a seismic catalog in
             `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
@@ -255,6 +253,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                         'seismic_catalog': {'quakeml': seismic_catalog},
                         'well': well,
                         'scenario': scenario,
+                        'spatialreference': spatialreference,
+                        'referencepoint': {
+                            'x': referencepoint_x,
+                            'y': referencepoint_y},
                         'reservoir': {'geom': reservoir}}}}
 
             if model_parameters is not None:
@@ -262,7 +264,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                     model_parameters
 
             self._serializer = kwargs.get(
-                'serializer', self.DEFAULT_SERIALIZER())
+                'serializer')
+            assert self._serializer, "No serializer configured"
 
         def dumps(self):
             return self._serializer.dumps(self._payload)
@@ -327,7 +330,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Requesting tasks results (model={!r}) (bulk mode).'.format(
                     self.model))
-            print("1 requests.get", requests.get)
             req = functools.partial(
                 requests.get, self.url, timeout=self._timeout)
 
@@ -350,7 +352,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Requesting result (model={!r}, url={!r}, task_id={!r}).'.
                 format(self.model, url, t))
 
-            print("2 requests.get", requests.get)
             req = functools.partial(
                 requests.get, url, timeout=self._timeout)
 
@@ -392,7 +393,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         headers = {'Content-Type': self.MIMETYPE,
                    'Accept': 'application/json'}
-        print("requests post", requests.post, self.url)
         req = functools.partial(
             requests.post, self.url, data=_payload, headers=headers,
             timeout=self._timeout)
@@ -401,7 +401,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         try:
             result = response.json()
             if deserializer:
-                print("in deserialization", result)
                 result = deserializer._loado(result)
         except (ValueError, marshmallow.exceptions.ValidationError) as err:
             raise self.DecodingError(err)

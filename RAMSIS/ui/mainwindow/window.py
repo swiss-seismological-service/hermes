@@ -29,7 +29,6 @@ from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 from RAMSIS.ui.utils import UiForm
-from RAMSIS.wkt_utils import point_to_proj4
 
 from .presenter import ContentPresenter
 
@@ -151,11 +150,16 @@ class MainWindow(QMainWindow,
 
         fc = idx.data(CustomRoles.RepresentedItemRole)
 
+        print("in mainwindow window")
         dlg = ScenarioConfigDialog(
             default_scenario(self.app.ramsis_core.store),
             fc_duration=(fc.endtime - fc.starttime).total_seconds(),
-            srs=point_to_proj4(
-                self.app.ramsis_core.project.referencepoint) or None)
+            deserializer_args={
+                'ramsis_proj': self.app.ramsis_core.project.spatialreference,
+                'external_proj': self.app.ramsis_core.external_proj,
+                'ref_easting': self.app.ramsis_core.project.referencepoint_x,
+                'ref_northing': self.app.ramsis_core.project.referencepoint_y,
+                'transform_func_name': 'pyproj_transform_to_local_coords'})
         dlg.exec_()
 
         scenario = dlg.data

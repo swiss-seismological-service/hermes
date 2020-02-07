@@ -266,14 +266,12 @@ class ForecastHandler(QObject):
         """
         Set the model runs status to RUNNING when this task suceeds.
         """
-        print("scenario_models_state_handler: ", new_state)
         if (new_state.is_finished() and
                 new_state.is_successful() and not
                 new_state.is_mapped()):
             model_runs = new_state.result
             for run in model_runs:
                 run.status.state = EStatus.RUNNING
-                print("model run is running")
                 self.session.merge(run)
                 self.session.commit()
             self.update_db()

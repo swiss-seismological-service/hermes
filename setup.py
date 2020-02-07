@@ -34,13 +34,13 @@ _install_requires = [
     # AttributeError: module 'scipy.special' has no attribute 'loggamma'
     # while installing pymap3d
     "astropy>=2.0.3",
-    "GDAL==2.2.3",
+    "GDAL",
     "lxml>=3.3.3",
     "matplotlib",
     "marshmallow==3.0.0rc8",
     # TODO (damb): check if valid version: "numpy==1.8.2",
     "numpy>=1.8.2",
-    "obspy>=1.0.2",
+    "obspy==1.1.0",
     "PyOpenGL>=3.1.1a1",
     "PyQt5 >=5.12, <5.13",
     "pymap3d",
@@ -49,7 +49,9 @@ _install_requires = [
     "PyYAML>=5.1.1",
     "ramsis.datamodel==0.3rc0",
     "requests>=2.18.4",
-    "transitions==0.6.9", ]
+    "transitions==0.6.9",
+    "prefect",
+    "pyproj==2.3.0"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

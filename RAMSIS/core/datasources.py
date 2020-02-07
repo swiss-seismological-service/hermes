@@ -14,7 +14,7 @@ from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSJSONIOError)
 from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
                                 QuakeMLCatalogIOError)
-from RAMSIS.io.utils import (binary_request, pymap3d_transform_geodetic2ned,
+from RAMSIS.io.utils import (binary_request,
                              NoContent, RequestsError)
 
 
@@ -26,7 +26,7 @@ class HYDWSDataSource(QtCore.QThread):
 
     data_received = QtCore.pyqtSignal(object)
 
-    def __init__(self, url, timeout=None, proj=None):
+    def __init__(self, url, project, timeout=None):
         super().__init__()
         self.url = url
         self._timeout = timeout
@@ -36,8 +36,11 @@ class HYDWSDataSource(QtCore.QThread):
         self.logger = logging.getLogger(__name__)
 
         self._deserializer = self.DESERIALZER(
-            proj=proj,
-            transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=project.spatialreference,
+            external_proj=4326,
+            ref_easting=project.referencepoint_x,
+            ref_northing=project.referencepoint_y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
     def fetch(self, **kwargs):
         """
@@ -88,7 +91,7 @@ class FDSNWSDataSource(QtCore.QThread):
 
     data_received = QtCore.pyqtSignal(object)
 
-    def __init__(self, url, timeout=None, proj=None):
+    def __init__(self, url, project, timeout=None):
         super().__init__()
         self.url = url
         self._timeout = timeout
@@ -98,8 +101,11 @@ class FDSNWSDataSource(QtCore.QThread):
         self.logger = logging.getLogger(__name__)
 
         self._deserializer = self.DESERIALZER(
-            proj=proj,
-            transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=project.spatialreference,
+            external_proj=4326,
+            ref_easting=project.referencepoint_x,
+            ref_northing=project.referencepoint_y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
     def fetch(self, **kwargs):
         """

@@ -60,6 +60,11 @@ from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 
 dirpath = os.path.dirname(os.path.abspath(__file__))
 
+RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m "
+               "+x_0=0.0 +y_0=0.0 +no_defs")
+WGS84_PROJ = "epsg:4326"
+REFERENCE_X = 681922
+REFERENCE_Y = 1179229
 
 PATH_SEISMICS = 'catalog_data/seismics.qml'
 # Only ~this many files can be imported and merged before
@@ -76,20 +81,13 @@ FORECAST_STARTTIME = PROJECT_STARTTIME
 FORECAST_ENDTIME = datetime(2006, 12, 2, 0, 30)
 
 # NOTE(sarsonl): Reservoir definition containing all seismic events.
-RESERVOIR = ('POLYHEDRALSURFACE Z ((('
-             '47.58 7.59 -20000,47.58 7.6 -20000,47.592 7.6 -20000,'
-             '47.592 7.59 -20000,47.58 7.59 -20000)),'
-             '((47.58 7.59 -20000,47.58 7.6 -20000,'
-             '47.58 7.6 0,47.58 7.59 0,47.58 7.59 -20000)),'
-             '((47.58 7.59 -20000,47.592 7.59 -20000,'
-             '47.592 7.59 0,47.58 7.59 0,47.58 7.59 -20000)),'
-             '((47.592 7.6 0,47.592 7.59 0,47.58 7.59 0,'
-             '47.58 7.6 0,47.592 7.6 0)),'
-             '((47.592 7.6 0,47.592 7.59 0,47.592 7.59 -20000,'
-             '47.592 7.6 -20000,47.592 7.6 0)),'
-             '((47.592 7.6 0,47.592 7.6 -20000,47.58 7.6 -20000,'
-             '47.58 7.6 0,47.592 7.6 0)))')
-RESERVOIR_ENCODED = 'results_data/geom1.txt'
+RESERVOIR_INPUT = {"x": [-2000, 2000], "y": [-2000, 2000], "z": [-4000, 0]}
+X_MIN = -2000
+X_MAX = 2000
+Y_MIN = -2000
+Y_MAX = 2000
+Z_MIN = -4000
+Z_MAX = 0
 
 JSON_POSTED_DATA1 = 'results_data/json_posted_data1.json'
 JSON_POSTED_DATA2 = 'results_data/json_posted_data2.json'
@@ -101,7 +99,12 @@ JSON_GET_TEMPLATE = {
             "status": "TaskCompleted",
             "status_code": 200,
             "forecast": {
-                "geom": RESERVOIR,
+                "x_min": X_MIN,
+                "y_min": Y_MIN,
+                "z_min": Z_MIN,
+                "x_max": X_MAX,
+                "y_max": Y_MAX,
+                "z_max": Z_MAX,
                 "samples": [
                     {
                         "starttime": "2015-05-07T00:00:00",
@@ -257,12 +260,22 @@ def insert_test_data(db_url):
     # data.
 
     # import seismic catalog
-    deserializer = QuakeMLCatalogDeserializer(proj=None)
+    deserializer = QuakeMLCatalogDeserializer(
+        ramsis_proj=RAMSIS_PROJ,
+        external_proj=WGS84_PROJ,
+        ref_easting=REFERENCE_X,
+        ref_northing=REFERENCE_Y,
+        transform_func_name='pyproj_transform_to_local_coords')
     with open(os.path.join(dirpath, PATH_SEISMICS), 'rb') as ifd:
         cat = deserializer.load(ifd)
 
     # import hydraulics
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(proj=None)
+    deserializer = HYDWSBoreholeHydraulicsDeserializer(
+        ramsis_proj=RAMSIS_PROJ,
+        external_proj=WGS84_PROJ,
+        ref_easting=REFERENCE_X,
+        ref_northing=REFERENCE_Y,
+        transform_func_name='pyproj_transform_to_local_coords')
     for fpath in PATHS_HYDRAULICS:
 
         with open(os.path.join(dirpath, fpath), 'rb') as ifd:
@@ -273,7 +286,10 @@ def insert_test_data(db_url):
         name='basel',
         description='Basel Project 2006',
         starttime=PROJECT_STARTTIME,
-        endtime=PROJECT_ENDTIME)
+        endtime=PROJECT_ENDTIME,
+        spatialreference=WGS84_PROJ,
+        referencepoint_x=REFERENCE_X,
+        referencepoint_y=REFERENCE_Y)
 
     # configure project: project settings
     project.seismiccatalogs = [cat]
@@ -295,10 +311,15 @@ def insert_test_data(db_url):
     risk_stage.enabled = False
     hazard_stage = scenario[EStage.HAZARD]
     hazard_stage.enabled = False
-    scenario.reservoirgeom = RESERVOIR
+    scenario.reservoirgeom = RESERVOIR_INPUT
 
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        plan=True, proj=None)
+        ramsis_proj=RAMSIS_PROJ,
+        external_proj=WGS84_PROJ,
+        ref_easting=REFERENCE_X,
+        ref_northing=REFERENCE_Y,
+        transform_func_name='pyproj_transform_to_local_coords',
+        plan=True)
     with open(os.path.join(dirpath, PATH_INJECTION_PLAN), 'rb') as ifd:
         scenario.well = deserializer.load(ifd)
 
@@ -348,7 +369,6 @@ def mocked_requests_post(*args, **kwargs):
 
 
 def mocked_requests_get(*args, **kwargs):
-    print("request.get are getting the arguments: ", args[0])
 
     if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
             '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
@@ -409,7 +429,7 @@ class IntegrationTestCase(unittest.TestCase):
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
     @classmethod
-    def setUpClass(cls):
+    def dontsetUpClass(cls):
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -456,6 +476,7 @@ class IntegrationTestCase(unittest.TestCase):
         Test the flow with only the seismicity stage enabled and two models
         enabled.
         """
+        self.maxDiff = None
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
         for item_status in statuses:
@@ -488,6 +509,7 @@ class IntegrationTestCase(unittest.TestCase):
 
             parent_type = call_tuple[0][0][1]
             self.assertEqual(parent_type, type(SeismicityModelRun()))
+
         # Check data send to remote worker
         posted_data = mock_post.call_args_list[0][1]['data']
         posted_data2 = mock_post.call_args_list[1][1]['data']
@@ -498,9 +520,8 @@ class IntegrationTestCase(unittest.TestCase):
             json_data2 = json.load(json_d)
         # As we are not sure which order the models are processed,
         # we cannot be sure which status is produced first
-        print("posted data", type(posted_data))
         if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
-                ["em1_training_epoch_duration"] == 3600):
+                ["em1_training_epoch_duration"] == 86400):
             self.assertEqual(posted_data, json_data)
             self.assertEqual(posted_data2, json_data2)
         else:
@@ -525,14 +546,12 @@ class IntegrationTestCase(unittest.TestCase):
         bins = [item for sublist in bins_nested for item in sublist]
         self.assertEqual(len(bins), 6)
         # Check the content of the results
-        with open(os.path.join(
-                dirpath, RESERVOIR_ENCODED), 'r') as geom1_fname:
-            encoded_reservoir = geom1_fname.readline()
-            encoded_reservoir = encoded_reservoir.strip('\n')
-        self.assertEqual(str(results[0].geom).upper(),
-                         encoded_reservoir.upper())
-        self.assertEqual(str(results[1].geom).upper(),
-                         encoded_reservoir.upper())
+        self.assertEqual(results[0].x_min, X_MIN)
+        self.assertEqual(results[0].x_max, X_MAX)
+        self.assertEqual(results[0].y_min, Y_MIN)
+        self.assertEqual(results[0].y_max, Y_MAX)
+        self.assertEqual(results[0].z_min, Z_MIN)
+        self.assertEqual(results[0].z_max, Z_MAX)
 
         bin_starttimes = [item.starttime for item in bins]
         self.assertEqual(sorted(bin_starttimes), [
@@ -608,7 +627,6 @@ class IntegrationTestCase(unittest.TestCase):
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        print(signal_list)
         self.assertEqual(len(signal_list), 4)
         for i, call_tuple in enumerate(signal_list):
             prefect_status = call_tuple[0][0][0]

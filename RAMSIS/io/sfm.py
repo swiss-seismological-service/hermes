@@ -4,21 +4,17 @@ Utilities for SFM-Worker data import/export.
 """
 
 import base64
-import functools
-
-from geoalchemy2 import WKBElement
 from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
-                         post_load, ValidationError, EXCLUDE)
-from osgeo import ogr, gdal
+                         post_load, EXCLUDE)
+from osgeo import gdal
 
 from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
                                          SeismicityPredictionBin)
 from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
-                             _IOError, TransformationError, DateTime,
+                             _IOError, DateTime,
                              Percentage, Uncertainty, append_ms_zeroes)
-from RAMSIS.wkt_utils import wkb_to_wkt
 
 gdal.UseExceptions()
 
@@ -74,7 +70,13 @@ class _SeismicCatalogSchema(_SchemaBase):
         <https://quake.ethz.ch/quakeml/>`_ representation.
         """
         if 'quakeml' in data:
-            data['quakeml'] = QuakeMLCatalogSerializer().dumps(data['quakeml'])
+            data['quakeml'] = QuakeMLCatalogSerializer(
+                transform_func_name=self.context.get('transform_func_name'),
+                ramsis_proj=self.context.get('ramsis_proj'),
+                external_proj=self.context.get('external_proj'),
+                ref_easting=self.context.get('ref_easting'),
+                ref_northing=self.context.get('ref_northing')).\
+                dumps(data['quakeml'])
 
         return data
 
@@ -155,71 +157,27 @@ class _ReservoirSchema(_SchemaBase):
     """
     Schema representation of a reservoir to be forecasted.
     """
-    ALLOWED_GEOMS = ('POLYHEDRALSURFACE')
+    x = fields.List(fields.Float(), required=True)
+    y = fields.List(fields.Float(), required=True)
+    z = fields.List(fields.Float(), required=True)
 
-    # XXX(damb): WKT/WKB
-    geom = fields.String()
-    samples = fields.Nested(_ModelResultSampleSchema, many=True)
-
-    # XXX(damb): Currently no sub_geometries are supported.
-    # sub_geometries = fields.Nested('self', many=True)
-
-    @pre_dump
-    def wkb_to_wkt(self, data, **kwargs):
-        if 'geom' in data and isinstance(data['geom'], WKBElement):
-            data['geom'] = wkb_to_wkt(data['geom'])
+    @pre_load
+    def validate_geom(self, data, **kwargs):
+        assert set(['x', 'y', 'z']) <= set(data.keys())
+        for dim in ['x', 'y', 'z']:
+            val_list = data[dim]
+            assert isinstance(val_list, list), ("Dimensional list length "
+                                                "must equal or exceed 2")
+            # Check that the values in each list are strictly increasing
+            # Same numbers are not allowed as that would create zero-width
+            # subgeometries.
+            assert all(x < y for x, y in zip(val_list, val_list[1:]))
+            assert len(val_list) >= 2
         return data
 
-    @post_dump
-    def transform(self, data, **kwargs):
-        if (not self.context.get('proj') or
-            'transform_callback' not in self.context or
-                'geom' not in data):
-            return data
 
-        data['geom'] = self._transform_wkt(data['geom'])
-
-        return data
-
-    @post_load
-    def load_postprocess(self, data, **kwargs):
-        if (self.context.get('proj') and
-                'transform_callback' in self.context):
-            data['geom'] = self._transform_wkt(data['geom'])
-
-        if (self.context.get('format') == 'dict'):
-            return data
-        return ReservoirSeismicityPrediction(**data)
-
-    def _transform_wkt(self, geom):
-        try:
-            geom = ogr.CreateGeometryFromWkt(geom)
-        except Exception as err:
-            raise ValidationError(f"Invalid geometry ({err}).")
-
-        if geom.GetGeometryName() not in self.ALLOWED_GEOMS:
-            raise ValidationError(
-                f"Unknown geometry type {geom.GetGeometryName()!r}")
-
-        transform_func = self.context['transform_callback']
-        try:
-            phsf = ogr.Geometry(ogr.wkbPolyhedralSurfaceZ)
-            for i in range(0, geom.GetGeometryCount()):
-                g = geom.GetGeometryRef(i)
-                ring = ogr.Geometry(ogr.wkbLinearRing)
-                for j in range(0, g.GetGeometryRef(0).GetPointCount()):
-                    ring.AddPoint(
-                        *transform_func(*g.GetGeometryRef(0).GetPoint(j)))
-                polygon = ogr.Geometry(ogr.wkbPolygon)
-                polygon.AddGeometry(ring)
-                phsf.AddGeometry(polygon)
-
-            return phsf.ExportToWkt()
-        except Exception as err:
-            raise TransformationError(f"{err}")
-
-    class Meta:
-        unknown = EXCLUDE
+class _GeomSchema(_SchemaBase):
+    geom = fields.Nested(_ReservoirSchema)
 
 
 class _ScenarioSchema(_SchemaBase):
@@ -235,8 +193,11 @@ class _ScenarioSchema(_SchemaBase):
         if 'well' in data:
             serializer = HYDWSBoreholeHydraulicsSerializer(
                 plan=True,
-                proj=self.context.get('proj'),
-                transform_callback=self.context.get('transform_callback'))
+                transform_func_name=self.context.get('transform_func_name'),
+                ramsis_proj=self.context.get('ramsis_proj'),
+                external_proj=self.context.get('external_proj'),
+                ref_easting=self.context.get('ref_easting'),
+                ref_northing=self.context.get('ref_northing'))
 
             # XXX(damb): This is not a nice solution. Something like
             # marshmallow's dump method would be required to avoid dumping to a
@@ -244,6 +205,14 @@ class _ScenarioSchema(_SchemaBase):
             data['well'] = serializer._dumpo(data['well'])
 
         return data
+
+
+class _ReferencePointSchema(_SchemaBase):
+    """
+    Schema representation of a reservoir to be forecasted.
+    """
+    x = fields.Float(required=True)
+    y = fields.Float(required=True)
 
 
 class _SFMWorkerRunsAttributesSchema(_SchemaBase):
@@ -255,13 +224,15 @@ class _SFMWorkerRunsAttributesSchema(_SchemaBase):
 
         With the current protocol version only a single well is supported.
     """
+    reservoir = fields.Nested(_GeomSchema)
+    spatialreference = fields.Str()
+    referencepoint = fields.Nested(_ReferencePointSchema)
     seismic_catalog = fields.Nested(_SeismicCatalogSchema)
     # XXX(damb): Implicit definition of an injection well in order to allow
     # serialization by means of the appropriate RT-RAMSIS borehole serializer.
     # Note, that a well comes along with its hydraulics.
     well = fields.Dict(keys=fields.Str())
     scenario = fields.Nested(_ScenarioSchema)
-    reservoir = fields.Nested(_ReservoirSchema)
     # XXX(damb): model_parameters are optional
     model_parameters = fields.Dict(keys=fields.Str())
 
@@ -270,8 +241,11 @@ class _SFMWorkerRunsAttributesSchema(_SchemaBase):
         if 'well' in data:
             serializer = HYDWSBoreholeHydraulicsSerializer(
                 plan=False,
-                proj=self.context.get('proj'),
-                transform_callback=self.context.get('transform_callback'))
+                transform_func_name=self.context.get('transform_func_name'),
+                ramsis_proj=self.context.get('ramsis_proj'),
+                external_proj=self.context.get('external_proj'),
+                ref_easting=self.context.get('ref_easting'),
+                ref_northing=self.context.get('ref_northing'))
 
             # XXX(damb): This is not a nice solution. Something like
             # marshmallow's dump method would be required to avoid dumping to a
@@ -298,13 +272,47 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
     data = fields.Nested(_SFMWorkerRunsSchema)
 
 
+class _SeismicityForecastSamplesSchema(_SchemaBase):
+    """
+    Schema representation of seismicity forecast samples.
+    """
+    x_min = fields.Float()
+    x_max = fields.Float()
+    y_min = fields.Float()
+    y_max = fields.Float()
+    z_min = fields.Float()
+    z_max = fields.Float()
+    samples = fields.Nested(_ModelResultSampleSchema, many=True)
+
+    @pre_load
+    def flatten(self, data, **kwargs):
+        print("preload data: ", data)
+        return self._flatten_dict(data)
+
+    @post_load
+    def post_load_data(self, data, **kwargs):
+        print("data x_min: ", data)
+        for d_min, d_max in [
+                ('x_min', 'x_max'),
+                ('y_min', 'y_max'),
+                ('z_min', 'z_max')]:
+            if data[d_min] and data[d_max]:
+                assert data[d_min] < data[d_max]
+        if (self.context.get('format') == 'dict'):
+            return data
+        return ReservoirSeismicityPrediction(**data)
+
+    class Meta:
+        unknown = EXCLUDE
+
+
 class SFMWorkerResponseDataAttributesSchema(_SchemaBase):
     """
     Schema representation of the SFM worker response data attributes.
     """
     status = fields.Str()
     status_code = fields.Int()
-    forecast = fields.Nested(_ReservoirSchema)
+    forecast = fields.Nested(_SeismicityForecastSamplesSchema)
     warning = fields.Str(missing='')
 
     @post_dump
@@ -353,17 +361,16 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
     Serializes a data structure which later can be consumed by SFM-Workers.
     """
 
-    SRS_EPSG = 4326
+    SRS_EPSG = "epsg:4326"
 
     @property
     def _ctx(self):
-        crs_transform = self._transform_callback or self._transform
-
         return {
-            'proj': self._proj,
-            'transform_callback': functools.partial(
-                crs_transform, source_proj=self._proj,
-                target_proj=self.SRS_EPSG)}
+            'transform_func_name': self.transform_func_name,
+            'ramsis_proj': self.ramsis_proj,
+            'external_proj': self.external_proj,
+            'ref_easting': self.ref_easting,
+            'ref_northing': self.ref_northing}
 
     def _serialize(self, data):
         """
@@ -380,13 +387,13 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
     Serializes a data structure which later can be consumed by SFM workers.
     """
 
-    SRS_EPSG = 4326
+    SRS_EPSG = "epsg:4326"
 
-    def __init__(self, proj=None, **kwargs):
+    def __init__(self, **kwargs):
         """
         :param bool many: Allow the deserialization of many arguments
         """
-        super().__init__(proj=proj, **kwargs)
+        super().__init__(**kwargs)
 
         self._context = kwargs.get('context', {'format': 'orm'})
         self._many = kwargs.get('many', False)
@@ -394,14 +401,12 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
 
     @property
     def _ctx(self):
-        crs_transform = self._transform_callback or self._transform
-
         self._context.update({
-            'proj': self._proj,
-            'transform_callback': functools.partial(
-                crs_transform, source_proj=self.SRS_EPSG,
-                target_proj=self._proj)})
-
+            'transform_func_name': self.transform_func_name,
+            'ramsis_proj': self.ramsis_proj,
+            'external_proj': self.external_proj,
+            'ref_easting': self.ref_easting,
+            'ref_northing': self.ref_northing})
         return self._context
 
     def _deserialize(self, data):

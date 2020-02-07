@@ -14,7 +14,7 @@ from RAMSIS.core.controller import LaunchMode
 from RAMSIS.ui.base.bindings import (AttrBinding, DictBinding)
 from RAMSIS.ui.base.controlinterface import control_interface
 from RAMSIS.ui.base.state import UiStateMachine
-from RAMSIS.ui.utils import UiForm, WktPointBinding
+from RAMSIS.ui.utils import UiForm
 
 ui_path = os.path.dirname(__file__)
 PROJECT_SETTINGS_WINDOW_PATH = \
@@ -252,9 +252,9 @@ class ProjectSettingsWindow(SettingsWindow):
             AttrBinding(project, 'description', self.ui.descriptionEdit),
             AttrBinding(project, 'starttime', self.ui.projectStartEdit),
             AttrBinding(project, 'endtime', self.ui.projectEndEdit),
-            WktPointBinding(project, 'referencepoint', 0, self.ui.refLatEdit),
-            WktPointBinding(project, 'referencepoint', 1, self.ui.refLonEdit),
-            WktPointBinding(project, 'referencepoint', 2, self.ui.refHEdit),
+            AttrBinding(project, 'spatialreference', self.ui.proj4Edit),
+            AttrBinding(project, 'referencepoint_x', self.ui.refXEdit),
+            AttrBinding(project, 'referencepoint_y', self.ui.refYEdit),
             DictBinding(settings, 'fdsnws_enable', self.ui.enableFdsnCheckBox),
             DictBinding(settings, 'fdsnws_url', self.ui.fdsnUrlEdit),
             DictBinding(settings, 'hydws_url', self.ui.hydwsUrlEdit),

@@ -21,7 +21,7 @@ _QUAKEML_HEADER = (
 
 _QUAKEML_FOOTER = b'</eventParameters></q:quakeml>'
 
-_QUAKEML_SRS_EPSG = 4326
+_QUAKEML_SRS_EPSG = 'epsg:4326'
 
 
 class QuakeMLCatalogIOError(_IOError):
@@ -43,19 +43,16 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
 
     LOGGER = 'RAMSIS.io.quakemldeserializer'
 
-    def __init__(self, proj=None, mag_type=None, **kwargs):
+    def __init__(self, mag_type=None, **kwargs):
         """
-        :param proj: Spatial reference system in Proj4 notation
-            representing the local coordinate system
-        :type proj: str or None
         :param mag_type: Describes the type of magnitude events should be
             configured with. If :code:`None` the magnitude type is not
             verified (default).
         :type mag_type: str or None
-        :param transform_callback: Function reference for transforming data
+        :param transform_func: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(proj=proj, **kwargs)
+        super().__init__(**kwargs)
 
         self._mag_type = mag_type
 
@@ -142,15 +139,12 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         y = origin.latitude
         z = origin.depth
 
-        if self._proj is not None:
-            crs_transform = self._transform_callback or self._transform
-            # convert origin into local CRS
-            try:
-                x, y, z = crs_transform(origin.longitude, origin.latitude,
-                                        origin.depth, self.SRS_EPSG,
-                                        self.proj)
-            except Exception as err:
-                raise TransformationError(err)
+        # convert origin into local CRS
+        try:
+            x, y, z = self.transform_func(origin.longitude, origin.latitude,
+                                          origin.depth)
+        except Exception as err:
+            raise TransformationError(err)
 
         attr_dict['x_value'] = x
         attr_dict.update(add_prefix('x_', origin.longitude_errors))
@@ -188,27 +182,7 @@ class QuakeMLCatalogSerializer(SerializerBase, IOBase):
     """
     Serializes a RT-RAMSIS seismic catalog into `QuakeML
     <https://quake.ethz.ch/quakeml/>`_.
-
-    .. note::
-
-        The serializer currently does not support transformation.
     """
-
-    def __init__(self, proj=None, **kwargs):
-        """
-        :param proj: Spatial reference system in Proj4 notation
-            representing the local coordinate system
-        :type proj: None
-        """
-        if proj is not None:
-            raise QuakeMLCatalogIOError(
-                'Passing SRS identifier is not allowed.')
-
-        super().__init__(proj=proj, **kwargs)
-
-    def transform_callback(self, func):
-        raise NotImplementedError
-
     def _serialize(self, data):
         """
         Serialize a seismic catalog.

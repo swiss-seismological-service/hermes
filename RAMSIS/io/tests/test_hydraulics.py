@@ -24,8 +24,14 @@ from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSBoreholeHydraulicsSerializer)
-from RAMSIS.io.utils import (binary_request, pymap3d_transform_geodetic2ned,
-                             pymap3d_transform_ned2geodetic)
+from RAMSIS.io.utils import (binary_request)
+
+
+RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 i"
+               "+units=m +x_0=0.0 +y_0=0.0 +no_defs")
+WGS84_PROJ = 4326
+REFERENCE_X = 681922
+REFERENCE_Y = 1179229
 
 
 class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
@@ -38,9 +44,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
     maxDiff = None
 
     def test_with_ifs(self):
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         with open(os.path.join(self.PATH_RESOURCES, 'hyd.json'), 'rb') as ifs:
             bh = deserializer.load(ifs)
@@ -52,12 +61,14 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.topx_value, 1159953.8384112194)
-        self.assertEqual(bh_section.topy_value, 1172434.598892671)
-        self.assertEqual(bh_section.topz_value, 217573.10967553407)
-        self.assertEqual(bh_section.bottomx_value, 1159771.9980531002)
-        self.assertEqual(bh_section.bottomy_value, 1172249.5633069365)
-        self.assertEqual(bh_section.bottomz_value, 218538.87150754593)
+        # The location of the borehole should be at the
+        # reference point.
+        self.assertEqual(int(bh_section.topx_value), 0)
+        self.assertEqual(int(bh_section.topy_value), 0)
+        self.assertEqual(int(bh_section.topz_value), 100)
+        self.assertEqual(int(bh_section.bottomx_value), 0)
+        self.assertEqual(int(bh_section.bottomy_value), 0)
+        self.assertEqual(int(bh_section.bottomz_value), -900)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.hydraulics.samples), 2)
         self.assertEqual(
@@ -97,10 +108,13 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
             'starttime': '2019-01-01T00:00:00',
             'endtime': '2020-01-01T00:00:00',
             'format': 'json', }
-        proj = '+x_0=0 +y_0=0 +z_0=0'
 
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         with binary_request(requests.get, url, req_params) as ifs:
             bh = deserializer.load(ifs)
@@ -112,12 +126,14 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.topx_value, 1159953.8384112194)
-        self.assertEqual(bh_section.topy_value, 1172434.598892671)
-        self.assertEqual(bh_section.topz_value, 217573.10967553407)
-        self.assertEqual(bh_section.bottomx_value, 1159771.9980531002)
-        self.assertEqual(bh_section.bottomy_value, 1172249.5633069365)
-        self.assertEqual(bh_section.bottomz_value, 218538.87150754593)
+        # The location of the borehole should be at the
+        # reference point.
+        self.assertEqual(int(bh_section.topx_value), 0)
+        self.assertEqual(int(bh_section.topy_value), 0)
+        self.assertEqual(int(bh_section.topz_value), 100)
+        self.assertEqual(int(bh_section.bottomx_value), 0)
+        self.assertEqual(int(bh_section.bottomy_value), 0)
+        self.assertEqual(int(bh_section.bottomz_value), -900)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.hydraulics.samples), 2)
         self.assertEqual(
@@ -134,9 +150,12 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
                          datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
 
     def test_import_plan(self):
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned,
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords',
             plan=True)
 
         with open(os.path.join(self.PATH_RESOURCES, 'hyd.json'), 'rb') as ifs:
@@ -149,12 +168,14 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.topx_value, 1159953.8384112194)
-        self.assertEqual(bh_section.topy_value, 1172434.598892671)
-        self.assertEqual(bh_section.topz_value, 217573.10967553407)
-        self.assertEqual(bh_section.bottomx_value, 1159771.9980531002)
-        self.assertEqual(bh_section.bottomy_value, 1172249.5633069365)
-        self.assertEqual(bh_section.bottomz_value, 218538.87150754593)
+        # The location of the borehole should be at the
+        # reference point.
+        self.assertEqual(int(bh_section.topx_value), 0)
+        self.assertEqual(int(bh_section.topy_value), 0)
+        self.assertEqual(int(bh_section.topz_value), 100)
+        self.assertEqual(int(bh_section.bottomx_value), 0)
+        self.assertEqual(int(bh_section.bottomy_value), 0)
+        self.assertEqual(int(bh_section.bottomz_value), -900)
         # additional borehole section attributes
         self.assertEqual(len(bh_section.injectionplan.samples), 2)
         self.assertEqual(
@@ -170,43 +191,14 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
         self.assertEqual(s1.datetime_value,
                          datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
 
-    def test_no_proj(self):
-        deserializer = HYDWSBoreholeHydraulicsDeserializer(proj=None)
-
-        with open(os.path.join(self.PATH_RESOURCES, 'hyd.json'), 'rb') as ifs:
-            bh = deserializer.load(ifs)
-
-        self.assertEqual(len(bh.sections), 1)
-        self.assertEqual(
-            bh.publicid,
-            'smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798')
-
-        bh_section = bh.sections[0]
-        # borehole section coordinates
-        self.assertEqual(bh_section.topx_value, 10.66320713)
-        self.assertEqual(bh_section.topy_value, 10.66320713)
-        self.assertEqual(bh_section.topz_value, 0.0)
-        self.assertEqual(bh_section.bottomx_value, 10.66320713)
-        self.assertEqual(bh_section.bottomy_value, 10.66320713)
-        self.assertEqual(bh_section.bottomz_value, 1000)
-        # additional borehole section attributes
-        self.assertEqual(len(bh_section.hydraulics.samples), 2)
-        self.assertEqual(
-            bh_section.publicid,
-            'smi:ch.ethz.sed/bh/section/11111111-8d89-4f13-95e7-526ade73cc8b')
-        self.assertEqual(bh_section.holediameter_value, 0.3)
-
-        # briefly validate samples
-        s0 = bh_section.hydraulics.samples[0]
-        self.assertEqual(s0.datetime_value,
-                         datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
-        s1 = bh_section.hydraulics.samples[1]
-        self.assertEqual(s1.datetime_value,
-                         datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
-
     def test_section_without_samples(self):
 
-        deserializer = HYDWSBoreholeHydraulicsDeserializer(proj=None)
+        deserializer = HYDWSBoreholeHydraulicsDeserializer(
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         with open(os.path.join(self.PATH_RESOURCES,
                                'hyd-no-samples.json'), 'rb') as ifs:
@@ -214,12 +206,14 @@ class HYDWSBoreholeHydraulicsDeserializerTestCase(unittest.TestCase):
 
         bh_section = bh.sections[0]
         # borehole section coordinates
-        self.assertEqual(bh_section.topx_value, 10.66320713)
-        self.assertEqual(bh_section.topy_value, 10.66320713)
-        self.assertEqual(bh_section.topz_value, 0.0)
-        self.assertEqual(bh_section.bottomx_value, 10.66320713)
-        self.assertEqual(bh_section.bottomy_value, 10.66320713)
-        self.assertEqual(bh_section.bottomz_value, 1000)
+        # The location of the borehole should be at the
+        # reference point.
+        self.assertEqual(int(bh_section.topx_value), 0)
+        self.assertEqual(int(bh_section.topy_value), 0)
+        self.assertEqual(int(bh_section.topz_value), 100)
+        self.assertEqual(int(bh_section.bottomx_value), 0)
+        self.assertEqual(int(bh_section.bottomy_value), 0)
+        self.assertEqual(int(bh_section.bottomz_value), -900)
         # additional borehole section attributes
         self.assertEqual(
             bh_section.publicid,
@@ -237,31 +231,31 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
 
     def test_well_only(self):
         reference_result = {
+            'altitude': {'value': 0.0},
+            'publicid': ('smi:ch.ethz.sed/bh/'
+                         '11111111-e4a0-4692-bf29-33b5591eb798'),
             'sections': [{
-                'toplongitude': {'value': 10.663207130000002},
-                'toplatitude': {'value': 10.66320713},
+                'toplongitude': {'value': 10.663205540045357},
+                'toplatitude': {'value': 10.663204912654692},
                 'topdepth': {'value': 0.0},
-                'bottomlatitude': {'value': 10.66320713},
-                'bottomlongitude': {'value': 10.66320713},
+                'bottomlongitude': {'value': 10.663205540045357},
+                'bottomlatitude': {'value': 10.663204912654692},
                 'bottomdepth': {'value': 1000.0},
                 'holediameter': {'value': 0.3},
                 'topclosed': False,
                 'bottomclosed': False,
                 'publicid': ('smi:ch.ethz.sed/bh/section/'
-                             '11111111-8d89-4f13-95e7-526ade73cc8b')}],
-                'altitude': {'value': 0.0},
-                'publicid': ('smi:ch.ethz.sed/bh/'
-                             '11111111-e4a0-4692-bf29-33b5591eb798')}
+                             '11111111-8d89-4f13-95e7-526ade73cc8b')}]}
 
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=10.663207130000002,
-            topy_value=10.66320713,
+            topx_value=0.0,
+            topy_value=0.0,
             topz_value=0.0,
-            bottomx_value=10.66320713,
-            bottomy_value=10.66320713,
-            bottomz_value=1000.0,
+            bottomx_value=0.0,
+            bottomy_value=0.0,
+            bottomz_value=-1000.0,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -270,36 +264,42 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
             altitude_value=0.0,
             sections=[sec, ])
-        serializer = HYDWSBoreholeHydraulicsSerializer(proj=None)
+        serializer = HYDWSBoreholeHydraulicsSerializer(
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_from_local_coords')
 
-        self.assertEqual(json.loads(serializer.dumps(bh)), reference_result)
+        serialized_result = json.loads(serializer.dumps(bh))
+        self.assertEqual(serialized_result, reference_result)
 
     def test_with_hydraulics(self):
         self.maxDiff = None
         # XXX(damb): Depending on the coordinate transformation used the
         # results might vary.
         reference_result = {
+            'altitude': {'value': 0.0},
+            'publicid': ('smi:ch.ethz.sed/bh/'
+                         '11111111-e4a0-4692-bf29-33b5591eb798'),
             'sections': [{
-                'toplongitude': {'value': 8.548320946150337},
-                'toplatitude': {'value': 47.38139680392223},
-                'topdepth': {'value': -408.03918324151323},
-                'bottomlongitude': {'value': 8.548321775220474},
-                'bottomlatitude': {'value': 47.38139736867669},
-                'bottomdepth': {'value': 391.96081184524866},
+                'toplongitude': {'value': 10.663205540045357},
+                'toplatitude': {'value': 10.663204912654692},
+                'topdepth': {'value': 0.0},
+                'bottomlongitude': {'value': 10.663205540045357},
+                'bottomlatitude': {'value': 10.663204912654692},
+                'bottomdepth': {'value': 1000.0},
                 'holediameter': {'value': 0.3},
                 'topclosed': False,
                 'bottomclosed': False,
                 'publicid': ('smi:ch.ethz.sed/bh/section/'
                              '11111111-8d89-4f13-95e7-526ade73cc8b'),
+
                 'hydraulics': [
                     {'datetime':
                         {'value': '2019-05-03T13:27:09.117623'}},
                     {'datetime':
-                        {'value': '2019-05-03T15:27:09.117623'}}]}],
-                'altitude': {'value': 0.0},
-                'publicid': ('smi:ch.ethz.sed/bh/'
-                             '11111111-e4a0-4692-bf29-33b5591eb798')}
-
+                        {'value': '2019-05-03T15:27:09.117623'}}]}]}
         s0 = HydraulicSample(
             datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
         s1 = HydraulicSample(
@@ -310,12 +310,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=500,
-            topy_value=500,
+            topx_value=0,
+            topy_value=0,
             topz_value=0,
-            bottomx_value=500,
-            bottomy_value=500,
-            bottomz_value=800,
+            bottomx_value=0,
+            bottomy_value=0,
+            bottomz_value=-1000,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -326,36 +326,40 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
             altitude_value=0.0,
             sections=[sec])
 
-        proj = '+x_0=8.5417 +y_0=47.3769 +z_0=408'
         serializer = HYDWSBoreholeHydraulicsSerializer(
-            proj=proj, transform_callback=pymap3d_transform_ned2geodetic)
-
-        self.assertEqual(json.loads(serializer.dumps(bh)), reference_result)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_from_local_coords')
+        serialized_result = json.loads(serializer.dumps(bh))
+        self.assertEqual(serialized_result, reference_result)
 
     def test_with_injectionplan(self):
         # XXX(damb): Depending on the coordinate transformation used the
         # results might vary.
         reference_result = {
+            'altitude': {'value': 0.0},
+            'publicid': ('smi:ch.ethz.sed/bh/'
+                         '11111111-e4a0-4692-bf29-33b5591eb798'),
             'sections': [{
-                'toplongitude': {'value': 8.548320946150337},
-                'toplatitude': {'value': 47.38139680392223},
-                'topdepth': {'value': -408.03918324151323},
-                'bottomlongitude': {'value': 8.548321775220474},
-                'bottomlatitude': {'value': 47.38139736867669},
-                'bottomdepth': {'value': 391.96081184524866},
+                'toplongitude': {'value': 10.663205540045357},
+                'toplatitude': {'value': 10.663204912654692},
+                'topdepth': {'value': 0.0},
+                'bottomlongitude': {'value': 10.663205540045357},
+                'bottomlatitude': {'value': 10.663204912654692},
+                'bottomdepth': {'value': 1000.0},
                 'holediameter': {'value': 0.3},
                 'topclosed': False,
                 'bottomclosed': False,
                 'publicid': ('smi:ch.ethz.sed/bh/section/'
                              '11111111-8d89-4f13-95e7-526ade73cc8b'),
+
                 'hydraulics': [
                     {'datetime':
                         {'value': '2019-05-03T13:27:09.117623'}},
                     {'datetime':
-                        {'value': '2019-05-03T15:27:09.117623'}}]}],
-                'altitude': {'value': 0.0},
-                'publicid': ('smi:ch.ethz.sed/bh/'
-                             '11111111-e4a0-4692-bf29-33b5591eb798')}
+                        {'value': '2019-05-03T15:27:09.117623'}}]}]}
 
         s0 = HydraulicSample(
             datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
@@ -367,12 +371,12 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=500,
-            topy_value=500,
+            topx_value=0,
+            topy_value=0,
             topz_value=0,
-            bottomx_value=500,
-            bottomy_value=500,
-            bottomz_value=800,
+            bottomx_value=0,
+            bottomy_value=0,
+            bottomz_value=-1000,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -383,119 +387,18 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
             altitude_value=0.0,
             sections=[sec])
 
-        proj = '+x_0=8.5417 +y_0=47.3769 +z_0=408'
         serializer = HYDWSBoreholeHydraulicsSerializer(
-            proj=proj, plan=True,
-            transform_callback=pymap3d_transform_ned2geodetic)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_from_local_coords',
+            plan=True)
 
-        self.assertEqual(json.loads(serializer.dumps(bh)), reference_result)
-
-    def test_hydraulics_no_proj(self):
-        reference_result = {
-            'sections': [{
-                'toplongitude': {'value': 10.663207130000002},
-                'toplatitude': {'value': 10.66320713},
-                'topdepth': {'value': 0.0},
-                'bottomlatitude': {'value': 10.66320713},
-                'bottomlongitude': {'value': 10.66320713},
-                'bottomdepth': {'value': 1000.0},
-                'holediameter': {'value': 0.3},
-                'topclosed': False,
-                'bottomclosed': False,
-                'publicid': ('smi:ch.ethz.sed/bh/section/'
-                             '11111111-8d89-4f13-95e7-526ade73cc8b'),
-                'hydraulics': [
-                    {'datetime':
-                        {'value': '2019-05-03T13:27:09.117623'}},
-                    {'datetime':
-                        {'value': '2019-05-03T15:27:09.117623'}}]}],
-                'altitude': {'value': 0.0},
-                'publicid': ('smi:ch.ethz.sed/bh/'
-                             '11111111-e4a0-4692-bf29-33b5591eb798')}
-
-        s0 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
-        s1 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
-
-        hyd = Hydraulics(samples=[s0, s1])
-
-        sec = WellSection(
-            publicid=('smi:ch.ethz.sed/bh/section/'
-                      '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=10.663207130000002,
-            topy_value=10.66320713,
-            topz_value=0.0,
-            bottomx_value=10.66320713,
-            bottomy_value=10.66320713,
-            bottomz_value=1000.0,
-            holediameter_value=0.3,
-            topclosed=False,
-            bottomclosed=False,
-            hydraulics=hyd)
-
-        bh = InjectionWell(
-            publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
-            altitude_value=0.0,
-            sections=[sec])
-
-        serializer = HYDWSBoreholeHydraulicsSerializer(proj=None)
-
-        self.assertEqual(json.loads(serializer.dumps(bh)), reference_result)
-
-    def test_injectionplan_no_proj(self):
-        reference_result = {
-            'sections': [{
-                'toplongitude': {'value': 10.663207130000002},
-                'toplatitude': {'value': 10.66320713},
-                'topdepth': {'value': 0.0},
-                'bottomlatitude': {'value': 10.66320713},
-                'bottomlongitude': {'value': 10.66320713},
-                'bottomdepth': {'value': 1000.0},
-                'holediameter': {'value': 0.3},
-                'topclosed': False,
-                'bottomclosed': False,
-                'publicid': ('smi:ch.ethz.sed/bh/section/'
-                             '11111111-8d89-4f13-95e7-526ade73cc8b'),
-                'hydraulics': [
-                    {'datetime':
-                        {'value': '2019-05-03T13:27:09.117623'}},
-                    {'datetime':
-                        {'value': '2019-05-03T15:27:09.117623'}}]}],
-                'altitude': {'value': 0.0},
-
-                'publicid': ('smi:ch.ethz.sed/bh/'
-                             '11111111-e4a0-4692-bf29-33b5591eb798')}
-
-        s0 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
-        s1 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
-
-        plan = InjectionPlan(samples=[s0, s1])
-
-        sec = WellSection(
-            publicid=('smi:ch.ethz.sed/bh/section/'
-                      '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=10.663207130000002,
-            topy_value=10.66320713,
-            topz_value=0.0,
-            bottomx_value=10.66320713,
-            bottomy_value=10.66320713,
-            bottomz_value=1000.0,
-            holediameter_value=0.3,
-            topclosed=False,
-            bottomclosed=False,
-            injectionplan=plan)
-
-        bh = InjectionWell(
-            publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
-            altitude_value=0.0,
-            sections=[sec])
-
-        serializer = HYDWSBoreholeHydraulicsSerializer(proj=None, plan=True)
-
-        self.assertEqual(json.loads(serializer.dumps(bh)), reference_result)
+        serialized_result = json.loads(serializer.dumps(bh))
+        print('serialized: ', serialized_result)
+        print('reference: ', reference_result)
+        self.assertEqual(serialized_result, reference_result)
 
 
 class HYDWSBoreholeHydraulicsTransformationTestCase(unittest.TestCase):
@@ -507,9 +410,12 @@ class HYDWSBoreholeHydraulicsTransformationTestCase(unittest.TestCase):
                                   'resources')
 
     def test_with_circular_transformation(self):
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         with open(os.path.join(self.PATH_RESOURCES, 'hyd.json'), 'rb') as ifs:
             bh = deserializer.load(ifs)
@@ -517,7 +423,11 @@ class HYDWSBoreholeHydraulicsTransformationTestCase(unittest.TestCase):
             reference_result = json.load(ifs)
 
         serializer = HYDWSBoreholeHydraulicsSerializer(
-            proj=proj, transform_callback=pymap3d_transform_ned2geodetic)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_from_local_coords')
         serialized_sec = json.loads(serializer.dumps(bh))['sections'][0]
         expected_sec = reference_result['sections'][0]
         self.assertAlmostEqual(serialized_sec['bottomlatitude']['value'],

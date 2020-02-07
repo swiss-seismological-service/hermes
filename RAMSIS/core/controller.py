@@ -20,7 +20,8 @@ from RAMSIS.core.simulator import Simulator, SimulatorState
 from RAMSIS.core.taskmanager import TaskManager
 from RAMSIS.core.store import Store
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
-from RAMSIS.wkt_utils import point_to_proj4
+
+WGS84_EPSG = 4326
 
 
 TaskRunInfo = namedtuple('TaskRunInfo', 't_project')
@@ -91,6 +92,7 @@ class Controller(QtCore.QObject):
         # Core components for real time and simulation operation
         self.engine = Engine(self)
         self.clock = WallClock()
+        self.external_proj = WGS84_EPSG
 
         def simulation_handler(time):
             self.clock.time = time
@@ -301,9 +303,7 @@ class Controller(QtCore.QObject):
         :type fc: :py:class:`ramsis.datamodel.forecast.Forecast`
         """
 
-        project = self.store.get_fresh(self.project)
-        self.project = None
-        self.project = project
+        self.project = self.store.get_fresh(self.project)
         self.project.forecasts.append(fc)
         self.store.save()
         self.project_data_changed.emit(self.project.forecasts)
@@ -315,7 +315,6 @@ class Controller(QtCore.QObject):
         self._update_data_sources()
 
     def _update_data_sources(self):
-        proj = point_to_proj4(self.project.referencepoint) or None
         try:
             enabled = self.project.settings['fdsnws_enable']
             url = self.project.settings['fdsnws_url']
@@ -337,7 +336,7 @@ class Controller(QtCore.QObject):
                             'enabled' if enabled else 'disabled'))
             else:
                 self.seismics_data_source = FDSNWSDataSource(
-                    url, timeout=None, proj=proj)
+                    url, timeout=None, project=self.project)
                 self.seismics_data_source.enabled = enabled
                 self.seismics_data_source.data_received.connect(
                     self._on_seismic_data_received)
@@ -365,7 +364,7 @@ class Controller(QtCore.QObject):
                             'enabled' if enabled else 'disabled'))
             else:
                 self.hydraulics_data_source = HYDWSDataSource(
-                    url, timeout=None, proj=proj)
+                    url, timeout=None, project=self.project)
                 self.hydraulics_data_source.enabled = enabled
                 self.hydraulics_data_source.data_received.connect(
                     self._on_hydraulic_data_received)
