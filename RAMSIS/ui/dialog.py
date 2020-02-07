@@ -16,9 +16,8 @@ from ramsis.datamodel.well import InjectionWell
 
 from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
-from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
+from RAMSIS.io.sfm import _ReservoirSchema
 from RAMSIS.ui.utils import UiForm
-from RAMSIS.wkt_utils import is_phsf, wkb_to_wkt
 
 
 class DialogError(Error):
@@ -87,6 +86,7 @@ class ScenarioConfigDialog(
         self._srs = srs
         self._data = scenario
         self._configure(scenario, fc_duration)
+        self.deserializer_args = kwargs.get('deserializer_args')
 
     def _configure(self, scenario, fc_duration=None):
         """
@@ -99,12 +99,14 @@ class ScenarioConfigDialog(
         self.ui.scenarioEnable.setChecked(scenario.enabled)
         self.ui.nameLineEdit.setText(scenario.name)
 
-        try:
-            geom = wkb_to_wkt(scenario.reservoirgeom)
-        except Exception:
-            geom = str(scenario.reservoirgeom)
+        if not scenario.reservoirgeom:
+            geom = {"x": [], "y": [], "z": []}
+        else:
+            geom = scenario.reservoirgeom
 
-        self.ui.reservoirGeometryPlainTextEdit.setPlainText(geom)
+        self.ui.reservoirGeometryPlainTextEdit.\
+            setPlainText(json.dumps(geom,
+                                    indent=self.JSON_INDENT))
 
         # configure seismicityStageTab
         try:
@@ -182,28 +184,24 @@ class ScenarioConfigDialog(
             raise ValidationError(
                 'Invalid forecast stage configuration.')
 
-        wkt_geom = self.ui.reservoirGeometryPlainTextEdit.toPlainText()
-        if not is_phsf(wkt_geom):
-            _ = QMessageBox.critical(
-                self, 'RAMSIS', f'Invalid reservoir geometry {wkt_geom!r}.',
-                buttons=QMessageBox.Close)
-            raise ValidationError(
-                f'Invalid reservoir geometry passed {wkt_geom!r}')
+        geom = self.ui.reservoirGeometryPlainTextEdit.toPlainText()
+        try:
+            geom = _ReservoirSchema().loads(json_data=geom)
+        except AssertionError as err:
+            print(err)
+            _ = QMessageBox.critical(self, 'RAMSIS',
+                                     f"Reservoir Invalid: {err}")
+            raise ValidationError(f"Reservoir Invalid, {err}")
 
         well = self._data.well
         # create injection plan
         if (self.ui.injectionStrategyRadioButton1.isChecked() and
                 self._path_plan):
 
-            deserializer_args = {'plan': True}
-            # TODO TODO TODO
-            if self._srs:
-                deserializer_args.update({
-                    'proj': self._srs,
-                    'transform_callback': pymap3d_transform_geodetic2ned})
-
+            self.deserializer_args.update(
+                {'plan': True})
             deserializer = HYDWSBoreholeHydraulicsDeserializer(
-                **deserializer_args)
+                **self.deserializer_args)
 
             self.logger.debug(
                 f'Importing injection plan {self._path_plan!r}')
@@ -238,9 +236,8 @@ class ScenarioConfigDialog(
         # complete scenario
         self._data.config = {}
         self._data.name = self.ui.nameLineEdit.text()
-        self._data.reservoirgeom = wkt_geom
+        self._data.reservoirgeom = geom
         self._data.well = well
-
         try:
             stage = self._data[EStage.SEISMICITY]
         except KeyError:

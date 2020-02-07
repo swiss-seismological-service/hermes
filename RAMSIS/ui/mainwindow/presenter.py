@@ -97,7 +97,6 @@ class ContentPresenter(object):
         fc_selection.selectionChanged.connect(self.on_fc_selection_change)
 
     def add_forecast(self, forecast):
-        print("in mainwindow presenter", id(self.ramsis_core.project))
         self.fc_tree_model.add_forecast(forecast)
 
     def clear_project(self):
@@ -174,7 +173,6 @@ class ContentPresenter(object):
 
             if isinstance(item, Forecast):
                 item = self.ramsis_core.store.get_fresh(item)
-                print("item: ", item)
                 dlg = CreateForecastSequenceDialog(item)
                 dlg.exec_()
 
@@ -213,7 +211,13 @@ class ContentPresenter(object):
 
             elif isinstance(item, ForecastScenario):
                 ctx = EditingContext(self.ramsis_core.store)
-                dlg = ScenarioConfigDialog(ctx.get(item))
+                dlg = ScenarioConfigDialog(ctx.get(item),
+                                           deserializer_args={
+                    'ramsis_proj': self.ramsis_core.project.spatialreference,
+                    'external_proj': self.ramsis_core.external_proj,
+                    'ref_easting': self.ramsis_core.project.referencepoint_x,
+                    'ref_northing': self.ramsis_core.project.referencepoint_y,
+                    'transform_func_name': 'pyproj_transform_to_local_coords'})
                 dlg.exec_()
 
                 if dlg.result() == QDialog.Accepted:

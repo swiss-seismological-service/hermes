@@ -24,8 +24,6 @@ from ramsis.datamodel.status import Status  # noqa
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import ExitCode
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.utils import pymap3d_transform_geodetic2ned
-from RAMSIS.wkt_utils import point_to_proj4
 
 
 def url(url):
@@ -151,17 +149,12 @@ class ImportHydApp:
                     'Found present hydraulics; use --force|-f to '
                     'overwrite.')
 
-            proj = point_to_proj4(p.referencepoint)
-            if proj:
-                self.logger.debug(f'Using SRS projection {proj!r}.')
-            else:
-                self.logger.warning(
-                    f'Missing SRS projection. Skip transformation.')
-
             deserializer = HYDWSBoreholeHydraulicsDeserializer(
-                proj=proj or None,
-                transform_callback=pymap3d_transform_geodetic2ned)
-
+                ramsis_proj=p.spatialreference,
+                external_proj=4326,
+                ref_easting=p.referencepoint_x,
+                ref_northing=p.referencepoint_y,
+                transform_func_name='pyproj_transform_to_local_coords')
             try:
                 bh = deserializer.load(self.args.infile)
             except Exception as err:

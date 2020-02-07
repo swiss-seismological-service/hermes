@@ -11,6 +11,7 @@ import unittest
 import uuid
 
 import dateutil
+import dateutil.parser
 
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.datamodel.seismicity import SeismicityModel  # noqa
@@ -26,8 +27,16 @@ from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
-from RAMSIS.io.utils import (pymap3d_transform_ned2geodetic,
-                             pymap3d_transform_geodetic2ned)
+
+
+RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 "
+               "+units=m +x_0=0.0 +y_0=0.0 +no_defs")
+WGS84_PROJ = "epsg:4326"
+REFERENCE_X = 681922.0
+REFERENCE_Y = 1179229.0
+
+LAT = 10.663204912654692
+LON = 10.663205540045357
 
 
 def _read(path):
@@ -49,6 +58,10 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
     maxDiff = None
 
     def test_dumps_imessage(self):
+        reservoir = {
+            "x": [-2000.0, 0.0, 2000.0],
+            "y": [-2000.0, 0.0, 2000.0],
+            "z": [-4000.0, -2000.0, 0.0]}
         reference_catalog = _read(os.path.join(self.PATH_RESOURCES,
                                                'cat-01.qml'))
         reference_catalog = base64.b64encode(
@@ -58,16 +71,16 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
             'seismic_catalog': {
                 'quakeml': reference_catalog},
             'well': {
-                'altitude': {'value': 408.0},
+                'altitude': {'value': 400.0},
                 'publicid': ('smi:ch.ethz.sed/bh/'
                              '11111111-e4a0-4692-bf29-33b5591eb798'),
                 'sections': [{
-                    'toplongitude': {'value': 8.525519556860086},
-                    'toplatitude': {'value': 47.37029681274552},
-                    'topdepth': {'value': -0.03918329074144822},
-                    'bottomlongitude': {'value': 8.525520385756767},
-                    'bottomlatitude': {'value': 47.3702973775022},
-                    'bottomdepth': {'value': 799.9608117940518},
+                    'toplongitude': {'value': LON},
+                    'toplatitude': {'value': LAT},
+                    'topdepth': {'value': 0.0},
+                    'bottomlongitude': {'value': LON},
+                    'bottomlatitude': {'value': LAT},
+                    'bottomdepth': {'value': 1000.0},
                     'holediameter': {'value': 0.3},
                     'topclosed': False,
                     'bottomclosed': False,
@@ -80,16 +93,16 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                             {'value': '2019-05-03T15:27:09.117623'}}]}]},
             'scenario': {
                 'well': {
-                    'altitude': {'value': 408.0},
+                    'altitude': {'value': 400.0},
                     'publicid': ('smi:ch.ethz.sed/bh/'
                                  '11111111-e4a0-4692-bf29-33b5591eb798'),
                     'sections': [{
-                        'toplongitude': {'value': 8.525519556860086},
-                        'toplatitude': {'value': 47.37029681274552},
-                        'topdepth': {'value': -0.03918329074144822},
-                        'bottomlongitude': {'value': 8.525520385756767},
-                        'bottomlatitude': {'value': 47.3702973775022},
-                        'bottomdepth': {'value': 799.9608117940518},
+                        'toplongitude': {'value': LON},
+                        'toplatitude': {'value': LAT},
+                        'topdepth': {'value': 0.0},
+                        'bottomlongitude': {'value': LON},
+                        'bottomlatitude': {'value': LAT},
+                        'bottomdepth': {'value': 1000.0},
                         'holediameter': {'value': 0.3},
                         'topclosed': False,
                         'bottomclosed': False,
@@ -100,47 +113,10 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                                 {'value': '2019-05-03T17:27:09.117623'}},
                             {'datetime':
                                 {'value': '2019-05-03T19:27:09.117623'}}]}]}},
-                'reservoir': {'geom':
-                              ('POLYHEDRALSURFACE Z ('
-                               '((8.5189 47.3658 408.000000000195,'
-                               '8.5189 47.3747940041495 '
-                               '408.07848751312,8.53214023892212 '
-                               '47.3747932395126 408.156733124078,'
-                               '8.5321379883561 47.3657992356023 '
-                               '408.078245651413,8.5189 47.3658 '
-                               '408.000000000195)),'
-                               '((8.5189 47.3658 408.000000000195,'
-                               '8.5189 47.3747940041495 408.07848751312,'
-                               '8.5189 47.3747954162037 -591.921500164234,'
-                               '8.5189 47.3658 -591.999999998976,'
-                               '8.5189 47.3658 408.000000000195)),'
-                               '((8.5189 47.3658 408.000000000195,'
-                               '8.5321379883561 47.3657992356023 '
-                               '408.078245651413,8.53214006031033 '
-                               '47.3657992353626 -591.921742101994,'
-                               '8.5189 47.3658 -591.999999998976,'
-                               '8.5189 47.3658 408.000000000195)),'
-                               '((8.53214231158096 47.374794651327 '
-                               '-591.843242307722,8.53214006031033 '
-                               '47.3657992353626 -591.921742101994,'
-                               '8.5189 47.3658 -591.999999998976,'
-                               '8.5189 47.3747954162037 -591.921500164234,'
-                               '8.53214231158096 47.374794651327 '
-                               '-591.843242307722)),((8.53214231158096 '
-                               '47.374794651327 -591.843242307722,'
-                               '8.53214006031033 47.3657992353626 '
-                               '-591.921742101994,8.5321379883561 '
-                               '47.3657992356023 408.078245651413,'
-                               '8.53214023892212 47.3747932395126 '
-                               '408.156733124078,8.53214231158096 '
-                               '47.374794651327 -591.843242307722)),'
-                               '((8.53214231158096 47.374794651327 '
-                               '-591.843242307722,8.53214023892212 '
-                               '47.3747932395126 408.156733124078,'
-                               '8.5189 47.3747940041495 408.07848751312,'
-                               '8.5189 47.3747954162037 -591.921500164234,'
-                               '8.53214231158096 47.374794651327 '
-                               '-591.843242307722)))')}}
+                'reservoir': {
+                    'geom': reservoir},
+                'spatialreference': RAMSIS_PROJ,
+                'referencepoint': {'x': REFERENCE_X, 'y': REFERENCE_Y}}
 
         reference_result = {
             'data': {
@@ -157,20 +133,6 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
 
         catalog = SeismicCatalog(events=events)
 
-        reservoir = ('POLYHEDRALSURFACE Z '
-                     '(((0 0 0, 0 1000 0, 1000 1000 0, 1000 0 0, '
-                     '0 0 0)),'
-                     '((0 0 0, 0 1000 0, 0 1000 1000, 0 0 1000, '
-                     '0 0 0)),'
-                     '((0 0 0, 1000 0 0, 1000 0 1000, 0 0 1000, '
-                     '0 0 0)),'
-                     '((1000 1000 1000, 1000 0 1000, 0 0 1000, '
-                     '0 1000 1000, 1000 1000 1000)),'
-                     '((1000 1000 1000, 1000 0 1000, 1000 0 0, '
-                     '1000 1000 0, 1000 1000 1000)),'
-                     '((1000 1000 1000, 1000 1000 0, 0 1000 0, '
-                     '0 1000 1000, 1000 1000 1000)))')
-
         s0 = HydraulicSample(
             datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
         s1 = HydraulicSample(
@@ -185,12 +147,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
         sec = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=500.0,
-            topy_value=500.0,
-            topz_value=0,
-            bottomx_value=500,
-            bottomy_value=500,
-            bottomz_value=800,
+            topx_value=0.0,
+            topy_value=0.0,
+            topz_value=400.0,
+            bottomx_value=0.0,
+            bottomy_value=0.0,
+            bottomz_value=-600,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
@@ -198,31 +160,34 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
 
         bh = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
-            altitude_value=408.0,
+            altitude_value=400.0,
             sections=[sec])
         plan = InjectionPlan(samples=[s2, s3])
 
         sec_scenario = WellSection(
             publicid=('smi:ch.ethz.sed/bh/section/'
                       '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=500.0,
-            topy_value=500.0,
-            topz_value=0,
-            bottomx_value=500,
-            bottomy_value=500,
-            bottomz_value=800,
+            topx_value=0.0,
+            topy_value=0.0,
+            topz_value=400.0,
+            bottomx_value=0,
+            bottomy_value=0,
+            bottomz_value=-600,
             holediameter_value=0.3,
             topclosed=False,
             bottomclosed=False,
             injectionplan=plan)
         bh_scenario = InjectionWell(
             publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
-            altitude_value=408.0,
+            altitude_value=400.0,
             sections=[sec_scenario])
 
-        proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
         serializer = SFMWorkerIMessageSerializer(
-            proj=proj, transform_callback=pymap3d_transform_ned2geodetic)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_from_local_coords')
 
         payload = {
             'data': {
@@ -231,161 +196,12 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                     'well': bh,
                     'scenario': {'well': bh_scenario},
                     'reservoir': {'geom': reservoir},
+                    'spatialreference': RAMSIS_PROJ,
+                    'referencepoint': {'x': REFERENCE_X, 'y': REFERENCE_Y},
                     'model_parameters': {}}}}
 
         actual_result = json.loads(serializer.dumps(payload))
         self.assertEqual(reference_result, actual_result)
-
-    def test_no_proj(self):
-
-        reference_catalog = _read(os.path.join(self.PATH_RESOURCES,
-                                               'cat-01.qml'))
-        reference_catalog = base64.b64encode(
-            reference_catalog).decode('utf-8')
-
-        attributes = {
-            'seismic_catalog': {
-                'quakeml': reference_catalog},
-            'well': {
-                'sections': [{
-                    'toplongitude': {'value': 10.663207130000002},
-                    'toplatitude': {'value': 10.66320713},
-                    'topdepth': {'value': 0.0},
-                    'bottomlatitude': {'value': 10.66320713},
-                    'bottomlongitude': {'value': 10.66320713},
-                    'bottomdepth': {'value': 1000.0},
-                    'holediameter': {'value': 0.3},
-                    'topclosed': False,
-                    'bottomclosed': False,
-                    'publicid': ('smi:ch.ethz.sed/bh/section/'
-                                 '11111111-8d89-4f13-95e7-526ade73cc8b'),
-                    'hydraulics': [
-                        {'datetime':
-                            {'value': '2019-05-03T13:27:09.117623'}},
-                        {'datetime':
-                            {'value': '2019-05-03T15:27:09.117623'}}]}],
-                    'altitude': {'value': 0.0},
-                    'publicid': ('smi:ch.ethz.sed/bh/'
-                                 '11111111-e4a0-4692-bf29-33b5591eb798')},
-            'scenario': {
-                'well': {
-                    'sections': [{
-                        'toplongitude': {'value': 10.663207130000002},
-                        'toplatitude': {'value': 10.66320713},
-                        'topdepth': {'value': 0.0},
-                        'bottomlatitude': {'value': 10.66320713},
-                        'bottomlongitude': {'value': 10.66320713},
-                        'bottomdepth': {'value': 1000.0},
-                        'holediameter': {'value': 0.3},
-                        'topclosed': False,
-                        'bottomclosed': False,
-                        'publicid': ('smi:ch.ethz.sed/bh/section/'
-                                     '11111111-8d89-4f13-95e7-526ade73cc8b'),
-                        'hydraulics': [
-                            {'datetime':
-                                {'value': '2019-05-03T17:27:09.117623'}},
-                            {'datetime':
-                                {'value': ('2019-05-03T19:27:09.117623')}}]}],
-                        'altitude': {'value': 0.0},
-                        'publicid': ('smi:ch.ethz.sed/bh/'
-                                     '11111111-e4a0-4692-bf29-33b5591eb798')}},
-                'reservoir': {'geom':
-                              ('POLYHEDRALSURFACE Z '
-                               '(((0 0 0, 0 2 0, 2 2 0, 2 0 0, 0 0 0)),'
-                               '((0 0 0, 0 2 0, 0 2 2, 0 0 2, 0 0 0)),'
-                               '((0 0 0, 2 0 0, 2 0 2, 0 0 2, 0 0 0)),'
-                               '((2 2 2, 2 0 2, 0 0 2, 0 2 2, 2 2 2)),'
-                               '((2 2 2, 2 0 2, 2 0 0, 2 2 0, 2 2 2)),'
-                               '((2 2 2, 2 2 0, 0 2 0, 0 2 2, 2 2 2)))')}}
-
-        reference_result = {
-            'data': {
-                'type': 'runs',
-                'attributes': attributes}}
-
-        event_0 = _read(os.path.join(self.PATH_RESOURCES, 'e-00.qmlevent'))
-        event_1 = _read(os.path.join(self.PATH_RESOURCES, 'e-01.qmlevent'))
-        event_2 = _read(os.path.join(self.PATH_RESOURCES, 'e-02.qmlevent'))
-
-        events = [SeismicEvent(quakeml=event_0),
-                  SeismicEvent(quakeml=event_1),
-                  SeismicEvent(quakeml=event_2)]
-
-        catalog = SeismicCatalog(events=events)
-
-        reservoir = ('POLYHEDRALSURFACE Z '
-                     '(((0 0 0, 0 2 0, 2 2 0, 2 0 0, 0 0 0)),'
-                     '((0 0 0, 0 2 0, 0 2 2, 0 0 2, 0 0 0)),'
-                     '((0 0 0, 2 0 0, 2 0 2, 0 0 2, 0 0 0)),'
-                     '((2 2 2, 2 0 2, 0 0 2, 0 2 2, 2 2 2)),'
-                     '((2 2 2, 2 0 2, 2 0 0, 2 2 0, 2 2 2)),'
-                     '((2 2 2, 2 2 0, 0 2 0, 0 2 2, 2 2 2)))')
-
-        s0 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
-        s1 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 15, 27, 9, 117623))
-        s2 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 17, 27, 9, 117623))
-        s3 = HydraulicSample(
-            datetime_value=datetime.datetime(2019, 5, 3, 19, 27, 9, 117623))
-
-        hyd = Hydraulics(samples=[s0, s1])
-
-        sec = WellSection(
-            publicid=('smi:ch.ethz.sed/bh/section/'
-                      '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=10.663207130000002,
-            topy_value=10.66320713,
-            topz_value=0.0,
-            bottomx_value=10.66320713,
-            bottomy_value=10.66320713,
-            bottomz_value=1000.0,
-            holediameter_value=0.3,
-            topclosed=False,
-            bottomclosed=False,
-            hydraulics=hyd)
-
-        bh = InjectionWell(
-            publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
-            altitude_value=0.0,
-            sections=[sec])
-
-        plan = InjectionPlan(samples=[s2, s3])
-
-        sec_scenario = WellSection(
-            publicid=('smi:ch.ethz.sed/bh/section/'
-                      '11111111-8d89-4f13-95e7-526ade73cc8b'),
-            topx_value=10.663207130000002,
-            topy_value=10.66320713,
-            topz_value=0.0,
-            bottomx_value=10.66320713,
-            bottomy_value=10.66320713,
-            bottomz_value=1000.0,
-            holediameter_value=0.3,
-            topclosed=False,
-            bottomclosed=False,
-            injectionplan=plan)
-
-        bh_scenario = InjectionWell(
-            publicid='smi:ch.ethz.sed/bh/11111111-e4a0-4692-bf29-33b5591eb798',
-            altitude_value=0.0,
-            sections=[sec_scenario])
-
-        serializer = SFMWorkerIMessageSerializer(proj=None)
-
-        payload = {
-            'data': {
-                'attributes': {
-                    'seismic_catalog': {'quakeml': catalog},
-                    'well': bh,
-                    'scenario': {'well': bh_scenario},
-                    'reservoir': {'geom': reservoir},
-                    'model_parameters': {}}}}
-        serialized = serializer.dumps(payload)
-        serialized = json.loads(serialized)
-        self.assertEqual(reference_result,
-                         serialized)
 
 
 class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
@@ -408,9 +224,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                     'status': 'WorkerError',
                     'warning': 'Caught in default model exception handler.'}}}
 
-        proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
         deserializer = SFMWorkerOMessageDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
@@ -427,7 +246,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                     'status': 'TaskAccepted',
                     'warning': '', }}}
 
-        deserializer = SFMWorkerOMessageDeserializer(proj=None)
+        deserializer = SFMWorkerOMessageDeserializer(
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
@@ -446,37 +270,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
             hydraulicvol_value=10000.)
 
         prediction = ReservoirSeismicityPrediction(
-            geom=('POLYHEDRALSURFACE Z '
-                  '(((-944829.45117427 -4619265.09168063 2094632.70852796,'
-                  '-944257.736152511 -4466699.60773925 1934552.84972869,'
-                  '-723677.819288185 -4488118.51527331 1914833.54607117,'
-                  '-724115.980887884 -4640696.9676138 2074901.46552201,'
-                  '-944829.45117427 -4619265.09168063 2094632.70852796)),'
-                  '((-944829.45117427 -4619265.09168063 2094632.70852796,'
-                  '-944257.736152511 -4466699.60773925 1934552.84972869,'
-                  '-944258.032243325 -4466701.01472902 1934551.45950928,'
-                  '-944829.747445564 -4619266.54683276 2094631.36884307,'
-                  '-944829.45117427 -4619265.09168063 2094632.70852796)),'
-                  '((-944829.45117427 -4619265.09168063 2094632.70852796,'
-                  '-724115.980887884 -4640696.9676138 2074901.46552201,'
-                  '-724116.207949793 -4640698.42948635 2074900.11964997,'
-                  '-944829.747445564 -4619266.54683276 2094631.36884307,'
-                  '-944829.45117427 -4619265.09168063 2094632.70852796)),'
-                  '((-723678.046211774 -4488119.9289794 1914832.14966838,'
-                  '-724116.207949793 -4640698.42948635 2074900.11964997,'
-                  '-944829.747445564 -4619266.54683276 2094631.36884307,'
-                  '-944258.032243325 -4466701.01472902 1934551.45950928,'
-                  '-723678.046211774 -4488119.9289794 1914832.14966838)),'
-                  '((-723678.046211774 -4488119.9289794 1914832.14966838,'
-                  '-724116.207949793 -4640698.42948635 2074900.11964997,'
-                  '-724115.980887884 -4640696.9676138 2074901.46552201,'
-                  '-723677.819288185 -4488118.51527331 1914833.54607117,'
-                  '-723678.046211774 -4488119.9289794 1914832.14966838)),'
-                  '((-723678.046211774 -4488119.9289794 1914832.14966838,'
-                  '-723677.819288185 -4488118.51527331 1914833.54607117,'
-                  '-944257.736152511 -4466699.60773925 1934552.84972869,'
-                  '-944258.032243325 -4466701.01472902 1934551.45950928,'
-                  '-723678.046211774 -4488119.9289794 1914832.14966838)))'),
+            x_min=-2000,
+            x_max=0,
+            y_min=-2000,
+            y_max=0,
+            z_min=-4000,
+            z_max=-2000,
             samples=[s0, ])
 
         reference_result = {
@@ -488,46 +287,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                     'warning': '',
                     'forecast': prediction}}}
 
-        proj = '+x_0=8.5189 +y_0=47.3658 +z_0=408'
         deserializer = SFMWorkerOMessageDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
-
-        self.assertEqual(deserializer.loads(json_omsg),
-                         reference_result)
-
-    def test_no_proj(self):
-        json_omsg = _read(os.path.join(self.PATH_RESOURCES,
-                                       'omsg-200.json'))
-
-        s0 = SeismicityPredictionBin(
-            starttime=dateutil.parser.parse(
-                '2019-07-02T14:59:52.508142'),
-            endtime=dateutil.parser.parse('2019-07-02T14:59:52.508142'),
-            b_value=73,
-            a_value=1.,
-            mc_value=1.5,
-            hydraulicvol_value=10000.)
-
-        prediction = ReservoirSeismicityPrediction(
-            geom=('POLYHEDRALSURFACE Z '
-                  '(((0 0 0,0 2 0,2 2 0,2 0 0,0 0 0)),'
-                  '((0 0 0,0 2 0,0 2 2,0 0 2,0 0 0)),'
-                  '((0 0 0,2 0 0,2 0 2,0 0 2,0 0 0)),'
-                  '((2 2 2,2 0 2,0 0 2,0 2 2,2 2 2)),'
-                  '((2 2 2,2 0 2,2 0 0,2 2 0,2 2 2)),'
-                  '((2 2 2,2 2 0,0 2 0,0 2 2,2 2 2)))'),
-            samples=[s0, ])
-
-        reference_result = {
-            'data': {
-                'id': uuid.UUID('491a85d6-04b3-4528-8422-acb348f5955b'),
-                'attributes': {
-                    'status_code': 200,
-                    'status': 'TaskCompleted',
-                    'warning': '',
-                    'forecast': prediction}}}
-
-        deserializer = SFMWorkerOMessageDeserializer(proj=None)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)
@@ -547,13 +312,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
             hydraulicvol_value=10000.)
 
         prediction = dict(
-            geom=('POLYHEDRALSURFACE Z '
-                  '(((0 0 0,0 2 0,2 2 0,2 0 0,0 0 0)),'
-                  '((0 0 0,0 2 0,0 2 2,0 0 2,0 0 0)),'
-                  '((0 0 0,2 0 0,2 0 2,0 0 2,0 0 0)),'
-                  '((2 2 2,2 0 2,0 0 2,0 2 2,2 2 2)),'
-                  '((2 2 2,2 0 2,2 0 0,2 2 0,2 2 2)),'
-                  '((2 2 2,2 2 0,0 2 0,0 2 2,2 2 2)))'),
+            x_min=-2000,
+            x_max=0,
+            y_min=-2000,
+            y_max=0,
+            z_min=-4000,
+            z_max=-2000,
             samples=[s0, ])
 
         reference_result = {
@@ -566,7 +330,12 @@ class SFMWorkerOMessageDeserializerTestCase(unittest.TestCase):
                     'forecast': prediction}}}
 
         deserializer = SFMWorkerOMessageDeserializer(
-            proj=None, context={'format': 'dict'})
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords',
+            context={'format': 'dict'})
 
         self.assertEqual(deserializer.loads(json_omsg),
                          reference_result)

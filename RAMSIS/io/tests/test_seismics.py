@@ -22,7 +22,14 @@ from ramsis.datamodel.project import Project  # noqa
 
 from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
                                 QuakeMLCatalogSerializer)
-from RAMSIS.io.utils import binary_request, pymap3d_transform_geodetic2ned
+from RAMSIS.io.utils import binary_request
+
+
+RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m "
+               "+x_0=0.0 +y_0=0.0 +no_defs")
+WGS84_PROJ = "epsg:4326"
+REFERENCE_X = 681922
+REFERENCE_Y = 1179229
 
 
 def _read(path):
@@ -43,9 +50,12 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
                                   'resources')
 
     def test_with_ifs(self):
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = QuakeMLCatalogDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         with open(os.path.join(self.PATH_RESOURCES,
                                'cat-00.qml'), 'rb') as ifs:
@@ -59,22 +69,26 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_0.datetime_value,
                          datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
         self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 549667.8429826467)
-        self.assertEqual(e_0.y_value, 4886615.047588805)
-        self.assertEqual(e_0.z_value, 2329559.564246732)
+
+        self.assertEqual(e_0.x_value, 4807981.415790671)
+        self.assertEqual(e_0.y_value, -44215.12188589969)
+        self.assertEqual(e_0.z_value, -4100.0)
 
         e_1 = events[1]
         self.assertEqual(e_1.datetime_value,
                          datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
         self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 429866.65732392936)
-        self.assertEqual(e_1.y_value, 4986132.283391061)
-        self.assertEqual(e_1.z_value, 2428637.741202894)
+        self.assertEqual(e_1.x_value, 5031237.042248942)
+        self.assertEqual(e_1.y_value, -246331.15090589435)
+        self.assertEqual(e_1.z_value, -10300.0)
 
     def test_with_bytes(self):
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = QuakeMLCatalogDeserializer(
-            proj=proj, transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         cat = deserializer.loads(
             _read(os.path.join(self.PATH_RESOURCES, 'cat-00.qml')))
@@ -86,18 +100,17 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         e_0 = events[0]
         self.assertEqual(e_0.datetime_value,
                          datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
-        self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 549667.8429826467)
-        self.assertEqual(e_0.y_value, 4886615.047588805)
-        self.assertEqual(e_0.z_value, 2329559.564246732)
+        self.assertEqual(e_0.x_value, 4807981.415790671)
+        self.assertEqual(e_0.y_value, -44215.12188589969)
+        self.assertEqual(e_0.z_value, -4100.0)
 
         e_1 = events[1]
         self.assertEqual(e_1.datetime_value,
                          datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
         self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 429866.65732392936)
-        self.assertEqual(e_1.y_value, 4986132.283391061)
-        self.assertEqual(e_1.z_value, 2428637.741202894)
+        self.assertEqual(e_1.x_value, 5031237.042248942)
+        self.assertEqual(e_1.y_value, -246331.15090589435)
+        self.assertEqual(e_1.z_value, -10300.0)
 
     @mock.patch('requests.get')
     def test_with_binary_request(self, mock_req):
@@ -123,10 +136,12 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
             'format': 'xml',
             'magnitudetype': 'ML,Mc,MS,Mw', }
 
-        proj = '+x_0=0 +y_0=0 +z_0=0'
         deserializer = QuakeMLCatalogDeserializer(
-            proj=proj,
-            transform_callback=pymap3d_transform_geodetic2ned)
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_to_local_coords')
 
         with binary_request(requests.get, url, req_params) as ifs:
             cat = deserializer.load(ifs)
@@ -138,44 +153,17 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         e_0 = events[0]
         self.assertEqual(e_0.datetime_value,
                          datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
-        self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 549667.8429826467)
-        self.assertEqual(e_0.y_value, 4886615.047588805)
-        self.assertEqual(e_0.z_value, 2329559.564246732)
+        self.assertEqual(e_0.x_value, 4807981.415790671)
+        self.assertEqual(e_0.y_value, -44215.12188589969)
+        self.assertEqual(e_0.z_value, -4100.0)
 
         e_1 = events[1]
         self.assertEqual(e_1.datetime_value,
                          datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
         self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 429866.65732392936)
-        self.assertEqual(e_1.y_value, 4986132.283391061)
-        self.assertEqual(e_1.z_value, 2428637.741202894)
-
-    def test_no_proj(self):
-        deserializer = QuakeMLCatalogDeserializer(proj=None)
-
-        cat = deserializer.loads(
-            _read(os.path.join(self.PATH_RESOURCES, 'cat-00.qml')))
-
-        self.assertEqual(len(cat), 2)
-
-        events = sorted(cat)
-
-        e_0 = events[0]
-        self.assertEqual(e_0.datetime_value,
-                         datetime.datetime(2011, 2, 14, 12, 43, 12, 980000))
-        self.assertEqual(e_0.magnitude_value, 4.4)
-        self.assertEqual(e_0.x_value, 7.731667)
-        self.assertEqual(e_0.y_value, 50.29)
-        self.assertEqual(e_0.z_value, 4100.0)
-
-        e_1 = events[1]
-        self.assertEqual(e_1.datetime_value,
-                         datetime.datetime(2011, 9, 8, 19, 2, 51, 10000))
-        self.assertEqual(e_1.magnitude_value, 4.5)
-        self.assertEqual(e_1.x_value, 6.211667)
-        self.assertEqual(e_1.y_value, 51.64017)
-        self.assertEqual(e_1.z_value, 10300.0)
+        self.assertEqual(e_1.x_value, 5031237.042248942)
+        self.assertEqual(e_1.y_value, -246331.15090589435)
+        self.assertEqual(e_1.z_value, -10300.0)
 
 
 class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
@@ -200,8 +188,14 @@ class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
 
         catalog = SeismicCatalog(events=events)
 
-        self.assertEqual(QuakeMLCatalogSerializer().dumps(catalog),
-                         reference_result)
+        result = QuakeMLCatalogSerializer(
+            ramsis_proj=RAMSIS_PROJ,
+            external_proj=WGS84_PROJ,
+            ref_easting=REFERENCE_X,
+            ref_northing=REFERENCE_Y,
+            transform_func_name='pyproj_transform_from_local_coords').\
+            dumps(catalog)
+        self.assertEqual(result, reference_result)
 
 
 def suite():

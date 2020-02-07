@@ -322,9 +322,7 @@ class _WellSectionSchema(_SchemaBase):
                                      self.EContext.FUTURE)):
             data = self.make_object(data)
 
-            if (self.context.get('proj') and
-                    self.context.get('transform_callback')):
-                data = self._transform_load(data)
+            data = self._transform_load(data)
         return data
 
     @pre_dump
@@ -332,9 +330,7 @@ class _WellSectionSchema(_SchemaBase):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
-            if (self.context.get('proj') and
-                    self.context.get('transform_callback')):
-                data = self._transform_dump(data)
+            data = self._transform_dump(data)
         return data
 
     @post_dump
@@ -375,35 +371,45 @@ class _WellSectionSchema(_SchemaBase):
         return data
 
     def _transform_load(self, data):
-        transform_func = self.context['transform_callback']
+        """
+        Transform coordinates from external to local coordinates.
+        """
+        transform_func = self.context['transform_func']
         if 'altitude_value' not in self.context.keys():
             raise ValidationError(
                 'Transformation of well coordinates cannot take place'
                 ' as altitude is not given')
 
         altitude_value = self.context['altitude_value']
-        topheight_value = altitude_value - data.topz_value
-        bottomheight_value = altitude_value - data.bottomz_value
-
+        # +z values have a directionality as depth
+        topdepth_value = -altitude_value + data.topz_value
+        bottomdepth_value = -altitude_value + data.bottomz_value
+        # The input values have an expected directionality of
+        # x, y, depth = lat, lon, depth
+        # The output values to a local CRS have an expected directionality of
+        # x, y, z = easting, northing, height
         try:
             (data.topx_value,
              data.topy_value,
              data.topz_value) = transform_func(
                 data.topx_value,
                 data.topy_value,
-                topheight_value)
+                topdepth_value)
             (data.bottomx_value,
              data.bottomy_value,
              data.bottomz_value) = transform_func(
                 data.bottomx_value,
                 data.bottomy_value,
-                bottomheight_value)
+                bottomdepth_value)
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
         return data
 
     def _transform_dump(self, data):
-        transform_func = self.context['transform_callback']
+        """
+        Transform coordinates from local to external coordinates.
+        """
+        transform_func = self.context['transform_func']
         if 'altitude_value' not in self.context.keys():
             raise ValidationError(
                 'Transformation of well coordinates cannot take place'
@@ -411,13 +417,13 @@ class _WellSectionSchema(_SchemaBase):
         try:
             (data.topx_value,
              data.topy_value,
-             topheight_value) = transform_func(
+             topdepth_value) = transform_func(
                 data.topx_value,
                 data.topy_value,
                 data.topz_value)
             (data.bottomx_value,
              data.bottomy_value,
-             bottomheight_value) = transform_func(
+             bottomdepth_value) = transform_func(
                 data.bottomx_value,
                 data.bottomy_value,
                 data.bottomz_value)
@@ -426,8 +432,8 @@ class _WellSectionSchema(_SchemaBase):
             raise TransformationError(f"{err}")
 
         altitude_value = self.context['altitude_value']
-        data.topz_value = altitude_value - topheight_value
-        data.bottomz_value = altitude_value - bottomheight_value
+        data.topz_value = altitude_value + topdepth_value
+        data.bottomz_value = altitude_value + bottomdepth_value
         return data
 
 
@@ -514,36 +520,26 @@ class HYDWSBoreholeHydraulicsDeserializer(DeserializerBase, IOBase):
     # referring to its hierarchical structure) parsing the response iteratevly
     # does not appear to be adequate. That is why for the moment we simply
     # implement a *bulk* deserializer.
-    SRS_EPSG = 4326
 
     LOGGER = 'RAMSIS.io.hydwsboreholehydraulicsdeserializer'
 
-    def __init__(self, proj=None, **kwargs):
+    def __init__(self, **kwargs):
         """
-        :param proj: Spatial reference system in Proj4 notation
-            representing the local coordinate system
-        :type proj: str or None
-        :param transform_callback: Function reference for transforming data
+        :param transform_func: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(proj=proj, **kwargs)
-
-        self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
-                      if kwargs.get('plan', False) else
-                      {'time': _SchemaBase.EContext.PAST})
+        super().__init__(**kwargs)
+        self.__ctx = kwargs
+        self.__ctx.update({'time': _SchemaBase.EContext.FUTURE}
+                          if kwargs.get('plan', False) else
+                          {'time': _SchemaBase.EContext.PAST})
+        self.__ctx.update({'transform_func': self.transform_func})
 
     @property
     def _ctx(self):
         # XXX(damb): Pass transformation rule/function by means of the
         # ma.Schema context
-        crs_transform = self._transform_callback or self._transform
-        ctx = {
-            'proj': self.proj,
-            'transform_callback': functools.partial(
-                crs_transform, source_proj=self.SRS_EPSG,
-                target_proj=self.proj)}
-        ctx.update(self.__ctx)
-        return ctx
+        return self.__ctx
 
     def _deserialize(self, data):
         """
@@ -571,31 +567,21 @@ class HYDWSBoreholeHydraulicsSerializer(SerializerBase, IOBase):
     Serializes borehole and hydraulics data from the RT-RAMSIS data model.
     """
 
-    SRS_EPSG = 4326
-
-    def __init__(self, proj=None, **kwargs):
+    def __init__(self, **kwargs):
         """
-        :param proj: Spatial reference system in Proj4 notation
-            representing the local coordinate system
-        :type proj: str or None
-        :param transform_callback: Function reference for transforming data
+        :param transform_func: Function reference for transforming data
             into local coordinate system
         """
-        super().__init__(proj=proj, **kwargs)
-        self.__ctx = ({'time': _SchemaBase.EContext.FUTURE}
-                      if kwargs.get('plan', False) else
-                      {'time': _SchemaBase.EContext.PAST})
+        super().__init__(**kwargs)
+        self.__ctx = kwargs
+        self.__ctx.update({'time': _SchemaBase.EContext.FUTURE}
+                          if kwargs.get('plan', False) else
+                          {'time': _SchemaBase.EContext.PAST})
+        self.__ctx.update({'transform_func': self.transform_func})
 
     @property
     def _ctx(self):
-        crs_transform = self._transform_callback or self._transform
-        ctx = {
-            'proj': self._proj,
-            'transform_callback': functools.partial(
-                crs_transform, source_proj=self._proj,
-                target_proj=self.SRS_EPSG)}
-        ctx.update(self.__ctx)
-        return ctx
+        return self.__ctx
 
     def _serialize(self, data):
         """

@@ -9,11 +9,10 @@ import functools
 import io
 import logging
 
-import pymap3d
+from pyproj import Transformer
 import requests
 
 from marshmallow import fields, validate
-from osgeo import ogr, osr
 
 from ramsis.utils.error import Error
 
@@ -67,14 +66,18 @@ class IOBase(abc.ABC):
 
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(self.LOGGER)
+        for atr in ['ref_easting', 'ref_northing', 'ramsis_proj',
+                    'external_proj', 'transform_func_name']:
+            if kwargs.get(atr) is None:
+                raise ValueError(
+                    f"IOBase requires {atr} to be passed in kwargs.")
+            setattr(self, atr, kwargs.get(atr))
 
-        self._proj = kwargs.get('proj', None)
-        self._transform_callback = _callable_or_raise(
-            kwargs.get('transform_callback', self._transform))
-
-    @property
-    def proj(self):
-        return self._proj
+        self.coordinate_transformer = RamsisCoordinateTransformer(
+            self.ref_easting, self.ref_northing,
+            self.ramsis_proj, self.external_proj)
+        self.transform_func = _callable_or_raise(
+            getattr(self.coordinate_transformer, self.transform_func_name))
 
     def transform_callback(self, func):
         """
@@ -99,48 +102,9 @@ class IOBase(abc.ABC):
 
             cat = deserializer.load(data)
         """
-        self._transform_callback = _callable_or_raise(func)
+        self._transform_callback = _callable_or_raise(
+            getattr(self.coordinate_transformer, func))
         return func
-
-    @staticmethod
-    def _transform(x, y, z, source_proj, target_proj):
-        """
-        Utility method performing a spatial transformation relying on `GDAL's
-        Python API <https://pypi.org/project/GDAL/>`.
-
-        :param float x: X value
-        :param float y: Y value
-        :param float z: Z value
-        :param source_proj: Source CRS description (PROJ4 or EPSG)
-        :type source_proj: int or str
-        :param target_proj: Target CRS description (PROJ4 or EPSG)
-        :type target_proj: int or str
-
-        :returns: Transformed values
-        :rtype: tuple
-        """
-        source_srs = osr.SpatialReference()
-        if isinstance(source_proj, int):
-            source_srs.ImportFromEPSG(source_proj)
-        elif isinstance(source_proj, str):
-            source_srs.ImportFromProj4(source_proj)
-        else:
-            raise ValueError(f"Invalid value passed {source_proj!r}")
-
-        target_srs = osr.SpatialReference()
-        if isinstance(target_proj, int):
-            target_srs.ImportFromEPSG(target_proj)
-        elif isinstance(target_proj, str):
-            target_srs.ImportFromProj4(target_proj)
-        else:
-            raise ValueError(f"Invalid value passed {target_proj!r}")
-
-        t = osr.CoordinateTransformation(source_srs, target_srs)
-        # convert to WKT
-        point_z = ogr.CreateGeometryFromWkt(f"POINT_Z ({x} {y} {z})")
-        point_z.Transform(t)
-
-        return point_z.GetX(), point_z.GetY(), point_z.GetZ()
 
 
 class SerializerBase(abc.ABC):
@@ -264,75 +228,33 @@ def _callable_or_raise(obj):
     return obj
 
 
-def pymap3d_transform_geodetic2ned(x, y, z, source_proj, target_proj):
-    """
-    Utility method performing a spatial transformation relying on `pymap3d's
-    <https://github.com/scivision/pymap3d>` :code:`geodetic2ned` function.
+class RamsisCoordinateTransformer:
+    def __init__(self, ref_easting, ref_northing,
+                 ramsis_proj, external_proj=4326):
+        self.ref_easting = ref_easting
+        self.ref_northing = ref_northing
+        self.ramsis_proj = ramsis_proj
+        self.external_proj = external_proj
 
-    :param float x: X value
-    :param float y: Y value
-    :param float z: Z value
-    :param source_proj: Source CRS description (PROJ4 or EPSG)
-    :type source_proj: int or str
-    :param target_proj: Target CRS description (PROJ4)
-    :type target_proj: str
+        self.transformer_to_ramsis = Transformer.from_proj(
+            self.external_proj, self.ramsis_proj)
+        self.transformer_to_external = Transformer.from_proj(
+            self.ramsis_proj, self.external_proj)
 
-    :returns: Transformed values
-    :rtype: tuple
-    """
-    if source_proj not in (4326, '+proj=longlat +datum=WGS84 +no_defs'):
-        raise ValueError(
-            'Only WGS84 source projections handled (EPSG, PROJ4).')
-    if not isinstance(target_proj, str):
-        raise ValueError('Only PROJ4 target projection handled.')
+    def pyproj_transform_to_local_coords(self, lat, lon, depth):
+        # Easting and northing in projected coordinates
+        easting_0, northing_0 = self.transformer_to_ramsis.transform(lat, lon)
+        easting = easting_0 - self.ref_easting
+        northing = northing_0 - self.ref_northing
+        altitude = -depth
 
-    # extract observer position from proj4 string
-    origin = dict([v.split('=') for v in target_proj.split(' ')
-                   if (v.startswith('+x_0') or
-                       v.startswith('+y_0') or
-                       v.startswith('+z_0'))])
+        return easting, northing, altitude
 
-    if len(origin) != 3:
-        raise ValueError(f"Invalid proj4 string: {target_proj!r}")
+    def pyproj_transform_from_local_coords(self, easting, northing, altitude):
+        easting_0 = easting + self.ref_easting
+        northing_0 = northing + self.ref_northing
 
-    n, e, d = pymap3d.geodetic2ned(
-        y, x, z,
-        float(origin['+y_0']), float(origin['+x_0']), float(origin['+z_0']))
-    return e, n, d
-
-
-def pymap3d_transform_ned2geodetic(x, y, z, source_proj, target_proj):
-    """
-    Utility method performing a spatial transformation relying on `pymap3d's
-    <https://github.com/scivision/pymap3d>` :code:`ned2geodetic` function.
-
-    :param float x: X value
-    :param float y: Y value
-    :param float z: Z value
-    :param source_proj: Source CRS description (PROJ4 or EPSG)
-    :type source_proj: int or str
-    :param target_proj: Target CRS description (PROJ4)
-    :type target_proj: str
-
-    :returns: Transformed values
-    :rtype: tuple
-    """
-    if target_proj not in (4326, '+proj=longlat +datum=WGS84 +no_defs'):
-        raise ValueError(
-            'Only WGS84 source projections handled (EPSG, PROJ4).')
-    if not isinstance(source_proj, str):
-        raise ValueError('Only PROJ4 target projection handled.')
-
-    # extract observer position from proj4 string
-    origin = dict([v.split('=') for v in source_proj.split(' ')
-                   if (v.startswith('+x_0') or
-                       v.startswith('+y_0') or
-                       v.startswith('+z_0'))])
-
-    if len(origin) != 3:
-        raise ValueError(f"Invalid proj4 string: {source_proj!r}")
-
-    lat, lon, alt = pymap3d.ned2geodetic(
-        y, x, z,
-        float(origin['+y_0']), float(origin['+x_0']), float(origin['+z_0']))
-    return lon, lat, alt
+        lat, lon = self.transformer_to_external.transform(easting_0,
+                                                          northing_0)
+        depth = -altitude
+        return lat, lon, depth
