@@ -27,8 +27,6 @@ import logging
 from prefect import task, Task
 import prefect
 from prefect.engine.signals import LOOP, FAIL
-from prefect.engine.runner import ENDRUN
-from prefect.engine.state import Skipped
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.forecast import EStage
 
@@ -43,6 +41,7 @@ log = logging.getLogger(__name__)
 def flatten_task(nested_list):
     flattened_list = [item for sublist in nested_list for item in sublist]
     return flattened_list
+
 
 @task
 def check_stage_enabled(scenario, estage):

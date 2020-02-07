@@ -507,7 +507,7 @@ class ForecastFlow(QObject):
 
 
         # (sarsonl) To view DAG: seismicity_flow.visualize()
-        seismicity_flow.visualize()
+        #seismicity_flow.visualize()
 
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(forecast_id=self.forecast.id):

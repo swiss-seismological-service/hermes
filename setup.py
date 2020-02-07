@@ -50,7 +50,7 @@ _install_requires = [
     "ramsis.datamodel==0.3rc0",
     "requests>=2.18.4",
     "transitions==0.6.9",
-    "prefect",
+    "prefect[viz]",
     "pyproj==2.3.0"]
 
 _extras_require = {'doc': [

@@ -523,6 +523,7 @@ class IntegrationTestCase(unittest.TestCase):
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
+        print('signal list', signal_list)
         self.assertEqual(len(signal_list), 4)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
