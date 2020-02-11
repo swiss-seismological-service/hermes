@@ -207,7 +207,7 @@ class ForecastHandler(QObject):
     def update_db(self):
         if self.session.dirty:
             self.session.commit()
-            self.session.remove()
+        self.session.remove()
 
     @staticmethod
     def scenario_stage_status(scenario):
@@ -256,8 +256,7 @@ class ForecastHandler(QObject):
             elif new_state.is_successful():
                 forecast.status.state = EStatus.COMPLETE
             for scenario in forecast.scenarios:
-                self.session.merge(self.scenario_stage_status(scenario))
-                self.session.commit()
+                scenario = self.scenario_stage_status(scenario)
             self.update_db()
         self.session.remove()
         return new_state
@@ -272,7 +271,6 @@ class ForecastHandler(QObject):
             model_runs = new_state.result
             for run in model_runs:
                 run.status.state = EStatus.RUNNING
-                self.session.merge(run)
                 self.session.commit()
             self.update_db()
         return new_state
@@ -290,15 +288,19 @@ class ForecastHandler(QObject):
         if new_state.is_finished() and not new_state.is_mapped():
             if new_state.is_successful():
                 model_run = new_state.result
+                update_model_run = self.session.query(SeismicityModelRun).\
+                    filter(SeismicityModelRun.id == model_run.id).first()
+                update_model_run.runid = model_run.runid
                 logger.info(f"Model run with runid={model_run.runid}"
                             "has been dispatched to the remote worker.")
-                model_run.status.state = EStatus.DISPATCHED
-                self.session.merge(model_run)
+                update_model_run.status.state = model_run.status.state
             elif not new_state.is_successful():
                 # prefect Fail should be raised with model_run as a result
                 model_run = new_state.result
-                model_run.status.state = EStatus.ERROR
-                self.session.merge(model_run)
+                update_model_run = self.session.query(SeismicityModelRun).\
+                    filter(SeismicityModelRun.id == model_run.id).first()
+                update_model_run.status.state = EStatus.ERROR
+
             # The sent status is not used, as the whole scenario must
             # be refreshed from the db in the gui thread.
             self.update_db()
@@ -325,15 +327,20 @@ class ForecastHandler(QObject):
                 logger.info(f"Model with runid={model_run.runid} "
                             "has returned without error from the "
                             "remote worker.")
-                model_run.status.state = EStatus.COMPLETE
-                self.session.merge(model_run)
+                update_model_run = self.session.query(SeismicityModelRun).\
+                    filter(SeismicityModelRun.id == model_run.id).first()
+                update_model_run.status.state = EStatus.COMPLETE
+                update_model_run.result = model_result
+                update_model_run.runid = model_run.runid
+
             elif new_state.is_failed():
                 model_run = new_state.result
                 logger.error(f"Model with runid={model_run.runid}"
                              "has returned an error from the "
                              "remote worker.")
-                model_run.status.state = EStatus.ERROR
-                self.session.merge(model_run)
+                update_model_run = self.session.query(SeismicityModelRun).\
+                    filter(SeismicityModelRun.id == model_run.id).first()
+                update_model_run.status.state = EStatus.ERROR
             self.update_db()
             self.execution_status_update.emit((
                 new_state, type(model_run),

@@ -6,7 +6,7 @@ a docker container to run the code in (not recommended to use the RAMSIS
 container, although this is possible.) The docker container needs to have
 postgres and postgis enabled, recomend using kartoza/postgis
 https://hub.docker.com/r/kartoza/postgis/
-(   Shouldn't need to pull image as image should already exist
+(   Shouldnt need to pull image as image should already exist
     but to get latest image...
     $ docker pull kartoza/postgis)
 $ docker run --rm   --name pg-test -d -p 5435:5432 kartoza/postgis
@@ -332,7 +332,8 @@ def insert_test_data(db_url):
         store.session.rollback()
         raise
     finally:
-        store.close()
+        store.session.remove()
+        store.engine.dispose()
 
 
 class MockResponse:
@@ -428,34 +429,55 @@ class IntegrationTestCase(unittest.TestCase):
         return(f'postgresql://{self.TEST_USER}:{self.TEST_PASSWORD}@'
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
-    @classmethod
-    def dontsetUpClass(cls):
+    def setUp(self):
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
-            port=cls.DEFAULT_PORT, user=cls.DEFAULT_USER,
-            host=cls.DEFAULT_HOST, password=cls.DEFAULT_PASSWORD,
-            dbname=cls.DEFAULT_DBNAME)
+            port=self.DEFAULT_PORT, user=self.DEFAULT_USER,
+            host=self.DEFAULT_HOST, password=self.DEFAULT_PASSWORD,
+            dbname=self.DEFAULT_DBNAME)
         conn0.autocommit = True
         cursor0 = conn0.cursor()
-        cursor0.execute(f"DROP DATABASE IF EXISTS {cls.TEST_DBNAME}")
-        cursor0.execute(f"DROP USER IF EXISTS {cls.TEST_USER}")
-        cursor0.execute(f"CREATE USER {cls.TEST_USER} with password "
-                        f"'{cls.TEST_PASSWORD}' SUPERUSER")
-        cursor0.execute(f"CREATE DATABASE {cls.TEST_DBNAME} with owner "
-                        f"{cls.TEST_USER}")
+        cursor0.execute(f"DROP DATABASE IF EXISTS {self.TEST_DBNAME}")
+        cursor0.execute(f"DROP USER IF EXISTS {self.TEST_USER}")
+        cursor0.execute(f"CREATE USER {self.TEST_USER} with password "
+                        f"'{self.TEST_PASSWORD}' SUPERUSER")
+        cursor0.execute(f"CREATE DATABASE {self.TEST_DBNAME} with owner "
+                        f"{self.TEST_USER}")
+        cursor0.execute(
+            f"select pg_terminate_backend(pg_stat_activity.pid)"
+            " from pg_stat_activity where pg_stat_activity.datname="
+            "'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
         cursor0.close()
         conn0.close()
         conn = psycopg2.connect(
-            host=cls.DEFAULT_HOST, port=cls.DEFAULT_PORT,
-            user=cls.TEST_USER, password=cls.TEST_PASSWORD,
-            dbname=cls.TEST_DBNAME)
+            host=self.DEFAULT_HOST, port=self.DEFAULT_PORT,
+            user=self.TEST_USER, password=self.TEST_PASSWORD,
+            dbname=self.TEST_DBNAME)
         cursor = conn.cursor()
         cursor.execute(f"CREATE EXTENSION IF NOT EXISTS postgis;")
         cursor.close()
         conn.commit()
         conn.close()
-        insert_test_data(cls.postgres_test_url(cls))
+        insert_test_data(self.postgres_test_url())
+
+    def tearDown(self):
+        # Login with default credentials and create a new
+        # testing database
+        conn0 = psycopg2.connect(
+            port=self.DEFAULT_PORT, user=self.DEFAULT_USER,
+            host=self.DEFAULT_HOST, password=self.DEFAULT_PASSWORD,
+            dbname=self.DEFAULT_DBNAME)
+        conn0.autocommit = True
+        cursor0 = conn0.cursor()
+        # Sometimes not all connctions close successfully so force close them.
+        cursor0.execute(
+            f"select pg_terminate_backend(pg_stat_activity.pid)"
+            " from pg_stat_activity where pg_stat_activity.datname="
+            "'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
+        cursor0.execute(f"DROP DATABASE IF EXISTS {self.TEST_DBNAME}")
+        cursor0.close()
+        conn0.close()
 
     def connect_ramsis(self):
         controller = Controller(mock.MagicMock(), LaunchMode.LAB)
@@ -490,7 +512,7 @@ class IntegrationTestCase(unittest.TestCase):
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # Allow main thread to wait until other threads triggered by
         # workflow complete for 200 seconds maximum
-        for i in range(20):
+        for i in range(5):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
@@ -582,6 +604,8 @@ class IntegrationTestCase(unittest.TestCase):
 
         bin_mc = [item.mc_value for item in bins]
         self.assertTrue(all(item == 4.4 for item in bin_mc))
+        store.session.remove()
+        store.engine.dispose()
 
     @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
                 'execution_status_update', side_effect=signal_factory)
@@ -607,7 +631,7 @@ class IntegrationTestCase(unittest.TestCase):
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # Allow main thread to wait until other threads triggered by
         # workflow complete for 200 seconds maximum
-        for i in range(20):
+        for i in range(5):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
@@ -639,6 +663,8 @@ class IntegrationTestCase(unittest.TestCase):
 
             parent_type = call_tuple[0][0][1]
             self.assertEqual(parent_type, type(SeismicityModelRun()))
+        store.session.remove()
+        store.engine.dispose()
 
     @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
                 'execution_status_update', side_effect=signal_factory)
@@ -649,6 +675,13 @@ class IntegrationTestCase(unittest.TestCase):
     def test_models_already_dispatched(self, mock_post, mock_get, mock_signal):
         self.execution_statuses = []
         controller, store = self.connect_ramsis()
+
+        model_runs = store.session.query(SeismicityModelRun).all()
+        model_run_ids = zip(model_runs, [
+            "1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
+            "1bcc9e3f-d9bd-4dd2-a626-735cbef419dd"])
+        for model_run, runid in model_run_ids:
+            model_run.runid = runid
 
         statuses = store.session.query(Status).all()
         for item_status in statuses:
@@ -664,7 +697,7 @@ class IntegrationTestCase(unittest.TestCase):
         store.session.close()
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # workflow complete for 200 seconds maximum
-        for i in range(20):
+        for i in range(5):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
@@ -705,6 +738,8 @@ class IntegrationTestCase(unittest.TestCase):
         bins_nested = [res.samples for res in results]
         bins = [item for sublist in bins_nested for item in sublist]
         self.assertEqual(len(bins), 6)
+        store.session.remove()
+        store.engine.dispose()
 
     @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
                 'execution_status_update', side_effect=signal_factory)
@@ -716,6 +751,10 @@ class IntegrationTestCase(unittest.TestCase):
                                           mock_signal):
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
+
+        model_runs = store.session.query(SeismicityModelRun).all()
+        model_runs[0].runid = "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"
+        model_runs[0].status.state = EStatus.DISPATCHED
 
         # Alter so that only one model is dispatched.
         m_altered = False
@@ -733,7 +772,7 @@ class IntegrationTestCase(unittest.TestCase):
         store.session.close()
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # workflow complete for 200 seconds maximum
-        for i in range(20):
+        for i in range(5):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
@@ -776,6 +815,8 @@ class IntegrationTestCase(unittest.TestCase):
         bins_nested = [res.samples for res in results]
         bins = [item for sublist in bins_nested for item in sublist]
         self.assertEqual(len(bins), 6)
+        store.session.remove()
+        store.engine.dispose()
 
     @mock.patch('RAMSIS.core.worker.sfm.requests.get',
                 side_effect=mocked_requests_get)
@@ -796,6 +837,8 @@ class IntegrationTestCase(unittest.TestCase):
         store.session.close()
         with self.assertRaises(AssertionError):
             controller.engine.run(datetime(2006, 12, 2), forecast.id)
+        store.session.remove()
+        store.engine.dispose()
 
 
 if __name__ == "__main__":

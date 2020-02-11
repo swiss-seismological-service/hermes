@@ -21,7 +21,6 @@ stage is managed by a respective StageExecutor class:
      ...
 
 """
-
 import time
 import copy
 import logging
@@ -209,8 +208,9 @@ class SeismicityModelRunExecutor(Task):
         # Deepcopy items that are transformed, otherwise
         # die to concurrency, the same object gets transformed
         # multiple times.
-        stage = model_run.forecaststage
-        scenario = model_run.forecaststage.scenario
+        model_run_serialize = model_run.snapshot()
+        stage = model_run_serialize.forecaststage
+        scenario = model_run_serialize.forecaststage.scenario
         project = forecast.project
         # (sarsonl) current bug when attempting to only
         # allow one to one relationship between forecast-well
@@ -221,8 +221,8 @@ class SeismicityModelRunExecutor(Task):
         seismiccatalog = forecast.seismiccatalog[0].snapshot()
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
-        model_parameters = copy.deepcopy(model_run.config)
+            model_run_serialize)
+        model_parameters = copy.deepcopy(model_run_serialize.config)
         model_parameters.update(
             {'datetime_start': forecast.starttime.isoformat(),
              'datetime_end': forecast.endtime.isoformat(),
@@ -264,41 +264,27 @@ class SeismicityModelRunExecutor(Task):
                        f"has returned an error: {resp}", result=model_run)
 
         model_run.runid = resp['data']['id']
+        # Next task requires knowledge of status, so update status inside task.
+        model_run.status.state = EStatus.DISPATCHED
         return model_run
 
 
 @task(skip_on_upstream_skip=False)
 def dispatched_seismicity_model_runs(forecast):
     logger = prefect.context.get('logger')
-    logger.info('started dispatched seismicity models')
-    wait_timeout = 3
-
     seismicity_stages = [s[EStage.SEISMICITY] for s in forecast.scenarios
                          if s.enabled]
     seismicity_stages = [stage for stage in seismicity_stages if stage.enabled]
     model_runs = []
     for stage in seismicity_stages:
-        runs = stage.runs
+        runs = [r for r in stage.runs if r.id]
         # If not all the runs have been set to DISPATCHED, they are still
         # in a RUNNING state, which is changed by the state handler. However
         # this may not happen quickly enough to update here.
-        for wait in range(wait_timeout):
-            if [run for run in runs if
-                    run.status.state == EStatus.RUNNING]:
-                time.sleep(1)
-            else:
-                continue
-            if wait == wait_timeout - 1:
-                logger = prefect.context.get('logger')
-                logger.warning(
-                    'Some model runs are not in the DISPATCHED state'
-                    ' and will not be polled for. Please run the'
-                    ' forecast again to poll for these.')
-
         model_runs.extend([run for run in runs if run.runid and
                            run.status.state == EStatus.DISPATCHED])
 
-    logger.info('returning model runs from dispatched task')
+    logger.info(f'Returning model runs from dispatched task, {model_runs}')
     return model_runs
 
 
@@ -362,7 +348,6 @@ class SeismicityModelRunPoller(Task):
                                f"a forecast (runid={model_run.runid}: {resp})",
                                result=model_run)
                 else:
-                    model_run.result = result
 
                     return model_run, result
 
