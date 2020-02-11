@@ -150,7 +150,6 @@ class MainWindow(QMainWindow,
 
         fc = idx.data(CustomRoles.RepresentedItemRole)
 
-        print("in mainwindow window")
         dlg = ScenarioConfigDialog(
             default_scenario(self.app.ramsis_core.store),
             fc_duration=(fc.endtime - fc.starttime).total_seconds(),

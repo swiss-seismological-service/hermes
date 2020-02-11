@@ -396,8 +396,6 @@ class HYDWSBoreholeHydraulicsSerializerTestCase(unittest.TestCase):
             plan=True)
 
         serialized_result = json.loads(serializer.dumps(bh))
-        print('serialized: ', serialized_result)
-        print('reference: ', reference_result)
         self.assertEqual(serialized_result, reference_result)
 
 

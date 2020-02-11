@@ -286,12 +286,10 @@ class _SeismicityForecastSamplesSchema(_SchemaBase):
 
     @pre_load
     def flatten(self, data, **kwargs):
-        print("preload data: ", data)
         return self._flatten_dict(data)
 
     @post_load
     def post_load_data(self, data, **kwargs):
-        print("data x_min: ", data)
         for d_min, d_max in [
                 ('x_min', 'x_max'),
                 ('y_min', 'y_max'),

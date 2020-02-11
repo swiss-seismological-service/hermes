@@ -126,7 +126,6 @@ class QLineEditInterface(ControlInterface):
         return self.control.text()
 
     def set_value(self, value):
-        print('value', value)
         if isinstance(value, float):
             value = str(value)
         self.control.setText(value)
