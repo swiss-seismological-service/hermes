@@ -13,7 +13,7 @@ from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
 from RAMSIS.io.seismics import QuakeMLCatalogSerializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
-                             _IOError, DateTime,
+                             _IOError, DateTime, TransformationError,
                              Percentage, Uncertainty, append_ms_zeroes)
 
 gdal.UseExceptions()
@@ -272,7 +272,7 @@ class _SFMWorkerIMessageSchema(_SchemaBase):
     data = fields.Nested(_SFMWorkerRunsSchema)
 
 
-class _SeismicityForecastSamplesSchema(_SchemaBase):
+class _SeismicityForecastGeomSchema(_SchemaBase):
     """
     Schema representation of seismicity forecast samples.
     """
@@ -282,7 +282,6 @@ class _SeismicityForecastSamplesSchema(_SchemaBase):
     y_max = fields.Float()
     z_min = fields.Float()
     z_max = fields.Float()
-    samples = fields.Nested(_ModelResultSampleSchema, many=True)
 
     @pre_load
     def flatten(self, data, **kwargs):
@@ -299,6 +298,53 @@ class _SeismicityForecastSamplesSchema(_SchemaBase):
         if (self.context.get('format') == 'dict'):
             return data
         return ReservoirSeismicityPrediction(**data)
+
+    @pre_dump
+    def transform_dump(self, data):
+        """
+        Transform coordinates from local to external coordinates.
+        """
+        transform_func = self.context['transform_func']
+        try:
+            (data.x_min,
+             data.y_min,
+             _) = transform_func(
+                data.x_min,
+                data.y_min)
+            (data.x_max,
+             data.y_max,
+             _) = transform_func(
+                data.x_max,
+                data.y_max)
+
+        except (TypeError, ValueError, AttributeError) as err:
+            raise TransformationError(f"{err}")
+
+        return data
+
+    @post_dump
+    def add_geom(self, data):
+        """
+        Add linear ring made from bounding box values.
+        This is required by Openquake.
+        """
+        linearring = (
+            f"{data.x_min} {data.y_min} "
+            f"{data.x_max} {data.y_min} "
+            f"{data.x_max} {data.y_max} "
+            f"{data.x_min} {data.y_max} ")
+        return {'linearring': linearring}
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+class _SeismicityForecastSamplesSchema(_SchemaBase,
+                                       _SeismicityForecastGeomSchema):
+    """
+    Schema representation of seismicity forecast samples.
+    """
+    samples = fields.Nested(_ModelResultSampleSchema, many=True)
 
     class Meta:
         unknown = EXCLUDE
@@ -418,6 +464,25 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
         return _SFMWorkerOMessageSchema(
             context=self._ctx, many=self._many,
             partial=self._partial).load(data)
+
+
+class OQGeomSerializer(DeserializerBase, IOBase):
+    """
+    Serializes a data structure which later can be consumed by openquake.
+    """
+    @property
+    def _ctx(self):
+        return {
+            'transform_func_name': self.transform_func_name,
+            'ramsis_proj': self.ramsis_proj,
+            'ref_easting': self.ref_easting,
+            'ref_northing': self.ref_northing}
+
+    def _serialize(self, data):
+        """
+        Serializes a SFM-Worker payload from the ORM into JSON.
+        """
+        return _SeismicityForecastGeomSchema(context=self._ctx).dumps(data)
 
 
 IOBase.register(SFMWorkerIMessageSerializer)

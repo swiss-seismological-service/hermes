@@ -15,7 +15,8 @@ from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     SeismicityModels, forecast_scenarios,\
     dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot,\
-    flatten_task, check_stage_enabled
+    flatten_task, check_stage_enabled,\
+    skip_seismicity_stage, seismicity_stage_complete
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.forecast import Forecast, ForecastScenario, \
     EStage, SeismicityForecastStage
@@ -403,53 +404,24 @@ class ForecastHandler(QObject):
                 self.update_db()
         return new_state
 
-
-@task
-def skip_seismicity_stage(forecast):
-    logger = prefect.context.get('logger')
-    logger.info('Seismicity stage has been skipped'
-                f' for forecast_id: {forecast.id}'
-                ' as no tasks are required to be done.')
-
-@task
-def seismicity_stage_complete(forecast):
-    
-    status_work_required = [
-        EStatus.DISPATCHED,
-        EStatus.PENDING]
-
-    seismicity_stage_done = True
-    for scenario in forecast.scenarios:
-        try:
-            stage = scenario[EStage.SEISMICITY]
-            stage_enabled = stage.enabled
-        except KeyError:
-            continue
-        else:
-            if stage_enabled:
-                for r in stage.runs:
-                    if r.status.state in status_work_required:
-                        seismicity_stage_done = False
-                        continue
-        print("seismicity stage is done: ", seismicity_stage_done)
-        return seismicity_stage_done
-
 class ForecastFlow(QObject):
     """
     Contains prefect flow logic for creating DAG.
     A flow is created for every forecast that is run by the
     engine.
     """
-    def __init__(self, forecast, system_time, forecast_handler):
+    def __init__(self, forecast, system_time, forecast_handler, data_dir):
         self.system_time = system_time
         self.forecast_handler = forecast_handler
         self.forecast = forecast
+        self.data_dir = data_dir
 
     def run(self, progress_callback):
         with Flow("Seismicity_Execution",
                   state_handlers=[self.forecast_handler.flow_state_handler]
                   ) as seismicity_flow:
             forecast = Parameter('forecast')
+            data_dir= Parameter('data_dir')
             # If there is no work to be done on seismicity stages, skip tasks until merge.
             seismicity_stage_conditional = seismicity_stage_complete(
                 forecast)
@@ -461,7 +433,7 @@ class ForecastFlow(QObject):
             
             ifelse(seismicity_stage_conditional, skip_seismicity, forecast) 
 
-            well_snapshot = WellSnapshot(
+            well_snapshot = WellSnapshote
                 state_handlers=[self.forecast_handler.
                                 well_snapshot_state_handler])
             forecast = well_snapshot(forecast, self.system_time)
@@ -511,7 +483,8 @@ class ForecastFlow(QObject):
 
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(forecast_id=self.forecast.id):
-            seismicity_flow.run(parameters=dict(forecast=self.forecast),
+            seismicity_flow.run(parameters=dict(forecast=self.forecast,
+                                                data_dir=self.data_dir),
                                 executor=executor)
 
 
@@ -553,11 +526,18 @@ class Engine(QObject):
             self.forecast_handler.session = self.session
         forecast_input = get_forecast_seismicity(forecast_id, self.session)
         assert forecast_input.status.state != EStatus.COMPLETE
+        app_settings = self.core.app_settings
+        if app_settings:
+            try:
+                data_dir = app_settings['data_dir']
+            exxcept KeyError:
+                data_dir = None
 
         # The current time is required for snapshots of catalog and well data
         # TODO (sarsonl) should get this from the scheduler module.
         system_time = datetime.now()
         forecast_flow = ForecastFlow(forecast_input, system_time,
-                                     self.forecast_handler)
+                                     self.forecast_handler,
+                                     data_dir)
         worker = Worker(forecast_flow.run)
         self.threadpool.start(worker)

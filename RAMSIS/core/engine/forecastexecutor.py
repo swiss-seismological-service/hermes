@@ -38,6 +38,38 @@ log = logging.getLogger(__name__)
 
 
 @task
+def skip_seismicity_stage(forecast):
+    logger = prefect.context.get('logger')
+    logger.info('Seismicity stage has been skipped'
+                f' for forecast_id: {forecast.id}'
+                ' as no tasks are required to be done.')
+
+
+@task
+def seismicity_stage_complete(forecast):
+
+    status_work_required = [
+        EStatus.DISPATCHED,
+        EStatus.PENDING]
+
+    seismicity_stage_done = True
+    for scenario in forecast.scenarios:
+        try:
+            stage = scenario[EStage.SEISMICITY]
+            stage_enabled = stage.enabled
+        except KeyError:
+            continue
+        else:
+            if stage_enabled:
+                for r in stage.runs:
+                    if r.status.state in status_work_required:
+                        seismicity_stage_done = False
+                        continue
+        print("seismicity stage is done: ", seismicity_stage_done)
+        return seismicity_stage_done
+
+
+@task
 def flatten_task(nested_list):
     flattened_list = [item for sublist in nested_list for item in sublist]
     return flattened_list
@@ -97,9 +129,6 @@ class CatalogSnapshot(Task):
             return event.datetime_value < forecast.starttime
 
         if forecast.seismiccatalog:
-            # If a snapshot is already attached, skip task
-            #skip = Skipped("skipping", result=forecast)
-            #raise ENDRUN(state=skip)
             pass
         else:
             seismiccatalog = forecast.project.seismiccatalog.\
@@ -261,8 +290,11 @@ class SeismicityModelRunExecutor(Task):
                     ref_northing=project.referencepoint_y,
                     transform_func_name='pyproj_transform_to_local_coords'))
         except RemoteSeismicityWorkerHandle.RemoteWorkerError:
-            raise FAIL(message="model run submission has failed with error: RemoteWorkerError. Check if remote worker is accepting requests.",
-                       result=model_run)
+            raise FAIL(
+                message="model run submission has failed with "
+                "error: RemoteWorkerError. Check if remote worker is"
+                " accepting requests.",
+                result=model_run)
 
         status = resp['data']['attributes']['status_code']
 
