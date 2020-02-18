@@ -11,6 +11,7 @@ from ramsis.datamodel.forecast import (
 from ramsis.datamodel.model import EModel
 from ramsis.datamodel.project import Project
 from ramsis.datamodel.seismicity import SeismicityModelRun
+from ramsis.datamodel.hazard import HazardModelRun
 from ramsis.datamodel.status import Status
 
 
@@ -96,7 +97,8 @@ def default_scenario(store, name='Scenario', **kwargs):
             if enabled:
                 runs = [SeismicityModelRun(model=m, enabled=True,
                                            config=m.config,
-                                           status=Status())
+                                           status=Status(),
+                                           weight=1.0)
                         for m in store.load_models(
                             model_type=EModel.SEISMICITY)
                         if m.enabled]
@@ -119,8 +121,11 @@ def default_scenario(store, name='Scenario', **kwargs):
         else:
             enabled = hazard_stage_config.get('enabled', True)
             if enabled:
-                retval.append(hazard_stage(enabled=enabled))
-
+                assert len(store.load_models(model_type=EModel.HAZARD)) == 1
+                models = [m for m in store.load_models(model_type = EModel.HAZARD) if m.enabled]
+                runs = [HazardModelRun(model=models[0], enabled=True,
+                                       status=Status())]
+                retval.append(hazard_stage(runs=runs, enabled=enabled))
         try:
             risk_stage_config = stage_config[3]['risk']
         except (IndexError, KeyError):

@@ -24,6 +24,7 @@ stage is managed by a respective StageExecutor class:
 import time
 import copy
 import logging
+from sqlalchemy import inspect
 from prefect import task, Task
 import prefect
 from prefect.engine.signals import LOOP, FAIL
@@ -69,10 +70,10 @@ def seismicity_stage_complete(forecast):
         return seismicity_stage_done
 
 
-@task
-def flatten_task(nested_list):
-    flattened_list = [item for sublist in nested_list for item in sublist]
-    return flattened_list
+class FlattenTask(Task):
+    def run(self, nested_list):
+        flattened_list = [item for sublist in nested_list for item in sublist]
+        return flattened_list
 
 
 @task
@@ -128,9 +129,12 @@ class CatalogSnapshot(Task):
         def filter_future(event):
             return event.datetime_value < forecast.starttime
 
+        print("forecast seismiccatalog", forecast.seismiccatalog)
         if forecast.seismiccatalog:
+            print("There is a seismiccatalog")
             pass
         else:
+            print("there isn't a seismiccatalog")
             seismiccatalog = forecast.project.seismiccatalog.\
                 snapshot(filter_cond=filter_future)
 
@@ -147,7 +151,7 @@ def forecast_scenarios(forecast):
     return scenarios
 
 
-class SeismicityModels(Task):
+class ModelRuns(Task):
     # model_run status should have been set to RUNNING
     # but as long as is is not already DISPATCHED (sent to
     # remote worker and need to get response) COMPLETED
@@ -158,10 +162,10 @@ class SeismicityModels(Task):
                      EStatus.COMPLETE,
                      EStatus.ERROR]
 
-    def run(self, scenario):
+    def run(self, scenario, stage_type):
         model_runs = []
         try:
-            stage = scenario[EStage.SEISMICITY]
+            stage = scenario[stage_type]
             stage_enabled = stage.enabled
         except KeyError:
             pass
@@ -305,6 +309,7 @@ class SeismicityModelRunExecutor(Task):
         model_run.runid = resp['data']['id']
         # Next task requires knowledge of status, so update status inside task.
         model_run.status.state = EStatus.DISPATCHED
+        model_run_serialize.forecaststage = None
         return model_run
 
 

@@ -1,11 +1,15 @@
-# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
+# Copyright 2018, ETH Zurich - Swiss Seismological Service SED # noqa
 """
 Openquake Hazard executing related engine facilities.
 """
+import os
 import sys
 import yaml
+from shutil import copyfile
 from datetime import datetime
-from prefect import Flow
+import prefect
+
+from prefect import Task, task
 from RAMSIS.io.sfm import OQGeomSerializer
 from RAMSIS.io.utils import TransformationError
 
@@ -20,26 +24,43 @@ class ModelResults(Task):
         pass
 
 
-class SeismicityModelResults(Task):
+def render_template(self, template_filename, context, path):
+    template_environment = Environment(
+        autoescape=False,
+        loader=FileSystemLoader(path),
+        trim_blocks=False)
+    return template_environment.get_template(template_filename).render(context)
+
+
+class OQSourceModelFiles(Task):
     def serialize_function(self, result, serializer):
         try:
             linearring = serializer.dumps(result)['linearring']
-        except KeyError, TransformationError as err:
-          raise FAIL(message=f"Seismicity model result {result.id} does not"
-                     " contain all the information required to form a linear "
-                     f"ring. {err}")  
-          return linearring
+        except (KeyError, TransformationError) as err:
+            raise FAIL(message=f"Seismicity model result {result.id} does not"
+                       " contain all the information required to form a linear "
+                       f"ring. {err}")  
+        return linearring
         
 
-    def run(self, scenario, oq_input_dir):
+    def run(self, hazard_model_run, oq_input_dir):
         self.logger = prefect.context.get('logger')
+        # Assume one hazard model run per scenario
+        hazard_stage = scenario[EStage.HAZARD]
+        if len(hazard_stage.runs) != 1:
+            raise FAIL(message="More than one hazard stage configured in scenario")
+        scenario = hazard_model_run.scenario
         # Check that all enabled model runs are complete
         try:
             seismicity_stage = scenario[EStage.SEISMICITY]
+
         except KeyError:
             raise FAIL(message=f'Scenario: {scenario} does not have a '
                     'seismicity stage, Further stages failing.', result=scenario)
         seismicity_model_runs = [r for r in stage.runs if r.enabled]
+        if not all(r.status.state==EStatus.COMPLETE for r in seismicity_model_runs):
+            raise FAIL(message="Seismicity model runs for scenario: "
+                       f"{scenario} do not have a state of EStatus.COMPLETE")
         hazard_model_run.seismicitymodelruns = seismicity_model_runs
         project = scenario.forecast.project
         serializer = OQGeomSerializer(
@@ -49,7 +70,7 @@ class SeismicityModelResults(Task):
             transform_func_name='pyproj_transform_from_local_coords')
         seis_context = []
         for seis_run in seismicity_model_runs:
-            self.validate_paths(seis_run.model, 'seismicitymodeltempalate', info=seis_run.model.name):
+            self.validate_paths(seis_run.model, 'seismicitymodeltempalate', info=seis_run.model.name)
             if seis_run.status.state != EStatus.COMPLETE:
                 raise FAIL(f'Scenario: {scenario.id} has model '
                            f'runs that are not complete.', result=scenario)
@@ -73,18 +94,18 @@ class SeismicityModelResults(Task):
                 'xml_basename': f"{seis_run.model.name}_{seis_run.id}",
                 'geometries': geoms})
 
-        source_xml_names = []
+        xml_names = []
         for starttime, endtime in distinct_dates:
             xml_basename = f"{starttime}_{endtime}_source_models.xml"
             time_context = []
-            for model_context in seis_context:
-                samples = [result.sample_matching_timeperiod(starttime, endtime) for result, linearring in model_context['geometries']
+            for model_context, seis_model in zip(seis_context, seismicity_model_runs):
+                samples = [result.sample_matching_timeperiod(starttime, endtime) for result, linearring in model_context['geometries']]
                 time_context.append({**model_context, **{'samples': samples}}) 
             # call xml writer
-                
-                        
-
-     
+            with open(os.path.join(oq_input_dir, SEISMICITY_MODEL_BASENAME), 'w') as model_file:
+                model_file.write(render_template(seis_model.model.seismicitymodeltemplate))
+                xml_names.append(SEISMICITY_MODEL_BASENAME) 
+        return xml_names
                      
     def create_geom(self, result):
         logger = prefect.context.get('logger')
@@ -96,7 +117,7 @@ class SeismicityModelResults(Task):
             return
         try:
             return serializer.dumps(result)['linearring']
-        except KeyError, TransformationError as err:
+        except (KeyError, TransformationError) as err:
           raise FAIL(message=f"Seismicity model result {result.id} does not"
                      " contain all the information required to form a linear "
                      f"ring. {err}")  
@@ -118,106 +139,37 @@ class SeismicityModelResults(Task):
 
 
         return seismicity_stage_done
-@task
-def create_oq_dir(data_dir, system_time, hazard_model_run):
-    # create the hazard level files
-    oq_input_dir = os.path.join(data_dir, "hazard_run_{hazard_model_run.id}_{system_time}") 
-    return oq_input_dir
+
+class CreateOQDir(Task):
+
+    def run(self, data_dir, system_time, hazard_model_run):
+        # create the hazard level files
+        oq_input_dir = os.path.join(data_dir, f"hazard_run_{hazard_model_run.id}_{system_time.strftime('%Y-%m-%dT%H:%M')}") 
+        return oq_input_dir
 
 
-class OQTemplates(Task):
-    def run(self, scenario, oq_input_dir, seismicity_source_filenames):
-        # Should there be only one hazard model run per scenario?
-        hazard_model_run = scenario.EStage[HAZARD].runs[0]
-
-
+class OQFiles(Task):
+    def run(self, hazard_model_run, oq_input_dir):
         hazard_model = hazard_model_run.model
         for attr_name in [
                 'logictreetemplate',
-                'jobconfigtemplate',
-                'gmpetemplate']:
+                'jobconfigfile',
+                'gmpefile']:
             self.validate_paths(hazard_model, attr_name)
 
- 
-        logic_tree_context = {'seismicity_source_names': seismicity_source_names}
-        logic_tree_template_filename = getattr(hazard_model, 'logictreetemplate')
-        logic_tree_filename = os.path.join(oq_input_dir, LOGIC_TREE_BASENAME)
-        with open(logic_tree_filename, 'w') as logic_tree_file:
-            html = self.render_template(logic_tree_template_filename, logic_tree_context)
-            logic_tree_file.write(html)
-
+        # Copy the job config and the gmpe file over.
+        
         gmpe_context = {}
-        gmpe_template_filename = getattr(hazard_model, 'gmpetemplate')
+        print("inputs OQFiles", oq_input_dir, GMPE_BASENAME)
         gmpe_filename = os.path.join(oq_input_dir, GMPE_BASENAME)
-        with open(gmpe_filename, 'w') as gmpe_file:
-            html = self.render_template(logic_tree_template_filename, logic_tree_context)
-            gmpe_file.write(html)
+        open(gmpe_filename, 'w').close()
+        copyfile(hazard_model.gmpefile, gmpe_filename)
 
         job_context = {}
-        job_template_filename = getattr(hazard_model, 'jobconfigtemplate')
         job_filename = os.path.join(oq_input_dir, JOB_CONFIG_BASENAME)
-        with open(logic_tree_filename, 'w') as job_config_file:
-            html = self.render_template(job_config_template_filename, job_config_context)
-            job_config_file.write(html)
-
-        zipfile_name = f"{oq_input_dir}.zip"
-        with ZipFile(zipfile_name, 'w') as oq_zipfile:
-            oq_basenames = os.listdir(oq_input_dir)
-            for basename in oq_basename:
-                oq_zipfile.write(os.path.join(oq_input_dir, basename))
-        
-        return hazard_model_run, zipfile_name 
-    
-
-    def render_template(self, template_filename, context):
-        template_environment = Environment(
-            autoescape=False,
-            loader=FileSystemLoader(os.path.join(PATH)),
-            trim_blocks=False)
-        return template_environment.get_template(template_filename).render(context)
-    
-    def create_input_files(self, config):
-        subgeom1 = {'id': 1, 'a_value': 2.4, 'b_value': 3.1, 'mc_value': 10.0, 'min_mag': 1.0, 'linear_ring_positions': '-5.0000000E-01 -5.0000000E-01 -3.0000000E-01 -1.0000000E-01 1.0000000E-01 2.0000000E-01 3.0000000E-01 -8.0000000E-01'}
-        subgeom2 = {'id': 2, 'a_value': 2.0, 'b_value': 3.5, 'mc_value': 10.0, 'min_mag': 1.0, 'linear_ring_positions': '-15.0000000E-01 -15.0000000E-01 -13.0000000E-01 -11.0000000E-01 11.0000000E-01 12.0000000E-01 13.0000000E-01 -18.0000000E-01'}
-        seismicity_model_runs = [{'name': 'EM1.1', 'hazard_weighting': 0.3, "xml_filename": "em1_source_1234.xml"},
-                {'model_name': 'EM1.2', 'hazard_weighting': 0.7, "xml_filename": "em1_source_1235.xml"}]
-        for model in seismicity_model_runs:
-            source_fname = model['xml_filename']
-            context_model_tree = {'model': [model], 'geometries': [subgeom1, subgeom2]}
-            source_template_file = 'area_source_template.txt'
-    
-            with open(os.path.join(PATH, source_fname), 'w') as f:
-                html = render_template(source_template_file, context_model_tree)
-                f.write(html)
-    
-        logic_tree_fname = "logic_tree_model_sources.xml"
-        context_logic_tree = {'seismicity_model_runs': seismicity_model_runs}
-        logic_template_file = 'model_sources_logic_tree_template.xml'
-    
-        with open(os.path.join(PATH, logic_tree_fname), 'w') as f:
-            html = render_template(logic_template_file, context_logic_tree)
-            f.write(html)
-
-
-    # Check that paths defined in config exist
-    def load_oq_config(self, oq_config_filename, project_id):
-        with open(oq_config_filename, 'r') as conf:
-            oq_config = yaml.full_load(conf.read())
-        default_config = oq_config['default_configuration']
-        proj_config = None
-        if 'projects' in oq_config.keys():
-            for proj in oq_config['projects']:
-                if proj['database_id'] == project_id:
-                    proj_config = proj
-    
-        if not proj_config:
-            self.logger.info("No project specific OpenQuake configuration exists."
-                             " Using default configuration.")
-            config = default_config
-        else:
-            config = {**default_config, **proj_config}
-        return config
-    
+        open(job_filename, 'w').close()
+        copyfile(hazard_model.jobconfigfile, gmpe_filename)
+ 
     def validate_paths(self, obj_name, attr_name):
        
         template = getattr(obj_name, attr_name)
@@ -229,3 +181,22 @@ class OQTemplates(Task):
             raise FAIL(
                 message=f"OpenQuake template does not exist: {template}")
     
+class OQLogicTree(Task):
+    def run(self, model_run, oq_input_dir, source_model_xml_basenames):
+        hazard_model = hazard_model_run.model
+ 
+        logic_tree_context = {'seismicity_source_names': source_model_xml_basenames}
+        logic_tree_template_filename = hazard_model.logictreetemplate
+        logic_tree_filename = os.path.join(oq_input_dir, LOGIC_TREE_BASENAME)
+        with open(logic_tree_filename, 'w') as logic_tree_file:
+            rendered_xml = render_template(logic_tree_template_filename, logic_tree_context)
+            logic_tree_file.write(rendered_xml)
+
+
+        zipfile_name = f"{oq_input_dir}.zip"
+        with ZipFile(zipfile_name, 'w') as oq_zipfile:
+            oq_basenames = os.listdir(oq_input_dir)
+            for basename in oq_basename:
+                oq_zipfile.write(os.path.join(oq_input_dir, basename))
+        
+        return hazard_model_run, zipfile_name 

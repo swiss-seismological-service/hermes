@@ -287,18 +287,6 @@ class _SeismicityForecastGeomSchema(_SchemaBase):
     def flatten(self, data, **kwargs):
         return self._flatten_dict(data)
 
-    @post_load
-    def post_load_data(self, data, **kwargs):
-        for d_min, d_max in [
-                ('x_min', 'x_max'),
-                ('y_min', 'y_max'),
-                ('z_min', 'z_max')]:
-            if data[d_min] and data[d_max]:
-                assert data[d_min] < data[d_max]
-        if (self.context.get('format') == 'dict'):
-            return data
-        return ReservoirSeismicityPrediction(**data)
-
     @pre_dump
     def transform_dump(self, data):
         """
@@ -339,12 +327,23 @@ class _SeismicityForecastGeomSchema(_SchemaBase):
         unknown = EXCLUDE
 
 
-class _SeismicityForecastSamplesSchema(_SchemaBase,
-                                       _SeismicityForecastGeomSchema):
+class _SeismicityForecastSamplesSchema(_SeismicityForecastGeomSchema):
     """
     Schema representation of seismicity forecast samples.
     """
     samples = fields.Nested(_ModelResultSampleSchema, many=True)
+
+    @post_load
+    def post_load_data(self, data, **kwargs):
+        for d_min, d_max in [
+                ('x_min', 'x_max'),
+                ('y_min', 'y_max'),
+                ('z_min', 'z_max')]:
+            if data[d_min] and data[d_max]:
+                assert data[d_min] < data[d_max]
+        if (self.context.get('format') == 'dict'):
+            return data
+        return ReservoirSeismicityPrediction(**data)
 
     class Meta:
         unknown = EXCLUDE
