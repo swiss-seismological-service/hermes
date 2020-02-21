@@ -51,7 +51,8 @@ _install_requires = [
     "requests>=2.18.4",
     "transitions==0.6.9",
     "prefect[viz]",
-    "pyproj==2.3.0"]
+    "pyproj==2.3.0",
+    "jinja2"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

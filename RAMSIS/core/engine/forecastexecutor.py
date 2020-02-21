@@ -392,7 +392,7 @@ class SeismicityModelRunPoller(Task):
                                f"a forecast (runid={model_run.runid}: {resp})",
                                result=model_run)
                 else:
-
+                    model_run.result = result
                     return model_run, result
 
             elif status in self.TASK_ERROR:

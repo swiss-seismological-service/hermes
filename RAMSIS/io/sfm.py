@@ -288,7 +288,7 @@ class _SeismicityForecastGeomSchema(_SchemaBase):
         return self._flatten_dict(data)
 
     @pre_dump
-    def transform_dump(self, data):
+    def transform_dump(self, data, **kwargs):
         """
         Transform coordinates from local to external coordinates.
         """
@@ -311,16 +311,16 @@ class _SeismicityForecastGeomSchema(_SchemaBase):
         return data
 
     @post_dump
-    def add_geom(self, data):
+    def add_geom(self, data, **kwargs):
         """
         Add linear ring made from bounding box values.
         This is required by Openquake.
         """
         linearring = (
-            f"{data.x_min} {data.y_min} "
-            f"{data.x_max} {data.y_min} "
-            f"{data.x_max} {data.y_max} "
-            f"{data.x_min} {data.y_max} ")
+            f"{data['x_min']} {data['y_min']} "
+            f"{data['x_max']} {data['y_min']} "
+            f"{data['x_max']} {data['y_max']} "
+            f"{data['x_min']} {data['y_max']} ")
         return {'linearring': linearring}
 
     class Meta:
@@ -465,14 +465,14 @@ class SFMWorkerOMessageDeserializer(DeserializerBase, IOBase):
             partial=self._partial).load(data)
 
 
-class OQGeomSerializer(DeserializerBase, IOBase):
+class OQGeomSerializer(SerializerBase, IOBase):
     """
     Serializes a data structure which later can be consumed by openquake.
     """
     @property
     def _ctx(self):
         return {
-            'transform_func_name': self.transform_func_name,
+            'transform_func': self.transform_func,
             'ramsis_proj': self.ramsis_proj,
             'ref_easting': self.ref_easting,
             'ref_northing': self.ref_northing}
@@ -481,7 +481,7 @@ class OQGeomSerializer(DeserializerBase, IOBase):
         """
         Serializes a SFM-Worker payload from the ORM into JSON.
         """
-        return _SeismicityForecastGeomSchema(context=self._ctx).dumps(data)
+        return _SeismicityForecastGeomSchema(context=self._ctx).dump(data)
 
 
 IOBase.register(SFMWorkerIMessageSerializer)

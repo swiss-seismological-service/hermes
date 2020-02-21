@@ -250,7 +250,7 @@ class RamsisCoordinateTransformer:
         easting_0, northing_0 = self.transformer_to_ramsis.transform(lat, lon)
         easting = easting_0 - self.ref_easting
         northing = northing_0 - self.ref_northing
-        altitude = -depth
+        altitude = -depth if depth else None
 
         return easting, northing, altitude
 
@@ -260,5 +260,5 @@ class RamsisCoordinateTransformer:
 
         lat, lon = self.transformer_to_external.transform(easting_0,
                                                           northing_0)
-        depth = -altitude
+        depth = -altitude if altitude else None
         return lat, lon, depth

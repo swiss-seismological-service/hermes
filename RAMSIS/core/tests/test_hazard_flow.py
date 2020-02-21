@@ -403,7 +403,7 @@ def insert_test_data(db_url):
     runids = ["1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
               "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"]
     starttime = datetime(2006, 12, 8, 8, 45)
-    datetimes = [starttime - timedelta(seconds=21600) for x in range(3)]
+    datetimes = [starttime + timedelta(seconds=21600*x) for x in range(3)]
     a_values = [1.2, 1.5]
     b_values = [1.6, 1.7]
     mc_values = [2.5, 2.5]

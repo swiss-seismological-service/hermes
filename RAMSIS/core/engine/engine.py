@@ -2,12 +2,13 @@
 """
 Forecast executing related engine facilities.
 """
-from copy import deepcopy
+from copy import deepcopy, copy
 import traceback
 import sys
 from datetime import datetime
 
 from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy import inspect
 from PyQt5.QtCore import (pyqtSignal, QObject, QThreadPool, QRunnable,
                           pyqtSlot)
 
@@ -17,17 +18,21 @@ from RAMSIS.core.engine.forecastexecutor import \
     dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot,\
     FlattenTask, check_stage_enabled,\
     skip_seismicity_stage, seismicity_stage_complete
-from RAMSIS.core.engine.hazardexecutor import CreateOQDir, OQFiles, \
+from RAMSIS.core.engine.hazardexecutor import CreateHazardModelRunDir, \
+    CreateHazardModelRuns, OQFiles, UpdateHazardRuns, \
     OQLogicTree, OQSourceModelFiles
-from ramsis.datamodel.seismicity import SeismicityModelRun
+from ramsis.datamodel.seismicity import SeismicityModelRun, \
+    ReservoirSeismicityPrediction
 from ramsis.datamodel.forecast import Forecast, ForecastScenario, \
     EStage, SeismicityForecastStage, HazardStage
+from ramsis.datamodel.model import ModelRun
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismics import SeismicCatalog
 from ramsis.datamodel.well import InjectionWell, WellSection
 from ramsis.datamodel.hydraulics import InjectionPlan, Hydraulics
 from ramsis.datamodel.project import Project
 from ramsis.datamodel.hazard import HazardModelRun
+
 import prefect
 from prefect import Flow, Parameter, unmapped, task
 from prefect.engine.executors import LocalDaskExecutor
@@ -113,7 +118,7 @@ def get_forecast_no_children(forecast_id, session):
     return forecast.one()
 
 
-def get_forecast_seismicity(forecast_id, session):
+def get_seismicity_input(forecast_id, session):
     session.remove()
     forecast_query = session.query(Forecast).\
         options(
@@ -166,7 +171,8 @@ def get_forecast_seismicity(forecast_id, session):
             subqueryload(ForecastScenario.stages.of_type(
                 SeismicityForecastStage)).\
             subqueryload(SeismicityForecastStage.runs).\
-            subqueryload(SeismicityModelRun.result)).\
+            subqueryload(SeismicityModelRun.result).\
+            subqueryload(ReservoirSeismicityPrediction.samples)).\
         options(
             # Load well attached to forecast
             subqueryload(Forecast.well).\
@@ -180,6 +186,47 @@ def get_forecast_seismicity(forecast_id, session):
             subqueryload(InjectionWell.sections).\
             subqueryload(WellSection.injectionplan).\
             subqueryload(InjectionPlan.samples)).\
+        filter(Forecast.id == forecast_id)
+    forecast = forecast_query.one()
+    forecast_copy = deepcopy(forecast)
+    session.remove()
+    return forecast_copy
+
+
+def get_hazard_input(forecast_id, session):
+    session.remove()
+    forecast_query = session.query(Forecast).\
+        options(
+            # Load catalogs linked to forecast and project
+            subqueryload(Forecast.status)).\
+        options(
+            # Load status of seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.status)).\
+        options(
+            # Load models from seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.model)).\
+        options(
+            # Load model run status from seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.status)).\
+        options(
+            # Load result attributes for model runs (these will be written to)
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.result).\
+            subqueryload(ReservoirSeismicityPrediction.samples)).\
         options(
             # Load status of seismicity stage
             subqueryload(Forecast.scenarios).\
@@ -191,8 +238,13 @@ def get_forecast_seismicity(forecast_id, session):
             subqueryload(Forecast.scenarios).\
             subqueryload(ForecastScenario.stages.of_type(
                 HazardStage)).\
-            subqueryload(HazardStage.runs).\
-            subqueryload(HazardModelRun.model)).\
+            subqueryload(HazardStage.runs)).\
+        options(
+            # Load models from seismicity stage
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                HazardStage)).\
+            subqueryload(HazardStage.model)).\
         options(
             # Load model run status from seismicity stage
             subqueryload(Forecast.scenarios).\
@@ -200,12 +252,17 @@ def get_forecast_seismicity(forecast_id, session):
                 HazardStage)).\
             subqueryload(HazardStage.runs).\
             subqueryload(HazardModelRun.status)).\
+        options(
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.hazardruns)).\
         filter(Forecast.id == forecast_id)
     forecast = forecast_query.one()
     forecast_copy = deepcopy(forecast)
     session.remove()
     return forecast_copy
-
 
 class ForecastHandler(QObject):
     """
@@ -363,7 +420,6 @@ class ForecastHandler(QObject):
                     filter(SeismicityModelRun.id == model_run.id).first()
                 update_model_run.status.state = EStatus.COMPLETE
                 update_model_run.result = model_result
-                update_model_run.runid = model_run.runid
 
             elif new_state.is_failed():
                 model_run = new_state.result
@@ -430,6 +486,37 @@ class ForecastHandler(QObject):
                 self.update_db()
         return new_state
 
+    def create_hazard_models_state_handler(self, obj, old_state, new_state):
+        """
+        """
+        logger = prefect.context.get("logger")
+        if not isinstance(new_state.result, NoResultType) and new_state.is_finished() and new_state.is_successful() and not new_state.is_skipped() and not new_state.is_mapped():
+            hazard_model_runs = new_state.result
+            #haz_model_runs = self.session.query(HazardModelRun).all()
+            for run in hazard_model_runs:
+                self.session.add(run)
+                print("status handler for create", self.session.dirty, "\n\n\n")
+                self.update_db()
+                print("after update", run.seismicitymodelruns)
+        return new_state
+
+    def update_hazard_models_state_handler(self, obj, old_state, new_state):
+        """
+        """
+        logger = prefect.context.get("logger")
+        if not isinstance(new_state.result, NoResultType) and new_state.is_finished() and new_state.is_successful() and not new_state.is_skipped() and not new_state.is_mapped():
+            runs = new_state.result
+            print("update state handler: ", runs)
+            for run in runs:
+                hazard_run = self.session.query(HazardModelRun).filter(HazardModelRun.id==run.id).first()
+                for seis_run in run.seismicitymodelruns:
+                    update_seis_run = self.session.query(SeismicityModelRun).filter(SeismicityModelRun.id==seis_run.id).first()
+                    update_seis_run.hazardruns.append(hazard_run)
+                    print("update", self.session.dirty())
+                    self.update_db()
+                    print("2 updating the run for the run:", run.id, run.seismicitymodelruns)
+        return new_state
+
 class ForecastFlow(QObject):
     """
     Contains prefect flow logic for creating DAG.
@@ -448,21 +535,16 @@ class ForecastFlow(QObject):
                   ) as seismicity_flow:
             forecast = Parameter('forecast')
             data_dir = Parameter('data_dir')
-            system_time = Parameter('system_time')
+            #system_time = Parameter('system_time')
             scenarios_node = forecast_scenarios(
                 forecast)
             # Start Seismicity Stage
-            # If seismicity stage is complete, skip tasks until Merge task.
-            seismicity_stage_conditional = seismicity_stage_complete(
-                forecast)
-            skip_seismicity = skip_seismicity_stage(forecast)
             # Snapshot seismicity catalog if required
             catalog_snapshot = CatalogSnapshot(
                 state_handlers=[self.forecast_handler.
                                 catalog_snapshot_state_handler])
             forecast = catalog_snapshot(forecast, self.system_time)
             
-            ifelse(seismicity_stage_conditional, skip_seismicity, forecast)
             # Snapshot hydraulic well if required
             well_snapshot = WellSnapshot(
                 state_handlers=[self.forecast_handler.
@@ -507,49 +589,84 @@ class ForecastFlow(QObject):
             poller = model_run_poller.map(unmapped(forecast),
                                      dispatched_model_runs)
     
-            # Merge seismicity branches to start hazard
-            seismicity_stage_end = merge(poller, skip_seismicity)
+
+        # (sarsonl) To view DAG: seismicity_flow.visualize()
+        #seismicity_flow.visualize()
+
+        executor = LocalDaskExecutor(scheduler='threads')
+        with prefect.context(forecast_id=self.forecast.id):
+            seismicity_flow.run(parameters=dict(forecast=self.forecast,
+                                                data_dir=self.data_dir
+                                                ),
+                                executor=executor)
+
+
+class HazardFlow(QObject):
+    """
+    Contains prefect flow logic for creating DAG.
+    A flow is created for every forecast that is run by the
+    engine.
+    """
+    def __init__(self, forecast, system_time, forecast_handler, data_dir):
+        self.system_time = system_time
+        self.forecast_handler = forecast_handler
+        self.forecast = forecast
+        self.data_dir = data_dir
+
+    def run(self, progress_callback):
+        with Flow("Seismicity_Execution",
+                  state_handlers=[self.forecast_handler.flow_state_handler]
+                  ) as seismicity_flow:
+            forecast = Parameter('forecast')
+            data_dir = Parameter('data_dir')
+            #system_time = Parameter('system_time')
+            scenarios_node = forecast_scenarios(
+                forecast)
             # Start Hazard stage
             # Load config and validate
             #haz_forecast = Parameter('forecast')
             #scenarios = forecast_scenarios(haz_forecast)
-            hazard_models = ModelRuns(skip_on_upstream_skip=False)
-            hazard_model_runs = hazard_models.map(scenarios_node, unmapped(EStage.HAZARD))
-            haz_model_runs_flattened = flatten_task(hazard_model_runs)
+            hazard_runs = CreateHazardModelRuns(
+                state_handlers=[self.forecast_handler.\
+                                create_hazard_models_state_handler])
+            hazard_model_runs = hazard_runs.map(scenarios_node)
+
+            haz_model_runs_flat = flatten_task(hazard_model_runs)
+
+            update_hazard_runs = UpdateHazardRuns(state_handlers=[self.forecast_handler.update_hazard_models_state_handler])
+            haz_model_runs_updated = update_hazard_runs.map(haz_model_runs_flat)
+
             seismicity_flow.add_edge(
                 seismicity_flow.get_tasks('Merge')[0],
-                seismicity_flow.get_tasks('ModelRuns')[1])
-            seis_models_2 = ModelRuns(skip_on_upstream_skip=False)
-            seis_model_runs2 = seis_models_2.map(scenarios_node, unmapped(EStage.SEISMICITY))
-            seismicity_flow.add_edge(
-                seismicity_flow.get_tasks('Merge')[0],
-                seismicity_flow.get_tasks('ModelRuns')[2])
-            create_oq_directories = CreateOQDir()
+                seismicity_flow.get_tasks('CreateHazardModelRuns')[0])
+            create_oq_directories = CreateHazardModelRunDir()
             oq_input_dir = create_oq_directories.map(unmapped(data_dir),
-                                                     unmapped(system_time),
-                                                     haz_model_runs_flattened)
+                                                     haz_model_runs_updated)
             oq_static_files = OQFiles()
-            oq_static_files.map(haz_model_runs_flattened, oq_input_dir)
+            oq_static_files.map(haz_model_runs_updated, oq_input_dir)
+
             oq_source_models = OQSourceModelFiles()
-            source_model_xml_basenames = oq_source_models.map(haz_model_runs_flattened, oq_input_dir)
+            source_model_xml_basenames = oq_source_models.map(haz_model_runs_updated, oq_input_dir)
+
             oq_logic_tree = OQLogicTree()
-            oq_logic_tree.map(haz_model_runs_flattened, oq_input_dir, source_model_xml_basenames)
+            oq_logic_tree.map(haz_model_runs_updated, oq_input_dir, source_model_xml_basenames)
+            seismicity_flow.add_edge(
+                seismicity_flow.get_tasks('OQFiles')[0],
+                seismicity_flow.get_tasks('OQLogicTree')[0])
 
 
 
 
 
         # (sarsonl) To view DAG: seismicity_flow.visualize()
-        seismicity_flow.visualize()
+        #seismicity_flow.visualize()
 
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(forecast_id=self.forecast.id):
             seismicity_flow.run(parameters=dict(forecast=self.forecast,
-                                                data_dir=self.data_dir,
-                                                system_time=self.system_time
+                                                data_dir=self.data_dir
                                                 ),
                                 executor=executor)
-
 
 class Engine(QObject):
     """
@@ -587,8 +704,6 @@ class Engine(QObject):
         if not self.session:
             self.session = self.core.store.session
             self.forecast_handler.session = self.session
-        forecast_input = get_forecast_seismicity(forecast_id, self.session)
-        assert forecast_input.status.state != EStatus.COMPLETE
         app_settings = self.core._settings
         if app_settings:
             try:
@@ -599,8 +714,30 @@ class Engine(QObject):
         # The current time is required for snapshots of catalog and well data
         # TODO (sarsonl) should get this from the scheduler module.
         system_time = datetime.now()
-        forecast_flow = ForecastFlow(forecast_input, system_time,
+        forecast_input = get_seismicity_input(forecast_id, self.session)
+        assert forecast_input.status.state != EStatus.COMPLETE
+
+        seismicity_stage_states = [scenario[EStage.SEISMICITY].status.state
+                                   for scenario in forecast_input.scenarios]
+        if any(state==EState.ERROR for state in seismicity_stage_states):
+            raise ValueError("One or more seismicity stages has a state "
+                    "of ERROR. The next stages cannot continue")
+        elif any(state!=EState.COMPLETE for state in seismicity_stage_states):
+            forecast_flow = ForecastFlow(forecast_input, system_time,
                                      self.forecast_handler,
                                      data_dir)
-        worker = Worker(forecast_flow.run)
+            worker = Worker(forecast_flow.run)
+            self.threadpool.start(worker)
+
+        hazard_input = get_hazard_input(forecast_id, self.session)
+        hazard_stage_states = [scenario[EStage.HAZARD].status.state
+                               for scenario in hazard_input.scenarios]
+        if any(state!=EState.COMPLETE for state in seismicity_stage_states):
+            raise ValueError("One or more seismicity stages has a state "
+                    "of ERROR. The next stages cannot continue")
+        elif any(state!=EState.COMPLETE for state in hazard_stage_states):
+            hazard_flow = HazardFlow(hazard_input, system_time,
+                                         self.forecast_handler,
+                                         data_dir)
+            worker = Worker(forecast_flow.run)
         self.threadpool.start(worker)
