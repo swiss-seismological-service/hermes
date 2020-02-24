@@ -119,10 +119,11 @@ def default_scenario(store, name='Scenario', **kwargs):
         except (IndexError, KeyError):
             pass
         else:
-            enabled = hazard_stage_config.get('enabled', True)
-            if enabled:
-                assert len(store.load_models(model_type=EModel.HAZARD)) == 1
-                models = [m for m in store.load_models(model_type = EModel.HAZARD) if m.enabled]
+            enabled = hazard_stage_config.get('enabled', False)
+            hazard_models = store.load_models(model_type=EModel.HAZARD)
+            if enabled and hazard_models:
+                assert len(hazard_models) == 1
+                models = [m for m in store.load_models(model_type=EModel.HAZARD) if m.enabled]
                 retval.append(hazard_stage(model=models[0], enabled=enabled))
         try:
             risk_stage_config = stage_config[3]['risk']

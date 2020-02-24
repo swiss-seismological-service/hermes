@@ -307,10 +307,6 @@ def insert_test_data(db_url):
     fc.scenarios = [scenario]
     seismicity_stage = scenario[EStage.SEISMICITY]
     seismicity_stage.config = {'prediction_bin_duration': 7200}
-    risk_stage = scenario[EStage.RISK]
-    risk_stage.enabled = False
-    hazard_stage = scenario[EStage.HAZARD]
-    hazard_stage.enabled = False
     scenario.reservoirgeom = RESERVOIR_INPUT
 
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
@@ -430,6 +426,7 @@ class IntegrationTestCase(unittest.TestCase):
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
     def setUp(self):
+        print("setUp")
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -462,6 +459,7 @@ class IntegrationTestCase(unittest.TestCase):
         insert_test_data(self.postgres_test_url())
 
     def tearDown(self):
+        print("tearDown")
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -498,6 +496,7 @@ class IntegrationTestCase(unittest.TestCase):
         Test the flow with only the seismicity stage enabled and two models
         enabled.
         """
+        print("test success")
         self.maxDiff = None
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
@@ -619,6 +618,7 @@ class IntegrationTestCase(unittest.TestCase):
         Test workflow when an Error is returned in the get
         request from remote worker.
         """
+        print("model error")
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
         for item_status in statuses:
@@ -674,6 +674,7 @@ class IntegrationTestCase(unittest.TestCase):
     @mock.patch('RAMSIS.core.worker.sfm.requests.post',
                 side_effect=mocked_requests_post)
     def test_models_already_dispatched(self, mock_post, mock_get, mock_signal):
+        print("models already dispatched")
         self.execution_statuses = []
         controller, store = self.connect_ramsis()
 
@@ -750,6 +751,7 @@ class IntegrationTestCase(unittest.TestCase):
                 side_effect=mocked_requests_post)
     def test_one_model_already_dispatched(self, mock_post, mock_get,
                                           mock_signal):
+        print("one model already dispatched")
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
 
@@ -816,28 +818,6 @@ class IntegrationTestCase(unittest.TestCase):
         bins_nested = [res.samples for res in results]
         bins = [item for sublist in bins_nested for item in sublist]
         self.assertEqual(len(bins), 6)
-        store.session.remove()
-        store.engine.dispose()
-
-    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
-                side_effect=mocked_requests_get)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
-                side_effect=mocked_requests_post)
-    def test_forecast_already_complete(self, mock_post, mock_get):
-        """
-        Test forecast already complete, an error is raised.
-        """
-        controller, store = self.connect_ramsis()
-        statuses = store.session.query(Status).all()
-        for item_status in statuses:
-            item_status.state = EStatus.COMPLETE
-        store.save()
-        project = store.session.query(Project).first()
-        forecast = store.session.query(Forecast).first()
-        controller.open_project(project)
-        store.session.close()
-        with self.assertRaises(AssertionError):
-            controller.engine.run(datetime(2006, 12, 2), forecast.id)
         store.session.remove()
         store.engine.dispose()
 
