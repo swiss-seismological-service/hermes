@@ -40,17 +40,20 @@ def render_template(template_filename, context, path):
 class UpdateHazardRuns(Task):
 
     def run(self, hazard_model_run):
-        self.logger = prefect.context.get('logger')
-        # Assume one hazard model run per scenario
-        hazard_stage = hazard_model_run.forecaststage
-        scenario = hazard_stage.scenario
-        seismicity_stage = scenario[EStage.SEISMICITY]
-        for seis_run in [run for run in seismicity_stage.runs if run.enabled]:
-            if seis_run.status.state != EStatus.COMPLETE:
-                raise FAIL(
-                    message='There are non-completed seismicity model runs'
-                    f' for scenario: {scenario.id}')
-            seis_run.hazardruns.append(hazard_model_run)
+        new_runs = []
+        for haz_run in hazard_model_run:
+            self.logger = prefect.context.get('logger')
+            # Assume one hazard model run per scenario
+            hazard_stage = haz_run.forecaststage
+            scenario = hazard_stage.scenario
+            seismicity_stage = scenario[EStage.SEISMICITY]
+            for seis_run in [run for run in seismicity_stage.runs if run.enabled]:
+                if seis_run.status.state != EStatus.COMPLETE:
+                    raise FAIL(
+                        message='There are non-completed seismicity model runs'
+                        f' for scenario: {scenario.id}')
+                seis_run.hazardruns.append(haz_run)
+            new_runs.append(haz_run)
         return hazard_model_run
 
 
@@ -80,6 +83,8 @@ class OQSourceModelFiles(Task):
                            f'runs that are not complete.', result=scenario)
             result = seis_run.result
             # Only support one level of parent-child results
+            # if there are no results for a model, a model source file
+            # is still created (equivalent to zero seismicity)
             geoms = []
             try:
                 children = result.children
@@ -289,7 +294,6 @@ class OQLogicTree(Task):
         with ZipFile(zipfile_name, 'w') as oq_zipfile:
             oq_basenames = os.listdir(oq_input_dir)
             for basename in oq_basenames:
-                #oq_zipfile.write(os.path.join(oq_input_dir, basename))
-                pass
+                oq_zipfile.write(os.path.join(oq_input_dir, basename))
 
         return hazard_model_run, zipfile_name

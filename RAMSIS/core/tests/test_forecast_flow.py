@@ -426,7 +426,6 @@ class IntegrationTestCase(unittest.TestCase):
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
     def setUp(self):
-        print("setUp")
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -459,7 +458,6 @@ class IntegrationTestCase(unittest.TestCase):
         insert_test_data(self.postgres_test_url())
 
     def tearDown(self):
-        print("tearDown")
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -472,8 +470,7 @@ class IntegrationTestCase(unittest.TestCase):
         cursor0.execute(
             f"select pg_terminate_backend(pg_stat_activity.pid)"
             " from pg_stat_activity where pg_stat_activity.datname="
-            "'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
-        cursor0.execute(f"DROP DATABASE IF EXISTS {self.TEST_DBNAME}")
+            "'{self.TEST_DBNAME}'")
         cursor0.close()
         conn0.close()
 
@@ -496,7 +493,6 @@ class IntegrationTestCase(unittest.TestCase):
         Test the flow with only the seismicity stage enabled and two models
         enabled.
         """
-        print("test success")
         self.maxDiff = None
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
@@ -511,18 +507,17 @@ class IntegrationTestCase(unittest.TestCase):
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # Allow main thread to wait until other threads triggered by
         # workflow complete for 200 seconds maximum
-        for i in range(5):
+        for i in range(50):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
             self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
-            time.sleep(10)
+            time.sleep(2)
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        print('signal list', signal_list)
         self.assertEqual(len(signal_list), 4)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
@@ -618,7 +613,6 @@ class IntegrationTestCase(unittest.TestCase):
         Test workflow when an Error is returned in the get
         request from remote worker.
         """
-        print("model error")
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
         for item_status in statuses:
@@ -629,16 +623,17 @@ class IntegrationTestCase(unittest.TestCase):
         forecast = store.session.query(Forecast).first()
         controller.open_project(project)
         store.session.close()
+
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # Allow main thread to wait until other threads triggered by
         # workflow complete for 200 seconds maximum
-        for i in range(5):
+        for i in range(10):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
             if forecast_status == EStatus.ERROR:
                 break
-            time.sleep(10)
+            time.sleep(5)
 
         # Check that forecast, scenario and model all have an error status
         non_stage_statuses = store.session.query(Status).\
@@ -674,7 +669,6 @@ class IntegrationTestCase(unittest.TestCase):
     @mock.patch('RAMSIS.core.worker.sfm.requests.post',
                 side_effect=mocked_requests_post)
     def test_models_already_dispatched(self, mock_post, mock_get, mock_signal):
-        print("models already dispatched")
         self.execution_statuses = []
         controller, store = self.connect_ramsis()
 
@@ -699,14 +693,14 @@ class IntegrationTestCase(unittest.TestCase):
         store.session.close()
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # workflow complete for 200 seconds maximum
-        for i in range(5):
+        for i in range(50):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
             self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
-            time.sleep(10)
+            time.sleep(2)
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
@@ -751,21 +745,20 @@ class IntegrationTestCase(unittest.TestCase):
                 side_effect=mocked_requests_post)
     def test_one_model_already_dispatched(self, mock_post, mock_get,
                                           mock_signal):
-        print("one model already dispatched")
         controller, store = self.connect_ramsis()
         statuses = store.session.query(Status).all()
 
         model_runs = store.session.query(SeismicityModelRun).all()
-        model_runs[0].runid = "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"
-        model_runs[0].status.state = EStatus.DISPATCHED
+        for model_run in model_runs:
+            if model_run.model.id == 1:
+                model_run.runid = "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"
+                model_run.status.state = EStatus.DISPATCHED
+            else:
+                model_run.status.state = EStatus.PENDING
 
         # Alter so that only one model is dispatched.
-        m_altered = False
         for item_status in statuses:
-            if item_status.run_id is not None and m_altered is False:
-                item_status.state = EStatus.DISPATCHED
-                m_altered = True
-            else:
+            if item_status.run_id is None:
                 item_status.state = EStatus.PENDING
 
         store.save()
