@@ -287,7 +287,7 @@ def insert_test_data(db_url):
         description='Basel Project 2006',
         starttime=PROJECT_STARTTIME,
         endtime=PROJECT_ENDTIME,
-        spatialreference=WGS84_PROJ,
+        spatialreference=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
@@ -531,6 +531,18 @@ class IntegrationTestCase(unittest.TestCase):
         posted_data = mock_post.call_args_list[0][1]['data']
         posted_data2 = mock_post.call_args_list[1][1]['data']
 
+        #with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'w') as json_d:
+        #    if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
+        #        ["em1_training_epoch_duration"] == 86400):
+        #        json.dump(posted_data, json_d)
+        #    else:
+        #        json.dump(posted_data2, json_d)
+        #with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'w') as json_d:
+        #    if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
+        #        ["em1_training_epoch_duration"] == 86400):
+        #        json.dump(posted_data2, json_d)
+        #    else:
+        #        json.dump(posted_data, json_d)
         with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'r') as json_d:
             json_data = json.load(json_d)
         with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'r') as json_d:
