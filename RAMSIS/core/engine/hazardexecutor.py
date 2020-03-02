@@ -4,7 +4,6 @@ Openquake Hazard executing related engine facilities.
 """
 import os
 from shutil import copyfile
-from zipfile import ZipFile
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm.exc import DetachedInstanceError
 import prefect
@@ -12,6 +11,7 @@ from prefect.engine.signals import FAIL
 from prefect import Task
 from RAMSIS.io.sfm import OQGeomSerializer
 from RAMSIS.io.utils import TransformationError
+from RAMSIS.core.worker.oq_hazard import OQHazardWorkerHandle
 from ramsis.datamodel.forecast import EStage
 from ramsis.datamodel.status import EStatus, Status
 from ramsis.datamodel.hazard import HazardModelRun
@@ -90,17 +90,14 @@ class OQSourceModelFiles(Task):
                 children = result.children
             except DetachedInstanceError:
                 children = None
+
             if children:
-                for child_result in children:
-                    sample = child_result.matching_timeperiod(start, end)
-                    if sample:
-                        linearring = self.create_geom(child_result, serializer)
-                        geoms.append((sample, linearring))
+                for index, child_result in enumerate(children):
+                    geoms = self.append_geometry(geoms, result, serializer,
+                                                 start, end, index + 1)
             else:
-                sample = result.matching_timeperiod(start, end)
-                if sample:
-                    linearring = self.create_geom(result, serializer)
-                    geoms.append((sample, linearring))
+                geoms = self.append_geometry(geoms, result, serializer,
+                                             start, end, 1)
 
             xml_name = SEISMICITY_MODEL_BASENAME.format(
                 seis_run.model.name, start.strftime(DATETIME_FORMAT),
@@ -132,6 +129,13 @@ class OQSourceModelFiles(Task):
                      model_context['seismicity_model_run'].weight))
         return source_models
 
+    def append_geometry(self, geoms, result, serializer, start, end, geom_id):
+        sample = result.matching_timeperiod(start, end)
+        if sample:
+            linearring = self.create_geom(result, serializer)
+            geoms.append((geom_id, sample, linearring))
+        return geoms
+
     def create_geom(self, result, serializer):
         logger = prefect.context.get('logger')
         if not result.samples:
@@ -142,7 +146,8 @@ class OQSourceModelFiles(Task):
                 f" seismicitypredictionbin.id: {result.id}.")
             return
         try:
-            result = serializer.dumps(result)
+            snapshot_result = result.snapshot()
+            result = serializer.dumps(snapshot_result)
             return result.get('linearring')
         except (KeyError, TransformationError) as err:
             raise FAIL(
@@ -211,7 +216,7 @@ class OQFiles(Task):
 
         job_filename = os.path.join(oq_input_dir, JOB_CONFIG_BASENAME)
         open(job_filename, 'w').close()
-        copyfile(hazard_model.jobconfigfile, gmpe_filename)
+        copyfile(hazard_model.jobconfigfile, job_filename)
 
     def validate_paths(self, obj_name, attr_name):
 
@@ -290,10 +295,45 @@ class OQLogicTree(Task):
                                            os.path.dirname(template_filename))
             logic_tree_file.write(rendered_xml)
 
-        zipfile_name = f"{oq_input_dir}.zip"
-        with ZipFile(zipfile_name, 'w') as oq_zipfile:
-            oq_basenames = os.listdir(oq_input_dir)
-            for basename in oq_basenames:
-                oq_zipfile.write(os.path.join(oq_input_dir, basename))
+        return logic_tree_filename
 
-        return hazard_model_run, zipfile_name
+
+class OQHazardModelRunExecutor(Task):
+    """
+    The executor instantiates the actual model that is associated with the run,
+    connects to its status update signal and then calls its run method.
+    """
+    TASK_ACCEPTED = 'created'
+
+    def run(self, model_runs, model_source_filenames_runs, oq_input_dir_runs):
+        for (model_run, model_source_filenames, oq_input_dir) in zip(
+                model_runs, model_source_filenames_runs, oq_input_dir_runs):
+            print("model run", model_run, "source", model_source_filenames, "dir", oq_input_dir)
+            stage = model_run.forecaststage
+            scenario = model_run.forecaststage.scenario
+
+            _worker_handle = OQHazardWorkerHandle.from_run(
+                model_run)
+
+            try:
+                resp = _worker_handle.compute(
+                    JOB_CONFIG_BASENAME, LOGIC_TREE_BASENAME,
+                    GMPE_BASENAME, model_source_filenames, oq_input_dir)
+            except OQHazardWorkerHandle.RemoteWorkerError:
+                raise FAIL(
+                    message="model run submission has failed with "
+                    "error: RemoteWorkerError. Check if remote worker is"
+                    " accepting requests.",
+                    result=model_run)
+
+            print('resp', resp)
+            status = resp['status']
+
+            if status != self.TASK_ACCEPTED:
+                raise FAIL(message=f"model run {resp[job'id']} "
+                           f"has returned an error: {resp}", result=model_run)
+
+            model_run.runid = resp['run_id']
+            # Next task requires knowledge of status, so update status inside task.
+            model_run.status.state = EStatus.DISPATCHED
+        return model_runs

@@ -246,7 +246,7 @@ class SeismicityModelRunExecutor(Task):
 
     def run(self, forecast, model_run):
         # Deepcopy items that are transformed, otherwise
-        # die to concurrency, the same object gets transformed
+        # due to concurrency, the same object gets transformed
         # multiple times.
         model_run_serialize = model_run.snapshot()
         stage = model_run_serialize.forecaststage

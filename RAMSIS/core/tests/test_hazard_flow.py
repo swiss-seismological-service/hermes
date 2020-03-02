@@ -264,7 +264,7 @@ def create_hazard_model():
         gmpefile=GMPE_TEMPLATE,
         jobconfigfile=JOB_CONFIG_TEMPLATE,
         enabled=True,
-        url="openquake_url")
+        url="http://localhost:8800")
 
 
 def parse_cli():
@@ -358,7 +358,7 @@ def insert_test_data(db_url):
         description='Basel Project 2006',
         starttime=PROJECT_STARTTIME,
         endtime=PROJECT_ENDTIME,
-        spatialreference=WGS84_PROJ,
+        spatialreference=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
@@ -453,22 +453,11 @@ class MockResponse:
 
 
 def mocked_requests_post(*args, **kwargs):
-    training_epoch = (json.loads(kwargs['data'])['data']['attributes']
-                      ['model_parameters']
-                      ['em1_training_epoch_duration'])
-    if args[0] == 'http://localhost:5000/v1/EM1/runs':
-        if training_epoch == 3600:
-            return MockResponse(
-                create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-                                     JSON_POST_TEMPLATE),
+    print('args', args, 'kwargs', kwargs)
+    if args[0] == 'http://localhost:5000/v1/calc/run':
+        print("########### correct post")
+        return MockResponse(
                 200)
-        elif training_epoch == 86400:
-            return MockResponse(
-                create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-                                     JSON_POST_TEMPLATE),
-                200)
-    elif args[0] == 'http://localhost:5000':
-        return MockResponse({"key2": "value2"}, 200)
 
     return MockResponse(None, 404)
 
@@ -534,7 +523,7 @@ class IntegrationTestCase(unittest.TestCase):
         return(f'postgresql://{self.TEST_USER}:{self.TEST_PASSWORD}@'
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
-    def setUp(self):
+    def setUpSingleGeom(self):
         print("setUp")
         # Login with default credentials and create a new
         # testing database
@@ -602,14 +591,16 @@ class IntegrationTestCase(unittest.TestCase):
                 'execution_status_update', side_effect=signal_factory)
     @mock.patch('RAMSIS.core.worker.sfm.requests.get',
                 side_effect=mocked_requests_get)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
-                side_effect=mocked_requests_post)
-    def test_successful_hazard_flow(self, mock_post, mock_get,
+    #@mock.patch('RAMSIS.core.worker.sfm.requests.post',
+    #            side_effect=mocked_requests_post)
+    def test_successful_hazard_flow(self, #mock_post,
+                                    mock_get,
                                         mock_signal):
         """
         Test the flow with only the seismicity & hazard stage enabled
         and seismicity stage complete.
         """
+        self.setUpSingleGeom()
         print("successfulHazardFlow")
         self.maxDiff = None
         controller, store = self.connect_ramsis()
