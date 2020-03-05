@@ -14,11 +14,12 @@ from PyQt5.QtCore import (pyqtSignal, QObject, QThreadPool, QRunnable,
 from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     ModelRuns, forecast_scenarios,\
-    dispatched_seismicity_model_runs, CatalogSnapshot, WellSnapshot,\
+    dispatched_model_runs, CatalogSnapshot, WellSnapshot,\
     FlattenTask
 from RAMSIS.core.engine.hazardexecutor import CreateHazardModelRunDir, \
     CreateHazardModelRuns, OQFiles, UpdateHazardRuns, \
-    OQLogicTree, OQSourceModelFiles, OQHazardModelRunExecutor
+    OQLogicTree, OQSourceModelFiles, OQHazardModelRunExecutor, \
+    OQHazardModelRunPoller
 from RAMSIS.core.engine.state_handlers import ForecastHandler, \
     HazardHandler
 from ramsis.datamodel.seismicity import SeismicityModelRun, \
@@ -239,22 +240,22 @@ class ForecastFlow(QObject):
 
             # Check which model runs are dispatched, where there may exist
             # model runs that were sent that still haven't been collected
-            dispatched_model_runs = dispatched_seismicity_model_runs(
-                forecast)
+            model_runs_dispatched = dispatched_model_runs(
+                forecast, EStage.SEISMICITY)
 
             # Add dependency so that SeismicityModelRunExecutor must complete
             # before checking for model runs with DISPATCHED status
             seismicity_flow.add_edge(
                 seismicity_flow.get_tasks('SeismicityModelRunExecutor')[0],
                 seismicity_flow.get_tasks(
-                    'dispatched_seismicity_model_runs')[0])
+                    'dispatched_model_runs')[0])
 
             # Poll the remote workers for tasks that have been completed.
             model_run_poller = SeismicityModelRunPoller(
                 state_handlers=[
                     self.forecast_handler.poll_seismicity_state_handler])
             model_run_poller.map(unmapped(forecast),
-                                 dispatched_model_runs)
+                                 model_dispatched_runs)
     
         # (sarsonl) To view DAG: seismicity_flow.visualize()
         #seismicity_flow.visualize()
@@ -326,7 +327,23 @@ class HazardFlow(QObject):
                     hazard_flow.get_tasks('OQLogicTree')[0],
                 hazard_flow.get_tasks('OQHazardModelRunExecutor')[0])
 
+            # Check which model runs are dispatched, where there may exist
+            # model runs that were sent that still haven't been collected
+            model_runs_dispatched = dispatched_model_runs(
+                forecast, EStage.HAZARD)
 
+            # Add dependency so that HazardModelRunExecutor must complete
+            # before checking for model runs with DISPATCHED status
+            hazard_flow.add_edge(
+                hazard_flow.get_tasks('OQHazardModelRunExecutor')[0],
+                hazard_flow.get_tasks('dispatched_model_runs')[0])
+
+            # Poll the remote workers for tasks that have been completed.
+            model_run_poller = OQHazardModelRunPoller(
+                state_handlers=[
+                    self.hazard_handler.poll_hazard_state_handler])
+            model_run_poller.map(unmapped(forecast),
+                                 model_runs_dispatched)
 
 
         # (sarsonl) To view DAG: hazard_flow.visualize()

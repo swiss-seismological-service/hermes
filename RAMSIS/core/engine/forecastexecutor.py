@@ -314,13 +314,13 @@ class SeismicityModelRunExecutor(Task):
 
 
 @task
-def dispatched_seismicity_model_runs(forecast):
+def dispatched_model_runs(forecast, estage):
     logger = prefect.context.get('logger')
-    seismicity_stages = [s[EStage.SEISMICITY] for s in forecast.scenarios
+    stages = [s[estage] for s in forecast.scenarios
                          if s.enabled]
-    seismicity_stages = [stage for stage in seismicity_stages if stage.enabled]
+    stages = [stage for stage in stages if stage.enabled]
     model_runs = []
-    for stage in seismicity_stages:
+    for stage in stages:
         runs = [r for r in stage.runs if r.id]
         # If not all the runs have been set to DISPATCHED, they are still
         # in a RUNNING state, which is changed by the state handler. However

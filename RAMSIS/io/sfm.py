@@ -293,6 +293,8 @@ class _SeismicityForecastGeomSchema(_SchemaBase):
         Transform coordinates from local to external coordinates.
         """
         transform_func = self.context['transform_func']
+        print("before transformation: ", data.x_min, data.x_max)
+        print("transform func", transform_func)
         try:
             (data.x_min,
              data.y_min,
@@ -304,6 +306,7 @@ class _SeismicityForecastGeomSchema(_SchemaBase):
              _) = transform_func(
                 data.x_max,
                 data.y_max)
+            print("after transformation: ", data.x_min, data.x_max)
 
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
