@@ -21,6 +21,7 @@ stage is managed by a respective StageExecutor class:
      ...
 
 """
+import json
 import time
 import copy
 import logging
@@ -234,6 +235,95 @@ class RiskStageExecutor(Task):
         #     self.model_run.result = notification.result
         #
 
+class ForecastSerializeData(Task):
+    """
+    :param str seismic_catalog: Snapshot of a seismic catalog in
+    `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
+    :param well: Snapshot of the injection well / borehole including
+        the hydraulics.
+    :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
+    :param scenario: The scenario to be forecasted
+    :type scenario:
+        :py:class:`ramsis.datamodel.hydraulics.InjectionPlan`
+    :param str reservoir: Reservoir geometry in `WKT
+        <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
+        format
+    :param model_parameters: Model specific configuration parameters.
+       If :code:`None` parameters are not appended.
+    :type model_parameters: dict or None
+    :param serializer: Serializer instance used to serialize the
+        payload
+    """
+    def run(self, forecast):
+        # Deepcopy items that are transformed, otherwise
+        # due to concurrency, the same object gets transformed
+        # multiple times.
+        project = forecast.project
+        well = forecast.well[0]
+        seismiccatalog = forecast.seismiccatalog[0]
+
+        serializer = SFMWorkerIMessageSerializer(
+            ramsis_proj=project.spatialreference,
+            external_proj="epsg:4326",
+            ref_easting=project.referencepoint_x,
+            ref_northing=project.referencepoint_y,
+            transform_func_name='pyproj_transform_from_local_coords')
+        payload = {
+            'data': {
+                'attributes': {
+                    'seismic_catalog': {'quakeml': seismiccatalog},
+                    'well': well,
+                    'spatialreference': project.spatialreference,
+                    'referencepoint': {
+                        'x': project.referencepoint_x,
+                        'y': project.referencepoint_y},
+                    }}}
+
+        data = serializer._serialize_dict(payload)
+        return data
+
+
+class ScenarioSerializeData(Task):
+    """
+    :param str seismic_catalog: Snapshot of a seismic catalog in
+    `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
+    :param well: Snapshot of the injection well / borehole including
+        the hydraulics.
+    :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
+    :param scenario: The scenario to be forecasted
+    :type scenario:
+        :py:class:`ramsis.datamodel.hydraulics.InjectionPlan`
+    :param str reservoir: Reservoir geometry in `WKT
+        <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
+        format
+    :param model_parameters: Model specific configuration parameters.
+       If :code:`None` parameters are not appended.
+    :type model_parameters: dict or None
+    :param serializer: Serializer instance used to serialize the
+        payload
+    """
+    def run(self, scenario):
+        # Deepcopy items that are transformed, otherwise
+        # due to concurrency, the same object gets transformed
+        # multiple times.
+        forecast = scenario.forecast
+        project = forecast.project
+        injection_plan = scenario.well
+
+        serializer = SFMWorkerIMessageSerializer(
+            ramsis_proj=project.spatialreference,
+            external_proj="epsg:4326",
+            ref_easting=project.referencepoint_x,
+            ref_northing=project.referencepoint_y,
+            transform_func_name='pyproj_transform_from_local_coords')
+        payload = {
+            'data': {
+                'attributes': {
+                    'scenario': {'well': injection_plan},
+                    'reservoir': {'geom': scenario.reservoirgeom}}}}
+
+        data = serializer._serialize_dict(payload)
+        return (scenario.id, data)
 
 class SeismicityModelRunExecutor(Task):
     """
@@ -244,50 +334,37 @@ class SeismicityModelRunExecutor(Task):
     """
     TASK_ACCEPTED = 202
 
-    def run(self, forecast, model_run):
+    def run(self, forecast, forecast_data, scenario_data_list, model_run):
         # Deepcopy items that are transformed, otherwise
         # due to concurrency, the same object gets transformed
         # multiple times.
-        model_run_serialize = model_run.snapshot()
-        stage = model_run_serialize.forecaststage
-        scenario = model_run_serialize.forecaststage.scenario
+        stage = model_run.forecaststage
+        scenario = model_run.forecaststage.scenario
         project = forecast.project
+        scenario_data = [data for scenario_id, data in scenario_data_list if scenario_id == model_run.forecaststage.scenario.id][0]
         # (sarsonl) current bug when attempting to only
         # allow one to one relationship between forecast-well
         # and forecast-seismiccatalog. Work-around is to leave
         # as one to many relationship and assume just one item in list.
-        well = forecast.well[0].snapshot()
-        injection_plan = scenario.well.snapshot()
-        seismiccatalog = forecast.seismiccatalog[0].snapshot()
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run_serialize)
-        model_parameters = copy.deepcopy(model_run_serialize.config)
+            model_run)
+        model_parameters = copy.deepcopy(model_run.config)
+        print('scenario_data', scenario_data)
         model_parameters.update(
             {'datetime_start': forecast.starttime.isoformat(),
              'datetime_end': forecast.endtime.isoformat(),
              'epoch_duration': stage.config['prediction_bin_duration']})
-        data = {
-            'seismic_catalog': seismiccatalog,
-            'well': well,
-            'model_parameters': model_parameters,
-            'reservoir': scenario.reservoirgeom,
-            'spatialreference': project.spatialreference,
-            'referencepoint_x': project.referencepoint_x,
-            'referencepoint_y': project.referencepoint_y,
-            'scenario': {'well': injection_plan}, }
-
-        serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj=project.spatialreference,
-            external_proj="epsg:4326",
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
-            transform_func_name='pyproj_transform_from_local_coords')
-        payload = _worker_handle.Payload(**data, serializer=serializer)
+        payload = forecast_data
+        attributes = payload["data"]["attributes"]
+        scenario_attributes = scenario_data["data"]["attributes"]
+        attributes["model_parameters"] = model_parameters
+        attributes["reservoir"] = scenario_attributes["reservoir"]
+        attributes["scenario"] = scenario_attributes["scenario"]
 
         try:
             resp = _worker_handle.compute(
-                payload, deserializer=SFMWorkerOMessageDeserializer(
+                json.dumps(payload), deserializer=SFMWorkerOMessageDeserializer(
                     ramsis_proj=project.spatialreference,
                     external_proj="epsg:4326",
                     ref_easting=project.referencepoint_x,
@@ -309,7 +386,6 @@ class SeismicityModelRunExecutor(Task):
         model_run.runid = resp['data']['id']
         # Next task requires knowledge of status, so update status inside task.
         model_run.status.state = EStatus.DISPATCHED
-        model_run_serialize.forecaststage = None
         return model_run
 
 

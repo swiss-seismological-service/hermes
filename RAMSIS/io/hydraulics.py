@@ -382,12 +382,15 @@ class _WellSectionSchema(_SchemaBase):
 
         altitude_value = self.context['altitude_value']
         # +z values have a directionality as depth
-        topdepth_value = -altitude_value + data.topz_value
-        bottomdepth_value = -altitude_value + data.bottomz_value
+        topz_value = data.topz_value if data.topz_value else 0
+        bottomz_value = data.bottomz_value if data.bottomz_value else 0
+        topdepth_value = -altitude_value + topz_value
+        bottomdepth_value = -altitude_value + bottomz_value
         # The input values have an expected directionality of
         # x, y, depth = lat, lon, depth
         # The output values to a local CRS have an expected directionality of
         # x, y, z = easting, northing, height
+
         try:
             (data.topx_value,
              data.topy_value,
@@ -432,6 +435,8 @@ class _WellSectionSchema(_SchemaBase):
             raise TransformationError(f"{err}")
 
         altitude_value = self.context['altitude_value']
+        topdepth_value = topdepth_value if topdepth_value else 0
+        bottomdepth_value = bottomdepth_value if bottomdepth_value else 0
         data.topz_value = altitude_value + topdepth_value
         data.bottomz_value = altitude_value + bottomdepth_value
         return data

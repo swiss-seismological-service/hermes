@@ -197,7 +197,7 @@ def create_json_response(task_id, response_template, **kwargs):
 
 
 def create_models():
-    URL_EM1 = 'http://localhost:5000'
+    URL_EM1 = 'http://localhost:5007'
     EM1_SFMWID = 'EM1'
     HOUR_IN_SECS = 3600
     DAY_IN_SECS = 86400
@@ -480,6 +480,22 @@ class IntegrationTestCase(unittest.TestCase):
 
         store = controller.store
         return controller, store
+
+    def reset_statuses(self):
+        """
+        Test the flow with only the seismicity stage enabled and two models
+        enabled.
+        """
+        controller, store = self.connect_ramsis()
+        statuses = store.session.query(Status).all()
+        for item_status in statuses:
+            item_status.state = EStatus.PENDING
+
+        
+        seismicity_models = store.session.query(SeismicityModel).all()
+        for model in seismicity_models:
+            model.sfwid =  'http://localhost:5007'
+        store.save()
 
     @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
                 'execution_status_update', side_effect=signal_factory)

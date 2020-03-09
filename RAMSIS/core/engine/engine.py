@@ -15,7 +15,7 @@ from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     ModelRuns, forecast_scenarios,\
     dispatched_model_runs, CatalogSnapshot, WellSnapshot,\
-    FlattenTask
+    FlattenTask, ScenarioSerializeData, ForecastSerializeData
 from RAMSIS.core.engine.hazardexecutor import CreateHazardModelRunDir, \
     CreateHazardModelRuns, OQFiles, UpdateHazardRuns, \
     OQLogicTree, OQSourceModelFiles, OQHazardModelRunExecutor, \
@@ -202,6 +202,7 @@ class ForecastFlow(QObject):
         self.system_time = system_time
 
     def run(self):
+        print("before flow in run")
         with Flow("Seismicity_Execution",
                   state_handlers=[self.forecast_handler.flow_state_handler]
                   ) as seismicity_flow:
@@ -231,12 +232,19 @@ class ForecastFlow(QObject):
             # (prefect currently does not allow mapping at multiple levels)
             flatten_task = FlattenTask()
             model_runs_flattened = flatten_task(seismicity_model_runs)
+            forecast_serializer = ForecastSerializeData()
+            forecast_serialized_data = forecast_serializer(forecast)
+            scenario_serializer = ScenarioSerializeData()
+            scenario_serialized_data = scenario_serializer.map(scenarios)
+            # As prefect does not allow double nested mapping, have to flattten scenarios data and pass to eash model run executor task. This data should not be large in any case as the majority of the data is in forecast_serialized_data (all catalog and well data)
             # Dispatch the model runs to remote workers
+            #flatten_scenario_data = FlattenTask()
+            #scenario_data_flattened = flatten_scenario_data(scenario_serialized_data)
             model_run_executor = SeismicityModelRunExecutor(
                 state_handlers=[self.forecast_handler.model_run_state_handler])
 
             _ = model_run_executor.map(
-                unmapped(forecast), model_runs_flattened)
+                unmapped(forecast), unmapped(forecast_serialized_data), unmapped(scenario_serialized_data), model_runs_flattened)
 
             # Check which model runs are dispatched, where there may exist
             # model runs that were sent that still haven't been collected
@@ -255,8 +263,9 @@ class ForecastFlow(QObject):
                 state_handlers=[
                     self.forecast_handler.poll_seismicity_state_handler])
             model_run_poller.map(unmapped(forecast),
-                                 model_dispatched_runs)
+                                 model_runs_dispatched)
     
+        print("after flow in run")
         # (sarsonl) To view DAG: seismicity_flow.visualize()
         #seismicity_flow.visualize()
 

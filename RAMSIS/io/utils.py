@@ -254,7 +254,8 @@ class RamsisCoordinateTransformer:
 
         return easting, northing, altitude
 
-    def pyproj_transform_from_local_coords(self, easting, northing, altitude=None):
+    def pyproj_transform_from_local_coords(self, easting, northing,
+                                           altitude=None):
         easting_0 = easting + self.ref_easting
         northing_0 = northing + self.ref_northing
 

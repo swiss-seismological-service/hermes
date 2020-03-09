@@ -424,7 +424,7 @@ class SFMWorkerIMessageSerializer(SerializerBase, IOBase):
         """
         return _SFMWorkerIMessageSchema(context=self._ctx).dumps(data)
 
-    def _dumpo(self, data):
+    def _serialize_dict(self, data):
         return _SFMWorkerIMessageSchema(context=self._ctx).dump(data)
 
 
