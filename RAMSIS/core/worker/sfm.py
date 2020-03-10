@@ -212,64 +212,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         def _wrap(value):
             return {KEY_DATA: value}
 
-    class Payload(object):
-        """
-        Representation of the payload sent to the remote seismicity forecast
-        worker. Encapsulates data model specific facilities.
-
-        .. note::
-
-            At the time being seismicity forecasts only hanlde a single
-            injection well. As a consequence, the scenario forecasted is a
-            single injection plan. Time depended injection well geometries
-            currently are not supported (Those would be also part of the
-            scenario).
-        """
-
-        def __init__(self, seismic_catalog, well, scenario, reservoir,
-                     referencepoint_x, referencepoint_y,
-                     spatialreference, model_parameters=None, **kwargs):
-            """
-            :param str seismic_catalog: Snapshot of a seismic catalog in
-            `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
-            :param well: Snapshot of the injection well / borehole including
-                the hydraulics.
-            :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
-            :param scenario: The scenario to be forecasted
-            :type scenario:
-                :py:class:`ramsis.datamodel.hydraulics.InjectionPlan`
-            :param str reservoir: Reservoir geometry in `WKT
-                <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
-                format
-            :param model_parameters: Model specific configuration parameters.
-               If :code:`None` parameters are not appended.
-            :type model_parameters: dict or None
-            :param serializer: Serializer instance used to serialize the
-                payload
-            """
-            self._payload = {
-                'data': {
-                    'attributes': {
-                        'seismic_catalog': {'quakeml': seismic_catalog},
-                        'well': well,
-                        'scenario': scenario,
-                        'spatialreference': spatialreference,
-                        'referencepoint': {
-                            'x': referencepoint_x,
-                            'y': referencepoint_y},
-                        'reservoir': {'geom': reservoir}}}}
-
-            if model_parameters is not None:
-                self._payload['data']['attributes']['model_parameters'] = \
-                    model_parameters
-
-            self._serializer = kwargs.get(
-                'serializer')
-            assert self._serializer, "No serializer configured"
-
-        def dumps(self):
-            return self._serializer.dumps(self._payload)
-
     def __init__(self, base_url, **kwargs):
         """
         :param str base_url: The worker's base URL
@@ -364,12 +306,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         return self.QueryResult.from_requests(
             resp, deserializer=deserializer)
 
-    def compute(self, payload, **kwargs):
+    def compute(self, _payload, **kwargs):
         """
         Issue a task to a remote seismicity forecast worker.
 
         :param payload: Payload sent to the remote worker
-        :type payload: :py:class:`SeismicityWorkerHandle.Payload`
+        :type payload: str
         :param deserializer: Optional deserializer instance used to load the
             response
         """
@@ -380,12 +322,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         # snapshot.
 
         deserializer = kwargs.get('deserializer')
-
-        # serialize payload
-        try:
-            _payload = payload.dumps()
-        except marshmallow.exceptions.ValidationError as err:
-            raise self.EncodingError(err)
 
         self.logger.debug(
             'Sending computation request (model={!r}, url={!r}).'.format(

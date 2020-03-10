@@ -74,7 +74,7 @@ PATHS_HYDRAULICS = [
 
 PATH_INJECTION_PLAN = 'injection_data/injectionplan-mignan.json'
 
-PROJECT_STARTTIME = datetime(2006, 12, 2)
+PROJECT_STARTTIME = datetime(2006, 12, 3, 0, 2)
 PROJECT_ENDTIME = None
 
 FORECAST_STARTTIME = PROJECT_STARTTIME
@@ -197,7 +197,7 @@ def create_json_response(task_id, response_template, **kwargs):
 
 
 def create_models():
-    URL_EM1 = 'http://localhost:5007'
+    URL_EM1 = 'http://localhost:5000'
     EM1_SFMWID = 'EM1'
     HOUR_IN_SECS = 3600
     DAY_IN_SECS = 86400
@@ -492,9 +492,9 @@ class IntegrationTestCase(unittest.TestCase):
             item_status.state = EStatus.PENDING
 
         
-        seismicity_models = store.session.query(SeismicityModel).all()
-        for model in seismicity_models:
-            model.sfwid =  'http://localhost:5007'
+        #seismicity_models = store.session.query(SeismicityModel).all()
+        #for model in seismicity_models:
+        #    model.sfwid =  'http://localhost:5007'
         store.save()
 
     @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'

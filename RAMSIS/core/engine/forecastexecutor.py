@@ -67,7 +67,6 @@ def seismicity_stage_complete(forecast):
                     if r.status.state in status_work_required:
                         seismicity_stage_done = False
                         continue
-        print("seismicity stage is done: ", seismicity_stage_done)
         return seismicity_stage_done
 
 
@@ -130,12 +129,9 @@ class CatalogSnapshot(Task):
         def filter_future(event):
             return event.datetime_value < forecast.starttime
 
-        print("forecast seismiccatalog", forecast.seismiccatalog)
         if forecast.seismiccatalog:
-            print("There is a seismiccatalog")
             pass
         else:
-            print("there isn't a seismiccatalog")
             seismiccatalog = forecast.project.seismiccatalog.\
                 snapshot(filter_cond=filter_future)
 
@@ -350,7 +346,6 @@ class SeismicityModelRunExecutor(Task):
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
         model_parameters = copy.deepcopy(model_run.config)
-        print('scenario_data', scenario_data)
         model_parameters.update(
             {'datetime_start': forecast.starttime.isoformat(),
              'datetime_end': forecast.endtime.isoformat(),
