@@ -1,10 +1,54 @@
 import prefect
+from time import time, sleep
 from prefect.engine.result import NoResultType
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.hazard import HazardModelRun
 from ramsis.datamodel.forecast import EStage, Forecast
+
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and 
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        # Timeout for a worker to wait for the synchronous thread to be released
+        self.timeout = 1000
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+        synchronous_thread = self.kwargs.pop('synchronous_thread', None)
+        if synchronous_thread is not None:
+            timeout = time() + self.timeout
+            while synchronous_thread.is_reserved():
+                sleep(1)
+                if time() > timeout:
+                    raise TimeoutError(
+                        "Synchronous thread task taking too long to complete")
+                    break
+            synchronous_thread.reserve_thread()
+        self.fn(*self.args, **self.kwargs)
+        if synchronous_thread is not None:
+            synchronous_thread.release_thread()
+
 
 
 class BaseHandler(QObject):
@@ -25,13 +69,22 @@ class BaseHandler(QObject):
     execution_status_update = pyqtSignal(object)
     forecast_status_update = pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, threadpool, synchronous_thread):
         super().__init__()
         self.session = None
+        self.threadpool = threadpool
+        self.synchronous_thread = synchronous_thread
 
     def update_db(self):
         if self.session.dirty:
             self.session.commit()
+        self.session.remove()
+
+    def commit(self):
+        if self.session.dirty:
+            self.session.commit()
+
+    def session_remove(self):
         self.session.remove()
 
     def state_evaluator(self, new_state, func_list):
@@ -63,6 +116,8 @@ class BaseHandler(QObject):
                 isinstance(new_state.result, NoResultType)):
             conditions_met = True
         return conditions_met
+
+
 
 
 class ForecastHandler(BaseHandler):
@@ -101,7 +156,8 @@ class ForecastHandler(BaseHandler):
                 for state in stage_states]):
             scenario.status.state = EStatus.COMPLETE
         elif any([state == EStatus.ERROR
-                 for state in stage_states]):
+            for state
+            in stage_states]):
             scenario.status.state = EStatus.ERROR
         elif any([state == EStatus.PENDING
                  for state in stage_states]):
@@ -114,7 +170,19 @@ class ForecastHandler(BaseHandler):
         Set the forecast state according to the end state
         of the flow.
         """
+        logger = prefect.context.get("logger")
         forecast_id = prefect.context.forecast_id
+        worker = Worker(self.update_seismicity_statuses, new_state, logger,
+                        forecast_id,
+                        synchronous_thread=self.synchronous_thread)
+        forecast = self.session.query(Forecast).first()
+        plan_section = forecast.scenarios[0].well.sections[0]
+        topz = plan_section.topz_value
+        bottomz = plan_section.bottomz_value
+        self.session.remove()
+        self.threadpool.start(worker)
+
+    def update_seismicity_statuses(self, new_state, logger, forecast_id):
         forecast = self.session.query(Forecast).filter(
             Forecast.id == forecast_id).first()
 
@@ -130,7 +198,11 @@ class ForecastHandler(BaseHandler):
                 scenario = self.scenario_stage_status(scenario)
 
             self.update_db()
-            self.session.remove()
+        forecast = self.session.query(Forecast).first()
+        plan_section = forecast.scenarios[0].well.sections[0]
+        topz = plan_section.topz_value
+        bottomz = plan_section.bottomz_value
+        self.session.remove()
         return new_state
 
     def scenario_models_state_handler(self, obj, old_state, new_state):
@@ -157,31 +229,37 @@ class ForecastHandler(BaseHandler):
         logger = prefect.context.get("logger")
 
         if self.state_evaluator(new_state, [self.task_finished]):
-            if self.state_evaluator(new_state, [self.successful_result]):
-                model_run = new_state.result
-
-                update_model_run = self.session.query(SeismicityModelRun).\
-                    filter(SeismicityModelRun.id == model_run.id).first()
-                update_model_run.runid = model_run.runid
-                logger.info(f"Model run with runid={model_run.runid}"
-                            "has been dispatched to the remote worker.")
-                update_model_run.status.state = model_run.status.state
-            elif self.state_evaluator(new_state, [self.error_result]):
-                # prefect Fail should be raised with model_run as a result
-                logger.warning(f"Model run has failed: {new_state.result}. "
-                               f"Message: {new_state.message}")
-                model_run = new_state.result
-                update_model_run = self.session.query(SeismicityModelRun).\
-                    filter(SeismicityModelRun.id == model_run.id).first()
-                update_model_run.status.state = EStatus.ERROR
-
-            # The sent status is not used, as the whole scenario must
-            # be refreshed from the db in the gui thread.
-            self.update_db()
-            self.execution_status_update.emit((
-                new_state, type(model_run),
-                model_run.id))
+            worker = Worker(self.dispatched_model_run, new_state, logger)
+            self.threadpool.start(worker)
         return new_state
+
+    def dispatched_model_run(self, new_state, logger):
+        if self.state_evaluator(new_state, [self.successful_result]):
+            model_run = new_state.result
+
+            update_model_run = self.session.query(SeismicityModelRun).\
+                filter(SeismicityModelRun.id == model_run.id).first()
+            update_model_run.runid = model_run.runid
+            logger.info(f"Model run with runid={model_run.runid}"
+                        "has been dispatched to the remote worker.")
+            update_model_run.status.state = model_run.status.state
+        elif self.state_evaluator(new_state, [self.error_result]):
+            # prefect Fail should be raised with model_run as a result
+            logger.warning(f"Model run has failed: {new_state.result}. "
+                           f"Message: {new_state.message}")
+            model_run = new_state.result
+            update_model_run = self.session.query(SeismicityModelRun).\
+                filter(SeismicityModelRun.id == model_run.id).first()
+            update_model_run.status.state = EStatus.ERROR
+
+        # The sent status is not used, as the whole scenario must
+        # be refreshed from the db in the gui thread.
+        
+        self.update_db()
+        self.execution_status_update.emit((
+            new_state, type(model_run),
+            model_run.id))
+        
 
     def poll_seismicity_state_handler(self, obj, old_state, new_state):
         """
@@ -191,6 +269,12 @@ class ForecastHandler(BaseHandler):
         task otherwise.
         A pyqt signal will be sent on success or failure of the task.
         """
+        # sarsonl: pass logger from the context in the main thread
+        forecast = self.session.query(Forecast).first()
+        plan_section = forecast.scenarios[0].well.sections[0]
+        topz = plan_section.topz_value
+        bottomz = plan_section.bottomz_value
+        self.session.remove()
         logger = prefect.context.get("logger")
 
         if self.state_evaluator(new_state, [self.task_finished]):
@@ -202,7 +286,10 @@ class ForecastHandler(BaseHandler):
                 update_model_run = self.session.query(SeismicityModelRun).\
                     filter(SeismicityModelRun.id == model_run.id).first()
                 update_model_run.status.state = EStatus.COMPLETE
-                update_model_run.result = model_result
+                self.update_db()
+                worker = Worker(self.finished_model_run, new_state, logger,
+                                synchronous_thread=self.synchronous_thread)
+                self.threadpool.start(worker)
 
             elif self.state_evaluator(new_state, [self.error_result]):
                 model_run = new_state.result
@@ -212,11 +299,46 @@ class ForecastHandler(BaseHandler):
                 update_model_run = self.session.query(SeismicityModelRun).\
                     filter(SeismicityModelRun.id == model_run.id).first()
                 update_model_run.status.state = EStatus.ERROR
-            self.update_db()
+                self.update_db()
             self.execution_status_update.emit((
                 new_state, type(model_run),
                 model_run.id))
+        forecast = self.session.query(Forecast).first()
+        plan_section = forecast.scenarios[0].well.sections[0]
+        topz = plan_section.topz_value
+        bottomz = plan_section.bottomz_value
+        self.session.remove()
         return new_state
+
+    def finished_model_run(self, new_state, logger):
+        """
+        Adding the result to the database may take time and as this task
+        being completed in a timely fashion does not impact the flow, this
+        can be moved to another thread.
+        """
+        model_run, model_result = new_state.result
+        update_model_run = self.session.query(SeismicityModelRun).\
+            filter(SeismicityModelRun.id == model_run.id).first()
+        update_model_run.result = model_result
+        self.update_db()
+
+    def add_catalog(self, new_state, logger):
+        forecast = new_state.result
+        # A forecast may only have one seismiccatalog associated
+        # This is enforced in code rather than at db level.
+        assert(len(forecast.seismiccatalog) == 1)
+        if forecast.seismiccatalog[0] not in self.session():
+            self.session.add(forecast.seismiccatalog[0])
+            self.session.commit()
+            self.session.merge(forecast)
+            self.update_db()
+            logger.info(f"Forecast id={forecast.id} has made a snapshot"
+                        " of the seismic catalog")
+        else:
+            logger.info(f"Forecast id={forecast.id} already has a snapshot"
+                        " of the seismic catalog. "
+                        "No new snapshot is being made.")
+        self.session.remove()
 
     def catalog_snapshot_state_handler(self, obj, old_state, new_state):
         """
@@ -228,23 +350,32 @@ class ForecastHandler(BaseHandler):
         logger = prefect.context.get("logger")
         if self.state_evaluator(new_state, [self.task_finished,
                                             self.successful_result]):
-            forecast = new_state.result
-            # A forecast may only have one seismiccatalog associated
-            # This is enforced in code rather than at db level.
-            assert(len(forecast.seismiccatalog) == 1)
-            if forecast.seismiccatalog[0] not in self.session():
-                self.session.add(forecast.seismiccatalog[0])
-                self.session.commit()
-                self.session.merge(forecast)
-                self.update_db()
-                logger.info(f"Forecast id={forecast.id} has made a snapshot"
-                            " of the seismic catalog")
-            else:
-                logger.info(f"Forecast id={forecast.id} already has a snapshot"
-                            " of the seismic catalog. "
-                            "No new snapshot is being made.")
-        self.session.remove()
+
+            worker = Worker(self.add_catalog, new_state, logger,
+                            synchronous_thread=self.synchronous_thread)
+            self.threadpool.start(worker)
         return new_state
+
+    def add_well(self, new_state, logger, **kwargs):
+        forecast = new_state.result
+        # A forecast may only have one well associated
+        # This is enforced in code rather than at db level.
+        assert(len(forecast.well) == 1)
+        if forecast.seismiccatalog[0] not in self.session():
+            self.session.add(forecast.well[0])
+            self.session.commit()
+            self.session.merge(forecast)
+            self.update_db()
+            logger.info(f"Forecast id={forecast.id} has made a snapshot"
+                        " of the hydraulic well")
+        else:
+            logger.info(f"Forecast id={forecast.id} already has a snapshot"
+                        " of the hydraulic well. "
+                        "No new snapshot is being made.")
+        forecast = self.session.query(Forecast).first()
+        plan_section = forecast.scenarios[0].well.sections[0]
+        topz = plan_section.topz_value
+        bottomz = plan_section.bottomz_value
 
     def well_snapshot_state_handler(self, obj, old_state, new_state):
         """
@@ -256,20 +387,10 @@ class ForecastHandler(BaseHandler):
         logger = prefect.context.get("logger")
         if self.state_evaluator(new_state, [self.task_finished,
                                             self.successful_result]):
-            forecast = new_state.result
-            # A forecast may only have one well associated
-            # This is enforced in code rather than at db level.
-            assert(len(forecast.well) == 1)
-            if forecast.seismiccatalog[0] not in self.session():
-                self.session.add(forecast.well[0])
-                self.session.commit()
-                self.session.merge(forecast)
-                logger.info(f"Forecast id={forecast.id} already has a snapshot"
-                            " of the well. "
-                            "No new snapshot is being made.")
-                self.update_db()
+            worker = Worker(self.add_well, new_state, logger,
+                            synchronous_thread=self.synchronous_thread)
+            self.threadpool.start(worker)
         return new_state
-
 
 class HazardHandler(BaseHandler):
     """

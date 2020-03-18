@@ -305,6 +305,8 @@ class ScenarioSerializeData(Task):
         forecast = scenario.forecast
         project = forecast.project
         injection_plan = scenario.well
+        print("plan topz before conversion:", injection_plan.sections[0].topz_value)
+        print("plan topx before conversion:", injection_plan.sections[0].topx_value)
 
         serializer = SFMWorkerIMessageSerializer(
             ramsis_proj=project.spatialreference,
@@ -319,6 +321,8 @@ class ScenarioSerializeData(Task):
                     'reservoir': {'geom': scenario.reservoirgeom}}}}
 
         data = serializer._serialize_dict(payload)
+        print('topdepth', data['data']['attributes']['scenario']['well']['sections'][0]['topdepth'])
+        print('toplatitude', data['data']['attributes']['scenario']['well']['sections'][0]['toplatitude'])
         return (scenario.id, data)
 
 class SeismicityModelRunExecutor(Task):
@@ -440,6 +444,7 @@ class SeismicityModelRunPoller(Task):
                 deserializer=deserializer).first()
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             logger.error(str(err))
+            model_run.status.state = EStatus.ERROR
             raise FAIL()
         else:
             status = resp['data']['attributes']['status_code']
@@ -464,15 +469,18 @@ class SeismicityModelRunPoller(Task):
                                result=model_run)
                 else:
                     #model_run.result = result
+                    model_run.status.state = EStatus.COMPLETE
                     return model_run, result
 
             elif status in self.TASK_ERROR:
+                model_run.status.state = EStatus.ERROR
                 raise FAIL(
                     message="Remote Seismicity Model Worker"
                     " has returned an unsuccessful status code."
                     f"(runid={model_run.runid}: {resp})", result=model_run)
 
             else:
+                model_run.status.state = EStatus.ERROR
                 raise FAIL(
                     message="Remote Seismicity Model Worker"
                     " has returned an unhandled status code."

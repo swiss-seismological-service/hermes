@@ -346,7 +346,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 self.model, self.url, result))
         return result
 
-    _run = compute
+    #_run = compute
 
     def delete(self, task_ids=[]):
         """

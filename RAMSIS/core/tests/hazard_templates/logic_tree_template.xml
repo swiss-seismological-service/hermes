@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.5">
+
+    <logicTree logicTreeID="lt1">
+        <logicTreeBranchingLevel branchingLevelID="bl1">
+            <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs1">
+                {% for model_name, weight in model_sources %}
+                <logicTreeBranch branchID="{{ loop.index }}">
+                    <uncertaintyModel>{{ model_name }}</uncertaintyModel>
+                    <uncertaintyWeight>{{ weight }}</uncertaintyWeight>
+                </logicTreeBranch>
+                  {% endfor %}
+            </logicTreeBranchSet>
+        </logicTreeBranchingLevel>
+    </logicTree>
+</nrml>

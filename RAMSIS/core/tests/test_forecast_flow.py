@@ -491,10 +491,9 @@ class IntegrationTestCase(unittest.TestCase):
         for item_status in statuses:
             item_status.state = EStatus.PENDING
 
-        
-        #seismicity_models = store.session.query(SeismicityModel).all()
-        #for model in seismicity_models:
-        #    model.sfwid =  'http://localhost:5007'
+        # seismicity_models = store.session.query(SeismicityModel).all()
+        # for model in seismicity_models:
+        #     model.sfwid =  'http://localhost:5007'
         store.save()
 
     @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
@@ -526,10 +525,12 @@ class IntegrationTestCase(unittest.TestCase):
         for i in range(50):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
+            statuses = store.session.query(Status).all()
             store.session.close()
             self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
+                time.sleep(1)
             time.sleep(2)
 
         # Check pyqtsignals that were produced
@@ -547,18 +548,18 @@ class IntegrationTestCase(unittest.TestCase):
         posted_data = mock_post.call_args_list[0][1]['data']
         posted_data2 = mock_post.call_args_list[1][1]['data']
 
-        #with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'w') as json_d:
-        #    if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
-        #        ["em1_training_epoch_duration"] == 86400):
-        #        json.dump(posted_data, json_d)
-        #    else:
-        #        json.dump(posted_data2, json_d)
-        #with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'w') as json_d:
-        #    if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
-        #        ["em1_training_epoch_duration"] == 86400):
-        #        json.dump(posted_data2, json_d)
-        #    else:
-        #        json.dump(posted_data, json_d)
+        # with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'w') as json_d:
+        #     if (json.loads(posted_data)["data"]["attributes"]["model_parameters"] # noqa
+        #         ["em1_training_epoch_duration"] == 86400):
+        #         json.dump(posted_data, json_d)
+        #     else:
+        #         json.dump(posted_data2, json_d)
+        # with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'w') as json_d:
+        #     if (json.loads(posted_data)["data"]["attributes"]["model_parameters"] # noqa
+        #         ["em1_training_epoch_duration"] == 86400):
+        #         json.dump(posted_data2, json_d)
+        #     else:
+        #         json.dump(posted_data, json_d)
         with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'r') as json_d:
             json_data = json.load(json_d)
         with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'r') as json_d:
@@ -627,6 +628,8 @@ class IntegrationTestCase(unittest.TestCase):
 
         bin_mc = [item.mc_value for item in bins]
         self.assertTrue(all(item == 4.4 for item in bin_mc))
+
+        statuses = store.session.query(Status).all()
         store.session.remove()
         store.engine.dispose()
 

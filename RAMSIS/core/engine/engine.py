@@ -143,6 +143,13 @@ def forecast_for_seismicity(forecast_id, session):
             subqueryload(ForecastScenario.stages.of_type(
                 SeismicityForecastStage)).\
             subqueryload(SeismicityForecastStage.runs).\
+            subqueryload(SeismicityModelRun.forecaststage)).\
+        options(
+            # Load result attributes for model runs (these will be written to)
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                SeismicityForecastStage)).\
+            subqueryload(SeismicityForecastStage.runs).\
             subqueryload(SeismicityModelRun.result)).\
         filter(Forecast.id == forecast_id)
     forecast = forecast_query.one()
@@ -202,7 +209,6 @@ class ForecastFlow(QObject):
         self.system_time = system_time
 
     def run(self):
-        print("before flow in run")
         with Flow("Seismicity_Execution",
                   state_handlers=[self.forecast_handler.flow_state_handler]
                   ) as seismicity_flow:
@@ -236,7 +242,7 @@ class ForecastFlow(QObject):
             forecast_serialized_data = forecast_serializer(forecast)
             scenario_serializer = ScenarioSerializeData()
             scenario_serialized_data = scenario_serializer.map(scenarios)
-            # As prefect does not allow double nested mapping, have to flattten scenarios data and pass to eash model run executor task. This data should not be large in any case as the majority of the data is in forecast_serialized_data (all catalog and well data)
+            # As prefect does not allow double nested mapping, have to flatten scenarios data and pass to eash model run executor task. This data should not be large in any case as the majority of the data is in forecast_serialized_data (all catalog and well data)
             # Dispatch the model runs to remote workers
             #flatten_scenario_data = FlattenTask()
             #scenario_data_flattened = flatten_scenario_data(scenario_serialized_data)
@@ -265,7 +271,6 @@ class ForecastFlow(QObject):
             model_run_poller.map(unmapped(forecast),
                                  model_runs_dispatched)
     
-        print("after flow in run")
         # (sarsonl) To view DAG: seismicity_flow.visualize()
         #seismicity_flow.visualize()
 
@@ -285,7 +290,6 @@ class HazardFlow(QObject):
     def __init__(self, forecast, hazard_handler, data_dir):
         super().__init__()
         self.hazard_handler = hazard_handler
-        print('haz handler', hazard_handler)
         self.forecast = forecast
         self.data_dir = data_dir
 
@@ -364,6 +368,25 @@ class HazardFlow(QObject):
                                                 data_dir=self.data_dir
                                                 ),
                                 executor=executor)
+class SynchronousThread:
+    """
+    Class for managing db tasks which should be done synchronously
+    but in a thread in threadpool. Tasks which involve loading the forecast or project are required to finish before the next
+    one is started as the same object cannot be loaded by different
+    sessions in sqlalchemy.
+    """
+
+    def __init__(self):
+        self.thread_reserved = False
+
+    def reserve_thread(self):
+        self.thread_reserved = True
+
+    def release_thread(self):
+        self.thread_reserved = False
+
+    def is_reserved(self):
+        return self.thread_reserved
 
 class Engine(QObject):
     """
@@ -384,8 +407,7 @@ class Engine(QObject):
         self.busy = False
         self.core = core
         self.session = None
-        self.forecast_handler = ForecastHandler()
-        self.hazard_handler = HazardHandler()
+        #self.synchronous_thread = SynchronousThread()
 
     def run(self, t, forecast_id):
         """
@@ -398,7 +420,6 @@ class Engine(QObject):
         :param forecast: Forecast to execute
         :type forecast: ramsis.datamodel.forecast.Forecast
         """
-        print("called the engine")
         assert self.core.project
         if not self.session:
             self.session = self.core.store.session
@@ -409,24 +430,26 @@ class Engine(QObject):
             except KeyError:
                 data_dir = None
 
-        self.forecast_handler.session = self.session
-        self.hazard_handler.session = self.session
-        flow_runner = FlowRunner(forecast_id, self.session, data_dir,
-                                 self.forecast_handler, self.hazard_handler)
+        #self.forecast_handler.session = self.session
+        #self.hazard_handler.session = self.session
+        flow_runner = FlowRunner(forecast_id, self.session, data_dir)
+        #                         self.forecast_handler, self.hazard_handler)
         worker = Worker(flow_runner.run)
-        print("starting the worker")
         self.threadpool.start(worker)
 
 class FlowRunner:
-    def __init__(self, forecast_id, session, data_dir,
-                 forecast_handler, hazard_handler):
+    def __init__(self, forecast_id, session, data_dir):
+        self.threadpool = QThreadPool()
+        self.synchronous_thread = SynchronousThread()
         self.forecast_id = forecast_id
         self.session = session
         self.data_dir = data_dir
         self.system_time = datetime.now()
         self.logger = logging.getLogger()
-        self.forecast_handler = forecast_handler
-        self.hazard_handler = hazard_handler
+        self.forecast_handler = ForecastHandler(self.threadpool, self.synchronous_thread)
+        self.hazard_handler = HazardHandler(self.threadpool, self.synchronous_thread)
+        self.forecast_handler.session = self.session
+        self.hazard_handler.session = self.session
 
     def update_forecast_status(self, estatus):
         forecast = self.session.query(Forecast).filter(Forecast.id==self.forecast_id).first()
@@ -447,7 +470,6 @@ class FlowRunner:
 
     def seismicity_flow(self, forecast_input):
         seismicity_stage_states = self.stage_states(EStage.SEISMICITY)
-        print("before seismicity stage states", seismicity_stage_states)
         if any(state==EStatus.ERROR for state in seismicity_stage_states):
             self.update_forecast_status(EStatus.ERROR)
             raise ValueError("One or more seismicity stages has a state "
@@ -457,14 +479,19 @@ class FlowRunner:
                                      self.system_time,
                                      self.forecast_handler)
             forecast_flow.run()
+
+            forecast = self.session.query(Forecast).first()
+            plan_section = forecast.scenarios[0].well.sections[0]
+            topz = plan_section.topz_value
+            bottomz = plan_section.bottomz_value
+            self.session.remove()
+            done = self.threadpool.waitForDone()
             seismicity_stage_states = self.stage_states(EStage.SEISMICITY)
-            print("after seismicity flow, states:", seismicity_stage_states)
         return seismicity_stage_states
 
     def hazard_flow(self, seismicity_stage_states):
         forecast = forecast_for_hazard(self.forecast_id, self.session)
         hazard_stage_states = self.stage_states(EStage.HAZARD)
-        print("hazard stage states: ", hazard_stage_states)
         if any(state==EStatus.ERROR for state in seismicity_stage_states):
             self.update_forecast_status(EStatus.ERROR)
             raise ValueError("One or more seismicity stages has a state "
@@ -484,17 +511,12 @@ class FlowRunner:
         return hazard_stage_states
 
     def run(self, progress_callback):
-        print("running the flow handler")
         forecast_input = forecast_for_seismicity(self.forecast_id, self.session)
-        print("got the forecast_input")
         assert forecast_input.status.state != EStatus.COMPLETE
         self.update_forecast_status(EStatus.RUNNING)
-        print("updted the forecast status")
 
-        print("starting the seismicity flow assessment")
         seismicity_stage_states = self.seismicity_flow(forecast_input)
 
-        print("starting the hazard flow assessment")
         hazard_stage_states = self.hazard_flow(seismicity_stage_states)
         # Alter forecast status
         
@@ -502,10 +524,12 @@ class FlowRunner:
         for status_list in [seismicity_stage_states, hazard_stage_states]:
             stage_statuses.extend(status_list)
         
-        print("status list", stage_statuses)
+        forecast = self.session.query(Forecast).first()
+        plan_section = forecast.scenarios[0].well.sections[0]
+        topz = plan_section.topz_value
+        bottomz = plan_section.bottomz_value
+        self.session.remove()
         if all(status==EStatus.COMPLETE for status in stage_statuses):
-            print("marking forecast as complete")
             self.update_forecast_status(EStatus.COMPLETE)
         else:
-            print("marking forecast as error")
             self.update_forecast_status(EStatus.ERROR)

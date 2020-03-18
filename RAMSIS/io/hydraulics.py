@@ -12,6 +12,7 @@ from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
 
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
                                          HydraulicSample)
+from sqlalchemy import inspect
 from ramsis.datamodel.well import InjectionWell, WellSection
 from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
                              IOBase, _IOError, TransformationError, Positive,
@@ -325,19 +326,13 @@ class _WellSectionSchema(_SchemaBase):
             data = self._transform_load(data)
         return data
 
-    @pre_dump
-    def dump_preprocess(self, data, **kwargs):
-        if ('time' in self.context and
-            self.context['time'] in (self.EContext.PAST,
-                                     self.EContext.FUTURE)):
-            data = self._transform_dump(data)
-        return data
 
     @post_dump
     def dump_postprocess(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
                                      self.EContext.FUTURE)):
+            data = self._transform_dump(data)
             return self._nest_dict(self._clear_missing(data))
 
         if 'starttime' in data:
@@ -408,28 +403,58 @@ class _WellSectionSchema(_SchemaBase):
             raise TransformationError(f"{err}")
         return data
 
+    def _validate_transform(self, data):
+        errors = {}
+        for prefix in ['top', 'bottom']:
+            lon = data[f"{prefix}longitude_value"] 
+            lat = data[f"{prefix}latitude_value"] 
+            depth = data[f"{prefix}depth_value"] 
+            if lon > 180.0 or lon < -180.0:
+                errors[f"{prefix}longitude_value"] = [
+                    f'Hydraulic section {prefix}longitude is not within '
+                    f'boundaries {lon}']
+            if lat > 90.0 or lat < -90.0:
+                errors[f"{prefix}latitude_value"] = [
+                    f'Hydraulic section {prefix}latitude is not within '
+                    f'boundaries {lat}']
+            if depth < 0.0:
+                errors[f"{prefix}depth_value"] = [
+                    f'Hydraulic section {prefix}depth is not within '
+                    f'boundaries {depth}']
+        if errors:
+            raise ValidationError(errors)
+        return data
+
+
+
     def _transform_dump(self, data):
         """
         Transform coordinates from local to external coordinates.
         """
+        # sarsonl Although not nice, for speed it is good to do
+        # the transform after the data has been serialized. This is becuase
+        # if the data is stil an object, this interferes with the process
+        # of writing the snapshot to the db (which happens in parallel).
+        # It is not nice because although the data is called latitude/longitude/depth
+        # it is actually still x, y, z local coords which is confusing.
         transform_func = self.context['transform_func']
         if 'altitude_value' not in self.context.keys():
             raise ValidationError(
                 'Transformation of well coordinates cannot take place'
                 ' as altitude is not given')
         try:
-            (data.topx_value,
-             data.topy_value,
+            (data["toplongitude_value"],
+             data["toplatitude_value"],
              topdepth_value) = transform_func(
-                data.topx_value,
-                data.topy_value,
-                data.topz_value)
-            (data.bottomx_value,
-             data.bottomy_value,
+                data["toplongitude_value"],
+                data["toplatitude_value"],
+                data["topdepth_value"])
+            (data["bottomlongitude_value"],
+             data["bottomlatitude_value"],
              bottomdepth_value) = transform_func(
-                data.bottomx_value,
-                data.bottomy_value,
-                data.bottomz_value)
+                data["bottomlongitude_value"],
+                data["bottomlatitude_value"],
+                data["bottomdepth_value"])
 
         except (TypeError, ValueError, AttributeError) as err:
             raise TransformationError(f"{err}")
@@ -437,8 +462,9 @@ class _WellSectionSchema(_SchemaBase):
         altitude_value = self.context['altitude_value']
         topdepth_value = topdepth_value if topdepth_value else 0
         bottomdepth_value = bottomdepth_value if bottomdepth_value else 0
-        data.topz_value = altitude_value + topdepth_value
-        data.bottomz_value = altitude_value + bottomdepth_value
+        data["topdepth_value"] = altitude_value + topdepth_value
+        data["bottomdepth_value"] = altitude_value + bottomdepth_value
+
         return data
 
 
