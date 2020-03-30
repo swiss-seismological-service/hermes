@@ -20,11 +20,13 @@ compatible with some of the libraries we use.
 
 RT-RAMSIS is a controller for real-time (or playback) time dependent seismicity,
 seismic hazard, and risk assessment. 
+
 As data input, it expects seismic information available in QuakeML from an 
 fdsnws/event standard web service, and (for induced seismicity), borehole, and 
 borehole operation (flow & pressure measurements) from a HYDWS web service.
 Internally, it is organized in projects.
-expects an updated earthquake catalog available
+
+
 
 ## Installation (for developers)
 
