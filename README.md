@@ -65,6 +65,32 @@ technology.
 ![RAMSIS block model](RT-RAMSIS-geothermica.png "RAMSIS block model")
 
 
+### Input of seismic data
+Seismic data is expected to be provided in QuakeML format from an FDSN/event web 
+service, specified at http://www.fdsn.org/webservices/fdsnws-event-1.2.pdf .
+The typical way to provide this service may be to populate a SeisComP3 
+compatible database and run the SeisComP3 fdsnws module on top of it: 
+https://docs.gempa.de/seiscomp3/current/apps/fdsnws.html
+
+The location and boundary parameters of the FDSN/event web service are a RAMSIS
+project configuration
+
+### Input of hydraulic data data
+Hydraulic data is expected in json format from a HYDWS web service. SED provides
+HYDWS as a ready-to-use freeware software package at 
+https://gitlab.seismo.ethz.ch/sed-infra/hydws , alongside with documentation. 
+HYDWS uses (and installs) a postgres database for hydraulic data. Auxiliary 
+Software to insert hydraulic data from project-specific measurement gear into
+the database needs to be implemented specifically for each service setup.
+
+Note: HYDWS supports multiple boreholes, borehole sections, and meadurement
+parameters. Individual seismicity models may need, or support only a subset of 
+of those. It is checked at runtime whether a seismicity model can handle the
+hydraulic data it is provided with, and whether it is sufficient to parametrize
+the model
+
+The location and boundary parameters of the HYDWS web service are a RAMSIS
+project configuration
 
 ## Installation (for developers)
 
