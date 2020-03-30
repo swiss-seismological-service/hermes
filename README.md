@@ -18,13 +18,51 @@ compatible with some of the libraries we use.
 
 ## System design and components
 
+### Summary of the RAMSIS workflow
+
 RT-RAMSIS is a controller for real-time (or playback) time dependent seismicity,
 seismic hazard, and risk assessment. 
 
 As data input, it expects seismic information available in QuakeML from an 
 fdsnws/event standard web service, and (for induced seismicity), borehole, and 
 borehole operation (flow & pressure measurements) from a HYDWS web service.
+
 Internally, it is organized in projects.
+For each project, a series of scenarios can be defined. A scenario is defined, 
+*  in its seismicity stage, it is defined by a series of forecast models with 
+respective configuration, and "injection plan" (planned future hydraulic data)
+* in its hazard stage, by an Openquake logic tree model containing the 
+seismicity models as branches, and providing the possibility to weight them
+* in its risk stage, [...pending]
+
+Scenarios have execution times, and timespans for which a/b values (seismicity 
+stages), hazard curves and maps (hazard), and (risk) are calculated. 
+
+Each seismicity model of a scenario is configured for a volume, or a set of 
+subvolumes, for which it is executed.
+
+All these configurations and settings are done in a QT-based GUI local to the 
+machine running the RAMSIS core.
+
+RAMSIS constantly checks the available configuration, and if current (or 
+modelled) time matches a scenario execution time, it
+1.  Invokes all due seismicity models via a web service interface, providing 
+them with model configuration, definition of the target volumes, full seismic
+and hydraulic history, and injection plan
+2. the models return a and b values for each volume and requested time interval.
+3. RAMSIS uses these results to parametrize the source models of an OpenQuake
+hazard calculation, and invokes this using the OpenQuake web service API
+4. After completion of the hazard calculations, RAMSIS fetches the results
+and stores hazard maps & curves to a database
+5. [risk computation, pending]
+6. [threshold analysis and alarming, pending]
+
+All calculation configurations, as well as calculation results are (will be) 
+browsable in a web-based read-only GUI, based on OpenCMS & SED Flexitable 
+technology.
+
+
+![RAMSIS block model](RT-RAMSIS-geothermica.png "RAMSIS block model")
 
 
 
