@@ -156,7 +156,7 @@ RT-RAMSIS's database directly in read-only mode. The WEB GUI will be prepared
 as a virtual machine, however it is not ready yet.
 
 
-## Installation (for developers)
+# Installation of the RT-RAMSIS core (for developers)
 
 Make sure the dependencies
 
