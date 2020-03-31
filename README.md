@@ -116,7 +116,44 @@ model workers are packaged as "utilities"
 here: https://gitlab.seismo.ethz.ch/indu/ramsis.utils
 
 ### The seismicity forecast models
-Seismicity forecast models return past seismicity catal
+Seismicity forecast models receive past seismicity catalogs and (in case of 
+induced seismicity) hydraulic history, and hydraulic plans, over a web service 
+interface. To foster the integration of seismicity forecast models, the web 
+service interface of seismicity forecast model is offered as an independent
+package: https://gitlab.seismo.ethz.ch/indu/ramsis.sfm.worker ("seismicity 
+forecast model worker"). It implements the web service interface and job 
+handling. 
+
+
+Models available are:
+* HM1: https://gitlab.seismo.ethz.ch/indu/hm1_model
+* EM1: https://gitlab.seismo.ethz.ch/indu/ramsis.sfm.em1
+
+Seismicity forecast models are typically provided by scientists, have 
+dependencies on many software packages and OSs, and variable incocation 
+interfaces. An overview of the models identified and tentatively planned for
+integration is at https://wiki.seismo.ethz.ch/doku.php?id=pro:sc_proj:coseismiq
+. Further models (for time-dependent non-induced risk) shall be nominated by 
+the RISE project.
+
+So, in order to get a model operational, you need an adapter between the web 
+service provider and the model.
+* in case of HM1, this adapter is 
+https://gitlab.seismo.ethz.ch/indu/ramsis.sfm.hm1 (work in progress)
+* (in case of EM1, which is fully operational, the model was re-implemented
+within the customization of the adapter in 
+https://gitlab.seismo.ethz.ch/indu/ramsis.sfm.em1)
+
+### Hazard calculator
+RT-RAMSIS uses OpenQuake as hazard calculation, (available from here:
+https://github.com/gem/oq-engine/) , which involves a REST server API: 
+https://github.com/gem/oq-engine/blob/master/doc/web-api.md . RT-RAMSIS core 
+just needs to be configured with the URL of the OpenQuake installation.
+
+### The WEB GUI
+The Web GUI is planned as an OpenCMS/Flexitable application directly accessing
+RT-RAMSIS's database directly in read-only mode. The WEB GUI will be prepared 
+as a virtual machine, however it is not ready yet.
 
 
 ## Installation (for developers)
