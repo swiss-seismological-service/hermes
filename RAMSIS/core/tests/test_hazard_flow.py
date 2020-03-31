@@ -26,6 +26,9 @@ logging https://github.com/pytest-dev/pytest/issues/5502
 where the buffer for pytest is closed before the core loggers and this
 leads to errors.
 """
+from copy import copy
+from io import BufferedReader
+import zipfile
 import unittest
 from unittest import mock
 import time
@@ -71,14 +74,14 @@ LOGIC_TREE_TEMPLATE = os.path.join(dirpath,
                                    'hazard_templates',
                                    'logic_tree_template.xml')
 GMPE_TEMPLATE = os.path.join(dirpath,
-                                   'hazard_templates',
-                                   'gmpe_file.xml')
+                             'hazard_templates',
+                             'gmpe_file.xml')
 JOB_CONFIG_TEMPLATE = os.path.join(dirpath,
                                    'hazard_templates',
                                    'job.ini')
 SOURCE_MODEL_TEMPLATE = os.path.join(dirpath,
-                                   'hazard_templates',
-                                   'single_reservoir_seismicity_template.xml')
+                                     'hazard_templates',
+                                     'single_reservoir_seismicity_template.xml')
 
 RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m "
                "+x_0=0.0 +y_0=0.0 +no_defs")
@@ -93,6 +96,13 @@ PATHS_HYDRAULICS = [
     'hyd_data/hyd-arnaud-alt.json']
 
 PATH_INJECTION_PLAN = 'injection_data/injectionplan-mignan.json'
+
+POST_RESPONSE = 'oq_responses/post_response1'
+XML_RESULTS_BINARY1 = 'oq_responses/xml_result_zip1'
+XML_RESULTS_BINARY2 = 'oq_responses/xml_result_zip2'
+RESPONSE_LIST_BINARY = 'oq_responses/response_result_list1'
+RESPONSE_STATUS_BINARY = 'oq_responses/response_result_status1'
+
 
 PROJECT_STARTTIME = datetime(2006, 12, 2)
 PROJECT_ENDTIME = None
@@ -109,8 +119,10 @@ Y_MAX = 2000
 Z_MIN = -4000
 Z_MAX = 0
 
-JSON_POSTED_DATA1 = 'results_data/json_posted_data1.json'
-JSON_POSTED_DATA2 = 'results_data/json_posted_data2.json'
+POSTED_DATA = "call('http://localhost:8800/v1/calc/run', files=[('job.ini', ('job.ini', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/job.ini'>, 'text/ini')), ('logictree.xml', ('logictree.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/logictree.xml'>, 'text/xml')), ('gmpe_logictree.xml', ('gmpe_logictree.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/gmpe_logictree.xml'>, 'text/xml')), ('input_model_1', ('EM1-Day-Training-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/EM1-Day-Training-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml'>, 'text/xml')), ('input_model_2', ('EM1-Hour-Moving-Window-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/EM1-Hour-Moving-Window-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml'>, 'text/xml'))], timeout=None)"
+'results_data/json_posted_data1.json'
+
+GEOPOINTS = 'results_data/hazard_geopoints.txt'
 
 JSON_GET_TEMPLATE = {
     "data": {
@@ -210,9 +222,15 @@ JSON_POST_TEMPLATE = {
     }}
 
 
-def create_json_response(task_id, response_template, **kwargs):
-    resp = response_template.copy()
-    resp['data']['id'] = task_id
+def create_xml_response(filename, **kwargs):
+    return os.path.join(dirpath, filename)
+#    with open(os.path.join(dirpath, filename), 'rb') as open_resp:
+#        resp = zipfile.ZipFile(open_resp)
+#    return resp
+
+def create_json_response(filename, **kwargs):
+    with open(os.path.join(dirpath, filename), 'rb')as open_resp:
+        resp = BufferedReader(open_resp).read()
     return resp
 
 
@@ -301,9 +319,6 @@ def insert_test_data(db_url):
 
     store.add(hazard_model)
     store.save()
-    print('hazard model: ', hazard_model)
-    print("seis", store.load_models(model_type=EModel.SEISMICITY))
-    print("haz", store.load_models(model_type=EModel.HAZARD))
 
     # FIXME(damb): The project and deserializers are configured without any
     # srid. As a consequence, no transformation is performed when importing
@@ -330,27 +345,6 @@ def insert_test_data(db_url):
 
         with open(os.path.join(dirpath, fpath), 'rb') as ifd:
             well = deserializer.load(ifd)
-    ## import seismic catalog
-    #deserializer = QuakeMLCatalogDeserializer(
-    #    ramsis_proj=RAMSIS_PROJ,
-    #    external_proj=WGS84_PROJ,
-    #    ref_easting=REFERENCE_X,
-    #    ref_northing=REFERENCE_Y,
-    #    transform_func_name='pyproj_transform_to_local_coords')
-    #with open(os.path.join(dirpath, PATH_SEISMICS), 'rb') as ifd:
-    #    cat = deserializer.load(ifd)
-
-    ## import hydraulics
-    #deserializer = HYDWSBoreholeHydraulicsDeserializer(
-    #    ramsis_proj=RAMSIS_PROJ,
-    #    external_proj=WGS84_PROJ,
-    #    ref_easting=REFERENCE_X,
-    #    ref_northing=REFERENCE_Y,
-    #    transform_func_name='pyproj_transform_to_local_coords')
-    #for fpath in PATHS_HYDRAULICS:
-
-    #    with open(os.path.join(dirpath, fpath), 'rb') as ifd:
-    #        well = deserializer.load(ifd)
 
     # create project
     project = default_project(
@@ -383,7 +377,6 @@ def insert_test_data(db_url):
     risk_stage.enabled = False
     hazard_stage = scenario[EStage.HAZARD]
     hazard_stage.enabled = True
-    print("is hazard stage in session? ", hazard_stage in store.session())
     scenario.reservoirgeom = RESERVOIR_INPUT
 
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
@@ -410,9 +403,7 @@ def insert_test_data(db_url):
 
     store.save()
     runs = scenario[EStage.SEISMICITY].runs
-    print("length of runs:", runs)
     for index, seis_run in enumerate(runs):
-        print("entering results for run: ", seis_run)
         seis_run.runid = runids[index]
         samples = create_seismicity_samples(
             datetimes, a_values, b_values, mc_values)
@@ -430,7 +421,6 @@ def insert_test_data(db_url):
             store.add(sample)
     
     try:
-        print("saving in store")
         store.save()
     except Exception:
         store.session.rollback()
@@ -439,57 +429,82 @@ def insert_test_data(db_url):
         store.session.remove()
         store.engine.dispose()
 
-
 class MockResponse:
-    def __init__(self, json_data, status_code):
-        self.json_data = json_data
-        self.status_code = status_code
+    def __init__(self, status, resp):
+        self.status = status
+        self.resp = resp
+        self.content = self.json()
+
+    def raise_for_status(self):
+        pass
+
+
+    def json(self):
+        resp = self.resp
+        if isinstance(self.resp, bytes):
+            resp = json.loads(copy(self.resp).decode())
+        return resp
+
+class MockPostResponse:
+    def __init__(self, status, resp):
+        self.status = status
+        self.resp = resp
 
     def raise_for_status(self):
         pass
 
     def json(self):
-        return self.json_data
+        resp =  json.loads(copy(self.resp).decode())
+        return resp
 
+RESULT_LIST_RESPONSE = [{"id": 44, "name": "Full Report", "type": "fullreport", "outtypes": ["rst"], "url": "http://127.0.0.1:8800/v1/calc/result/44", "size_mb": None}, {"id": 45, "name": "Hazard Curves", "type": "hcurves", "outtypes": ["csv", "xml", "npz"], "url": "http://127.0.0.1:8800/v1/calc/result/45", "size_mb": None}] # noqa
+
+
+class MockListResponse:
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return RESULT_LIST_RESPONSE
 
 def mocked_requests_post(*args, **kwargs):
-    print('args', args, 'kwargs', kwargs)
-    if args[0] == 'http://localhost:5000/v1/calc/run':
-        print("########### correct post")
-        return MockResponse(
-                200)
-
-    return MockResponse(None, 404)
+    if args[0] == 'http://localhost:8800/v1/calc/run':
+        with open(os.path.join(dirpath, POST_RESPONSE), 'rb') as open_resp:
+            resp = BufferedReader(open_resp).read()
+            return MockPostResponse(200, resp)
+    return MockResponse(404, None) # alter, this is not actual response
 
 
 def mocked_requests_get(*args, **kwargs):
 
-    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
-        return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-                                 JSON_GET_TEMPLATE), 200)
-    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
-        return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-                                 JSON_GET_TEMPLATE), 200)
-    return MockResponse(None, 404)
+    if args[0] == "http://localhost:8800/v1/calc/result/1031":
+        return MockResponse(200,
+            create_xml_response(XML_RESULTS_BINARY1))
+    if args[0] == "http://localhost:8800/v1/calc/result/1033":
+        return MockResponse(200,
+            create_xml_response(XML_RESULTS_BINARY2))
+    elif args[0] == "http://localhost:8800/v1/calc/10/results":
+        return MockResponse(200,
+            create_json_response(RESPONSE_LIST_BINARY))
+    elif args[0] == "http://localhost:8800/v1/calc/10/status":
+        return MockResponse(200,
+            create_json_response(RESPONSE_STATUS_BINARY))
+    return MockResponse(404, None)
 
 
-def mocked_requests_get_error(*args, **kwargs):
-
-    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
-        return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
-    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
-        return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
-    return MockResponse(None, 404)
+#def mocked_requests_get_error(*args, **kwargs):
+#
+#    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
+#            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
+#        return MockResponse(
+#            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
+#                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
+#    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
+#            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
+#        return MockResponse(
+#            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
+#                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
+#    return MockResponse(404, None)
 
 
 def mocked_pyqtsignal(*args, **kwargs):
@@ -503,6 +518,14 @@ class MockSignal():
 
 def signal_factory():
     return MockSignal()
+
+def zipfile_archive(arg):
+    with open(arg, 'rb') as open_resp:
+        resp = zipfile.ZipFile(open_resp)
+        infolist = resp.infolist()
+        for zipinfo_obj in infolist:
+            obj_filename = zipinfo_obj.filename
+            yield resp.read(obj_filename).decode()
 
 
 class IntegrationTestCase(unittest.TestCase):
@@ -524,7 +547,6 @@ class IntegrationTestCase(unittest.TestCase):
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
     def setUpSingleGeom(self):
-        print("setUp")
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -559,7 +581,6 @@ class IntegrationTestCase(unittest.TestCase):
     def tearDown(self):
         # Login with default credentials and create a new
         # testing database
-        print("tearDown")
         conn0 = psycopg2.connect(
             port=self.DEFAULT_PORT, user=self.DEFAULT_USER,
             host=self.DEFAULT_HOST, password=self.DEFAULT_PASSWORD,
@@ -579,7 +600,6 @@ class IntegrationTestCase(unittest.TestCase):
 
     def connect_ramsis(self):
         app = mock.Mock(app_settings= {'data_dir': self.TMP_DIR})
-        print("trying with mock:", app, app.app_settings)
         controller = Controller(app, LaunchMode.LAB, )
         controller.connect(self.postgres_test_url())
 
@@ -589,19 +609,23 @@ class IntegrationTestCase(unittest.TestCase):
     
     @mock.patch('RAMSIS.core.engine.engine.HazardHandler.'
                 'execution_status_update', side_effect=signal_factory)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
                 side_effect=mocked_requests_get)
-    #@mock.patch('RAMSIS.core.worker.sfm.requests.post',
-    #            side_effect=mocked_requests_post)
-    def test_successful_hazard_flow(self, #mock_post,
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
+                side_effect=mocked_requests_post)
+    @mock.patch('RAMSIS.io.oq_hazard.'
+                'OQHazardOMessageDeserializer._read_ziparchive',
+                side_effect=zipfile_archive)
+    def test_successful_hazard_flow(self,
+                                    mock_ziparchive,
+                                    mock_post,
                                     mock_get,
-                                        mock_signal):
+                                    mock_signal):
         """
         Test the flow with only the seismicity & hazard stage enabled
         and seismicity stage complete.
         """
         self.setUpSingleGeom()
-        print("successfulHazardFlow")
         self.maxDiff = None
         controller, store = self.connect_ramsis()
         forecast = store.session.query(Forecast).first()
@@ -631,18 +655,17 @@ class IntegrationTestCase(unittest.TestCase):
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # Allow main thread to wait until other threads triggered by
         # workflow complete for 200 seconds maximum
-        for i in range(5):
+        for i in range(50):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
             self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
-            time.sleep(2)
+            time.sleep(4)
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        print('signal list', signal_list)
         self.assertEqual(len(signal_list), 4)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
@@ -650,25 +673,16 @@ class IntegrationTestCase(unittest.TestCase):
             self.assertTrue(prefect_status.is_successful())
 
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            self.assertEqual(parent_type, type(HazardModelRun()))
 
         # Check data send to remote worker
-        posted_data = mock_post.call_args_list[0][1]['data']
-        posted_data2 = mock_post.call_args_list[1][1]['data']
+        posted_data = mock_post.call_args_list[0][1]
+        posted_data2 = mock_post.call_args_list[1][1]
 
-        with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'r') as json_d:
-            json_data = json.load(json_d)
-        with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'r') as json_d:
-            json_data2 = json.load(json_d)
-        # As we are not sure which order the models are processed,
-        # we cannot be sure which status is produced first
-        if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
-                ["em1_training_epoch_duration"] == 86400):
-            self.assertEqual(posted_data, json_data)
-            self.assertEqual(posted_data2, json_data2)
-        else:
-            self.assertEqual(posted_data, json_data2)
-            self.assertEqual(posted_data2, json_data)
+        self.assertEqual(len(
+            posted_data['files']), 5)
+        self.assertEqual(len(
+            posted_data2['files']), 5)
 
         # Check that forecast, scenario and model runs all have completed
         non_stage_statuses = store.session.query(Status).\
@@ -678,52 +692,33 @@ class IntegrationTestCase(unittest.TestCase):
                  for s in non_stage_statuses]))
         # Check that the seismicity stage has completed.
         forecast = store.session.query(Forecast).first()
-        stage = forecast.scenarios[0][EStage.SEISMICITY]
+        stage = forecast.scenarios[0][EStage.HAZARD]
         self.assertEqual(stage.status.state, EStatus.COMPLETE)
 
         # Check number of samples produced in total
-        results = [run.result for run in stage.runs]
-        self.assertEqual(len(results), 2)
-        bins_nested = [res.samples for res in results]
-        bins = [item for sublist in bins_nested for item in sublist]
-        self.assertEqual(len(bins), 6)
-        # Check the content of the results
-        self.assertEqual(results[0].x_min, X_MIN)
-        self.assertEqual(results[0].x_max, X_MAX)
-        self.assertEqual(results[0].y_min, Y_MIN)
-        self.assertEqual(results[0].y_max, Y_MAX)
-        self.assertEqual(results[0].z_min, Z_MIN)
-        self.assertEqual(results[0].z_max, Z_MAX)
+        pointvalues_list = [run.hazardpointvalues for run in stage.runs]
+        pointvalues = [value for sublist in pointvalues_list for value
+                       in sublist]
+        self.assertEqual(len(pointvalues), 544)
+        curves_list = [run.hazardcurves for run in stage.runs]
+        curves = [value for sublist in curves_list for value in sublist]
+        self.assertEqual(len(curves), 68)
 
-        bin_starttimes = [item.starttime for item in bins]
-        self.assertEqual(sorted(bin_starttimes), [
-            datetime(2015, 5, 7),
-            datetime(2015, 5, 7),
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 8),
-            datetime(2015, 5, 7, 8)])
+        geopoints = [(point.geopoint.lat, point.geopoint.lon)
+                     for point in pointvalues]
+        # rewrite geopoints file in case results are altered
+        #with open(os.path.join(dirpath, GEOPOINTS), 'w') as geopoints_read: # noqa
+        #    for tup in geopoints:
+        #        lat, lon = tup
+        #        geopoints_read.write(f"{lat} {lon}\n")
+        with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
+            geopoint_lines = geopoints_read.readlines()
+        geopoints_stored = []
+        for line in geopoint_lines:
+            lat_str, lon_str = line.split()
+            geopoints_stored.append((float(lat_str), float(lon_str)))
 
-        bin_endtimes = [item.endtime for item in bins]
-        self.assertEqual(sorted(bin_endtimes), [
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 8),
-            datetime(2015, 5, 7, 8),
-            datetime(2015, 5, 7, 12),
-            datetime(2015, 5, 7, 12)])
-
-        bin_events = [item.numberevents_value for item in bins]
-        self.assertEqual(sorted(bin_events), sorted([
-            1.8, 1.8, 2.1, 2.1, 2.4, 2.4]))
-        bin_a = [item.a_value for item in bins]
-        self.assertTrue(all(item == 14.2516247073 for item in bin_a))
-
-        bin_b = [item.b_value for item in bins]
-        self.assertTrue(all(item == 4.342944819 for item in bin_b))
-
-        bin_mc = [item.mc_value for item in bins]
-        self.assertTrue(all(item == 4.4 for item in bin_mc))
+        self.assertEqual(geopoints, geopoints_stored)
         store.session.remove()
         store.engine.dispose()
 

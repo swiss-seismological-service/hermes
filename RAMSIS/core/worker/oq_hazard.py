@@ -2,6 +2,7 @@
 """
 Openquake worker facilities
 """
+import random
 from os.path import basename, dirname, join
 import enum
 import functools
@@ -69,7 +70,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
     """
     API_VERSION = 'v1'
     PATH_CALC_RUN = '/calc/run'
-    PATH_QUERY_RUN = '/calc/{}'
+    PATH_QUERY_STATUS = '/calc/{}/status'
     PATH_RESULTS_RUN = '/calc/{}/results'
 
     MIMETYPE = 'application/json'
@@ -107,7 +108,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             self._resp = resp
 
         @classmethod
-        def from_requests(cls, resp, deserializer=None):
+        def from_requests(cls, resp, deserializer=None, resp_format='json', **kwargs):
             """
             :param resp: SFM worker responses.
             :type resp: list of :py:class:`requests.Response or
@@ -120,38 +121,33 @@ class OQHazardWorkerHandle(WorkerHandleBase):
                 """
                 Return a JSON encoded query result.
                 """
+                print("in from_requests _json", resp)
                 if not resp:
                     return []
 
                 try:
+                    print("before r json", resp)
                     resp_json = [r.json() for r in resp]
+                    print('resp_json: ', resp_json)
                 except ValueError as err:
                     raise OQHazardWorkerHandle.DecodingError(err)
 
                 return resp_json
 
-            def demux_data(resp):
-                """
-                Demultiplex the responses' primary data. :code:`errors` and
-                :code:`meta` are ignored.
-                """
-                retval = []
-                for r in resp:
-                    if KEY_DATA in r:
-                        if isinstance(r[KEY_DATA], list):
-                            for d in r[KEY_DATA]:
-                                retval.append({KEY_DATA: d})
-                        else:
-                            retval.append({KEY_DATA: r[KEY_DATA]})
-
-                return retval
-
             if not isinstance(resp, list):
                 resp = [resp]
+            ikwargs = {}
+            if kwargs.get('output_type'):
+                ikwargs['output_type'] = kwargs.get('output_type')
+                print("adding output type to kwargs", ikwargs)
 
-            if deserializer is None:
-                return cls(demux_data(_json(resp)))
-            return cls(deserializer._loado(demux_data(_json(resp))))
+            if resp_format == 'json':
+                if deserializer is None:
+                    return cls(_json(resp))
+                return cls(deserializer._loado(_json(resp, **ikwargs)))
+            if resp_format == 'xml':
+                resp_cls = cls(deserializer._loado(resp, **ikwargs))
+                return resp_cls
 
         def filter_by(self, **kwargs):
             """
@@ -253,7 +249,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
     def model(self):
         return self.model_id
 
-    def query(self, task_ids):
+    def query(self, task_id):
         """
         Query the result for worker's tasks.
 
@@ -261,10 +257,10 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             an empty list is passed all results are requested.
         :type task_ids: list or :py:class:`uuid.UUID`
         """
-        query_url = '{self.PATH_QUERY_RUN}'.format(t)
+        query_url = f'{self.PATH_QUERY_STATUS}'.format(task_id)
         url = f'{self.url}{query_url}'
         self.logger.debug(
-            f'Requesting result OQ hazard(url={url}, task_id={t}).')
+            f'Requesting result OQ hazard(url={url}, task_id={task_id}).')
 
         req = functools.partial(
             requests.get, url, timeout=self._timeout)
@@ -272,11 +268,16 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         response = self._handle_exceptions(req)
 
         self.logger.debug(
-            'Task result OQ hazard(task_id={t}): {response}')
+            'Task result OQ hazard(task_id={task_id}): {response}')
+        #randi = random.randint(0, 200)
+        #with open('/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/xml_FILES/xml_result_status{}'.format(randi), 'wb') as f1:
+        #    f1.write(bytes(response.content))
+        #    print("resp cls randint", randi)
 
-        return response
+        return self.QueryResult.from_requests(
+            response)
 
-    def query_results(self, task_ids, deserializer=None):
+    def query_results(self, task_id, deserializer=None):
         """
         Query the result for worker's tasks.
 
@@ -289,10 +290,10 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             values.
         :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
         """
-        query_url = '{self.PATH_RESULTS_RUN}'.format(t)
+        query_url = f'{self.PATH_RESULTS_RUN}'.format(task_id)
         url = f'{self.url}{query_url}'
         self.logger.debug(
-            f'Requesting result OQ hazard(url={url}, task_id={t}).')
+            f'Requesting result OQ hazard(url={url}, task_id={task_id}).')
 
         req = functools.partial(
             requests.get, url, timeout=self._timeout)
@@ -300,11 +301,39 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         response = self._handle_exceptions(req)
 
         self.logger.debug(
-            'Task result OQ hazard(task_id={t}): {response}')
+            'Task result OQ hazard(task_id={task_id}): {response}')
 
         return self.QueryResult.from_requests(
             response, deserializer=deserializer)
 
+    def query_result_file(self, result_dict, deserializer=None):
+        """
+        Query the result for worker's tasks.
+
+        :param task_ids: List of task identifiers (:py:class:`uuid.UUID`). If
+            an empty list is passed all results are requested.
+        :type task_ids: list or :py:class:`uuid.UUID`
+        :param deserializer: Deserializer instance to be used for data
+            deserialization.  If :code:`None` no deserialization is performed
+            at all. The deserializer must be configured to deserialize *many*
+            values.
+        :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+        """
+        url = result_dict['url']
+        htype = result_dict['type']
+        self.logger.debug(
+            f'Requesting result file for OQ hazard (url={url}, type={htype}).')
+
+        req = functools.partial(
+                requests.get, url, params={'export_type': 'xml'}, timeout=self._timeout)
+
+        response = self._handle_exceptions(req)
+
+        self.logger.debug(
+            'Task result OQ hazard (url={url}): {response}')
+        return self.QueryResult.from_requests(
+            response, deserializer=deserializer,
+            resp_format='xml', output_type=htype)
 
     def compute(self, job_config_filename, logic_tree_filename, gmpe_logic_tree_filename, model_source_filenames, oq_input_dir, **kwargs):
         """
@@ -340,9 +369,11 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             requests.post, url_post, files=oq_input_files,
             timeout=self._timeout)
         response = self._handle_exceptions(req)
-
+        #with open("/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/xml_FILES/post_response{}".format(random.randint(1, 300)), 'wb') as open_f:
+        #3    open_f.write(response.content)
         try:
             result = response.json()
+            print("in compute", result, response)
         except ValueError as err:
             raise self.DecodingError(err)
 
@@ -405,7 +436,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
                 raise self.HTTPError(self.url, err)
         except requests.exceptions.ConnectionError as err:
             raise self.ConnectionError(self.url, err)
-        except requests.exceptions.RequestsError as err:
+        except requests.exceptions.RequestException as err:
             raise self.RemoteWorkerError(err)
 
         return resp

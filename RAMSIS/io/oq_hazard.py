@@ -2,19 +2,16 @@
 """
 Utilities for SFM-Worker data import/export.
 """
-
-import base64
-from marshmallow import (Schema, fields, pre_dump, post_dump, pre_load,
+import xmltodict
+import zipfile
+from io import BytesIO
+from marshmallow import (Schema, fields, pre_load,
                          post_load, EXCLUDE)
 from osgeo import gdal
 
-from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
-                                         SeismicityPredictionBin)
-from RAMSIS.io.seismics import QuakeMLCatalogSerializer
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
-from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
-                             _IOError, DateTime, TransformationError,
-                             Percentage, Uncertainty, append_ms_zeroes)
+from ramsis.datamodel.hazard import HazardPointValue, HazardCurve, GeoPoint
+from RAMSIS.io.utils import (DeserializerBase, IOBase,
+                             _IOError)
 
 gdal.UseExceptions()
 
@@ -53,132 +50,130 @@ class _SchemaBase(Schema):
 
         return retval
 
-#from openquake.baselib.node import node_from_xml, read_nodes
-from marshmallow import Schema, fields, pre_load, EXCLUDE
-from ramsis.datamodel.hazard import HazardPointValue, HazardCurve, GeoPoint
-import xmltodict
 
 class BaseSchema(Schema):
     class Meta:
-        unknown=EXCLUDE
+        unknown = EXCLUDE
+
 
 class ComboRenderer:
     @staticmethod
     def loads(s, *args, **kwargs):
-        data = xmltodict.parse(s.read(), force_list=True)
+        data = xmltodict.parse(s, force_list=True)
         return data
+
 
 class HazardPointValueSchema(BaseSchema):
     poe = fields.Float(data_key='poE')
     groundmotion = fields.Float(data_key='iml')
+
     @pre_load
     def preload(self, data, **kwargs):
+        self.context['geopoint'] = data['geopoint']
         return data
 
-class GMLPointSchema(BaseSchema):
-    lat = fields.Float()
-    lon = fields.Float()
-    @pre_load
-    def translate_points(self, data, **kwargs):
-        # convert to local coords
-        print("gml data", data)
-        lat, lon = (float(loc) for loc in data["gml:pos"][0].split(" "))
-        return {"lat": lat, "lon": lon}
+    @post_load
+    def postload(self, data, **kwargs):
+        data['hazardintensitytype'] = self.context['IMT']
+        point_value = HazardPointValue(**data)
+        point_value.geopoint = self.context['geopoint']
+        return point_value
+
 
 class HazardCurveSchema(BaseSchema):
-    gml_point = fields.Nested(GMLPointSchema, data_key='gml:Point', many=True)
     samples = fields.Nested(HazardPointValueSchema, data_key='poEs', many=True)
+
     @pre_load
     def alter_fields(self, data, **kwargs):
-        poes_dict = [dict([('poE', float(poe))]) for poe in data['poEs'][0].split(' ')]
+        """
+        Before a hazard curve  is deserialized, move the location
+        and intensity measure level into the data at the hazard point
+        value level so that the object created is populated with this data.
+        """
+        session = self.context.get('session')
+        lat, lon = (float(loc) for loc in data['gml:Point'][0]["gml:pos"][0].
+                    split(" "))
+        geopoint = session.query(GeoPoint).filter(
+            GeoPoint.lat == lat,
+            GeoPoint.lon == lon).\
+            one_or_none()
+
+        use_geopoint = geopoint if geopoint else GeoPoint(
+            lat=lat, lon=lon)
+
+        del data['gml:Point']
+        poes_dict = [dict([('poE', float(poe))]) for poe in
+                     data['poEs'][0].split(' ')]
         imls = self.context["IMLs"][0].split(' ')
+
         for poe_dict, iml in zip(poes_dict, imls):
             poe_dict['iml'] = iml
+            poe_dict['geopoint'] = use_geopoint
         data['poEs'] = poes_dict
         return data
-    #@post_load
-    #def make_object(self, data, **kwargs):
-    #    return HazardCurve(**data)
-        
+
+    @post_load
+    def make_object(self, data, **kwargs):
+        return HazardCurve(**data)
+
 
 class HazardCurvesSchema(BaseSchema):
-    hazardcurve = fields.Nested(HazardCurveSchema, data_key='hazardCurve', many=True)
+    hazardcurve = fields.Nested(HazardCurveSchema, data_key='hazardCurve',
+                                many=True)
+
     @pre_load
     def preload(self, data, **kwargs):
-        iml = data["IMLs"]
-        self.context["IMLs"] = iml
+        print("haz curve keys", data["@IMT"])
+        self.context["IMLs"] = data["IMLs"]
+        self.context["IMT"] = data["@IMT"]
+        return data
+
+    @post_load
+    def postload(self, data, **kwargs):
+        print("length of hazard curves", len(data['hazardcurve']))
         return data
 
 
 class NRMLSchema(BaseSchema):
-    hazardcurves = fields.Nested(HazardCurvesSchema, data_key='hazardCurves', many=True)
+    hazardcurves = fields.Nested(HazardCurvesSchema, data_key='hazardCurves',
+                                 many=True)
+
+    @pre_load
+    def preload(self, data, **kwargs):
+        print("nrml keys", data.keys())
+        return data
+
 
 class HazardXMLSchema(BaseSchema):
     class Meta:
         render_module = ComboRenderer
-        unknown=EXCLUDE
+        unknown = EXCLUDE
     nrml = fields.Nested(NRMLSchema, many=True)
 
     @pre_load
     def preload(self, data, **kwargs):
-        print(data)
         return data
-
-def get_geopoint(gml_point):
-    geopoint = session.query(GeoPoint).filter(
-        GeoPoint.lat == gml_point['lat'],
-        GeoPoint.lon == gml_point['lon']).\
-        one_or_none()
-    return geopoint
-
-def create_hazard_curve_object(hazard_curve, session):
-    # There is known to be a single geo point associated with each curve
-    # Check if geo point already exists
-    gml_point = hazard_curve['gml_point'][0]
-    geopoint = get_geopoint(gml_point)
-    geopoint_exists = True if geopoint else False
-    if not geopoint_exists:
-         geopoint = GeoPoint(**gml_point)
-
-    del hazard_curve['gml_point']
-    hazardcurve = HazardCurve(**hazard_curve)
-    geopoint.hazardpointvalues.append(hazardcurve.samples)
-    return hazard_curve, geopoint, geopoint_exists
-
-class _OQHazardCurveSchema(_SchemaBase):
-    data = fields.Method("_serialize_data", deserialize="_deserialize_data")
-
-    #@post_dump
-    #def clear_missing(self, data, **kwargs):
-    #    return self._clear_missing(data)
-
-    #def _serialize_data(self, obj):
-    #    if 'data' in obj:
-    #        if isinstance(obj['data'], list):
-    #            return SFMWorkerResponseDataSchema(
-    #                context=self.context, many=True).dump(obj['data'])
-
-    #        return SFMWorkerResponseDataSchema(
-    #            context=self.context).dump(obj['data'])
-
-    def _deserialize_data(self, value):
-        if isinstance(value, list):
-            return SFMWorkerResponseDataSchema(
-                context=self.context, many=True).load(value)
-
-        return SFMWorkerResponseDataSchema(context=self.context).load(value)
 
 
 class OQHazardResultsListDeserializer():
-
-    def _deserialize(self, data):
+    """
+    Deserializes a list of results data  structure from
+    hazard workers.
+    """
+    def _loado(self, data_list):
+        """
+        Load data from list of results from OpenQuake into
+        known dict format.
+        """
         query_urls = []
+        # Response returns a list inside a list
+        data = data_list[0]
         for output in data:
             if output['type'] in ['hcurves', 'hmaps']:
                 assert 'xml' in output['outtypes']
                 query_urls.append(
                     {'url': output['url'],
-                     'type': output['type']
+                     'type': output['type'],
                      'id': output['id'],
                      'name': output['name']})
         return query_urls
@@ -186,50 +181,55 @@ class OQHazardResultsListDeserializer():
 
 class OQHazardOMessageDeserializer(DeserializerBase):
     """
-    Serializes a data structure which later can be consumed by SFM workers.
+    Deserializes a result data structure which has been output from
+    hazard workers.
     """
     def __init__(self, session, **kwargs):
         """
         :param bool many: Allow the deserialization of many arguments
         """
-        super().__init__(**kwargs)
-
+        self.session = session
+        self._many = kwargs.get('many', False)
+        self._partial = kwargs.get('partial', False)
         self._context = {'session': session}
 
-    def _deserialize(self, data, output_type):
-        """
-        Deserializes a data structure returned by SFM-Worker implementations.
-        """
-        if output_type == 'hazardcurve':
-            return _OQHazardCurveMessageSchema(
-                context=self._context, many=self._many).loads(data)
-
-    def _loado(self, data):
-        return _OQHazardCurveMessageSchema(
-            context=self._context, many=self._many,
-            partial=self._partial).load(data)
-
-
-class OQGeomSerializer(SerializerBase, IOBase):
-    """
-    Serializes a data structure which later can be consumed by openquake.
-    """
     @property
     def _ctx(self):
-        return {
-            'transform_func': self.transform_func,
-            'ramsis_proj': self.ramsis_proj,
-            'ref_easting': self.ref_easting,
-            'ref_northing': self.ref_northing}
+        return self._context
 
-    def _serialize(self, data):
+    def _deserialize(self, data, output_type):
+        # sarsonl NotImplemented
+        pass
+
+    def _read_ziparchive(self, archive):
+        with BytesIO(archive) as zip_obj:
+            read_obj = zipfile.ZipFile(zip_obj)
+            infolist = read_obj.infolist()
+            for zipinfo_obj in infolist:
+                obj_filename = zipinfo_obj.filename
+                yield read_obj.read(obj_filename).decode()
+
+    def _loado(self, data, **kwargs):
         """
-        Serializes a SFM-Worker payload from the ORM into JSON.
+        Deserializes a data structure returned by Hazard-Worker
+        implementations.
         """
-        return _SeismicityForecastGeomSchema(context=self._ctx).dump(data)
+        ziparchive_gen = self._read_ziparchive(data[0].content)
+        output_type = kwargs.get('output_type')
+        if output_type == 'hcurves':
+            hazard_curves = []
+            for hcurve_data in ziparchive_gen:
+                nrml = HazardXMLSchema(
+                    context=self._ctx, many=False,
+                    partial=self._partial).loads(hcurve_data)
+                for ind_nrml in nrml['nrml']:
+                    for haz_curves in ind_nrml['hazardcurves']:
+                        hazard_curves.append(haz_curves)
+                        return hazard_curves
+            return hazard_curves
 
 
-IOBase.register(SFMWorkerIMessageSerializer)
-SerializerBase.register(SFMWorkerIMessageSerializer)
-IOBase.register(SFMWorkerOMessageDeserializer)
-DeserializerBase.register(SFMWorkerOMessageDeserializer)
+IOBase.register(OQHazardResultsListDeserializer)
+DeserializerBase.register(OQHazardResultsListDeserializer)
+IOBase.register(OQHazardOMessageDeserializer)
+DeserializerBase.register(OQHazardOMessageDeserializer)

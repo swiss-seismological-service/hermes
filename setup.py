@@ -52,7 +52,8 @@ _install_requires = [
     "transitions==0.6.9",
     "prefect[viz]",
     "pyproj==2.3.0",
-    "jinja2"]
+    "jinja2",
+    "xmltodict"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

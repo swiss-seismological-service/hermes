@@ -164,7 +164,7 @@ class DeserializerBase(abc.ABC):
         """
         return self._deserialize(data)
 
-    def _loado(self, data):
+    def _loado(self, data, **kwargs):
         """
         Deserialize :code:`data` from an object.
 

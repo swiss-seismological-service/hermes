@@ -3,13 +3,16 @@
 Openquake Hazard executing related engine facilities.
 """
 import os
+import time
 from shutil import copyfile
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm.exc import DetachedInstanceError
 import prefect
-from prefect.engine.signals import FAIL
+from prefect.engine.signals import FAIL, LOOP
 from prefect import Task
 from RAMSIS.io.sfm import OQGeomSerializer
+from RAMSIS.io.oq_hazard import OQHazardOMessageDeserializer, \
+    OQHazardResultsListDeserializer
 from RAMSIS.io.utils import TransformationError
 from RAMSIS.core.worker.oq_hazard import OQHazardWorkerHandle
 from ramsis.datamodel.forecast import EStage
@@ -327,7 +330,7 @@ class OQHazardModelRunExecutor(Task):
             status = resp['status']
 
             if status != self.TASK_ACCEPTED:
-                raise FAIL(message=f"model run {resp['job_id']} "
+                raise FAIL(message=f"model run {resp['id']} "
                            f"has returned an error: {resp}", result=run)
 
             run.runid = resp['job_id']
@@ -346,7 +349,7 @@ class OQHazardModelRunPoller(Task):
     TASK_COMPLETE = 'complete'
     TASK_ERROR = ['aborted', 'failed', 'deleted']
 
-    def run(self, forecast, model_run):
+    def run(self, forecast, model_run, session):
         """
         :param run: Model run to execute
         :type run: :py:class:`ramsis.datamodel.seismicity.HazardModelRun`
@@ -364,9 +367,10 @@ class OQHazardModelRunPoller(Task):
 
         except OQHazardWorkerHandle.RemoteWorkerError as err:
             logger.error(str(err))
-            raise FAIL()
+            raise FAIL(result=model_run)
 
-        if query_response.status in self.TASK_ERROR: 
+        status = query_response["status"]
+        if status in self.TASK_ERROR: 
             raise FAIL(
                 message="Hazard Model Worker"
                 " has returned an unsuccessful status code."
@@ -379,31 +383,31 @@ class OQHazardModelRunPoller(Task):
                 f"{model_run.forecaststage.scenario}) "
                 f"(runid={model_run.runid}): Polling")
         else:
-            try:
-                deserializer = OQHazardOMessageDeserializer(
-                    ramsis_proj=project.spatialreference,
-                    external_proj="epsg:4326",
-                    ref_easting=project.referencepoint_x,
-                    ref_northing=project.referencepoint_y,
-                    transform_func_name='pyproj_transform_to_local_coords',
-            many=True)
-                result_resp = _worker_handle.query_results(
-                    model_run.runid,
-                    deserializer=deserializer).first()
-                logger.info(
-                    f'Received response (run={model_run!r}, '
-                    f'runid={model_run.runid}): {result_resp}')
-            except OQHazardWorkerHandle.RemoteWorkerError as err:
-                logger.error(str(err))
-                raise FAIL()
-
-            try:
-                print('result_resp', result_resp)
-                result = result_resp['data']['attributes']['forecast']
-            except KeyError:
-                raise FAIL("Hazard  Worker has not returned "
-                           f"a forecast (runid={model_run.runid}: {resp})",
-                           result=model_run)
-            else:
-                return model_run, result
+            # Get list of results available matching htypes
+            results_deserializer = OQHazardResultsListDeserializer(
+                    )
+            results_list = _worker_handle.query_results(
+                    model_run.runid, deserializer=results_deserializer).all()
+            deserializer = OQHazardOMessageDeserializer(
+                session=session,
+                ramsis_proj=project.spatialreference,
+                external_proj="epsg:4326",
+                ref_easting=project.referencepoint_x,
+                ref_northing=project.referencepoint_y,
+                transform_func_name='pyproj_transform_to_local_coords',
+                many=True)
+            logger.info(
+                f'OQ has results for (run={model_run!r}, '
+                f'runid={model_run.runid}): {results_list}')
+            results = []
+            for result in results_list: 
+                try:
+                    result_resp = _worker_handle.query_result_file(
+                        result,
+                        deserializer=deserializer).all()
+                    results.append(result_resp)
+                except OQHazardWorkerHandle.RemoteWorkerError as err:
+                    logger.error(str(err))
+                    raise FAIL(model_run)
+            return model_run, results
 

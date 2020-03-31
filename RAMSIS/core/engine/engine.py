@@ -287,18 +287,20 @@ class HazardFlow(QObject):
     A flow is created for every forecast that is run by the
     engine.
     """
-    def __init__(self, forecast, hazard_handler, data_dir):
+    def __init__(self, forecast, hazard_handler, data_dir, session):
         super().__init__()
         self.hazard_handler = hazard_handler
         self.forecast = forecast
         self.data_dir = data_dir
+        self.session = session
 
     def run(self):
-        with Flow("Seismicity_Execution",
+        with Flow("Hazard_Execution",
                   state_handlers=[self.hazard_handler.flow_state_handler]
                   ) as hazard_flow:
             forecast = Parameter('forecast')
             data_dir = Parameter('data_dir')
+            session = Parameter('session')
             scenarios_node = forecast_scenarios(
                 forecast)
             # Start Hazard stage
@@ -356,7 +358,7 @@ class HazardFlow(QObject):
                 state_handlers=[
                     self.hazard_handler.poll_hazard_state_handler])
             model_run_poller.map(unmapped(forecast),
-                                 model_runs_dispatched)
+                                 model_runs_dispatched, unmapped(session))
 
 
         # (sarsonl) To view DAG: hazard_flow.visualize()
@@ -365,7 +367,8 @@ class HazardFlow(QObject):
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(forecast_id=self.forecast.id):
             hazard_flow.run(parameters=dict(forecast=self.forecast,
-                                                data_dir=self.data_dir
+                                                data_dir=self.data_dir,
+                                                session=self.session
                                                 ),
                                 executor=executor)
 class SynchronousThread:
@@ -480,11 +483,6 @@ class FlowRunner:
                                      self.forecast_handler)
             forecast_flow.run()
 
-            forecast = self.session.query(Forecast).first()
-            plan_section = forecast.scenarios[0].well.sections[0]
-            topz = plan_section.topz_value
-            bottomz = plan_section.bottomz_value
-            self.session.remove()
             done = self.threadpool.waitForDone()
             seismicity_stage_states = self.stage_states(EStage.SEISMICITY)
         return seismicity_stage_states
@@ -504,8 +502,10 @@ class FlowRunner:
         if any(state!=EStatus.COMPLETE for state in hazard_stage_states):
             hazard_flow = HazardFlow(forecast,
                                          self.hazard_handler,
-                                         self.data_dir)
+                                         self.data_dir,
+                                         self.session)
             hazard_flow.run()
+            done = self.threadpool.waitForDone()
 
             hazard_stage_states = self.stage_states(EStage.HAZARD)
         return hazard_stage_states
