@@ -92,6 +92,33 @@ the model
 The location and boundary parameters of the HYDWS web service are a RAMSIS
 project configuration
 
+### The RT-RAMSIS core
+
+... (i.e. this repository) comprises the functionality of the QT config GUI, the
+task managers, serialization/deserialization, and the clients to all web 
+services (fdsnws/event, hydws, seismicity forecast models, openQuake hazard
+assessment, risk assessment), and, in future, the thresholding and alerting. 
+Requirements and nstallation is described below. The core depends on the data 
+model, and, in order to provide real functionality, on the web services.
+All web service components can be assessed remotely, over inthernet, and thus
+can be maintained by other responsibles, in different environments, operating
+systems, etc. Multiple RT-RAMSIS instances may use overlapping sets of web 
+services.
+
+### The data model and tools.
+In order to make the data abstraction available as a dependency to seismicity 
+forecast models and future analysis software, the data model, along with 
+serialization/deserialization capability to a PostgreSQL database is provided
+as a standalone package here: 
+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.
+Also other functionality useful to both RT-RAMSIS core and seismicity forecast
+model workers are packaged as "utilities" 
+here: https://gitlab.seismo.ethz.ch/indu/ramsis.utils
+
+### The seismicity forecast models
+Seismicity forecast models return past seismicity catal
+
+
 ## Installation (for developers)
 
 Make sure the dependencies
