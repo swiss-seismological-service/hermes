@@ -148,7 +148,11 @@ https://gitlab.seismo.ethz.ch/indu/ramsis.sfm.em1)
 RT-RAMSIS uses OpenQuake as hazard calculation, (available from here:
 https://github.com/gem/oq-engine/) , which involves a REST server API: 
 https://github.com/gem/oq-engine/blob/master/doc/web-api.md . RT-RAMSIS core 
-just needs to be configured with the URL of the OpenQuake installation.
+just needs to be configured with the URL of the OpenQuake installation. The list
+of GMPE models available for hazard calculation is given by those available
+in openquake 
+(see https://github.com/gem/oq-engine/tree/master/openquake/hazardlib/gsim), and
+referenced in the logic tree template file of the project.
 
 ### The WEB GUI
 The Web GUI is planned as an OpenCMS/Flexitable application directly accessing
