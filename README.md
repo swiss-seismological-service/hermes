@@ -190,29 +190,6 @@ $ virtualenv -p $(which python3.6) $PATH_PROJECTS/RAMSIS/venv3
 $ source $PATH_PROJECTS/RAMSIS/venv3/bin/activate
 ```
 
-Install [OpenQuake](https://github.com/gem/oq-engine)
-
-```bash
-$ export PATH_THIRD=$HOME/work/3rd
-$ mkdir -pv $PATH_THIRD
-$ git clone https://github.com/gem/oq-engine.git $PATH_THIRD/oq-engine
-$ pip install -r $PATH_THIRD/oq-engine/requirements-py36-linux64.txt
-$ pip install -e $PATH_THIRD/oq-engine/
-```
-
-and install the custom GSIMs
-
-```bash
-$ cp -v $PATH_PROJECTS/RAMSIS/RAMSIS/resources/oq/gmpe-gsim/* \
-  $PATH_THIRD/oq-engine/openquake/hazardlib/gsim/
-```
-
-Start the OpenQuake engine
-
-```bash
-$ oq engine --upgrade-db -y
-```
-
 Finally install RAMSIS
 
 ```bash
