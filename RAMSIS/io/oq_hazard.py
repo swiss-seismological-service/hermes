@@ -9,7 +9,8 @@ from marshmallow import (Schema, fields, pre_load,
                          post_load, EXCLUDE)
 from osgeo import gdal
 
-from ramsis.datamodel.hazard import HazardPointValue, HazardCurve, GeoPoint
+from ramsis.datamodel.hazard import HazardPointValue, HazardCurve, GeoPoint,\
+    HazardMap
 from RAMSIS.io.utils import (DeserializerBase, IOBase,
                              _IOError)
 
@@ -96,7 +97,7 @@ class HazardCurveSchema(BaseSchema):
         geopoint = session.query(GeoPoint).filter(
             GeoPoint.lat == lat,
             GeoPoint.lon == lon).\
-            one_or_none()
+            first()
 
         use_geopoint = geopoint if geopoint else GeoPoint(
             lat=lat, lon=lon)
@@ -123,24 +124,58 @@ class HazardCurvesSchema(BaseSchema):
 
     @pre_load
     def preload(self, data, **kwargs):
-        print("haz curve keys", data["@IMT"])
         self.context["IMLs"] = data["IMLs"]
         self.context["IMT"] = data["@IMT"]
         return data
 
     @post_load
     def postload(self, data, **kwargs):
-        print("length of hazard curves", len(data['hazardcurve']))
         return data
 
+class HazardMapPointSchema(BaseSchema):
+    lat = fields.Float(data_key='@lat')
+    lon = fields.Float(data_key='@lon')
+    groundmotion = fields.Float(data_key='@iml')
+
+    @post_load
+    def postload(self, data, **kwargs):
+        session = self.context.get('session')
+        geopoint = session.query(GeoPoint).filter(
+            GeoPoint.lat == data["lat"],
+            GeoPoint.lon == data["lon"]).\
+            first()
+
+        data["geopoint"] = geopoint if geopoint else GeoPoint(
+            lat=data["lat"], lon=data["lon"])
+
+        data["poe"] = self.context["poe"]
+        data["hazardintensitytype"] = self.context["IMT"]
+        del data['lat']
+        del data['lon']
+        return HazardPointValue(**data)
+
+
+class HazardMapSchema(BaseSchema):
+    samples = fields.Nested(HazardMapPointSchema, data_key='node', many=True)
+
+    @pre_load
+    def preload(self, data, **kwargs):
+        self.context["poe"] = data["@poE"]
+        self.context["IMT"] = data["@IMT"]
+        return data
+
+    @post_load
+    def postload(self, data, **kwargs):
+        return HazardMap(**data)
 
 class NRMLSchema(BaseSchema):
     hazardcurves = fields.Nested(HazardCurvesSchema, data_key='hazardCurves',
                                  many=True)
+    hazardmap = fields.Nested(HazardMapSchema, data_key='hazardMap',
+                                 many=True)
 
     @pre_load
     def preload(self, data, **kwargs):
-        print("nrml keys", data.keys())
         return data
 
 
@@ -216,8 +251,9 @@ class OQHazardOMessageDeserializer(DeserializerBase):
         """
         ziparchive_gen = self._read_ziparchive(data[0].content)
         output_type = kwargs.get('output_type')
+        hazard_curves = []
+        hazard_maps = []
         if output_type == 'hcurves':
-            hazard_curves = []
             for hcurve_data in ziparchive_gen:
                 nrml = HazardXMLSchema(
                     context=self._ctx, many=False,
@@ -225,8 +261,14 @@ class OQHazardOMessageDeserializer(DeserializerBase):
                 for ind_nrml in nrml['nrml']:
                     for haz_curves in ind_nrml['hazardcurves']:
                         hazard_curves.append(haz_curves)
-                        return hazard_curves
-            return hazard_curves
+        elif output_type == 'hmaps':
+            for hmap_data in ziparchive_gen:
+                nrml = HazardXMLSchema(
+                    context=self._ctx, many=False,
+                    partial=self._partial).loads(hmap_data)
+                haz_map = nrml['nrml']
+                hazard_maps.extend(nrml['nrml'])
+        return {'hazard_curves': hazard_curves, 'hazard_maps': hazard_maps}
 
 
 IOBase.register(OQHazardResultsListDeserializer)

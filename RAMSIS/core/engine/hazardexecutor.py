@@ -389,13 +389,7 @@ class OQHazardModelRunPoller(Task):
             results_list = _worker_handle.query_results(
                     model_run.runid, deserializer=results_deserializer).all()
             deserializer = OQHazardOMessageDeserializer(
-                session=session,
-                ramsis_proj=project.spatialreference,
-                external_proj="epsg:4326",
-                ref_easting=project.referencepoint_x,
-                ref_northing=project.referencepoint_y,
-                transform_func_name='pyproj_transform_to_local_coords',
-                many=True)
+                session=session)
             logger.info(
                 f'OQ has results for (run={model_run!r}, '
                 f'runid={model_run.runid}): {results_list}')

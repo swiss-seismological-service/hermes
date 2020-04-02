@@ -100,6 +100,8 @@ PATH_INJECTION_PLAN = 'injection_data/injectionplan-mignan.json'
 POST_RESPONSE = 'oq_responses/post_response1'
 XML_RESULTS_BINARY1 = 'oq_responses/xml_result_zip1'
 XML_RESULTS_BINARY2 = 'oq_responses/xml_result_zip2'
+XML_RESULTS_BINARY_MAPS1 = 'oq_responses/xml_result_maps_zip1'
+XML_RESULTS_BINARY_MAPS2 = 'oq_responses/xml_result_maps_zip2'
 RESPONSE_LIST_BINARY = 'oq_responses/response_result_list1'
 RESPONSE_STATUS_BINARY = 'oq_responses/response_result_status1'
 
@@ -457,15 +459,6 @@ class MockPostResponse:
         resp =  json.loads(copy(self.resp).decode())
         return resp
 
-RESULT_LIST_RESPONSE = [{"id": 44, "name": "Full Report", "type": "fullreport", "outtypes": ["rst"], "url": "http://127.0.0.1:8800/v1/calc/result/44", "size_mb": None}, {"id": 45, "name": "Hazard Curves", "type": "hcurves", "outtypes": ["csv", "xml", "npz"], "url": "http://127.0.0.1:8800/v1/calc/result/45", "size_mb": None}] # noqa
-
-
-class MockListResponse:
-    def raise_for_status(self):
-        pass
-
-    def json(self):
-        return RESULT_LIST_RESPONSE
 
 def mocked_requests_post(*args, **kwargs):
     if args[0] == 'http://localhost:8800/v1/calc/run':
@@ -480,9 +473,15 @@ def mocked_requests_get(*args, **kwargs):
     if args[0] == "http://localhost:8800/v1/calc/result/1031":
         return MockResponse(200,
             create_xml_response(XML_RESULTS_BINARY1))
-    if args[0] == "http://localhost:8800/v1/calc/result/1033":
+    elif args[0] == "http://localhost:8800/v1/calc/result/1033":
         return MockResponse(200,
             create_xml_response(XML_RESULTS_BINARY2))
+    elif args[0] == "http://localhost:8800/v1/calc/result/1056":
+        return MockResponse(200,
+            create_xml_response(XML_RESULTS_BINARY_MAPS1))
+    elif args[0] == "http://localhost:8800/v1/calc/result/1057":
+        return MockResponse(200,
+            create_xml_response(XML_RESULTS_BINARY_MAPS2))
     elif args[0] == "http://localhost:8800/v1/calc/10/results":
         return MockResponse(200,
             create_json_response(RESPONSE_LIST_BINARY))
@@ -609,17 +608,17 @@ class IntegrationTestCase(unittest.TestCase):
     
     @mock.patch('RAMSIS.core.engine.engine.HazardHandler.'
                 'execution_status_update', side_effect=signal_factory)
-    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
-                side_effect=mocked_requests_get)
-    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
-                side_effect=mocked_requests_post)
-    @mock.patch('RAMSIS.io.oq_hazard.'
-                'OQHazardOMessageDeserializer._read_ziparchive',
-                side_effect=zipfile_archive)
+    #@mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
+    #            side_effect=mocked_requests_get)
+    #@mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
+    #            side_effect=mocked_requests_post)
+    #@mock.patch('RAMSIS.io.oq_hazard.'
+    #            'OQHazardOMessageDeserializer._read_ziparchive',
+    #            side_effect=zipfile_archive)
     def test_successful_hazard_flow(self,
-                                    mock_ziparchive,
-                                    mock_post,
-                                    mock_get,
+                                    #mock_ziparchive,
+                                    #mock_post,
+                                    #mock_get,
                                     mock_signal):
         """
         Test the flow with only the seismicity & hazard stage enabled

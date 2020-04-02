@@ -1,12 +1,12 @@
 import prefect
 from sqlalchemy.orm import lazyload
+from sqlalchemy.orm.exc import MultipleResultsFound
 from time import time, sleep
 from prefect.engine.result import NoResultType
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismicity import SeismicityModelRun
-from ramsis.datamodel.hazard import HazardModelRun, HazardCurve,\
-    HazardMap, GeoPoint
+from ramsis.datamodel.hazard import HazardModelRun, GeoPoint
 from ramsis.datamodel.forecast import EStage, Forecast
 
 
@@ -420,7 +420,6 @@ class HazardHandler(BaseHandler):
         # If all model runs are complete without error, then the
         stage = scenario[EStage.HAZARD]
         # stage is a success
-        print('model status state before stage completion', [model.status.state for model in [r for r in stage.runs if r.enabled]])
         model_success = all([
             True if model.status.state == EStatus.COMPLETE else False
             for model in [r for r in stage.runs if r.enabled]])
@@ -540,7 +539,7 @@ class HazardHandler(BaseHandler):
             hazard_point.modelrun = model_run
         return model_run, curve
 
-    def add_hc_geopoints(self, curve):
+    def add_hc_geopoints(self, result):
         """
         Check if the geopoint location exists in the database
         and use this one if so. Add the new objects to the
@@ -549,11 +548,14 @@ class HazardHandler(BaseHandler):
         :param curve: New hazard curve object where child
             attributes must be added or updated in database
         """
-        for hazard_point in curve.samples:
+        for hazard_point in result.samples:
             geopoint = hazard_point.geopoint
             # See if geopoint is already in db
-            geopoint_in_db = self.session.query(GeoPoint).\
-                filter(GeoPoint.id == geopoint.id).one_or_none()
+            if geopoint.id:
+                geopoint_in_db = self.session.query(GeoPoint).\
+                    filter(GeoPoint.id == geopoint.id).one_or_none()
+            else:
+                geopoint_in_db = None
             if not geopoint_in_db:
                 geopoint_existing = self.session.query(
                     GeoPoint).filter(
@@ -565,12 +567,12 @@ class HazardHandler(BaseHandler):
                     for related_hazard_point in old_geopoint.hazardpointvalues:
                         related_hazard_point.geopoint = geopoint_existing
                         self.session.add(related_hazard_point)
-                    self.session.commit()
                     self.session.expunge(old_geopoint)
+                    self.session.commit()
                 else:
                     self.session.add(geopoint)
                 self.session.commit()
-        return curve
+        return result
 
     def oq_hazard_results(self, new_state, logger):
         """
@@ -591,16 +593,29 @@ class HazardHandler(BaseHandler):
                 options(lazyload(HazardModelRun.seismicitymodelruns)).\
                 filter(HazardModelRun.id == model_run.id).first()
             for result in model_results:
-                for hazard_curve_dict in result:
-                    hazard_curves = hazard_curve_dict['hazardcurve']
-                    for curve in hazard_curves:
+                for results_dict in result:
+                    hazard_curves_list = results_dict['hazard_curves']
+                    hazard_maps_list = results_dict['hazard_maps']
+                    for curve_list in hazard_curves_list:
+                        hazard_curves = curve_list['hazardcurve']
+                        for curve in hazard_curves:
 
-                        curve = self.add_hc_geopoints(curve)
-                        update_model_run, curve = self.hazardpoints_associate(
-                            update_model_run, curve)
+                            curve = self.add_hc_geopoints(curve)
+                            update_model_run, curve = self.hazardpoints_associate(
+                                update_model_run, curve)
 
-                        curve.modelrun = update_model_run
-                        self.session.commit()
+                            curve.modelrun = update_model_run
+                            self.session.commit()
+                    for map_list in hazard_maps_list:
+                        hazard_maps = map_list['hazardmap']
+                        for hmap in hazard_maps:
+
+                            hmap = self.add_hc_geopoints(hmap)
+                            update_model_run, hmap = self.hazardpoints_associate(
+                                update_model_run, hmap)
+
+                            hmap.modelrun = update_model_run
+                            self.session.commit()
 
             update_model_run.status.state = EStatus.COMPLETE
             self.update_db()

@@ -269,10 +269,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
 
         self.logger.debug(
             'Task result OQ hazard(task_id={task_id}): {response}')
-        #randi = random.randint(0, 200)
-        #with open('/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/xml_FILES/xml_result_status{}'.format(randi), 'wb') as f1:
-        #    f1.write(bytes(response.content))
-        #    print("resp cls randint", randi)
 
         return self.QueryResult.from_requests(
             response)
@@ -344,7 +340,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         :param deserializer: Optional deserializer instance used to load the
             response
         """
-        print(self, job_config_filename, logic_tree_filename, gmpe_logic_tree_filename, model_source_filenames, oq_input_dir)
         url_post = f'{self.url}{self.PATH_CALC_RUN}'
         self.logger.debug(
             'Sending computation request OQ hazard '
@@ -356,7 +351,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
              open(join(oq_input_dir, logic_tree_filename), 'rb'), "text/xml")),
             (gmpe_logic_tree_filename, (gmpe_logic_tree_filename,
              open(join(oq_input_dir, gmpe_logic_tree_filename), 'rb'), "text/xml"))]
-        print('input files sent: ', oq_input_files)
         
         model_index = 1
         for source_file, _ in model_source_filenames:
@@ -369,8 +363,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             requests.post, url_post, files=oq_input_files,
             timeout=self._timeout)
         response = self._handle_exceptions(req)
-        #with open("/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/xml_FILES/post_response{}".format(random.randint(1, 300)), 'wb') as open_f:
-        #3    open_f.write(response.content)
         try:
             result = response.json()
             print("in compute", result, response)
