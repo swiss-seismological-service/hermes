@@ -1,6 +1,5 @@
 import prefect
 from sqlalchemy.orm import lazyload
-from sqlalchemy.orm.exc import MultipleResultsFound
 from time import time, sleep
 from prefect.engine.result import NoResultType
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
@@ -49,6 +48,10 @@ class Worker(QRunnable):
                     raise TimeoutError(
                         "Synchronous thread task taking too long to complete")
                     break
+            if self.fn.__name__ == 'update_hazard_statuses':
+                while (synchronous_thread.model_runs >
+                       synchronous_thread.model_runs_count):
+                    sleep(0.5)
             synchronous_thread.reserve_thread()
         self.fn(*self.args, **self.kwargs)
         if synchronous_thread is not None:
@@ -96,6 +99,15 @@ class BaseHandler(QObject):
         for func in func_list:
             if not func(new_state):
                 conditions_met = False
+        return conditions_met
+
+    def task_running(self, new_state):
+        conditions_met = False
+        if (new_state.is_running() and not
+            new_state.is_skipped() and not
+            new_state.is_mapped() and not
+                new_state.is_looped()):
+            conditions_met = True
         return conditions_met
 
     def task_finished(self, new_state):
@@ -442,7 +454,6 @@ class HazardHandler(BaseHandler):
 
         return scenario
 
-
     def update_db(self):
         if self.session.dirty:
             self.session.commit()
@@ -465,7 +476,6 @@ class HazardHandler(BaseHandler):
         Updates the hazard model run with linked seismicity
         runs that are used in making the hazard model.
         """
-        logger = prefect.context.get("logger")
         if self.state_evaluator(new_state, [self.task_finished,
                                             self.successful_result]):
             runs = new_state.result
@@ -523,7 +533,8 @@ class HazardHandler(BaseHandler):
         Handles result from hazard model run poller.
         """
         logger = prefect.context.get("logger")
-
+        if self.state_evaluator(new_state, [self.task_running]):
+            self.synchronous_thread.model_runs += 1
         if self.state_evaluator(new_state, [self.task_finished]):
             worker = Worker(self.oq_hazard_results, new_state, logger,
                             synchronous_thread=self.synchronous_thread)
@@ -601,7 +612,8 @@ class HazardHandler(BaseHandler):
                         for curve in hazard_curves:
 
                             curve = self.add_hc_geopoints(curve)
-                            update_model_run, curve = self.hazardpoints_associate(
+                            (update_model_run,
+                             curve) = self.hazardpoints_associate(
                                 update_model_run, curve)
 
                             curve.modelrun = update_model_run
@@ -611,7 +623,8 @@ class HazardHandler(BaseHandler):
                         for hmap in hazard_maps:
 
                             hmap = self.add_hc_geopoints(hmap)
-                            update_model_run, hmap = self.hazardpoints_associate(
+                            (update_model_run,
+                             hmap) = self.hazardpoints_associate(
                                 update_model_run, hmap)
 
                             hmap.modelrun = update_model_run
@@ -632,3 +645,4 @@ class HazardHandler(BaseHandler):
         self.execution_status_update.emit((
             new_state, type(model_run),
             model_run.id))
+        self.synchronous_thread.model_runs_count += 1

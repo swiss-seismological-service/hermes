@@ -1,6 +1,6 @@
 # Copyright 2019, ETH Zurich - Swiss Seismological Service SED
 """
-Utilities for SFM-Worker data import/export.
+Utilities for Hazard-Worker data import/export.
 """
 import xmltodict
 import zipfile
@@ -11,14 +11,9 @@ from osgeo import gdal
 
 from ramsis.datamodel.hazard import HazardPointValue, HazardCurve, GeoPoint,\
     HazardMap
-from RAMSIS.io.utils import (DeserializerBase, IOBase,
-                             _IOError)
+from RAMSIS.io.utils import (DeserializerBase, IOBase)
 
 gdal.UseExceptions()
-
-
-class SFMWIOError(_IOError):
-    """Base SFMW de-/serialization error ({})."""
 
 
 class _SchemaBase(Schema):
@@ -132,6 +127,7 @@ class HazardCurvesSchema(BaseSchema):
     def postload(self, data, **kwargs):
         return data
 
+
 class HazardMapPointSchema(BaseSchema):
     lat = fields.Float(data_key='@lat')
     lon = fields.Float(data_key='@lon')
@@ -168,11 +164,12 @@ class HazardMapSchema(BaseSchema):
     def postload(self, data, **kwargs):
         return HazardMap(**data)
 
+
 class NRMLSchema(BaseSchema):
     hazardcurves = fields.Nested(HazardCurvesSchema, data_key='hazardCurves',
                                  many=True)
     hazardmap = fields.Nested(HazardMapSchema, data_key='hazardMap',
-                                 many=True)
+                              many=True)
 
     @pre_load
     def preload(self, data, **kwargs):
@@ -202,8 +199,7 @@ class OQHazardResultsListDeserializer():
         """
         query_urls = []
         # Response returns a list inside a list
-        data = data_list[0]
-        for output in data:
+        for output in data_list:
             if output['type'] in ['hcurves', 'hmaps']:
                 assert 'xml' in output['outtypes']
                 query_urls.append(
@@ -266,7 +262,6 @@ class OQHazardOMessageDeserializer(DeserializerBase):
                 nrml = HazardXMLSchema(
                     context=self._ctx, many=False,
                     partial=self._partial).loads(hmap_data)
-                haz_map = nrml['nrml']
                 hazard_maps.extend(nrml['nrml'])
         return {'hazard_curves': hazard_curves, 'hazard_maps': hazard_maps}
 

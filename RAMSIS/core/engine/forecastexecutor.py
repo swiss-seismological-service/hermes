@@ -25,7 +25,6 @@ import json
 import time
 import copy
 import logging
-from sqlalchemy import inspect
 from prefect import task, Task
 import prefect
 from prefect.engine.signals import LOOP, FAIL
@@ -173,64 +172,6 @@ class ModelRuns(Task):
         return model_runs
 
 
-class HazardStageExecutor(Task):
-    """
-    Executes the hazard stage
-
-    The executor instantiates the OQ hazard client, connects to its status
-    update signal and then calls its run method.
-
-    :param scenario: Scenario for which to compute the hazard
-    :type scenario: ramsis.datamodel.forecast.ForecastScenario
-    """
-    # TODO: this is mostly just pseudo-code since the interface will change
-    #   completely with OQ 3 and the new client/worker classes. Re-add as soon
-    #   as we have the new hazard (OQ) client implementation.
-
-    def run(self):
-        # TODO LH: implement
-        # self.model_run.model.run()
-        # TODO LH: remove, fake instant success for testing :)
-        pass
-
-    def on_model_status_changed(self, notification):
-        pass
-        # model = self.sender()
-        # self.proceed_on[0]execution_status = _create_execution_status(
-        #       self, notification)
-        # if notification.success:
-        #     self.model_run.result = notification.result
-        #
-
-
-class RiskStageExecutor(Task):
-    """
-    Executes the risk stage
-
-    The executor instantiates the OQ risk client, connects to its status
-    update signal and then calls its run method.
-
-    :param scenario: Scenario for which to compute the hazard
-    :type scenario: ramsis.datamodel.forecast.ForecastScenario
-    """
-    # TODO: this is mostly just pseudo-code since the interface will change
-    #   completely with OQ 3 and the new client/worker classes. Re-add as soon
-    #   as we have the new hazard (OQ) client implementation.
-
-    def run(self):
-        # TODO LH: implement
-        # self.model_run.model.run()
-        # TODO LH: remove, fake instant success for testing :)
-        pass
-
-    def on_model_status_changed(self, notification):
-        pass
-        # model = self.sender()
-        # execution_status = _create_execution_status(self, notification)
-        # if notification.success:
-        #     self.model_run.result = notification.result
-        #
-
 class ForecastSerializeData(Task):
     """
     :param str seismic_catalog: Snapshot of a seismic catalog in
@@ -272,8 +213,7 @@ class ForecastSerializeData(Task):
                     'spatialreference': project.spatialreference,
                     'referencepoint': {
                         'x': project.referencepoint_x,
-                        'y': project.referencepoint_y},
-                    }}}
+                        'y': project.referencepoint_y}}}}
 
         data = serializer._serialize_dict(payload)
         return data
@@ -305,8 +245,6 @@ class ScenarioSerializeData(Task):
         forecast = scenario.forecast
         project = forecast.project
         injection_plan = scenario.well
-        print("plan topz before conversion:", injection_plan.sections[0].topz_value)
-        print("plan topx before conversion:", injection_plan.sections[0].topx_value)
 
         serializer = SFMWorkerIMessageSerializer(
             ramsis_proj=project.spatialreference,
@@ -321,9 +259,8 @@ class ScenarioSerializeData(Task):
                     'reservoir': {'geom': scenario.reservoirgeom}}}}
 
         data = serializer._serialize_dict(payload)
-        print('topdepth', data['data']['attributes']['scenario']['well']['sections'][0]['topdepth'])
-        print('toplatitude', data['data']['attributes']['scenario']['well']['sections'][0]['toplatitude'])
         return (scenario.id, data)
+
 
 class SeismicityModelRunExecutor(Task):
     """
@@ -339,9 +276,9 @@ class SeismicityModelRunExecutor(Task):
         # due to concurrency, the same object gets transformed
         # multiple times.
         stage = model_run.forecaststage
-        scenario = model_run.forecaststage.scenario
         project = forecast.project
-        scenario_data = [data for scenario_id, data in scenario_data_list if scenario_id == model_run.forecaststage.scenario.id][0]
+        scenario_data = [data for scenario_id, data in scenario_data_list if
+                         scenario_id == model_run.forecaststage.scenario.id][0]
         # (sarsonl) current bug when attempting to only
         # allow one to one relationship between forecast-well
         # and forecast-seismiccatalog. Work-around is to leave
@@ -363,7 +300,8 @@ class SeismicityModelRunExecutor(Task):
 
         try:
             resp = _worker_handle.compute(
-                json.dumps(payload), deserializer=SFMWorkerOMessageDeserializer(
+                json.dumps(payload),
+                deserializer=SFMWorkerOMessageDeserializer(
                     ramsis_proj=project.spatialreference,
                     external_proj="epsg:4326",
                     ref_easting=project.referencepoint_x,
@@ -392,7 +330,7 @@ class SeismicityModelRunExecutor(Task):
 def dispatched_model_runs(forecast, estage):
     logger = prefect.context.get('logger')
     stages = [s[estage] for s in forecast.scenarios
-                         if s.enabled]
+              if s.enabled]
     stages = [stage for stage in stages if stage.enabled]
     model_runs = []
     for stage in stages:
@@ -468,7 +406,6 @@ class SeismicityModelRunPoller(Task):
                                f"a forecast (runid={model_run.runid}: {resp})",
                                result=model_run)
                 else:
-                    #model_run.result = result
                     model_run.status.state = EStatus.COMPLETE
                     return model_run, result
 

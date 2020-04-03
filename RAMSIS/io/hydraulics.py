@@ -12,7 +12,6 @@ from marshmallow import (Schema, fields, pre_load, post_load, post_dump,
 
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,
                                          HydraulicSample)
-from sqlalchemy import inspect
 from ramsis.datamodel.well import InjectionWell, WellSection
 from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
                              IOBase, _IOError, TransformationError, Positive,
@@ -326,7 +325,6 @@ class _WellSectionSchema(_SchemaBase):
             data = self._transform_load(data)
         return data
 
-
     @post_dump
     def dump_postprocess(self, data, **kwargs):
         if ('time' in self.context and
@@ -406,9 +404,9 @@ class _WellSectionSchema(_SchemaBase):
     def _validate_transform(self, data):
         errors = {}
         for prefix in ['top', 'bottom']:
-            lon = data[f"{prefix}longitude_value"] 
-            lat = data[f"{prefix}latitude_value"] 
-            depth = data[f"{prefix}depth_value"] 
+            lon = data[f"{prefix}longitude_value"]
+            lat = data[f"{prefix}latitude_value"]
+            depth = data[f"{prefix}depth_value"]
             if lon > 180.0 or lon < -180.0:
                 errors[f"{prefix}longitude_value"] = [
                     f'Hydraulic section {prefix}longitude is not within '
@@ -425,8 +423,6 @@ class _WellSectionSchema(_SchemaBase):
             raise ValidationError(errors)
         return data
 
-
-
     def _transform_dump(self, data):
         """
         Transform coordinates from local to external coordinates.
@@ -435,7 +431,8 @@ class _WellSectionSchema(_SchemaBase):
         # the transform after the data has been serialized. This is becuase
         # if the data is stil an object, this interferes with the process
         # of writing the snapshot to the db (which happens in parallel).
-        # It is not nice because although the data is called latitude/longitude/depth
+        # It is not nice because although the data is called
+        # latitude/longitude/depth
         # it is actually still x, y, z local coords which is confusing.
         transform_func = self.context['transform_func']
         if 'altitude_value' not in self.context.keys():

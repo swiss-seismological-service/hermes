@@ -50,7 +50,8 @@ class UpdateHazardRuns(Task):
             hazard_stage = haz_run.forecaststage
             scenario = hazard_stage.scenario
             seismicity_stage = scenario[EStage.SEISMICITY]
-            for seis_run in [run for run in seismicity_stage.runs if run.enabled]:
+            for seis_run in [run for run in seismicity_stage.runs
+                             if run.enabled]:
                 if seis_run.status.state != EStatus.COMPLETE:
                     raise FAIL(
                         message='There are non-completed seismicity model runs'
@@ -311,9 +312,6 @@ class OQHazardModelRunExecutor(Task):
     def run(self, model_runs, source_filenames_for_runs, oq_dirs):
         for (run, source_filenames, oq_dir) in zip(
                 model_runs, source_filenames_for_runs, oq_dirs):
-            stage = run.forecaststage
-            scenario = run.forecaststage.scenario
-
             _worker_handle = OQHazardWorkerHandle.from_run(run)
 
             try:
@@ -334,9 +332,11 @@ class OQHazardModelRunExecutor(Task):
                            f"has returned an error: {resp}", result=run)
 
             run.runid = resp['job_id']
-            # Next task requires knowledge of status, so update status inside task.
+            # Next task requires knowledge of status, so update status
+            # inside task.
             run.status.state = EStatus.DISPATCHED
         return model_runs
+
 
 class OQHazardModelRunPoller(Task):
     """
@@ -356,8 +356,6 @@ class OQHazardModelRunPoller(Task):
         """
         logger = prefect.context.get('logger')
         logger.debug(f"Polling for runid={model_run.runid}")
-        project = forecast.project
-
         _worker_handle = OQHazardWorkerHandle.from_run(
             model_run)
 
@@ -370,11 +368,12 @@ class OQHazardModelRunPoller(Task):
             raise FAIL(result=model_run)
 
         status = query_response["status"]
-        if status in self.TASK_ERROR: 
+        if status in self.TASK_ERROR:
             raise FAIL(
                 message="Hazard Model Worker"
                 " has returned an unsuccessful status code."
-                f"(runid={model_run.runid}: {resp})", result=model_run)
+                f"(runid={model_run.runid}: {query_response})",
+                result=model_run)
         elif status in self.TASK_PROCESSING:
             logger.info("sleeping")
             time.sleep(15)
@@ -384,17 +383,16 @@ class OQHazardModelRunPoller(Task):
                 f"(runid={model_run.runid}): Polling")
         else:
             # Get list of results available matching htypes
-            results_deserializer = OQHazardResultsListDeserializer(
-                    )
+            results_deserializer = OQHazardResultsListDeserializer()
             results_list = _worker_handle.query_results(
-                    model_run.runid, deserializer=results_deserializer).all()
+                model_run.runid, deserializer=results_deserializer).all()
             deserializer = OQHazardOMessageDeserializer(
                 session=session)
             logger.info(
                 f'OQ has results for (run={model_run!r}, '
                 f'runid={model_run.runid}): {results_list}')
             results = []
-            for result in results_list: 
+            for result in results_list:
                 try:
                     result_resp = _worker_handle.query_result_file(
                         result,
@@ -404,4 +402,3 @@ class OQHazardModelRunPoller(Task):
                     logger.error(str(err))
                     raise FAIL(model_run)
             return model_run, results
-

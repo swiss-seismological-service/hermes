@@ -2,8 +2,7 @@
 """
 Openquake worker facilities
 """
-import random
-from os.path import basename, dirname, join
+from os.path import dirname, join
 import enum
 import functools
 import uuid
@@ -108,7 +107,8 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             self._resp = resp
 
         @classmethod
-        def from_requests(cls, resp, deserializer=None, resp_format='json', **kwargs):
+        def from_requests(cls, resp, deserializer=None, resp_format='json',
+                          **kwargs):
             """
             :param resp: SFM worker responses.
             :type resp: list of :py:class:`requests.Response or
@@ -121,14 +121,11 @@ class OQHazardWorkerHandle(WorkerHandleBase):
                 """
                 Return a JSON encoded query result.
                 """
-                print("in from_requests _json", resp)
                 if not resp:
                     return []
 
                 try:
-                    print("before r json", resp)
                     resp_json = [r.json() for r in resp]
-                    print('resp_json: ', resp_json)
                 except ValueError as err:
                     raise OQHazardWorkerHandle.DecodingError(err)
 
@@ -139,7 +136,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             ikwargs = {}
             if kwargs.get('output_type'):
                 ikwargs['output_type'] = kwargs.get('output_type')
-                print("adding output type to kwargs", ikwargs)
 
             if resp_format == 'json':
                 if deserializer is None:
@@ -205,7 +201,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         def _wrap(value):
             return {KEY_DATA: value}
 
-
     def __init__(self, base_url, model_run_id,
                  scenario_id, **kwargs):
         """
@@ -216,7 +211,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         :type timeout: float or tuple
         """
         super().__init__(**kwargs)
-        print("in init")
 
         self.base_url = self.validate_ctor_args(base_url)
         self.model_run_id = model_run_id
@@ -237,12 +231,11 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         """
         # XXX(damb): Where to get additional configuration options from?
         # model_run.config? model.config? From somewhere else?
-        print(model_run.model.url, model_run.id, model_run.forecaststage.scenario.id)
-        return cls(model_run.model.url, model_run.id, model_run.forecaststage.scenario.id)
+        return cls(model_run.model.url, model_run.id,
+                   model_run.forecaststage.scenario.id)
 
     @property
     def url(self):
-        print('url: ', self.base_url + self._url_path)
         return self.base_url + self._url_path
 
     @property
@@ -321,7 +314,8 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             f'Requesting result file for OQ hazard (url={url}, type={htype}).')
 
         req = functools.partial(
-                requests.get, url, params={'export_type': 'xml'}, timeout=self._timeout)
+            requests.get, url, params={'export_type': 'xml'},
+            timeout=self._timeout)
 
         response = self._handle_exceptions(req)
 
@@ -331,7 +325,9 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             response, deserializer=deserializer,
             resp_format='xml', output_type=htype)
 
-    def compute(self, job_config_filename, logic_tree_filename, gmpe_logic_tree_filename, model_source_filenames, oq_input_dir, **kwargs):
+    def compute(self, job_config_filename, logic_tree_filename,
+                gmpe_logic_tree_filename, model_source_filenames,
+                oq_input_dir, **kwargs):
         """
         Issue a task to a hazard forecast worker.
 
@@ -350,22 +346,23 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             (logic_tree_filename, (logic_tree_filename,
              open(join(oq_input_dir, logic_tree_filename), 'rb'), "text/xml")),
             (gmpe_logic_tree_filename, (gmpe_logic_tree_filename,
-             open(join(oq_input_dir, gmpe_logic_tree_filename), 'rb'), "text/xml"))]
-        
+             open(join(oq_input_dir, gmpe_logic_tree_filename), 'rb'),
+             "text/xml"))]
+
         model_index = 1
         for source_file, _ in model_source_filenames:
-            oq_input_files.append((f'input_model_{model_index}',
-                (source_file, open(join(oq_input_dir, source_file), 'rb'), "text/xml")))
+            oq_input_files.append(
+                (f'input_model_{model_index}',
+                 (source_file, open(join(oq_input_dir, source_file), 'rb'),
+                  "text/xml")))
             model_index += 1
 
-        headers = {'Content-Type': self.MIMETYPE}
         req = functools.partial(
             requests.post, url_post, files=oq_input_files,
             timeout=self._timeout)
         response = self._handle_exceptions(req)
         try:
             result = response.json()
-            print("in compute", result, response)
         except ValueError as err:
             raise self.DecodingError(err)
 
@@ -396,7 +393,8 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         for t in task_ids:
             url = '{url}/{task_id}'.format(url=self.url, task_id=t)
             self.logger.debug(
-                f'Removing task (model={self.model_run_id}, url={url}, task_id={t})')
+                f'Removing task (model={self.model_run_id}, url={url}, '
+                f'task_id={t})')
             req = functools.partial(requests.delete, url,
                                     timeout=self._timeout)
             response = self._handle_exceptions(req)

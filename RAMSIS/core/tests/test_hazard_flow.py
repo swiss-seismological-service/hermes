@@ -79,9 +79,8 @@ GMPE_TEMPLATE = os.path.join(dirpath,
 JOB_CONFIG_TEMPLATE = os.path.join(dirpath,
                                    'hazard_templates',
                                    'job.ini')
-SOURCE_MODEL_TEMPLATE = os.path.join(dirpath,
-                                     'hazard_templates',
-                                     'single_reservoir_seismicity_template.xml')
+SOURCE_MODEL_TEMPLATE = os.path.join(
+    dirpath, 'hazard_templates', 'single_reservoir_seismicity_template.xml')
 
 RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m "
                "+x_0=0.0 +y_0=0.0 +no_defs")
@@ -98,8 +97,8 @@ PATHS_HYDRAULICS = [
 PATH_INJECTION_PLAN = 'injection_data/injectionplan-mignan.json'
 
 POST_RESPONSE = 'oq_responses/post_response1'
-XML_RESULTS_BINARY1 = 'oq_responses/xml_result_zip1'
-XML_RESULTS_BINARY2 = 'oq_responses/xml_result_zip2'
+XML_RESULTS_BINARY1 = 'oq_responses/xml_result_curves_zip1'
+XML_RESULTS_BINARY2 = 'oq_responses/xml_result_curves_zip2'
 XML_RESULTS_BINARY_MAPS1 = 'oq_responses/xml_result_maps_zip1'
 XML_RESULTS_BINARY_MAPS2 = 'oq_responses/xml_result_maps_zip2'
 RESPONSE_LIST_BINARY = 'oq_responses/response_result_list1'
@@ -120,9 +119,6 @@ Y_MIN = -2000
 Y_MAX = 2000
 Z_MIN = -4000
 Z_MAX = 0
-
-POSTED_DATA = "call('http://localhost:8800/v1/calc/run', files=[('job.ini', ('job.ini', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/job.ini'>, 'text/ini')), ('logictree.xml', ('logictree.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/logictree.xml'>, 'text/xml')), ('gmpe_logictree.xml', ('gmpe_logictree.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/gmpe_logictree.xml'>, 'text/xml')), ('input_model_1', ('EM1-Day-Training-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/EM1-Day-Training-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml'>, 'text/xml')), ('input_model_2', ('EM1-Hour-Moving-Window-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml', <_io.BufferedReader name='/home/sarsonl/repos/em1/rt-ramsis/RAMSIS/core/tests/tmp_dir/ProjectId_1_basel/ForecastScenarioId_1_BaselScenario/HazardModelRunId_3_2006-12-08T-14-45_2006-12-08T-20-45/EM1-Hour-Moving-Window-Low-Event-Threshold_source_2006-12-08T-14-45_2006-12-08T-20-45.xml'>, 'text/xml'))], timeout=None)"
-'results_data/json_posted_data1.json'
 
 GEOPOINTS = 'results_data/hazard_geopoints.txt'
 
@@ -224,14 +220,12 @@ JSON_POST_TEMPLATE = {
     }}
 
 
-def create_xml_response(filename, **kwargs):
+def return_filepath(filename, **kwargs):
     return os.path.join(dirpath, filename)
-#    with open(os.path.join(dirpath, filename), 'rb') as open_resp:
-#        resp = zipfile.ZipFile(open_resp)
-#    return resp
+
 
 def create_json_response(filename, **kwargs):
-    with open(os.path.join(dirpath, filename), 'rb')as open_resp:
+    with open(os.path.join(dirpath, filename), 'rb') as open_resp:
         resp = BufferedReader(open_resp).read()
     return resp
 
@@ -276,6 +270,7 @@ def create_seismicity_models():
 
     return retval
 
+
 def create_hazard_model():
 
     return HazardModel(
@@ -296,6 +291,7 @@ def parse_cli():
 
     return parser.parse_args()
 
+
 def create_seismicity_samples(datetimes, a_values, b_values, mc_values):
     samples = []
     for index, starttime in enumerate(datetimes[:-1]):
@@ -308,6 +304,7 @@ def create_seismicity_samples(datetimes, a_values, b_values, mc_values):
             mc_value=mc_values[index])
         samples.append(sample)
     return samples
+
 
 def insert_test_data(db_url):
 
@@ -358,7 +355,7 @@ def insert_test_data(db_url):
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
-    ## configure project: project settings
+    # configure project: project settings
     project.seismiccatalogs = [cat]
     project.wells = [well]
 
@@ -391,14 +388,13 @@ def insert_test_data(db_url):
     with open(os.path.join(dirpath, PATH_INJECTION_PLAN), 'rb') as ifd:
         scenario.well = deserializer.load(ifd)
 
-    
     store.add(project)
     store.add(fc)
     store.add(scenario)
     runids = ["1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
               "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"]
     starttime = datetime(2006, 12, 8, 8, 45)
-    datetimes = [starttime + timedelta(seconds=21600*x) for x in range(3)]
+    datetimes = [starttime + timedelta(seconds=21600 * x) for x in range(3)]
     a_values = [1.2, 1.5]
     b_values = [1.6, 1.7]
     mc_values = [2.5, 2.5]
@@ -421,7 +417,7 @@ def insert_test_data(db_url):
         store.add(seis_run.result)
         for sample in samples:
             store.add(sample)
-    
+
     try:
         store.save()
     except Exception:
@@ -430,6 +426,7 @@ def insert_test_data(db_url):
     finally:
         store.session.remove()
         store.engine.dispose()
+
 
 class MockResponse:
     def __init__(self, status, resp):
@@ -440,12 +437,12 @@ class MockResponse:
     def raise_for_status(self):
         pass
 
-
     def json(self):
         resp = self.resp
         if isinstance(self.resp, bytes):
             resp = json.loads(copy(self.resp).decode())
         return resp
+
 
 class MockPostResponse:
     def __init__(self, status, resp):
@@ -456,7 +453,7 @@ class MockPostResponse:
         pass
 
     def json(self):
-        resp =  json.loads(copy(self.resp).decode())
+        resp = json.loads(copy(self.resp).decode())
         return resp
 
 
@@ -465,45 +462,30 @@ def mocked_requests_post(*args, **kwargs):
         with open(os.path.join(dirpath, POST_RESPONSE), 'rb') as open_resp:
             resp = BufferedReader(open_resp).read()
             return MockPostResponse(200, resp)
-    return MockResponse(404, None) # alter, this is not actual response
+    return MockResponse(404, None)
 
 
 def mocked_requests_get(*args, **kwargs):
 
     if args[0] == "http://localhost:8800/v1/calc/result/1031":
-        return MockResponse(200,
-            create_xml_response(XML_RESULTS_BINARY1))
+        return MockResponse(
+            200, return_filepath(XML_RESULTS_BINARY1))
     elif args[0] == "http://localhost:8800/v1/calc/result/1033":
-        return MockResponse(200,
-            create_xml_response(XML_RESULTS_BINARY2))
+        return MockResponse(
+            200, return_filepath(XML_RESULTS_BINARY2))
     elif args[0] == "http://localhost:8800/v1/calc/result/1056":
-        return MockResponse(200,
-            create_xml_response(XML_RESULTS_BINARY_MAPS1))
+        return MockResponse(
+            200, return_filepath(XML_RESULTS_BINARY_MAPS1))
     elif args[0] == "http://localhost:8800/v1/calc/result/1057":
-        return MockResponse(200,
-            create_xml_response(XML_RESULTS_BINARY_MAPS2))
+        return MockResponse(
+            200, return_filepath(XML_RESULTS_BINARY_MAPS2))
     elif args[0] == "http://localhost:8800/v1/calc/10/results":
-        return MockResponse(200,
-            create_json_response(RESPONSE_LIST_BINARY))
+        return MockResponse(
+            200, create_json_response(RESPONSE_LIST_BINARY))
     elif args[0] == "http://localhost:8800/v1/calc/10/status":
-        return MockResponse(200,
-            create_json_response(RESPONSE_STATUS_BINARY))
+        return MockResponse(
+            200, create_json_response(RESPONSE_STATUS_BINARY))
     return MockResponse(404, None)
-
-
-#def mocked_requests_get_error(*args, **kwargs):
-#
-#    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-#            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
-#        return MockResponse(
-#            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-#                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
-#    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-#            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
-#        return MockResponse(
-#            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-#                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
-#    return MockResponse(404, None)
 
 
 def mocked_pyqtsignal(*args, **kwargs):
@@ -517,6 +499,7 @@ class MockSignal():
 
 def signal_factory():
     return MockSignal()
+
 
 def zipfile_archive(arg):
     with open(arg, 'rb') as open_resp:
@@ -598,27 +581,26 @@ class IntegrationTestCase(unittest.TestCase):
             os.mkdir(self.TMP_DIR)
 
     def connect_ramsis(self):
-        app = mock.Mock(app_settings= {'data_dir': self.TMP_DIR})
+        app = mock.Mock(app_settings={'data_dir': self.TMP_DIR})
         controller = Controller(app, LaunchMode.LAB, )
         controller.connect(self.postgres_test_url())
 
         store = controller.store
         return controller, store
 
-    
     @mock.patch('RAMSIS.core.engine.engine.HazardHandler.'
                 'execution_status_update', side_effect=signal_factory)
-    #@mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
-    #            side_effect=mocked_requests_get)
-    #@mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
-    #            side_effect=mocked_requests_post)
-    #@mock.patch('RAMSIS.io.oq_hazard.'
-    #            'OQHazardOMessageDeserializer._read_ziparchive',
-    #            side_effect=zipfile_archive)
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
+                side_effect=mocked_requests_get)
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
+                side_effect=mocked_requests_post)
+    @mock.patch('RAMSIS.io.oq_hazard.'
+                'OQHazardOMessageDeserializer._read_ziparchive',
+                side_effect=zipfile_archive)
     def test_successful_hazard_flow(self,
-                                    #mock_ziparchive,
-                                    #mock_post,
-                                    #mock_get,
+                                    mock_ziparchive,
+                                    mock_post,
+                                    mock_get,
                                     mock_signal):
         """
         Test the flow with only the seismicity & hazard stage enabled
@@ -633,7 +615,7 @@ class IntegrationTestCase(unittest.TestCase):
         scenario = forecast.scenarios[0]
         scenario.status.state = EStatus.RUNNING
 
-        seismicity_stage = scenario[EStage.SEISMICITY] 
+        seismicity_stage = scenario[EStage.SEISMICITY]
         seismicity_stage.status.state = EStatus.COMPLETE
 
         hazard_stage = scenario[EStage.HAZARD]
@@ -661,7 +643,7 @@ class IntegrationTestCase(unittest.TestCase):
             self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
-            time.sleep(4)
+            time.sleep(2)
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
@@ -698,13 +680,14 @@ class IntegrationTestCase(unittest.TestCase):
         pointvalues_list = [run.hazardpointvalues for run in stage.runs]
         pointvalues = [value for sublist in pointvalues_list for value
                        in sublist]
-        self.assertEqual(len(pointvalues), 544)
+        self.assertEqual(len(pointvalues), 3264)
         curves_list = [run.hazardcurves for run in stage.runs]
         curves = [value for sublist in curves_list for value in sublist]
-        self.assertEqual(len(curves), 68)
+        self.assertEqual(len(curves), 272)
 
         geopoints = [(point.geopoint.lat, point.geopoint.lon)
                      for point in pointvalues]
+        geopoints = sorted(geopoints)
         # rewrite geopoints file in case results are altered
         #with open(os.path.join(dirpath, GEOPOINTS), 'w') as geopoints_read: # noqa
         #    for tup in geopoints:
@@ -713,14 +696,15 @@ class IntegrationTestCase(unittest.TestCase):
         with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
             geopoint_lines = geopoints_read.readlines()
         geopoints_stored = []
+
         for line in geopoint_lines:
             lat_str, lon_str = line.split()
             geopoints_stored.append((float(lat_str), float(lon_str)))
 
+        geopoints_stored = sorted(geopoints_stored)
         self.assertEqual(geopoints, geopoints_stored)
         store.session.remove()
         store.engine.dispose()
-
 
 
 if __name__ == "__main__":
