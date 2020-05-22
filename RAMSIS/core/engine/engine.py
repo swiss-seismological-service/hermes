@@ -442,9 +442,26 @@ class Engine(QObject):
             except KeyError:
                 data_dir = None
 
-        flow_runner = FlowRunner(forecast_id, self.session, data_dir)
-        worker = Worker(flow_runner.run)
+        self.flow_runner = FlowRunner(forecast_id, self.session, data_dir)
+        worker = Worker(self.flow_runner.run)
+        self.flow_runner.forecast_executor.status_changed.connect(
+            self.on_executor_status_changed)
+
         self.threadpool.start(worker)
+
+    def on_executor_status_changed(self, status):
+        """
+        Handle status changes from the executor chain
+
+        :param RAMSIS.core.tools.executor.ExecutionStatus status: Status
+        """
+        #if status.origin == self._forecast_executor:
+        #    done = [ExecutionStatus.Flag.SUCCESS, ExecutionStatus.Flag.ERROR]
+        #    if status.flag in done:
+        #        self.busy = False
+        #        self.forecast_complete.emit()
+        self.execution_status_update.emit(status)
+
 
 
 class FlowRunner:

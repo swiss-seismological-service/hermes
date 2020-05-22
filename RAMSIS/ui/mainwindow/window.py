@@ -29,7 +29,6 @@ from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 from RAMSIS.ui.utils import UiForm
-from ramsis.datamodel.forecast import EStage
 
 from .presenter import ContentPresenter
 
@@ -153,6 +152,7 @@ class MainWindow(QMainWindow,
 
         dlg = ScenarioConfigDialog(
             default_scenario(self.app.ramsis_core.store),
+            self.app.ramsis_core.store,
             fc_duration=(fc.endtime - fc.starttime).total_seconds(),
             deserializer_args={
                 'ramsis_proj': self.app.ramsis_core.project.spatialreference,
@@ -165,15 +165,6 @@ class MainWindow(QMainWindow,
         scenario = dlg.data
         if scenario is not None:
             self.logger.debug(f"Dialog data: {dlg.data!r}")
-
-            oq_stage_enabled = any([scenario[EStage.HAZARD].enabled,
-                                    scenario[EStage.RISK].enabled])
-            if not self.app.oq_config_file and oq_stage_enabled:
-                _ = QMessageBox.critical(
-                    self, 'RAMSIS', 'No openquake config found for enabled '
-                    'stages. Please add openquake_config.yml '
-                    'to ~/.config/SED/Ramsis and restart app.')
-                return
 
             fc = self.app.ramsis_core.store.get_fresh(fc)
             fc.append(scenario)

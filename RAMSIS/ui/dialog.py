@@ -8,12 +8,14 @@ import json
 import logging
 
 from PyQt5.QtCore import pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox, QTableWidgetItem
 
 from ramsis.utils.error import Error
 from ramsis.datamodel.forecast import EStage
+from ramsis.datamodel import SeismicityModel, HazardModel
 from ramsis.datamodel.well import InjectionWell
 
+from ramsis.datamodel.model import EModel
 from RAMSIS.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
 from RAMSIS.io.sfm import _ReservoirSchema
@@ -71,7 +73,7 @@ class ScenarioConfigDialog(
     """
     JSON_INDENT = 2
 
-    def __init__(self, scenario, *args, fc_duration=None,
+    def __init__(self, scenario, store, *args, fc_duration=None,
                  srs=None, **kwargs):
         """
         :param scenario: Forecast scenario the dialog is preconfigured with
@@ -85,6 +87,7 @@ class ScenarioConfigDialog(
         self._path_plan = None
         self._srs = srs
         self._data = scenario
+        self.store = store
         self._configure(scenario, fc_duration)
         self.deserializer_args = kwargs.get('deserializer_args')
 
@@ -128,6 +131,7 @@ class ScenarioConfigDialog(
                     stage.config['prediction_bin_duration'])
 
             # configure seismicity models
+
             for r in stage.runs:
                 self.ui.seismicityModelsComboBox.addItem(
                     r.model.name, userData=r)
@@ -153,12 +157,48 @@ class ScenarioConfigDialog(
 
         # configure hazardStageTab
         try:
-            stage = scenario[EStage.HAZARD]
+            hazard_stage = scenario[EStage.HAZARD]
+            seismicity_stage = scenario[EStage.SEISMICITY]
         except KeyError:
             # TODO(damb): see seismicityStageTab
             pass
         else:
-            self.ui.hazardStageEnable.setChecked(stage.enabled)
+            hazard_models = self.store.load_models(EModel.HAZARD)
+            self.ui.hazardStageEnable.setChecked(hazard_stage.enabled)
+            # configure what hazard models are available
+            if hazard_models:
+
+                self.ui.hazardModelComboBox.setCurrentIndex(0)
+
+                self.ui.hazardStageEnable.setChecked(
+                    hazard_models[0].enabled)
+                for hazard_model in hazard_models:
+                    self.ui.hazardModelComboBox.addItem(
+                        hazard_model.name, userData=hazard_model)
+
+            # configure seismicity models for hazard
+            self.ui.hazardTableWidget.setColumnCount(1)
+            self.ui.hazardTableWidget.setRowCount(5)
+            self.ui.hazardTableWidget.setHorizontalHeaderLabels(['Weights'])
+            hheader = self.ui.hazardTableWidget.horizontalHeader()
+            vheader = self.ui.hazardTableWidget.verticalHeader()
+            hheader.setVisible(True)
+            vheader.setVisible(True)
+
+            if seismicity_stage.runs:
+                self.ui.hazardTableWidget.setRowCount(len(seismicity_stage.runs))
+                for i, r in enumerate(seismicity_stage.runs):
+                    self.ui.hazardTableWidget.setCurrentCell(i, 0)
+                    self.ui.hazardTableWidget.setVerticalHeaderItem(i,
+                        QTableWidgetItem(r.model.name))
+                    # Strings are required to show as an item in a cell
+                    weight = str(r.weight) if r.weight else "1.0"
+                    self.ui.hazardTableWidget.setItem(i, 0,
+                        QTableWidgetItem(weight))
+
+            self.ui.hazardTableWidget.setCurrentCell(0, 0)
+
+
 
         # configure riskStageTab
         try:
@@ -170,7 +210,7 @@ class ScenarioConfigDialog(
             self.ui.riskStageEnable.setChecked(stage.enabled)
 
     def _on_accept(self):
-        # validate stages
+
         seismicity_stage_enabled = self.ui.seismicityStageEnable.isChecked()
         hazard_stage_enabled = self.ui.hazardStageEnable.isChecked()
         risk_stage_enabled = self.ui.riskStageEnable.isChecked()
@@ -239,23 +279,56 @@ class ScenarioConfigDialog(
         self._data.reservoirgeom = geom
         self._data.well = well
         try:
-            stage = self._data[EStage.SEISMICITY]
+            seismicity_stage = self._data[EStage.SEISMICITY]
         except KeyError:
             pass
         else:
-            stage.enabled = seismicity_stage_enabled
-            stage.config = {
+            seismicity_stage.enabled = seismicity_stage_enabled
+            seismicity_stage.config = {
                 'prediction_bin_duration':
                 self.ui.predictionBinDurationDoubleSpinBox.value(), }
             cbox = self.ui.seismicityModelsComboBox
-            stage.runs = [cbox.itemData(i) for i in range(cbox.count())]
+            seismicity_stage.runs = [cbox.itemData(i) for i in range(cbox.count())]
 
         try:
-            stage = self._data[EStage.HAZARD]
+            hazard_stage = self._data[EStage.HAZARD]
         except KeyError:
             pass
         else:
-            stage.enabled = hazard_stage_enabled
+            hazard_stage.enabled = hazard_stage_enabled
+
+            # check that seismicity stage also enabled
+            if not seismicity_stage.enabled:
+                _ = QMessageBox.critical(
+                    self, 'RAMSIS',
+                    f'The seismicity stage must be enabled for the '
+                    'hazard stage to proceed.',
+                    buttons=QMessageBox.Close)
+                raise ValidationError(
+                    'Seismicity stage should be enabled if other stages '
+                    'are also enabled')
+
+            # add hazard model to hazard stage
+
+            chosen_model_name = self.ui.hazardModelComboBox.currentText()
+            chosen_model = self.store.load_models_by(HazardModel, name=chosen_model_name)
+            self._data[EStage.HAZARD].model = chosen_model[0]
+            # update the seismicity models with new values for weights
+            model_runs = self._data[EStage.SEISMICITY].runs
+            for i in range(len(seismicity_stage.runs)):
+                self.ui.hazardTableWidget.setCurrentCell(i, 0)
+                new_weight = self.ui.hazardTableWidget.item(i, 0).text()
+                model_name = self.ui.hazardTableWidget.verticalHeaderItem(i).text()
+                model = [mod for mod in model_runs if mod.model.name == model_name][0]
+                try:
+                    model.weight = float(new_weight)
+                except ValueError:
+                    _ = QMessageBox.critical(
+                        self, 'RAMSIS',
+                        f'The weights entered for the hazard stage cannot '
+                        'be accepted.',
+                        buttons=QMessageBox.Close)
+                    raise ValidationError()
 
         try:
             stage = self._data[EStage.RISK]

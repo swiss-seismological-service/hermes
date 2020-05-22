@@ -119,12 +119,14 @@ def default_scenario(store, name='Scenario', **kwargs):
             pass
         else:
             enabled = hazard_stage_config.get('enabled', False)
-            hazard_models = store.load_models(model_type=EModel.HAZARD)
-            if enabled and hazard_models:
-                assert len(hazard_models) == 1
-                models = [m for m in store.load_models(
-                    model_type=EModel.HAZARD) if m.enabled]
-                retval.append(hazard_stage(model=models[0], enabled=enabled))
+            hazard_model = store.load_models(model_type=EModel.HAZARD)
+            if enabled and hazard_model:
+                retval.append(hazard_stage(enabled=enabled))
+            elif enabled and not hazard_model:
+                raise Exception("Hazard stage enabled but no "
+                                "models exist.")
+            else:
+                pass
         try:
             risk_stage_config = stage_config[3]['risk']
         except (IndexError, KeyError):

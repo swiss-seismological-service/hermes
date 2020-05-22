@@ -84,7 +84,7 @@ class ContentPresenter(object):
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
         # Essential signals from the core
-        self.ramsis_core.engine.forecast_handler.execution_status_update.\
+        self.ramsis_core.engine.execution_status_update.\
             connect(self.on_execution_status_update)
 
     # Display update methods for individual window components
@@ -212,6 +212,7 @@ class ContentPresenter(object):
             elif isinstance(item, ForecastScenario):
                 ctx = EditingContext(self.ramsis_core.store)
                 dlg = ScenarioConfigDialog(ctx.get(item),
+                                           self.ramsis_core.store,
                                            deserializer_args={
                     'ramsis_proj': self.ramsis_core.project.spatialreference,
                     'external_proj': self.ramsis_core.external_proj,
@@ -223,6 +224,7 @@ class ContentPresenter(object):
                 if dlg.result() == QDialog.Accepted:
                     ctx.save()
                     self._refresh_scenario_status()
+                    self.ramsis_core.store.close()
 
             else:
                 raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")

@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>411</width>
+    <width>729</width>
     <height>567</height>
    </rect>
   </property>
@@ -224,13 +224,102 @@
       <attribute name="title">
        <string>Hazard Stage</string>
       </attribute>
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>126</y>
+         <width>671</width>
+         <height>341</height>
+        </rect>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each seismicity model that is input to the hazard stage requires a weighting value. This value determines the influence of the model when hazard is calculated, with a larger number giving a larger influence. These weightings are not required to sum to 1.0, as the values will be normalized on running the forecast.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="title">
+        <string>Seismicity model weighting</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QTableWidget" name="hazardTableWidget">
+          <property name="minimumSize">
+           <size>
+            <width>256</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="midLineWidth">
+           <number>0</number>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="horizontalHeaderCascadingSectionResizes">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="horizontalHeaderDefaultSectionSize">
+           <number>180</number>
+          </attribute>
+          <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderHighlightSections">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>Weighting</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_5">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>40</y>
+         <width>671</width>
+         <height>71</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Hazard model</string>
+       </property>
+       <widget class="QComboBox" name="hazardModelComboBox">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>40</y>
+          <width>661</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="maxVisibleItems">
+         <number>1</number>
+        </property>
+        <property name="maxCount">
+         <number>214</number>
+        </property>
+       </widget>
+      </widget>
       <widget class="QCheckBox" name="hazardStageEnable">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>10</y>
-         <width>359</width>
-         <height>21</height>
+         <y>-10</y>
+         <width>347</width>
+         <height>61</height>
         </rect>
        </property>
        <property name="text">
