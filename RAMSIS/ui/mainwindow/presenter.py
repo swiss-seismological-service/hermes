@@ -159,6 +159,9 @@ class ContentPresenter(object):
         self.ui.statusAreaWidget.setStyleSheet('background-color: transparent;'
                                                'color: transparent;'
                                                .format(color, text_color))
+        general_tab = next(t for t in self.tab_presenters
+                           if isinstance(t, GeneralTabPresenter))
+        general_tab.refresh_status(scenario)
 
     # Context menu actions
 
@@ -222,6 +225,9 @@ class ContentPresenter(object):
                 dlg.exec_()
 
                 if dlg.result() == QDialog.Accepted:
+                    merge_items = dlg.updated_items()
+                    for item in merge_items:
+                        ctx.add(item)
                     ctx.save()
                     self._refresh_scenario_status()
                     self.ramsis_core.store.close()

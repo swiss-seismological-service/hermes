@@ -8,11 +8,12 @@ import json
 import logging
 
 from PyQt5.QtCore import pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QMessageBox, QTableWidgetItem
+from PyQt5.QtWidgets import (QDialog, QWidget, QFileDialog,
+                             QMessageBox, QTableWidgetItem)
 
 from ramsis.utils.error import Error
 from ramsis.datamodel.forecast import EStage
-from ramsis.datamodel import SeismicityModel, HazardModel
+from ramsis.datamodel import HazardModel
 from ramsis.datamodel.well import InjectionWell
 
 from ramsis.datamodel.model import EModel
@@ -90,6 +91,11 @@ class ScenarioConfigDialog(
         self.store = store
         self._configure(scenario, fc_duration)
         self.deserializer_args = kwargs.get('deserializer_args')
+        self.previous_tab_position = 0
+        self.merge_items = []
+
+    def updated_items(self):
+        return list(set(self.merge_items))
 
     def _configure(self, scenario, fc_duration=None):
         """
@@ -178,27 +184,27 @@ class ScenarioConfigDialog(
 
             # configure seismicity models for hazard
             self.ui.hazardTableWidget.setColumnCount(1)
-            self.ui.hazardTableWidget.setRowCount(5)
             self.ui.hazardTableWidget.setHorizontalHeaderLabels(['Weights'])
             hheader = self.ui.hazardTableWidget.horizontalHeader()
             vheader = self.ui.hazardTableWidget.verticalHeader()
             hheader.setVisible(True)
             vheader.setVisible(True)
 
-            if seismicity_stage.runs:
-                self.ui.hazardTableWidget.setRowCount(len(seismicity_stage.runs))
-                for i, r in enumerate(seismicity_stage.runs):
+            runs = [run for run in seismicity_stage.runs if run.enabled]
+            if runs:
+                self.ui.hazardTableWidget.setRowCount(len(runs))
+                for i, r in enumerate(runs):
                     self.ui.hazardTableWidget.setCurrentCell(i, 0)
-                    self.ui.hazardTableWidget.setVerticalHeaderItem(i,
-                        QTableWidgetItem(r.model.name))
+                    self.ui.hazardTableWidget.setVerticalHeaderItem(
+                        i, QTableWidgetItem(r.model.name))
                     # Strings are required to show as an item in a cell
                     weight = str(r.weight) if r.weight else "1.0"
-                    self.ui.hazardTableWidget.setItem(i, 0,
-                        QTableWidgetItem(weight))
+                    self.ui.hazardTableWidget.setItem(
+                        i, 0, QTableWidgetItem(weight))
 
             self.ui.hazardTableWidget.setCurrentCell(0, 0)
-
-
+            self.ui.generalScenarioTab.currentChanged.connect(
+                self._update_hazard_table)
 
         # configure riskStageTab
         try:
@@ -209,8 +215,60 @@ class ScenarioConfigDialog(
         else:
             self.ui.riskStageEnable.setChecked(stage.enabled)
 
+    def _update_hazard_table(self):
+
+        if self.previous_tab_position == 1:
+
+            seismicity_stage = self._data[EStage.SEISMICITY]
+            runs = [run for run in seismicity_stage.runs]
+
+            # Get the index and name of model for each row in table
+            runs_in_table = [
+                (i, self.ui.hazardTableWidget.verticalHeaderItem(i).text())
+                for i in range(self.ui.hazardTableWidget.rowCount())]
+            indexes_table, model_names_table = zip(*runs_in_table)
+
+            # grab index of rows that should be removed
+            disable_model_runs = [run for run in runs if not run.enabled
+                                  and run.model.name in model_names_table] # noqa
+
+            # get model run that should be added to table
+            enable_model_runs = [run for run in runs if run.enabled and
+                                 run.model.name not in model_names_table]
+            enabled_runs = [run for run in runs if run.enabled]
+            if disable_model_runs:
+                for run in disable_model_runs:
+                    self.merge_items.append(run)
+                    matching_row = [
+                        item for item in runs_in_table if
+                        item[1] == run.model.name][0]
+                    row_index, row_name = matching_row
+                    self.ui.hazardTableWidget.removeRow(row_index)
+
+                self.ui.hazardTableWidget.setRowCount(len(enabled_runs))
+            if enable_model_runs:
+                self.ui.hazardTableWidget.setRowCount(len(enabled_runs))
+                current_index = len(enabled_runs) - len(enable_model_runs)
+                self.ui.hazardTableWidget.setRowCount(len(enabled_runs))
+                for ind, model_run in enumerate(enable_model_runs):
+                    self.merge_items.append(model_run)
+                    new_index = ind + current_index
+                    self.ui.hazardTableWidget.setVerticalHeaderItem(
+                        new_index,
+                        QTableWidgetItem(model_run.model.name))
+                    # Strings are required to show as an item in a cell
+                    weight = (str(model_run.weight) if model_run.weight
+                              else "1.0")
+                    self.ui.hazardTableWidget.setItem(
+                        new_index, 0, QTableWidgetItem(weight))
+
+            self.ui.hazardTableWidget.setCurrentCell(0, 0)
+
+        self.previous_tab_position = self.ui.generalScenarioTab.currentIndex()
+
     def _on_accept(self):
 
+        self._update_hazard_table()
         seismicity_stage_enabled = self.ui.seismicityStageEnable.isChecked()
         hazard_stage_enabled = self.ui.hazardStageEnable.isChecked()
         risk_stage_enabled = self.ui.riskStageEnable.isChecked()
@@ -288,7 +346,8 @@ class ScenarioConfigDialog(
                 'prediction_bin_duration':
                 self.ui.predictionBinDurationDoubleSpinBox.value(), }
             cbox = self.ui.seismicityModelsComboBox
-            seismicity_stage.runs = [cbox.itemData(i) for i in range(cbox.count())]
+            seismicity_stage.runs = [cbox.itemData(i) for i
+                                     in range(cbox.count())]
 
         try:
             hazard_stage = self._data[EStage.HAZARD]
@@ -311,24 +370,31 @@ class ScenarioConfigDialog(
             # add hazard model to hazard stage
 
             chosen_model_name = self.ui.hazardModelComboBox.currentText()
-            chosen_model = self.store.load_models_by(HazardModel, name=chosen_model_name)
+            chosen_model = self.store.load_models_by(
+                HazardModel, name=chosen_model_name)
             self._data[EStage.HAZARD].model = chosen_model[0]
             # update the seismicity models with new values for weights
             model_runs = self._data[EStage.SEISMICITY].runs
-            for i in range(len(seismicity_stage.runs)):
-                self.ui.hazardTableWidget.setCurrentCell(i, 0)
-                new_weight = self.ui.hazardTableWidget.item(i, 0).text()
-                model_name = self.ui.hazardTableWidget.verticalHeaderItem(i).text()
-                model = [mod for mod in model_runs if mod.model.name == model_name][0]
-                try:
-                    model.weight = float(new_weight)
-                except ValueError:
-                    _ = QMessageBox.critical(
-                        self, 'RAMSIS',
-                        f'The weights entered for the hazard stage cannot '
-                        'be accepted.',
-                        buttons=QMessageBox.Close)
-                    raise ValidationError()
+            for run in model_runs:
+                model_updated = False
+                for row_index in range(self.ui.hazardTableWidget.rowCount()):
+                    model_name = self.ui.hazardTableWidget.verticalHeaderItem(
+                        row_index).text()
+                    if model_name == run.model.name:
+                        new_weight = self.ui.hazardTableWidget.item(
+                            row_index, 0).text()
+                        try:
+                            run.weight = float(new_weight)
+                            model_updated = True
+                        except ValueError:
+                            _ = QMessageBox.critical(
+                                self, 'RAMSIS',
+                                f'The weights entered for the hazard stage '
+                                'cannot be accepted.',
+                                buttons=QMessageBox.Close)
+                            raise ValidationError()
+                if not model_updated:
+                    run.weight = None
 
         try:
             stage = self._data[EStage.RISK]
