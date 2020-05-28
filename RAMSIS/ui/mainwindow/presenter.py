@@ -226,11 +226,12 @@ class ContentPresenter(object):
 
                 if dlg.result() == QDialog.Accepted:
                     merge_items = dlg.updated_items()
-                    for item in merge_items:
-                        ctx.add(item)
+                    for mitem in merge_items:
+                        ctx.add(mitem)
+                        _ = self.ramsis_core.store.get_fresh(mitem)
+                    self.current_scenario = self.ramsis_core.store.get_fresh(ctx.get(item))
                     ctx.save()
                     self._refresh_scenario_status()
-                    self.ramsis_core.store.close()
 
             else:
                 raise TypeError(f"Invalid type {item!r} (index={indices[0]}).")
