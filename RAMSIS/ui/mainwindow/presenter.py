@@ -229,7 +229,8 @@ class ContentPresenter(object):
                     for mitem in merge_items:
                         ctx.add(mitem)
                         _ = self.ramsis_core.store.get_fresh(mitem)
-                    self.current_scenario = self.ramsis_core.store.get_fresh(ctx.get(item))
+                    self.current_scenario = self.ramsis_core.store.get_fresh(
+                        ctx.get(item))
                     ctx.save()
                     self._refresh_scenario_status()
 
