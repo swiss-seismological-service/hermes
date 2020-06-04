@@ -65,72 +65,79 @@ class OQSourceModelFiles(Task):
 
     def run(self, hazard_model_run, oq_input_dir):
         self.logger = prefect.context.get('logger')
+        try:
 
-        hazard_stage = hazard_model_run.forecaststage
-        start = hazard_model_run.describedinterval_start
-        end = hazard_model_run.describedinterval_end
+            hazard_stage = hazard_model_run.forecaststage
+            start = hazard_model_run.describedinterval_start
+            end = hazard_model_run.describedinterval_end
 
-        scenario = hazard_stage.scenario
-        project = scenario.forecast.project
-        serializer = OQGeomSerializer(
-            ramsis_proj=project.spatialreference,
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
-            transform_func_name='pyproj_transform_from_local_coords')
+            scenario = hazard_stage.scenario
+            project = scenario.forecast.project
+            serializer = OQGeomSerializer(
+                ramsis_proj=project.spatialreference,
+                ref_easting=project.referencepoint_x,
+                ref_northing=project.referencepoint_y,
+                transform_func_name='pyproj_transform_from_local_coords')
 
-        seis_context = []
-        for seis_run in hazard_model_run.seismicitymodelruns:
-            self.validate_paths(seis_run.model, 'seismicitymodeltemplate',
-                                seis_run.model.name)
-            if seis_run.status.state != EStatus.COMPLETE:
-                raise FAIL(f'Scenario: {scenario.id} has model '
-                           f'runs that are not complete.', result=scenario)
-            result = seis_run.result
-            # Only support one level of parent-child results
-            # if there are no results for a model, a model source file
-            # is still created (equivalent to zero seismicity)
-            geoms = []
-            try:
-                children = result.children
-            except DetachedInstanceError:
-                children = None
+            seis_context = []
+            for seis_run in hazard_model_run.seismicitymodelruns:
+                self.validate_paths(seis_run.model, 'seismicitymodeltemplate',
+                                    seis_run.model.name)
+                if seis_run.status.state != EStatus.COMPLETE:
+                    raise FAIL(f'Scenario: {scenario.id} has model '
+                               f'runs that are not complete.', result=scenario)
+                result = seis_run.result
+                # Only support one level of parent-child results
+                # if there are no results for a model, a model source file
+                # is still created (equivalent to zero seismicity)
+                geoms = []
+                try:
+                    children = result.children
+                except DetachedInstanceError:
+                    children = None
 
-            if children:
-                for index, child_result in enumerate(children):
+                if children:
+                    for index, child_result in enumerate(children):
+                        geoms = self.append_geometry(geoms, result, serializer,
+                                                     start, end, index + 1)
+                else:
                     geoms = self.append_geometry(geoms, result, serializer,
-                                                 start, end, index + 1)
-            else:
-                geoms = self.append_geometry(geoms, result, serializer,
-                                             start, end, 1)
+                                                 start, end, 1)
 
-            xml_name = SEISMICITY_MODEL_BASENAME.format(
-                seis_run.model.name, start.strftime(DATETIME_FORMAT),
-                end.strftime(DATETIME_FORMAT))
-            seis_context.append({
-                'starttime': start,
-                'endtime': end,
-                'seismicity_model_run': seis_run,
-                'model': seis_run.model,
-                'hazard_weighting': seis_run.weight,
-                'xml_name': xml_name,
-                'geometries': geoms,
-                'min_mag': MIN_MAG})
+                xml_name = SEISMICITY_MODEL_BASENAME.format(
+                    seis_run.model.name, start.strftime(DATETIME_FORMAT),
+                    end.strftime(DATETIME_FORMAT))
+                seis_context.append({
+                    'starttime': start,
+                    'endtime': end,
+                    'seismicity_model_run': seis_run,
+                    'model': seis_run.model,
+                    'hazard_weighting': seis_run.weight,
+                    'xml_name': xml_name,
+                    'geometries': geoms,
+                    'min_mag': MIN_MAG})
 
-        source_models = []
-        for model_context in seis_context:
-            # Call xml writer
-            template_filename = model_context['seismicity_model_run'].\
-                model.seismicitymodeltemplate
-            with open(
-                os.path.join(oq_input_dir,
-                             model_context['xml_name']), 'w') as model_file:
-                model_file.write(render_template(
-                    os.path.basename(template_filename),
-                    model_context,
-                    os.path.dirname(template_filename)))
-                source_models.append(
-                    (model_context['xml_name'],
-                     model_context['seismicity_model_run'].weight))
+            source_models = []
+            for model_context in seis_context:
+                # Call xml writer
+                template_filename = model_context['seismicity_model_run'].\
+                    model.seismicitymodeltemplate
+                with open(
+                    os.path.join(oq_input_dir,
+                                 model_context['xml_name']), 'w') as model_file:
+                    model_file.write(render_template(
+                        os.path.basename(template_filename),
+                        model_context,
+                        os.path.dirname(template_filename)))
+                    source_models.append(
+                        (model_context['xml_name'],
+                         model_context['seismicity_model_run'].weight))
+        except Exception as err:
+
+            self.logger.error("Get model files failed: ", err)
+            scenario = hazard_model_run.forecaststage.scenario
+            raise FAIL(f'Scenario: {scenario.id} has model '
+                       f'runs that are not complete.', result=scenario)
         return source_models
 
     def append_geometry(self, geoms, result, serializer, start, end, geom_id):

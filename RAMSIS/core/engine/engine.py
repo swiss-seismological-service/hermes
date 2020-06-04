@@ -444,7 +444,7 @@ class Engine(QObject):
 
         self.flow_runner = FlowRunner(forecast_id, self.session, data_dir)
         worker = Worker(self.flow_runner.run)
-        self.flow_runner.forecast_executor.status_changed.connect(
+        self.flow_runner.forecast_handler.execution_status_update.connect(
             self.on_executor_status_changed)
 
         self.threadpool.start(worker)
@@ -479,6 +479,7 @@ class FlowRunner:
             self.threadpool, self.synchronous_thread)
         self.forecast_handler.session = self.session
         self.hazard_handler.session = self.session
+        self.stage_results = []
 
     def update_forecast_status(self, estatus):
         forecast = self.session.query(Forecast).filter(
@@ -529,7 +530,9 @@ class FlowRunner:
                              "that is not complete. The next stages cannot "
                              "continue")
 
+        print([state for state in hazard_stage_states])
         if any(state != EStatus.COMPLETE for state in hazard_stage_states):
+            print("running the hazard flow")
             hazard_flow = HazardFlow(forecast,
                                      self.hazard_handler,
                                      self.data_dir,
@@ -540,21 +543,37 @@ class FlowRunner:
             hazard_stage_states = self.stage_states(EStage.HAZARD)
         return hazard_stage_states
 
+    def run_stage(self, forecast_input, estage):
+        stage_enabled = False
+        try:
+            scenarios = forecast_input.scenarios
+            for scenario in scenarios:
+                print('scenario in scenarios', scenario)
+                print("Running stage ", estage, scenario[estage].enabled)
+                if scenario[estage].enabled:
+                    stage_enabled = True
+        except AttributeError as err:
+            print('err...', err)
+            pass
+        print("stage enabled", stage_enabled)
+        return stage_enabled
+
     def run(self, progress_callback):
         forecast_input = forecast_for_seismicity(self.forecast_id,
                                                  self.session)
         assert forecast_input.status.state != EStatus.COMPLETE
         self.update_forecast_status(EStatus.RUNNING)
 
-        seismicity_stage_states = self.seismicity_flow(forecast_input)
+        if self.run_stage(forecast_input, EStage.SEISMICITY):
+            seismicity_stage_states = self.seismicity_flow(forecast_input)
+            self.stage_results.extend(seismicity_stage_states)
 
-        hazard_stage_states = self.hazard_flow(seismicity_stage_states)
+        if self.run_stage(forecast_input, EStage.HAZARD):
+            hazard_stage_states = self.hazard_flow(seismicity_stage_states)
+            self.stage_results.extend(hazard_stage_states)
         # Alter forecast status
 
-        stage_statuses = []
-        for status_list in [seismicity_stage_states, hazard_stage_states]:
-            stage_statuses.extend(status_list)
-        if all(status == EStatus.COMPLETE for status in stage_statuses):
+        if all(status == EStatus.COMPLETE for status in self.stage_results):
             self.update_forecast_status(EStatus.COMPLETE)
         else:
             self.update_forecast_status(EStatus.ERROR)

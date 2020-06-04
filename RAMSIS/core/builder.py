@@ -172,7 +172,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
 empty_forecast = functools.partial(default_forecast, None, num_scenarios=0)
 
 
-def default_project(spatialreference, referencepoint_x=0, referencepoint_y=0,
+def default_project(spatialreference='', referencepoint_x=0, referencepoint_y=0,
                     name='Project', description='',
                     starttime=datetime.datetime.utcnow(), endtime=None):
     """

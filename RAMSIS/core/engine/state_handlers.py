@@ -314,6 +314,7 @@ class ForecastHandler(BaseHandler):
         update_model_run = self.session.query(SeismicityModelRun).\
             filter(SeismicityModelRun.id == model_run.id).first()
         update_model_run.result = model_result
+        self.session.add(model_result)
         self.update_db()
 
     def add_catalog(self, new_state, logger):
@@ -516,12 +517,13 @@ class HazardHandler(BaseHandler):
                 logger.warning(
                     f"Hazard model run has failed: {new_state.result}. "
                     f"Message: {new_state.message}")
-                update_model_run = self.session.query(HazardModelRun).\
-                    filter(HazardModelRun.id == model_run.id).first()
-                update_model_run.status.state = EStatus.ERROR
-                self.execution_status_update.emit((
-                    new_state, type(model_run),
-                    model_run.id))
+                for model_run in model_runs:
+                    update_model_run = self.session.query(HazardModelRun).\
+                        filter(HazardModelRun.id == model_run.id).first()
+                    update_model_run.status.state = EStatus.ERROR
+                    self.execution_status_update.emit((
+                        new_state, type(model_run),
+                        model_run.id))
 
                 # The sent status is not used, as the whole scenario must
                 # be refreshed from the db in the gui thread.
