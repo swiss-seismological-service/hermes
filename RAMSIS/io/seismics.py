@@ -135,21 +135,21 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         attr_dict['datetime_value'] = origin.time.datetime
         attr_dict.update(add_prefix('datetime_', origin.time_errors))
 
-        x = origin.latitude
-        y = origin.longitude
+        x = origin.longitude
+        y = origin.latitude
         z = origin.depth
 
         # convert origin into local CRS
         try:
-            x, y, z = self.transform_func(origin.latitude, origin.longitude,
+            x, y, z = self.transform_func(origin.longitude, origin.latitude,
                                           origin.depth)
         except Exception as err:
             raise TransformationError(err)
 
         attr_dict['x_value'] = x
-        attr_dict.update(add_prefix('x_', origin.latitude_errors))
+        attr_dict.update(add_prefix('x_', origin.longitude_errors))
         attr_dict['y_value'] = y
-        attr_dict.update(add_prefix('y_', origin.longitude_errors))
+        attr_dict.update(add_prefix('y_', origin.latitude_errors))
         attr_dict['z_value'] = z
         attr_dict.update(add_prefix('z_', origin.depth_errors))
 

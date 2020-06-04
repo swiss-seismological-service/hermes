@@ -241,16 +241,16 @@ class RamsisCoordinateTransformer:
         self.external_proj = external_proj
 
         self.transformer_to_ramsis = Transformer.from_proj(
-            self.external_proj, self.ramsis_proj)
+            self.external_proj, self.ramsis_proj, always_xy=True)
         self.transformer_to_external = Transformer.from_proj(
-            self.ramsis_proj, self.external_proj)
+            self.ramsis_proj, self.external_proj, always_xy=True)
 
-    def pyproj_transform_to_local_coords(self, lat, lon, depth=None):
+    def pyproj_transform_to_local_coords(self, lon, lat, depth=None):
         # Easting and northing in projected coordinates
-        easting_0, northing_0 = self.transformer_to_ramsis.transform(lat, lon)
+        easting_0, northing_0 = self.transformer_to_ramsis.transform(lon, lat)
         easting = easting_0 - self.ref_easting
         northing = northing_0 - self.ref_northing
-        altitude = -depth if depth else None
+        altitude = -depth if depth is not None else None
 
         return easting, northing, altitude
 
@@ -259,7 +259,7 @@ class RamsisCoordinateTransformer:
         easting_0 = easting + self.ref_easting
         northing_0 = northing + self.ref_northing
 
-        lat, lon = self.transformer_to_external.transform(easting_0,
+        lon, lat = self.transformer_to_external.transform(easting_0,
                                                           northing_0)
-        depth = -altitude if altitude else None
-        return lat, lon, depth
+        depth = -altitude if altitude is not None else None
+        return lon, lat, depth
