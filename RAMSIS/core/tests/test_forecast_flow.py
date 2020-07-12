@@ -43,6 +43,8 @@ from ramsis.datamodel.hydraulics import (  # noqa
     Hydraulics, InjectionPlan, HydraulicSample)
 from ramsis.datamodel.model import Model, ModelRun  # noqa
 from ramsis.datamodel.project import Project  # noqa
+from ramsis.datamodel.hazard import (  # noqa
+    HazardModel)
 from ramsis.datamodel.seismicity import (  # noqa
     SeismicityModel, SeismicityModelRun, ReservoirSeismicityPrediction,
     SeismicityPredictionBin)
@@ -195,7 +197,6 @@ def create_json_response(task_id, response_template, **kwargs):
     resp['data']['id'] = task_id
     return resp
 
-
 def create_models():
     URL_EM1 = 'http://localhost:5000'
     EM1_SFMWID = 'EM1'
@@ -232,6 +233,14 @@ def create_models():
         url=URL_EM1)
     retval.append(m)
 
+    m = HazardModel(
+        name='default',
+        logictreetemplate='text',
+        gmpefile='text',
+        jobconfigfile='text',
+        enabled=True,
+        url="http://localhost:8800")
+    retval.append(m)
     return retval
 
 
@@ -308,6 +317,8 @@ def insert_test_data(db_url):
     seismicity_stage = scenario[EStage.SEISMICITY]
     seismicity_stage.config = {'prediction_bin_duration': 7200}
     scenario.reservoirgeom = RESERVOIR_INPUT
+    hazard_stage = scenario[EStage.HAZARD]
+    hazard_stage.enabled = False
 
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=RAMSIS_PROJ,

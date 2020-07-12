@@ -1,12 +1,17 @@
 import prefect
-from sqlalchemy.orm import lazyload
+from sqlalchemy.orm import lazyload, subqueryload
 from time import time, sleep
 from prefect.engine.result import NoResultType
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
+
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismicity import SeismicityModelRun
-from ramsis.datamodel.hazard import HazardModelRun, GeoPoint
-from ramsis.datamodel.forecast import EStage, Forecast
+from ramsis.datamodel.hazard import HazardModelRun, GeoPoint,\
+    HazardPointValue, HazardCurve, HazardMap
+from ramsis.datamodel.forecast import EStage, Forecast, ForecastScenario
+import logging
+
+logger = logging.getLogger('status_handler')
 
 
 class Worker(QRunnable):
@@ -48,12 +53,12 @@ class Worker(QRunnable):
                     raise TimeoutError(
                         "Synchronous thread task taking too long to complete")
                     break
-            if self.fn.__name__ == 'update_hazard_statuses':
-                while (synchronous_thread.model_runs >
-                       synchronous_thread.model_runs_count):
-                    sleep(0.5)
             synchronous_thread.reserve_thread()
-        self.fn(*self.args, **self.kwargs)
+        try:
+            self.fn(*self.args, **self.kwargs)
+        except Exception as err:
+            logger.error(f"Synchronous thread Exception raised: {err}")
+            raise err
         if synchronous_thread is not None:
             synchronous_thread.release_thread()
 
@@ -149,8 +154,7 @@ class ForecastHandler(BaseHandler):
     :param old_state: prefect.engine.state
     :param new_state: prefect.engine.state
     """
-    @staticmethod
-    def scenario_stage_status(scenario):
+    def scenario_stage_status(self, scenario):
         # If all model runs are complete without error, then the
         stage = scenario[EStage.SEISMICITY]
         # stage is a success
@@ -176,6 +180,9 @@ class ForecastHandler(BaseHandler):
                  for state in stage_states]):
             scenario.status.state = EStatus.RUNNING
 
+        self.execution_status_update.emit((
+            scenario.status.state, type(scenario),
+            scenario.id))
         return scenario
 
     def flow_state_handler(self, obj, old_state, new_state):
@@ -199,6 +206,11 @@ class ForecastHandler(BaseHandler):
             for scenario in forecast.scenarios:
                 if scenario.enabled:
                     scenario.status.state = EStatus.RUNNING
+                try:
+                    seismicity_stage = scenario[EStage.SEISMICITY]
+                    seismicity_stage.status.state = EStatus.RUNNING
+                except KeyError:
+                    pass
             self.update_db()
 
         elif new_state.is_finished():
@@ -383,6 +395,109 @@ class ForecastHandler(BaseHandler):
         return new_state
 
 
+class HazardPreparationHandler(BaseHandler):
+    """
+    Handles status changes and results emitted from prefect
+    flows. SQLalchemy model objects that are returned are
+    merged back into the database and pyqt signals alert the
+    GUI to display changes.
+
+    This class is initialized at the same time as the Engine,
+    so the session is attached later.
+
+    Prefect status handlers follow the form:
+    :param obj: The task that the status update is from
+    :param old_state: prefect.engine.state
+    :param new_state: prefect.engine.state
+    """
+    def update_hazard_statuses(self, new_state, logger, scenario_id):
+        scenario = self.session.query(ForecastScenario).filter(
+            ForecastScenario.id == scenario_id).first()
+
+        if new_state.is_running():
+            scenario.forecast.status.state = EStatus.RUNNING
+            if scenario.enabled:
+                scenario.status.state = EStatus.RUNNING
+        try:
+            hstage = scenario[EStage.HAZARD]
+            if not hstage.enabled:
+                self.update_db()
+                return new_state
+        except KeyError:
+            pass
+        else:
+            if new_state.is_failed():
+                self.stages_status_update(hstage, EStatus.ERROR, new_state)
+
+            elif new_state.is_finished() and new_state.is_successful():
+                self.stages_status_update(hstage, EStatus.PREPARED, new_state)
+                for hrun in hstage.runs:
+                    hrun.status.state = EStatus.PREPARED
+            self.update_db()
+        return new_state
+
+    def stages_status_update(self, stage, status, new_state):
+        stage.status.state = status
+        for hazard_run in stage.runs:
+            if hazard_run.enabled and status == EStatus.PREPARED:
+                hazard_run.status.state = status
+        self.update_db()
+        self.execution_status_update.emit((
+            new_state, type(stage),
+            None))
+
+    def flow_state_handler(self, obj, old_state, new_state):
+        """
+        Set the forecast state according to the end state
+        of the flow.
+        """
+        logger = prefect.context.get("logger")
+        scenario_id = prefect.context.scenario_id
+        worker = Worker(self.update_hazard_statuses, new_state, logger,
+                        scenario_id,
+                        synchronous_thread=self.synchronous_thread)
+        self.threadpool.start(worker)
+
+    def create_hazard_models_state_handler(self, obj, old_state, new_state):
+        """
+        Adds the new hazard model run to the database.
+        """
+        if self.state_evaluator(new_state, [self.task_finished,
+                                            self.successful_result]):
+            runs = new_state.result
+            for run in runs:
+                run.status.state = EStatus.RUNNING
+                self.session.add(run)
+                self.update_db()
+            if runs:
+                run = runs[0]
+                stage = run.forecaststage
+                stage.status.state = EStatus.RUNNING
+                self.execution_status_update.emit((
+                    new_state, type(run),
+                    None))
+        return new_state
+
+    def update_hazard_models_state_handler(self, obj, old_state, new_state):
+        """
+        Updates the hazard model run with linked seismicity
+        runs that are used in making the hazard model.
+        """
+        if self.state_evaluator(new_state, [self.task_finished,
+                                            self.successful_result]):
+            runs = new_state.result
+            for run in runs:
+                hazard_run = self.session.query(HazardModelRun).\
+                    filter(HazardModelRun.id == run.id).first()
+
+                for seis_run in run.seismicitymodelruns:
+                    update_seis_run = self.session.query(SeismicityModelRun).\
+                        filter(SeismicityModelRun.id == seis_run.id).first()
+                    update_seis_run.hazardruns.append(hazard_run)
+                self.update_db()
+        return new_state
+
+
 class HazardHandler(BaseHandler):
     """
     Handles status changes and results emitted from prefect
@@ -398,38 +513,30 @@ class HazardHandler(BaseHandler):
     :param old_state: prefect.engine.state
     :param new_state: prefect.engine.state
     """
-    def update_hazard_statuses(self, new_state, logger, forecast_id):
-        forecast = self.session.query(Forecast).filter(
-            Forecast.id == forecast_id).first()
+    def update_hazard_statuses(self, new_state, logger, scenario_id):
+        scenario = self.session.query(ForecastScenario).filter(
+            ForecastScenario.id == scenario_id).first()
 
-        if new_state.is_running():
-            forecast.status.state = EStatus.RUNNING
-            for scenario in forecast.scenarios:
-                if scenario.enabled:
-                    scenario.status.state = EStatus.RUNNING
-            self.update_db()
-
-        elif new_state.is_finished():
-            for scenario in forecast.scenarios:
-                scenario = self.scenario_stage_status(scenario)
+        if new_state.is_finished():
+            scenario = self.scenario_stage_status(scenario, new_state)
 
             self.update_db()
         return new_state
 
     def flow_state_handler(self, obj, old_state, new_state):
         """
-        Set the forecast state according to the end state
+        Set the scenario state according to the end state
         of the flow.
         """
+        print("start flow state handler")
         logger = prefect.context.get("logger")
-        forecast_id = prefect.context.forecast_id
+        scenario_id = prefect.context.scenario_id
         worker = Worker(self.update_hazard_statuses, new_state, logger,
-                        forecast_id,
+                        scenario_id,
                         synchronous_thread=self.synchronous_thread)
         self.threadpool.start(worker)
 
-    @staticmethod
-    def scenario_stage_status(scenario):
+    def scenario_stage_status(self, scenario, new_state):
         # If all model runs are complete without error, then the
         stage = scenario[EStage.HAZARD]
         # stage is a success
@@ -453,43 +560,10 @@ class HazardHandler(BaseHandler):
         else:
             scenario.status.state = EStatus.ERROR
 
+        self.execution_status_update.emit((
+            new_state, type(stage),
+            stage.id))
         return scenario
-
-    def update_db(self):
-        if self.session.dirty:
-            self.session.commit()
-        self.session.remove()
-
-    def create_hazard_models_state_handler(self, obj, old_state, new_state):
-        """
-        Adds the new hazard model run to the database.
-        """
-        if self.state_evaluator(new_state, [self.task_finished,
-                                            self.successful_result]):
-            runs = new_state.result
-            for run in runs:
-                self.session.add(run)
-                self.update_db()
-        return new_state
-
-    def update_hazard_models_state_handler(self, obj, old_state, new_state):
-        """
-        Updates the hazard model run with linked seismicity
-        runs that are used in making the hazard model.
-        """
-        if self.state_evaluator(new_state, [self.task_finished,
-                                            self.successful_result]):
-            runs = new_state.result
-            for run in runs:
-                hazard_run = self.session.query(HazardModelRun).\
-                    filter(HazardModelRun.id == run.id).first()
-
-                for seis_run in run.seismicitymodelruns:
-                    update_seis_run = self.session.query(SeismicityModelRun).\
-                        filter(SeismicityModelRun.id == seis_run.id).first()
-                    update_seis_run.hazardruns.append(hazard_run)
-                self.update_db()
-        return new_state
 
     def model_run_state_handler(self, obj, old_state, new_state):
         """
@@ -500,30 +574,29 @@ class HazardHandler(BaseHandler):
         logger = prefect.context.get("logger")
 
         if self.state_evaluator(new_state, [self.task_finished]):
-            model_runs = new_state.result
+            model_run = new_state.result
+            self.synchronous_thread.model_runs += 1
             if self.state_evaluator(new_state, [self.successful_result]):
-                for model_run in model_runs:
-                    update_model_run = self.session.query(HazardModelRun).\
-                        filter(HazardModelRun.id == model_run.id).first()
-                    update_model_run.runid = model_run.runid
-                    logger.info(
-                        f"Hazard model run with runid={model_run.runid}"
-                        "has been dispatched to the remote worker.")
-                    update_model_run.status.state = model_run.status.state
-                    self.execution_status_update.emit((
-                        new_state, type(model_run),
-                        model_run.id))
+                update_model_run = self.session.query(HazardModelRun).\
+                    filter(HazardModelRun.id == model_run.id).first()
+                update_model_run.runid = model_run.runid
+                logger.info(
+                    f"Hazard model run with runid={model_run.runid}"
+                    "has been dispatched to the remote worker.")
+                update_model_run.status.state = model_run.status.state
+                self.execution_status_update.emit((
+                    new_state, type(model_run),
+                    model_run.id))
             elif self.state_evaluator(new_state, [self.error_result]):
                 logger.warning(
                     f"Hazard model run has failed: {new_state.result}. "
                     f"Message: {new_state.message}")
-                for model_run in model_runs:
-                    update_model_run = self.session.query(HazardModelRun).\
-                        filter(HazardModelRun.id == model_run.id).first()
-                    update_model_run.status.state = EStatus.ERROR
-                    self.execution_status_update.emit((
-                        new_state, type(model_run),
-                        model_run.id))
+                update_model_run = self.session.query(HazardModelRun).\
+                    filter(HazardModelRun.id == model_run.id).first()
+                update_model_run.status.state = EStatus.ERROR
+                self.execution_status_update.emit((
+                    new_state, type(model_run),
+                    model_run.id))
 
                 # The sent status is not used, as the whole scenario must
                 # be refreshed from the db in the gui thread.
@@ -535,24 +608,14 @@ class HazardHandler(BaseHandler):
         Handles result from hazard model run poller.
         """
         logger = prefect.context.get("logger")
-        if self.state_evaluator(new_state, [self.task_running]):
-            self.synchronous_thread.model_runs += 1
         if self.state_evaluator(new_state, [self.task_finished]):
             worker = Worker(self.oq_hazard_results, new_state, logger,
                             synchronous_thread=self.synchronous_thread)
             self.threadpool.start(worker)
+        self.session.remove()
         return new_state
 
-    def hazardpoints_associate(self, model_run, curve):
-        """
-        Associate all the hazard point values in a curve
-        with the hazard model run.
-        """
-        for hazard_point in curve.samples:
-            hazard_point.modelrun = model_run
-        return model_run, curve
-
-    def add_hc_geopoints(self, result):
+    def add_hc_geopoints(self, result, model_run, result_type='curve'):
         """
         Check if the geopoint location exists in the database
         and use this one if so. Add the new objects to the
@@ -561,36 +624,31 @@ class HazardHandler(BaseHandler):
         :param curve: New hazard curve object where child
             attributes must be added or updated in database
         """
-        for hazard_point in result.samples:
-            geopoint = hazard_point.geopoint
-            # See if geopoint is already in db
-            if geopoint.id:
-                geopoint_in_db = self.session.query(GeoPoint).\
-                    filter(GeoPoint.id == geopoint.id).one_or_none()
+        new_samples = []
+        for sample in result['samples']:
+            hazardpoint = sample['hazardpointvalue']
+            geopoint_dict = sample['geopoint_dict']
+            geopoint_existing = self.session.query(
+                GeoPoint).filter(
+                    GeoPoint.lat == geopoint_dict['lat'],
+                    GeoPoint.lon == geopoint_dict['lon']).\
+                one_or_none()
+            if geopoint_existing:
+                hazardpoint.geopoint = geopoint_existing
             else:
-                geopoint_in_db = None
-            if not geopoint_in_db:
-                geopoint_existing = self.session.query(
-                    GeoPoint).filter(
-                    GeoPoint.lat == geopoint.lat,
-                    GeoPoint.lon == geopoint.lon).\
-                    one_or_none()
-                if geopoint_existing:
-                    old_geopoint = hazard_point.geopoint
-                    for related_hazard_point in old_geopoint.hazardpointvalues:
-                        related_hazard_point.geopoint = geopoint_existing
-                        self.session.add(related_hazard_point)
-                    self.session.expunge(old_geopoint)
-                    self.session.commit()
-                else:
-                    self.session.add(geopoint)
-                self.session.commit()
-        return result
+                hazardpoint.geopoint = GeoPoint(
+                    lat=geopoint_dict['lat'],
+                    lon=geopoint_dict['lon'],
+                    hazardpointvalues=[hazardpoint])
+                self.session.add(hazardpoint.geopoint)
+            self.session.commit()
+            new_samples.append(hazardpoint)
+        return new_samples
 
     def oq_hazard_results(self, new_state, logger):
         """
         The polling task sends a Sucessful state when the remote
-        model worker has returned a forecast and this has been
+        model worker has returned a scenario and this has been
         deserialized sucessfully. A Failed state is sent from the
         task otherwise.
         A pyqt signal will be sent on success or failure of the task.
@@ -601,38 +659,52 @@ class HazardHandler(BaseHandler):
             logger.info(f"Hazard model with runid={model_run.runid} "
                         "has returned without error from the "
                         "remote worker.")
-            update_model_run = self.session.query(HazardModelRun).\
+            model_run_db = self.session.query(HazardModelRun).\
                 options(lazyload(HazardModelRun.forecaststage)).\
                 options(lazyload(HazardModelRun.seismicitymodelruns)).\
                 filter(HazardModelRun.id == model_run.id).first()
+
             for result in model_results:
                 for results_dict in result:
-                    hazard_curves_list = results_dict['hazard_curves']
                     hazard_maps_list = results_dict['hazard_maps']
-                    for curve_list in hazard_curves_list:
-                        hazard_curves = curve_list['hazardcurve']
-                        for curve in hazard_curves:
-
-                            curve = self.add_hc_geopoints(curve)
-                            (update_model_run,
-                             curve) = self.hazardpoints_associate(
-                                update_model_run, curve)
-
-                            curve.modelrun = update_model_run
-                            self.session.commit()
                     for map_list in hazard_maps_list:
                         hazard_maps = map_list['hazardmap']
+                        hazard_maps_new = []
+
                         for hmap in hazard_maps:
-
-                            hmap = self.add_hc_geopoints(hmap)
-                            (update_model_run,
-                             hmap) = self.hazardpoints_associate(
-                                update_model_run, hmap)
-
-                            hmap.modelrun = update_model_run
+                            hmap = self.add_hc_geopoints(
+                                hmap, model_run, result_type='map')
+                            hazard_map = HazardMap(
+                                samples=hmap, modelrun=model_run_db)
+                            hazard_maps_new.append(hazard_map)
                             self.session.commit()
 
-            update_model_run.status.state = EStatus.COMPLETE
+                    hazard_curves_list = results_dict['hazard_curves']
+                    for curve_list in hazard_curves_list:
+                        hazard_curves = curve_list['hazardcurve']
+                        hazard_curves_new = []
+
+                        for curve in hazard_curves:
+                            curve = self.add_hc_geopoints(
+                                curve, model_run, result_type='curve')
+                            hazard_curve = HazardCurve(
+                                samples=curve, modelrun=model_run_db)
+                            hazard_curves_new.append(hazard_curve)
+                            self.session.commit()
+
+            logger.info(f"Hazard model with runid={model_run.runid} "
+                        "has returned without error from the "
+                        "remote worker.")
+            model_run_db.status.state = EStatus.COMPLETE
+            self.session.commit()
+            self.update_db()
+            _ = self.session.query(HazardPointValue).\
+                options(subqueryload(HazardPointValue.hazardcurve).
+                        subqueryload(HazardCurve.modelrun)).\
+                filter(HazardModelRun.id == model_run_db.id).\
+                update({HazardPointValue.modelrun_id: model_run_db.id},
+                       synchronize_session=False)
+            self.session.commit()
             self.update_db()
 
         elif self.state_evaluator(new_state, [self.error_result]):
@@ -643,7 +715,7 @@ class HazardHandler(BaseHandler):
             update_model_run = self.session.query(HazardModelRun).\
                 filter(HazardModelRun.id == model_run.id).first()
             update_model_run.status.state = EStatus.ERROR
-        self.update_db()
+            self.update_db()
         self.execution_status_update.emit((
             new_state, type(model_run),
             model_run.id))

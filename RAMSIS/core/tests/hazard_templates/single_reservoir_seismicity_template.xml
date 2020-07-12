@@ -19,8 +19,8 @@
       <truncGutenbergRichterMFD
         aValue="{{ result.a_value }}"
         bValue="{{ result.b_value }}"
-        maxMag="{{ result.mc_value }}"
-        minMag="{{ min_mag }}"/>
+        maxMag="{{ max_mag }}"
+        minMag="{{ result.mc_value }}"/>
     <nodalPlaneDist>
         <nodalPlane probability="1.0" strike="0.0" dip="90.0" rake="0.0" />
     </nodalPlaneDist>

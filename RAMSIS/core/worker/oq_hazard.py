@@ -15,6 +15,11 @@ import requests
 from marshmallow import Schema, fields, validate
 
 from RAMSIS.core.worker import WorkerHandleBase
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+#post_session = requests.Session()
+#retries = Retry(total=5, backoff_factor=1, status_forcelist=[ 502, 503, 504 ])
+#post_session.mount('http://', HTTPAdapter(max_retries=retries))
 
 
 DATETIME_FORMAT = '%Y-%m-%dT-%H-%M'
@@ -131,6 +136,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
 
                 return resp_json
 
+            print("args in from_requests", cls, resp, deserializer, resp_format)
             if not isinstance(resp, list):
                 resp = [resp]
             ikwargs = {}
@@ -142,6 +148,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
                     return cls(_json(resp))
                 return cls(deserializer._loado(_json(resp, **ikwargs)))
             if resp_format == 'xml':
+                print("format in xml", resp)
                 resp_cls = cls(deserializer._loado(resp, **ikwargs))
                 return resp_cls
 
@@ -250,6 +257,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             an empty list is passed all results are requested.
         :type task_ids: list or :py:class:`uuid.UUID`
         """
+        print("query")
         query_url = f'{self.PATH_QUERY_STATUS}'.format(task_id)
         url = f'{self.url}{query_url}'
         self.logger.debug(
@@ -350,7 +358,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
              "text/xml"))]
 
         model_index = 1
-        for source_file, _ in model_source_filenames:
+        for source_file in model_source_filenames:
             oq_input_files.append(
                 (f'input_model_{model_index}',
                  (source_file, open(join(oq_input_dir, source_file), 'rb'),
@@ -358,8 +366,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             model_index += 1
 
         req = functools.partial(
-            requests.post, url_post, files=oq_input_files,
-            timeout=self._timeout)
+            requests.post, url_post, files=oq_input_files)
         response = self._handle_exceptions(req)
         try:
             result = response.json()
@@ -415,6 +422,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         """
         try:
             resp = req()
+            #print("status code", resp.status_code)
             resp.raise_for_status()
         except requests.exceptions.HTTPError as err:
             try:

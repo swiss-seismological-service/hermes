@@ -2,6 +2,7 @@
 """
 Forecast executing related engine facilities.
 """
+import time
 import traceback
 import sys
 from datetime import datetime
@@ -19,15 +20,18 @@ from RAMSIS.core.engine.forecastexecutor import \
 from RAMSIS.core.engine.hazardexecutor import CreateHazardModelRunDir, \
     CreateHazardModelRuns, OQFiles, UpdateHazardRuns, \
     OQLogicTree, OQSourceModelFiles, OQHazardModelRunExecutor, \
-    OQHazardModelRunPoller
+    OQHazardModelRunPoller, dispatched_model_runs_scenario,\
+    get_hazard_model_runs_prepared
 from RAMSIS.core.engine.state_handlers import ForecastHandler, \
-    HazardHandler
+    HazardHandler, HazardPreparationHandler
 from ramsis.datamodel.seismicity import SeismicityModelRun, \
     ReservoirSeismicityPrediction
 from ramsis.datamodel.forecast import Forecast, ForecastScenario, \
     EStage, SeismicityForecastStage, HazardStage
 from ramsis.datamodel.project import Project
 from ramsis.datamodel.status import EStatus
+from ramsis.datamodel.hazard import HazardModelRun, HazardMap, HazardCurve,\
+    HazardPointValue
 
 import prefect
 from prefect import Flow, Parameter, unmapped
@@ -156,28 +160,45 @@ def forecast_for_seismicity(forecast_id, session):
                 SeismicityForecastStage)).\
             subqueryload(SeismicityForecastStage.runs).\
             subqueryload(SeismicityModelRun.result)).\
+        options(
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                HazardStage)).\
+            subqueryload(HazardStage.runs).\
+            subqueryload(HazardModelRun.hazardmaps).\
+            subqueryload(HazardMap.samples).\
+            subqueryload(HazardPointValue.geopoint)).\
+        options(
+            subqueryload(Forecast.scenarios).\
+            subqueryload(ForecastScenario.stages.of_type(
+                HazardStage)).\
+            subqueryload(HazardStage.runs).\
+            subqueryload(HazardModelRun.hazardcurves).\
+            subqueryload(HazardCurve.samples).\
+            subqueryload(HazardPointValue.geopoint)).\
         filter(Forecast.id == forecast_id)
     forecast = forecast_query.one()
     session.remove()
     return forecast
 
 
-def forecast_for_hazard(forecast_id, session):
+def scenario_for_hazard(scenario_id, session):
     session.remove()
-    forecast_query = session.query(Forecast).\
+    scenario_query = session.query(ForecastScenario).\
+        options(subqueryload(ForecastScenario.forecast)).\
         options(
+            subqueryload(ForecastScenario.forecast).
             subqueryload(Forecast.project)).\
         options(
             # Load catalogs linked to forecast and project
+            subqueryload(ForecastScenario.forecast).\
             subqueryload(Forecast.status)).\
         options(
             # Load status of seismicity stage
-            subqueryload(Forecast.scenarios).\
             subqueryload(ForecastScenario.stages.of_type(
                 SeismicityForecastStage))).\
         options(
             # Load result attributes for model runs (these will be written to)
-            subqueryload(Forecast.scenarios).\
             subqueryload(ForecastScenario.stages.of_type(
                 SeismicityForecastStage)).\
             subqueryload(SeismicityForecastStage.runs).\
@@ -185,21 +206,34 @@ def forecast_for_hazard(forecast_id, session):
             subqueryload(ReservoirSeismicityPrediction.samples)).\
         options(
             # Load models from seismicity stage
-            subqueryload(Forecast.scenarios).\
             subqueryload(ForecastScenario.stages.of_type(
                 HazardStage)).\
-            subqueryload(HazardStage.runs)).\
+            subqueryload(HazardStage.runs).\
+            subqueryload(HazardModelRun.hazardmaps).\
+            subqueryload(HazardMap.samples).\
+            subqueryload(HazardPointValue.geopoint)).\
+        options(
+            subqueryload(ForecastScenario.stages.of_type(
+                HazardStage)).\
+            subqueryload(HazardStage.runs).\
+            subqueryload(HazardModelRun.hazardcurves).\
+            subqueryload(HazardCurve.samples).\
+            subqueryload(HazardPointValue.geopoint)).\
+        options(
+            # Load models from seismicity stage
+            subqueryload(ForecastScenario.stages.of_type(
+                HazardStage)).\
+            subqueryload(HazardStage.model)).\
         options(
             # Remove this section, not needed as have new table.
-            subqueryload(Forecast.scenarios).\
             subqueryload(ForecastScenario.stages.of_type(
                 SeismicityForecastStage)).\
             subqueryload(SeismicityForecastStage.runs).\
             subqueryload(SeismicityModelRun.hazardruns)).\
-        filter(Forecast.id == forecast_id)
-    forecast = forecast_query.one()
+        filter(ForecastScenario.id == scenario_id)
+    scenario = scenario_query.one()
     session.remove()
-    return forecast
+    return scenario
 
 
 class ForecastFlow(QObject):
@@ -285,41 +319,36 @@ class ForecastFlow(QObject):
                                 executor=executor)
 
 
-class HazardFlow(QObject):
+class HazardPreparationFlow(QObject):
     """
     Contains prefect flow logic for creating DAG.
+    This DAG runs tasks that prepare the model runs for
+    hazard stage.
     A flow is created for every forecast that is run by the
     engine.
     """
-    def __init__(self, forecast, hazard_handler, data_dir, session):
+    def __init__(self, scenario, hazard_handler, data_dir):
         super().__init__()
         self.hazard_handler = hazard_handler
-        self.forecast = forecast
+        self.scenario = scenario
         self.data_dir = data_dir
-        self.session = session
 
     def run(self):
-        with Flow("Hazard_Execution",
+        with Flow("Hazard_Preparation_Execution",
                   state_handlers=[self.hazard_handler.flow_state_handler]
-                  ) as hazard_flow:
-            forecast = Parameter('forecast')
+                  ) as prepared_hazard_flow:
+            scenario = Parameter('scenario')
             data_dir = Parameter('data_dir')
-            session = Parameter('session')
-            scenarios_node = forecast_scenarios(
-                forecast)
             # Start Hazard stage
             hazard_runs = CreateHazardModelRuns(
                 state_handlers=[self.hazard_handler.
                                 create_hazard_models_state_handler])
-            hazard_model_runs = hazard_runs.map(scenarios_node)
-
-            flatten_task = FlattenTask()
-            haz_model_runs_flat = flatten_task(hazard_model_runs)
+            hazard_model_runs = hazard_runs(scenario)
 
             update_hazard_runs = UpdateHazardRuns(
                 state_handlers=[
                     self.hazard_handler.update_hazard_models_state_handler])
-            haz_model_runs_updated = update_hazard_runs(haz_model_runs_flat)
+            haz_model_runs_updated = update_hazard_runs(hazard_model_runs)
 
             create_oq_directories = CreateHazardModelRunDir()
             oq_input_dir = create_oq_directories.map(unmapped(data_dir),
@@ -334,46 +363,70 @@ class HazardFlow(QObject):
             oq_logic_tree = OQLogicTree()
             oq_logic_tree.map(haz_model_runs_updated, oq_input_dir,
                               source_model_xml_basenames)
-            hazard_flow.add_edge(
-                hazard_flow.get_tasks('OQFiles')[0],
-                hazard_flow.get_tasks('OQLogicTree')[0])
+            prepared_hazard_flow.add_edge(
+                prepared_hazard_flow.get_tasks('OQFiles')[0],
+                prepared_hazard_flow.get_tasks('OQLogicTree')[0])
 
+        executor = LocalDaskExecutor(scheduler='threads')
+        with prefect.context(scenario_id=self.scenario.id):
+            prepared_hazard_flow.run(parameters=dict(scenario=self.scenario,
+                                                     data_dir=self.data_dir),
+                                     executor=executor)
+
+
+class HazardFlow(QObject):
+    """
+    Contains prefect flow logic for creating DAG.
+    A flow is created for every forecast that is run by the
+    engine.
+    """
+    def __init__(self, scenario, hazard_handler, data_dir):
+        super().__init__()
+        self.hazard_handler = hazard_handler
+        self.scenario = scenario
+        self.data_dir = data_dir
+
+    def run(self):
+        with Flow("Hazard_Execution",
+                  state_handlers=[self.hazard_handler.flow_state_handler]
+                  ) as hazard_flow:
+            scenario = Parameter('scenario')
+            data_dir = Parameter('data_dir')
+
+            model_runs_prepared = get_hazard_model_runs_prepared(scenario)
             model_run_executor = OQHazardModelRunExecutor(
                 state_handlers=[self.hazard_handler.model_run_state_handler])
 
-            _ = model_run_executor(haz_model_runs_updated,
-                                   source_model_xml_basenames,
-                                   oq_input_dir)
-            hazard_flow.add_edge(
-                hazard_flow.get_tasks('OQLogicTree')[0],
-                hazard_flow.get_tasks('OQHazardModelRunExecutor')[0])
-
+            _ = model_run_executor.map(
+                model_runs_prepared, unmapped(scenario),
+                unmapped(data_dir))
             # Check which model runs are dispatched, where there may exist
             # model runs that were sent that still haven't been collected
-            model_runs_dispatched = dispatched_model_runs(
-                forecast, EStage.HAZARD)
+            model_runs_dispatched = dispatched_model_runs_scenario(
+
+                scenario, EStage.HAZARD)
 
             # Add dependency so that HazardModelRunExecutor must complete
             # before checking for model runs with DISPATCHED status
             hazard_flow.add_edge(
                 hazard_flow.get_tasks('OQHazardModelRunExecutor')[0],
-                hazard_flow.get_tasks('dispatched_model_runs')[0])
+                hazard_flow.get_tasks('dispatched_model_runs_scenario')[0])
 
             # Poll the remote workers for tasks that have been completed.
             model_run_poller = OQHazardModelRunPoller(
                 state_handlers=[
                     self.hazard_handler.poll_hazard_state_handler])
-            model_run_poller.map(unmapped(forecast),
-                                 model_runs_dispatched, unmapped(session))
+            model_run_poller.map(unmapped(scenario),
+                                 model_runs_dispatched)
 
         # (sarsonl) To view DAG: hazard_flow.visualize()
-        hazard_flow.visualize()
+        # hazard_flow.visualize()
 
         executor = LocalDaskExecutor(scheduler='threads')
-        with prefect.context(forecast_id=self.forecast.id):
-            hazard_flow.run(parameters=dict(forecast=self.forecast,
-                                            data_dir=self.data_dir,
-                                            session=self.session),
+        with prefect.context(scenario_id=self.scenario.id):
+            print("running hazard flow")
+            hazard_flow.run(parameters=dict(scenario=self.scenario,
+                                            data_dir=self.data_dir),
                             executor=executor)
 
 
@@ -446,6 +499,11 @@ class Engine(QObject):
         worker = Worker(self.flow_runner.run)
         self.flow_runner.forecast_handler.execution_status_update.connect(
             self.on_executor_status_changed)
+        self.flow_runner.hazard_handler.execution_status_update.connect(
+            self.on_executor_status_changed)
+        self.flow_runner.hazard_preparation_handler.\
+            execution_status_update.connect(
+                self.on_executor_status_changed)
 
         self.threadpool.start(worker)
 
@@ -455,13 +513,12 @@ class Engine(QObject):
 
         :param RAMSIS.core.tools.executor.ExecutionStatus status: Status
         """
-        #if status.origin == self._forecast_executor:
-        #    done = [ExecutionStatus.Flag.SUCCESS, ExecutionStatus.Flag.ERROR]
-        #    if status.flag in done:
-        #        self.busy = False
-        #        self.forecast_complete.emit()
+        # if status.origin == self._forecast_executor:
+        #     done = [ExecutionStatus.Flag.SUCCESS, ExecutionStatus.Flag.ERROR]
+        #     if status.flag in done:
+        #         self.busy = False
+        #         self.forecast_complete.emit()
         self.execution_status_update.emit(status)
-
 
 
 class FlowRunner:
@@ -475,10 +532,13 @@ class FlowRunner:
         self.logger = logging.getLogger()
         self.forecast_handler = ForecastHandler(
             self.threadpool, self.synchronous_thread)
+        self.hazard_preparation_handler = HazardPreparationHandler(
+            self.threadpool, self.synchronous_thread)
         self.hazard_handler = HazardHandler(
             self.threadpool, self.synchronous_thread)
         self.forecast_handler.session = self.session
         self.hazard_handler.session = self.session
+        self.hazard_preparation_handler.session = self.session
         self.stage_results = []
 
     def update_forecast_status(self, estatus):
@@ -498,6 +558,7 @@ class FlowRunner:
                 stage_states.append(stage)
             except KeyError:
                 pass
+        self.session.remove()
         return stage_states
 
     def seismicity_flow(self, forecast_input):
@@ -517,29 +578,47 @@ class FlowRunner:
             seismicity_stage_states = self.stage_states(EStage.SEISMICITY)
         return seismicity_stage_states
 
-    def hazard_flow(self, seismicity_stage_states):
-        forecast = forecast_for_hazard(self.forecast_id, self.session)
-        hazard_stage_states = self.stage_states(EStage.HAZARD)
-        if any(state == EStatus.ERROR for state in seismicity_stage_states):
+    def hazard_flow(self, seismicity_stage_states, scenario_ref):
+        scenario = scenario_for_hazard(scenario_ref.id, self.session)
+        seismicity_status = scenario[EStage.SEISMICITY].status.state
+        if seismicity_status == EStatus.ERROR:
             self.update_forecast_status(EStatus.ERROR)
             raise ValueError("One or more seismicity stages has a state "
                              "of ERROR. The next stages cannot continue")
-        if any(state != EStatus.COMPLETE for state in seismicity_stage_states):
+        elif seismicity_status != EStatus.COMPLETE:
             self.update_forecast_status(EStatus.ERROR)
             raise ValueError("One or more seismicity stages has a state "
                              "that is not complete. The next stages cannot "
                              "continue")
+        hazard_status = scenario[EStage.HAZARD].status.state
+        if hazard_status != EStatus.COMPLETE:
+            if hazard_status != EStatus.PREPARED:
+                hazard_prep_flow = HazardPreparationFlow(
+                    scenario, self.hazard_preparation_handler,
+                    self.data_dir)
+                hazard_prep_flow.run()
+                print("waiting for done")
+                self.threadpool.waitForDone()
+                print("waited for done")
+                # Will the hazard status update here?
+                if hazard_status == EStatus.ERROR:
+                    self.update_forecast_status(EStatus.ERROR)
+                    raise ValueError(
+                        "One or more seismicity stages has a state "
+                        "of ERROR. The next stages cannot continue")
+            # Assume that all the hazard stages must be in state PREPARED now,
+            # if not ERROR
 
-        print([state for state in hazard_stage_states])
-        if any(state != EStatus.COMPLETE for state in hazard_stage_states):
-            print("running the hazard flow")
-            hazard_flow = HazardFlow(forecast,
+            scenario = scenario_for_hazard(scenario_ref.id, self.session)
+            hazard_flow = HazardFlow(scenario,
                                      self.hazard_handler,
-                                     self.data_dir,
-                                     self.session)
+                                     self.data_dir)
+            print("#### start hazard flow")
             hazard_flow.run()
             self.threadpool.waitForDone()
-
+            while (self.synchronous_thread.model_runs_count <
+                   self.synchronous_thread.model_runs_count):
+                time.sleep(5)
             hazard_stage_states = self.stage_states(EStage.HAZARD)
         return hazard_stage_states
 
@@ -548,8 +627,6 @@ class FlowRunner:
         try:
             scenarios = forecast_input.scenarios
             for scenario in scenarios:
-                print('scenario in scenarios', scenario)
-                print("Running stage ", estage, scenario[estage].enabled)
                 if scenario[estage].enabled:
                     stage_enabled = True
         except AttributeError as err:
@@ -568,9 +645,18 @@ class FlowRunner:
             seismicity_stage_states = self.seismicity_flow(forecast_input)
             self.stage_results.extend(seismicity_stage_states)
 
-        if self.run_stage(forecast_input, EStage.HAZARD):
-            hazard_stage_states = self.hazard_flow(seismicity_stage_states)
-            self.stage_results.extend(hazard_stage_states)
+        # Run hazard stage per scenario
+        for scenario in forecast_input.scenarios:
+            try:
+                hazard_stage = scenario[EStage.HAZARD]
+                if hazard_stage.enabled:
+
+                    hazard_stage_states = self.hazard_flow(
+                        seismicity_stage_states,
+                        scenario)
+                    self.stage_results.extend(hazard_stage_states)
+            except KeyError:
+                pass
         # Alter forecast status
 
         if all(status == EStatus.COMPLETE for status in self.stage_results):

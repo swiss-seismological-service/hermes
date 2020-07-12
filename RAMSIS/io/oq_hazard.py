@@ -9,8 +9,7 @@ from marshmallow import (Schema, fields, pre_load,
                          post_load, EXCLUDE)
 from osgeo import gdal
 
-from ramsis.datamodel.hazard import HazardPointValue, HazardCurve, GeoPoint,\
-    HazardMap
+from ramsis.datamodel.hazard import HazardPointValue
 from RAMSIS.io.utils import (DeserializerBase, IOBase)
 
 gdal.UseExceptions()
@@ -65,15 +64,16 @@ class HazardPointValueSchema(BaseSchema):
 
     @pre_load
     def preload(self, data, **kwargs):
-        self.context['geopoint'] = data['geopoint']
+        self.context['geopoint_dict'] = data['geopoint_dict']
         return data
 
     @post_load
     def postload(self, data, **kwargs):
         data['hazardintensitytype'] = self.context['IMT']
         point_value = HazardPointValue(**data)
-        point_value.geopoint = self.context['geopoint']
-        return point_value
+        geopoint_dict = self.context['geopoint_dict']
+        return {"hazardpointvalue": point_value,
+                "geopoint_dict": geopoint_dict}
 
 
 class HazardCurveSchema(BaseSchema):
@@ -86,16 +86,9 @@ class HazardCurveSchema(BaseSchema):
         and intensity measure level into the data at the hazard point
         value level so that the object created is populated with this data.
         """
-        session = self.context.get('session')
-        lat, lon = (float(loc) for loc in data['gml:Point'][0]["gml:pos"][0].
+        lon, lat = (float(loc) for loc in data['gml:Point'][0]["gml:pos"][0].
                     split(" "))
-        geopoint = session.query(GeoPoint).filter(
-            GeoPoint.lat == lat,
-            GeoPoint.lon == lon).\
-            first()
-
-        use_geopoint = geopoint if geopoint else GeoPoint(
-            lat=lat, lon=lon)
+        geopoint_dict = {"lat": lat, "lon": lon}
 
         del data['gml:Point']
         poes_dict = [dict([('poE', float(poe))]) for poe in
@@ -104,13 +97,13 @@ class HazardCurveSchema(BaseSchema):
 
         for poe_dict, iml in zip(poes_dict, imls):
             poe_dict['iml'] = iml
-            poe_dict['geopoint'] = use_geopoint
+            poe_dict['geopoint_dict'] = geopoint_dict
         data['poEs'] = poes_dict
         return data
 
     @post_load
     def make_object(self, data, **kwargs):
-        return HazardCurve(**data)
+        return data
 
 
 class HazardCurvesSchema(BaseSchema):
@@ -135,20 +128,13 @@ class HazardMapPointSchema(BaseSchema):
 
     @post_load
     def postload(self, data, **kwargs):
-        session = self.context.get('session')
-        geopoint = session.query(GeoPoint).filter(
-            GeoPoint.lat == data["lat"],
-            GeoPoint.lon == data["lon"]).\
-            first()
-
-        data["geopoint"] = geopoint if geopoint else GeoPoint(
-            lat=data["lat"], lon=data["lon"])
-
+        geopoint_dict = {"lat": data["lat"], "lon": data["lon"]}
         data["poe"] = self.context["poe"]
         data["hazardintensitytype"] = self.context["IMT"]
         del data['lat']
         del data['lon']
-        return HazardPointValue(**data)
+        return {'hazardpointvalue': HazardPointValue(**data),
+                'geopoint_dict': geopoint_dict}
 
 
 class HazardMapSchema(BaseSchema):
@@ -162,7 +148,7 @@ class HazardMapSchema(BaseSchema):
 
     @post_load
     def postload(self, data, **kwargs):
-        return HazardMap(**data)
+        return data
 
 
 class NRMLSchema(BaseSchema):
@@ -192,21 +178,22 @@ class OQHazardResultsListDeserializer():
     Deserializes a list of results data  structure from
     hazard workers.
     """
-    def _loado(self, data_list):
+    def _loado(self, result_list):
         """
         Load data from list of results from OpenQuake into
         known dict format.
         """
         query_urls = []
         # Response returns a list inside a list
-        for output in data_list:
-            if output['type'] in ['hcurves', 'hmaps']:
-                assert 'xml' in output['outtypes']
-                query_urls.append(
-                    {'url': output['url'],
-                     'type': output['type'],
-                     'id': output['id'],
-                     'name': output['name']})
+        for data_list in result_list:
+            for output in data_list:
+                if output['type'] in ['hcurves', 'hmaps']:
+                    assert 'xml' in output['outtypes']
+                    query_urls.append(
+                        {'url': output['url'],
+                         'type': output['type'],
+                         'id': output['id'],
+                         'name': output['name']})
         return query_urls
 
 
@@ -215,14 +202,13 @@ class OQHazardOMessageDeserializer(DeserializerBase):
     Deserializes a result data structure which has been output from
     hazard workers.
     """
-    def __init__(self, session, **kwargs):
+    def __init__(self, **kwargs):
         """
         :param bool many: Allow the deserialization of many arguments
         """
-        self.session = session
         self._many = kwargs.get('many', False)
         self._partial = kwargs.get('partial', False)
-        self._context = {'session': session}
+        self._context = {}
 
     @property
     def _ctx(self):
@@ -245,6 +231,7 @@ class OQHazardOMessageDeserializer(DeserializerBase):
         Deserializes a data structure returned by Hazard-Worker
         implementations.
         """
+        print("in loado")
         ziparchive_gen = self._read_ziparchive(data[0].content)
         output_type = kwargs.get('output_type')
         hazard_curves = []

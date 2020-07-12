@@ -140,10 +140,10 @@ class _ModelResultSampleSchema(_SchemaBase):
         if 'endtime' in data:
             data['endtime'] = append_ms_zeroes(data['endtime'])
 
-        return data
+        #return data
 
-    @pre_load
-    def flatten(self, data, **kwargs):
+        #@pre_load
+        #def flatten(self, data, **kwargs):
         return self._flatten_dict(data)
 
     @post_load
