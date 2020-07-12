@@ -23,9 +23,10 @@ class TabPresenter(QObject):
         super().__init__()
         self.ui = ui
         self.scenario = None
+        self.store = None
         self.logger = logging.getLogger(__name__)
 
-    def present_scenario(self, scenario):
+    def present_scenario(self, scenario, store):
         """
         Show input or results for a scenario
 
@@ -39,9 +40,10 @@ class TabPresenter(QObject):
         # if self.scenario:
         #     self.scenario.scenario_changed.disconnect(self._on_change)
         self.scenario = scenario
+        self.store = store
         # if self.scenario:
         #     self.scenario.scenario_changed.connect(self._on_change)
-        self.refresh()
+        self.refresh(scenario=self.scenario, store=self.store)
 
     def refresh(self):
         raise NotImplementedError

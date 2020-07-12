@@ -207,6 +207,13 @@
      </property>
     </spacer>
    </item>
+   <item>
+    <widget class="QPushButton" name="stageReset">
+     <property name="text">
+      <string>Reset Stage</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources>

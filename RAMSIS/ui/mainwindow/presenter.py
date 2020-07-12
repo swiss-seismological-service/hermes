@@ -104,7 +104,7 @@ class ContentPresenter(object):
 
     def _clear_all(self):
         for tab_presenter in self.tab_presenters:
-            tab_presenter.present_scenario(None)
+            tab_presenter.present_scenario(None, None)
 
     def _refresh_scenario_status(self):
         """
@@ -161,7 +161,7 @@ class ContentPresenter(object):
                                                .format(color, text_color))
         general_tab = next(t for t in self.tab_presenters
                            if isinstance(t, GeneralTabPresenter))
-        general_tab.refresh_status(scenario)
+        general_tab.refresh_status(scenario, self.ramsis_core.store)
 
     # Context menu actions
 
@@ -288,7 +288,7 @@ class ContentPresenter(object):
         for tab_presenter in self.tab_presenters:
             self.current_scenario = self.ramsis_core.store.get_fresh(
                 self.current_scenario)
-            tab_presenter.present_scenario(self.current_scenario)
+            tab_presenter.present_scenario(self.current_scenario, self.ramsis_core.store)
         self._refresh_scenario_status()
 
     # Signals from the core
@@ -301,7 +301,8 @@ class ContentPresenter(object):
             for run in self.current_scenario[EStage.SEISMICITY].runs:
                 self.ramsis_core.store.session.add(run)
             self.ramsis_core.store.add(self.current_scenario)
-        general_tab.refresh_status(self.current_scenario)
+        general_tab.refresh_status(self.current_scenario,
+                                   self.ramsis_core.store)
         self._refresh_scenario_status()
         if self.current_scenario:
             self.ramsis_core.store.session.expunge(self.current_scenario)

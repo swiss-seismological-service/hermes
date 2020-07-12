@@ -22,8 +22,9 @@ class StageWidget(
         'RUNNING': 'black',
         'ERROR': 'red',
         'PENDING': 'orange',
-        'PREPARED': 'purple',
-        'ONHOLD': 'brown'
+        'DISPATCHED': 'purple',
+        'ONHOLD': 'brown',
+        'PREPARED': 'blue'
     }
 
     def __init__(self, title, **kwargs):
@@ -31,26 +32,28 @@ class StageWidget(
 
         self.ui.titleLabel.setText(title)
         self.clear_substages()
+        self.ui.stageReset.hide()
+        self.hazard_reset_button_connected = False
 
     def disable(self):
         self.ui.imageLabel.setPixmap(
             QPixmap(':stage_images/images/stage_disabled.png')
         )
-        self.ui.statusLabel.setText('Disabled')
+        self.ui.statusLabel.setText('DISABLED')
 
     def plan(self):
         self.ui.imageLabel.setPixmap(
             QPixmap(':stage_images/images/stage_planned.png')
         )
-        self.ui.statusLabel.setText('Pending')
+        self.ui.statusLabel.setText('PENDING')
 
     def set_stage_status(self, status):
         self.ui.statusLabel.setText(str(status))
         color = self.colors.get(status, 'gray')
         self.ui.statusLabel.setStyleSheet('color: {}'.format(color))
 
-
     def set_substages(self, substages):
+
         for i, stage in enumerate(substages):
             stage_label = QLabel(stage[0])
             stage_label.setMinimumHeight(20)
@@ -64,7 +67,7 @@ class StageWidget(
     def set_aggregate_substages(self, substages):
         title1 = QLabel('Status')
         title2 = QLabel('Hazard Run Count')
-        
+
         title1.setFont(QFont("SansSerif", weight=QFont.Bold))
         title2.setFont(QFont("SansSerif", weight=QFont.Bold))
         self.ui.substatusLayout.addWidget(title1, 0, 0)
