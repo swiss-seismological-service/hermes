@@ -53,7 +53,7 @@ from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.status import Status, EStatus  # noqa
 from ramsis.datamodel.well import InjectionWell, WellSection  # noqa
-from ramsis.datamodel.hazard import HazardModel, HazardModelRun
+from ramsis.datamodel.hazard import HazardModel, HazardModelRun, GeoPoint
 
 from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
@@ -666,9 +666,7 @@ class IntegrationTestCase(unittest.TestCase):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
-            ##self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
-                print("forecast COMPLETEV")
                 break
             time.sleep(4)
 
@@ -734,6 +732,132 @@ class IntegrationTestCase(unittest.TestCase):
         store.session.remove()
         store.engine.dispose()
 
+    @mock.patch('RAMSIS.core.engine.engine.HazardHandler.'
+                'execution_status_update', side_effect=signal_factory)
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
+                side_effect=mocked_requests_get)
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
+                side_effect=mocked_requests_post_init.mocked_requests_post)
+    @mock.patch('RAMSIS.io.oq_hazard.'
+                'OQHazardOMessageDeserializer._read_ziparchive',
+                side_effect=zipfile_archive)
+    def test_successful_hazard_flow_geopoints(
+            self,
+            mock_ziparchive,
+            mock_post,
+            mock_get,
+            mock_signal):
+        """
+        Test the flow with only the seismicity & hazard stage enabled
+        and seismicity stage complete.
+        """
+        self.setUpSingleGeom()
+        self.maxDiff = None
+        controller, store = self.connect_ramsis()
+        forecast = store.session.query(Forecast).first()
+        forecast.status.state = EStatus.RUNNING
+
+        scenario = forecast.scenarios[0]
+        scenario.status.state = EStatus.RUNNING
+
+        seismicity_stage = scenario[EStage.SEISMICITY]
+        seismicity_stage.status.state = EStatus.COMPLETE
+
+        hazard_stage = scenario[EStage.HAZARD]
+        hazard_stage.status.state = EStatus.PENDING
+
+        risk_stage = scenario[EStage.RISK]
+        risk_stage.enabled = False
+
+        seis_model_runs = seismicity_stage.runs
+        for run in seis_model_runs:
+            run.status.state = EStatus.COMPLETE
+
+        with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
+            geopoint_lines = geopoints_read.readlines()
+        for geopoint_line in geopoint_lines:
+            lat, lon = [float(item) for item in geopoint_line.split(" ")]
+            # Set up geopoints
+            print("add geopoints for lat, lon:", lat, lon)
+            geopoint = store.session.add(GeoPoint(lat=lat, lon=lon))
+
+        store.save()
+        project = store.session.query(Project).first()
+        forecast = store.session.query(Forecast).first()
+        controller.open_project(project)
+        store.session.close()
+        controller.engine.run(datetime(2006, 12, 2), forecast.id)
+        # Allow main thread to wait until other threads triggered by
+        # workflow complete for 200 seconds maximum
+        for i in range(50):
+            forecast_status = store.session.query(Forecast).first().\
+                status.state
+            store.session.close()
+            if forecast_status == EStatus.COMPLETE:
+                break
+            time.sleep(4)
+
+        # Check pyqtsignals that were produced
+        signal_list = mock_signal.emit.call_args_list
+        self.assertEqual(len(signal_list), 5)
+        for call_tuple in signal_list:
+            prefect_status = call_tuple[0][0][0]
+            self.assertTrue(prefect_status.message in ["Task run succeeded.", "All reference tasks succeeded."])
+            self.assertTrue(prefect_status.is_successful())
+
+            parent_type = call_tuple[0][0][1]
+            self.assertTrue(parent_type in [
+                type(HazardModelRun()), type(HazardStage())])
+
+        # Check data send to remote worker
+        posted_data = mock_post.call_args_list[0][1]
+        posted_data2 = mock_post.call_args_list[1][1]
+
+        self.assertEqual(len(
+            posted_data['files']), 5)
+        self.assertEqual(len(
+            posted_data2['files']), 5)
+
+        # Check that forecast, scenario and model runs all have completed
+        non_stage_statuses = store.session.query(Status).\
+            filter(Status.stage_id is None).all()
+        self.assertTrue(
+            all([s.state == EStatus.COMPLETE
+                 for s in non_stage_statuses]))
+        # Check that the seismicity stage has completed.
+        forecast = store.session.query(Forecast).first()
+        stage = forecast.scenarios[0][EStage.HAZARD]
+        self.assertEqual(stage.status.state, EStatus.COMPLETE)
+
+        # Check number of samples produced in total
+        pointvalues_list = [run.hazardpointvalues for run in stage.runs]
+        pointvalues = [value for sublist in pointvalues_list for value
+                       in sublist]
+        self.assertEqual(len(pointvalues), 3264)
+        curves_list = [run.hazardcurves for run in stage.runs]
+        curves = [value for sublist in curves_list for value in sublist]
+        self.assertEqual(len(curves), 272)
+
+        geopoints = [(point.geopoint.lat, point.geopoint.lon)
+                     for point in pointvalues]
+        geopoints = sorted(set(geopoints))
+        # rewrite geopoints file in case results are altered
+        #with open(os.path.join(dirpath, GEOPOINTS), 'w') as geopoints_read: # noqa
+        #    for tup in geopoints:
+        #        lat, lon = tup
+        #        geopoints_read.write(f"{lat} {lon}\n")
+        with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
+            geopoint_lines = geopoints_read.readlines()
+        geopoints_stored = []
+
+        for line in geopoint_lines:
+            lat_str, lon_str = line.split()
+            geopoints_stored.append((float(lat_str), float(lon_str)))
+
+        geopoints_stored = sorted(set(geopoints_stored))
+        self.assertEqual(geopoints, geopoints_stored)
+        store.session.remove()
+        store.engine.dispose()
 
 if __name__ == "__main__":
     unittest.main()
