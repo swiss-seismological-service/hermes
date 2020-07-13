@@ -288,7 +288,8 @@ class ContentPresenter(object):
         for tab_presenter in self.tab_presenters:
             self.current_scenario = self.ramsis_core.store.get_fresh(
                 self.current_scenario)
-            tab_presenter.present_scenario(self.current_scenario, self.ramsis_core.store)
+            tab_presenter.present_scenario(self.current_scenario,
+                                           self.ramsis_core.store)
         self._refresh_scenario_status()
 
     # Signals from the core

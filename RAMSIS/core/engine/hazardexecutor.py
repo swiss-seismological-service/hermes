@@ -38,6 +38,7 @@ def render_template(template_filename, context, path):
     return template_environment.get_template(
         template_filename).render(context)
 
+
 @task
 def get_hazard_runs(forecast):
     hazard_model_runs = []
@@ -50,6 +51,7 @@ def get_hazard_runs(forecast):
                                           if run.enabled])
         except (KeyError, AttributeError):
             pass
+
 
 class UpdateHazardRuns(Task):
 
@@ -71,10 +73,12 @@ class UpdateHazardRuns(Task):
             new_runs.append(haz_run)
         return hazard_model_run
 
+
 def source_model_name(seis_model_name, start, end):
     return SEISMICITY_MODEL_BASENAME.format(
         seis_model_name, start.strftime(DATETIME_FORMAT),
         end.strftime(DATETIME_FORMAT))
+
 
 class OQSourceModelFiles(Task):
 
@@ -196,6 +200,7 @@ class OQSourceModelFiles(Task):
                 message=("OpenQuake template does not exist for model "
                          f"{model_name}: {template}"))
 
+
 def get_hazard_directories(data_dir, hazard_model_run):
     scenario = hazard_model_run.forecaststage.scenario
     project = scenario.forecast.project
@@ -215,6 +220,7 @@ def get_hazard_directories(data_dir, hazard_model_run):
         f"{starttime.strftime(DATETIME_FORMAT)}_"
         f"{endtime.strftime(DATETIME_FORMAT)}")
     return project_dir, scenario_dir, hazard_dir
+
 
 class CreateHazardModelRunDir(Task):
 
@@ -329,16 +335,7 @@ class OQLogicTree(Task):
 
         return logic_tree_filename
 
-#class SetPreparedStatus(Task)
-#    def run(self, forecast):
-#        hstages = []
-#        scenarios = [s for s in forecast.scenarios if s.enabled]
-#        for scenario in scenarios:
-#            try:
-#                hstage = scenario[EStage.HAZARD]
-#                if hstage.enabled:
-#                    hstages.append(hstage)
-#        return hstages
+
 @task
 def get_hazard_model_runs_prepared(scenario):
     prepared_runs = []
@@ -347,11 +344,11 @@ def get_hazard_model_runs_prepared(scenario):
             hstage = scenario[EStage.HAZARD]
             if hstage.enabled:
                 prepared_runs = [
-                    run for run in hstage.runs if run.status.state == EStatus.PREPARED]
+                    run for run in hstage.runs if
+                    run.status.state == EStatus.PREPARED]
         except KeyError:
             pass
     return prepared_runs
-       
 
 
 class OQHazardModelRunExecutor(Task):
@@ -372,11 +369,12 @@ class OQHazardModelRunExecutor(Task):
 
         _, _, oq_dir = get_hazard_directories(
             data_dir, model_run)
-        
+
         _worker_handle = OQHazardWorkerHandle.from_run(model_run)
 
         try:
-            time.sleep(random.random()*50.0)
+            # sarsonl bad work around for OpenQuake bug just to test hazard
+            time.sleep(random.random() * 50.0)
             resp = _worker_handle.compute(
                 JOB_CONFIG_BASENAME, LOGIC_TREE_BASENAME,
                 GMPE_BASENAME, source_filenames, oq_dir)
@@ -399,6 +397,7 @@ class OQHazardModelRunExecutor(Task):
         model_run.status.state = EStatus.DISPATCHED
         return model_run
 
+
 @task
 def dispatched_model_runs_scenario(scenario, estage):
     logger = prefect.context.get('logger')
@@ -407,11 +406,10 @@ def dispatched_model_runs_scenario(scenario, estage):
     # in a RUNNING state, which is changed by the state handler. However
     # this may not happen quickly enough to update here.
     model_runs = [run for run in stage.runs if run.runid and
-                           run.status.state == EStatus.DISPATCHED]
+                  run.status.state == EStatus.DISPATCHED]
 
     logger.info(f'Returning model runs from dispatched task, {model_runs}')
     return model_runs
-
 
 
 class OQHazardModelRunPoller(Task):

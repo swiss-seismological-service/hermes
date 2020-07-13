@@ -197,6 +197,7 @@ def create_json_response(task_id, response_template, **kwargs):
     resp['data']['id'] = task_id
     return resp
 
+
 def create_models():
     URL_EM1 = 'http://localhost:5000'
     EM1_SFMWID = 'EM1'

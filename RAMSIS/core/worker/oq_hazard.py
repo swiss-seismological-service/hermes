@@ -15,11 +15,6 @@ import requests
 from marshmallow import Schema, fields, validate
 
 from RAMSIS.core.worker import WorkerHandleBase
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-#post_session = requests.Session()
-#retries = Retry(total=5, backoff_factor=1, status_forcelist=[ 502, 503, 504 ])
-#post_session.mount('http://', HTTPAdapter(max_retries=retries))
 
 
 DATETIME_FORMAT = '%Y-%m-%dT-%H-%M'
@@ -136,7 +131,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
 
                 return resp_json
 
-            print("args in from_requests", cls, resp, deserializer, resp_format)
             if not isinstance(resp, list):
                 resp = [resp]
             ikwargs = {}
@@ -422,7 +416,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
         """
         try:
             resp = req()
-            #print("status code", resp.status_code)
             resp.raise_for_status()
         except requests.exceptions.HTTPError as err:
             try:

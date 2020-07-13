@@ -651,9 +651,6 @@ class IntegrationTestCase(unittest.TestCase):
         for run in seis_model_runs:
             run.status.state = EStatus.COMPLETE
 
-        # Set up geopoints
-        #geopoint1 = store.session.add(GeoPoint(lat=47.5580339199014, lon=7.56698854824407))
-
         store.save()
         project = store.session.query(Project).first()
         forecast = store.session.query(Forecast).first()
@@ -675,7 +672,8 @@ class IntegrationTestCase(unittest.TestCase):
         self.assertEqual(len(signal_list), 5)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
-            self.assertTrue(prefect_status.message in ["Task run succeeded.", "All reference tasks succeeded."])
+            self.assertTrue(prefect_status.message in [
+                "Task run succeeded.", "All reference tasks succeeded."])
             self.assertTrue(prefect_status.is_successful())
 
             parent_type = call_tuple[0][0][1]
@@ -779,7 +777,7 @@ class IntegrationTestCase(unittest.TestCase):
             lat, lon = [float(item) for item in geopoint_line.split(" ")]
             # Set up geopoints
             print("add geopoints for lat, lon:", lat, lon)
-            geopoint = store.session.add(GeoPoint(lat=lat, lon=lon))
+            _ = store.session.add(GeoPoint(lat=lat, lon=lon))
 
         store.save()
         project = store.session.query(Project).first()
@@ -802,7 +800,8 @@ class IntegrationTestCase(unittest.TestCase):
         self.assertEqual(len(signal_list), 5)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
-            self.assertTrue(prefect_status.message in ["Task run succeeded.", "All reference tasks succeeded."])
+            self.assertTrue(prefect_status.message in [
+                "Task run succeeded.", "All reference tasks succeeded."])
             self.assertTrue(prefect_status.is_successful())
 
             parent_type = call_tuple[0][0][1]
@@ -858,6 +857,7 @@ class IntegrationTestCase(unittest.TestCase):
         self.assertEqual(geopoints, geopoints_stored)
         store.session.remove()
         store.engine.dispose()
+
 
 if __name__ == "__main__":
     unittest.main()
