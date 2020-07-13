@@ -27,7 +27,7 @@ from RAMSIS.ui.dialog import (
     ForecastConfigDialog, CreateForecastSequenceDialog, ScenarioConfigDialog)
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
     ForecastTreeModel)
-from RAMSIS.ui.styles import StatusColor
+# from RAMSIS.ui.styles import StatusColor
 
 
 class ContentPresenter(object):
@@ -84,7 +84,7 @@ class ContentPresenter(object):
         self.time_line_presenter = TimeLinePresenter(self.ui, ramsis_core)
 
         # Essential signals from the core
-        self.ramsis_core.engine.forecast_handler.execution_status_update.\
+        self.ramsis_core.engine.execution_status_update.\
             connect(self.on_execution_status_update)
 
     # Display update methods for individual window components
@@ -104,14 +104,14 @@ class ContentPresenter(object):
 
     def _clear_all(self):
         for tab_presenter in self.tab_presenters:
-            tab_presenter.present_scenario(None)
+            tab_presenter.present_scenario(None, None)
 
     def _refresh_scenario_status(self):
         """
         Show the overall status of the currently selected forecast
 
         """
-        color = StatusColor.OTHER
+        # color = StatusColor.OTHER
         errors = False
         msg = ''
         self.current_scenario = self.ramsis_core.store.get_fresh(
@@ -153,12 +153,15 @@ class ContentPresenter(object):
 
         if errors:
             msg += ' (with errors)'
-            color = StatusColor.ERROR
-        text_color = 'black' if color == StatusColor.OTHER else 'white'
+            # color = StatusColor.ERROR
+        # text_color = 'black' if color == StatusColor.OTHER else 'white'
         self.ui.fcStatusLabel.setText(msg)
         self.ui.statusAreaWidget.setStyleSheet('background-color: transparent;'
-                                               'color: transparent;'
-                                               .format(color, text_color))
+                                               'color: transparent;')
+        #                                       .format(color, text_color))
+        general_tab = next(t for t in self.tab_presenters
+                           if isinstance(t, GeneralTabPresenter))
+        general_tab.refresh_status(scenario, self.ramsis_core.store)
 
     # Context menu actions
 
@@ -211,17 +214,31 @@ class ContentPresenter(object):
 
             elif isinstance(item, ForecastScenario):
                 ctx = EditingContext(self.ramsis_core.store)
-                dlg = ScenarioConfigDialog(ctx.get(item),
-                                           deserializer_args={
-                    'ramsis_proj': self.ramsis_core.project.spatialreference,
-                    'external_proj': self.ramsis_core.external_proj,
-                    'ref_easting': self.ramsis_core.project.referencepoint_x,
-                    'ref_northing': self.ramsis_core.project.referencepoint_y,
-                    'transform_func_name': 'pyproj_transform_to_local_coords'})
+                scenario = self.ramsis_core.store.get_fresh(ctx.get(item))
+                dlg = ScenarioConfigDialog(
+                    scenario,
+                    self.ramsis_core.store,
+                    deserializer_args={
+                        'ramsis_proj':
+                        self.ramsis_core.project.spatialreference,
+                        'external_proj':
+                        self.ramsis_core.external_proj,
+                        'ref_easting':
+                        self.ramsis_core.project.referencepoint_x,
+                        'ref_northing':
+                        self.ramsis_core.project.referencepoint_y,
+                        'transform_func_name':
+                        'pyproj_transform_to_local_coords'})
                 dlg.exec_()
 
                 if dlg.result() == QDialog.Accepted:
+                    merge_items = dlg.updated_items()
+                    for mitem in merge_items:
+                        ctx.add(mitem)
+                        _ = self.ramsis_core.store.get_fresh(mitem)
                     ctx.save()
+                    self.current_scenario = self.ramsis_core.store.get_fresh(
+                        ctx.get(item))
                     self._refresh_scenario_status()
 
             else:
@@ -260,6 +277,7 @@ class ContentPresenter(object):
             scenario = idx.data(role=CustomRoles.RepresentedItemRole)
         else:
             forecast = idx.data(role=CustomRoles.RepresentedItemRole)
+            forecast = self.ramsis_core.store.get_fresh(forecast)
             scenario = forecast.scenarios[0] if forecast.scenarios else None
         self.current_scenario = scenario
         if self.current_scenario:
@@ -270,7 +288,8 @@ class ContentPresenter(object):
         for tab_presenter in self.tab_presenters:
             self.current_scenario = self.ramsis_core.store.get_fresh(
                 self.current_scenario)
-            tab_presenter.present_scenario(self.current_scenario)
+            tab_presenter.present_scenario(self.current_scenario,
+                                           self.ramsis_core.store)
         self._refresh_scenario_status()
 
     # Signals from the core
@@ -283,7 +302,8 @@ class ContentPresenter(object):
             for run in self.current_scenario[EStage.SEISMICITY].runs:
                 self.ramsis_core.store.session.add(run)
             self.ramsis_core.store.add(self.current_scenario)
-        general_tab.refresh_status(self.current_scenario)
+        general_tab.refresh_status(self.current_scenario,
+                                   self.ramsis_core.store)
         self._refresh_scenario_status()
         if self.current_scenario:
             self.ramsis_core.store.session.expunge(self.current_scenario)

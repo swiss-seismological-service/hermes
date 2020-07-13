@@ -22,6 +22,7 @@ from ramsis.datamodel.base import ORMBase
 from ramsis.datamodel.project import Project
 from ramsis.datamodel.model import EModel, Model
 from ramsis.datamodel.seismicity import SeismicityModel
+from ramsis.datamodel.hazard import HazardModel
 
 logger = logging.getLogger(__name__)
 
@@ -174,10 +175,11 @@ class Store:
         :rtype: [ramsis.datamodel.model.Model]
         """
         _map = {
-            EModel.SEISMICITY: SeismicityModel, }
+            EModel.SEISMICITY: SeismicityModel,
+            EModel.HAZARD: HazardModel, }
 
         try:
-            entity = with_polymorphic(Model, _map[model_type])
+            entity = _map[model_type]
         except KeyError:
             if model_type is not None:
                 raise ValueError(f'Unknown model type {model_type!r}')

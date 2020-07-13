@@ -96,7 +96,8 @@ def default_scenario(store, name='Scenario', **kwargs):
             if enabled:
                 runs = [SeismicityModelRun(model=m, enabled=True,
                                            config=m.config,
-                                           status=Status())
+                                           status=Status(),
+                                           weight=1.0)
                         for m in store.load_models(
                             model_type=EModel.SEISMICITY)
                         if m.enabled]
@@ -117,10 +118,15 @@ def default_scenario(store, name='Scenario', **kwargs):
         except (IndexError, KeyError):
             pass
         else:
-            enabled = hazard_stage_config.get('enabled', True)
-            if enabled:
+            enabled = hazard_stage_config.get('enabled', False)
+            hazard_model = store.load_models(model_type=EModel.HAZARD)
+            if enabled and hazard_model:
                 retval.append(hazard_stage(enabled=enabled))
-
+            elif enabled and not hazard_model:
+                raise Exception("Hazard stage enabled but no "
+                                "models exist.")
+            else:
+                pass
         try:
             risk_stage_config = stage_config[3]['risk']
         except (IndexError, KeyError):
@@ -166,8 +172,8 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
 empty_forecast = functools.partial(default_forecast, None, num_scenarios=0)
 
 
-def default_project(spatialreference, referencepoint_x=0, referencepoint_y=0,
-                    name='Project', description='',
+def default_project(spatialreference='', referencepoint_x=0,
+                    referencepoint_y=0, name='Project', description='',
                     starttime=datetime.datetime.utcnow(), endtime=None):
     """
     Build a *default* project.

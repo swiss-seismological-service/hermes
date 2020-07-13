@@ -52,7 +52,10 @@ class Node:
 
     def child(self, row):
         if self.children:
-            return self.children[row]
+            try:
+                return self.children[row]
+            except IndexError:
+                pass
 
     def child_count(self):
         return len(self.children)
@@ -132,6 +135,7 @@ class TreeModel(QAbstractItemModel):
             parent_node = self.root_node
         else:
             parent_node = parent.internalPointer()
+
         child_node = parent_node.child(row)
         if child_node:
             return self.createIndex(row, column, child_node)

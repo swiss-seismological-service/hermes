@@ -196,8 +196,8 @@ class ApplicationSettingsWindow(SettingsWindow,
                 self._ui_state_machine_db.to_connected_initialized()
             else:
                 QMessageBox.critical(self, 'Initialization Failed',
-                                     f'DB initialization failed. Check the '
-                                     f'logs for further information.')
+                                     'DB initialization failed. Check the '
+                                     'logs for further information.')
 
     @pyqtSlot(str, name='on_dbUrlEdit_textChanged')
     @pyqtSlot(str, name='on_dbNameEdit_textChanged')

@@ -66,8 +66,12 @@ class IOBase(abc.ABC):
 
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(self.LOGGER)
+        self.external_proj = kwargs.get("external_proj")
+        if not self.external_proj:
+            self.external_proj = 'epsg:4326'
+
         for atr in ['ref_easting', 'ref_northing', 'ramsis_proj',
-                    'external_proj', 'transform_func_name']:
+                    'transform_func_name']:
             if kwargs.get(atr) is None:
                 raise ValueError(
                     f"IOBase requires {atr} to be passed in kwargs.")
@@ -160,7 +164,7 @@ class DeserializerBase(abc.ABC):
         """
         return self._deserialize(data)
 
-    def _loado(self, data):
+    def _loado(self, data, **kwargs):
         """
         Deserialize :code:`data` from an object.
 
@@ -237,24 +241,25 @@ class RamsisCoordinateTransformer:
         self.external_proj = external_proj
 
         self.transformer_to_ramsis = Transformer.from_proj(
-            self.external_proj, self.ramsis_proj)
+            self.external_proj, self.ramsis_proj, always_xy=True)
         self.transformer_to_external = Transformer.from_proj(
-            self.ramsis_proj, self.external_proj)
+            self.ramsis_proj, self.external_proj, always_xy=True)
 
-    def pyproj_transform_to_local_coords(self, lat, lon, depth):
+    def pyproj_transform_to_local_coords(self, lon, lat, depth=None):
         # Easting and northing in projected coordinates
-        easting_0, northing_0 = self.transformer_to_ramsis.transform(lat, lon)
+        easting_0, northing_0 = self.transformer_to_ramsis.transform(lon, lat)
         easting = easting_0 - self.ref_easting
         northing = northing_0 - self.ref_northing
-        altitude = -depth
+        altitude = -depth if depth is not None else None
 
         return easting, northing, altitude
 
-    def pyproj_transform_from_local_coords(self, easting, northing, altitude):
+    def pyproj_transform_from_local_coords(self, easting, northing,
+                                           altitude=None):
         easting_0 = easting + self.ref_easting
         northing_0 = northing + self.ref_northing
 
-        lat, lon = self.transformer_to_external.transform(easting_0,
+        lon, lat = self.transformer_to_external.transform(easting_0,
                                                           northing_0)
-        depth = -altitude
-        return lat, lon, depth
+        depth = -altitude if altitude is not None else None
+        return lon, lat, depth

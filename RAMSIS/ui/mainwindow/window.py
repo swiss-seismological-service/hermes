@@ -152,6 +152,7 @@ class MainWindow(QMainWindow,
 
         dlg = ScenarioConfigDialog(
             default_scenario(self.app.ramsis_core.store),
+            self.app.ramsis_core.store,
             fc_duration=(fc.endtime - fc.starttime).total_seconds(),
             deserializer_args={
                 'ramsis_proj': self.app.ramsis_core.project.spatialreference,

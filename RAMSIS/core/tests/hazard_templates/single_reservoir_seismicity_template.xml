@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<nrml xmlns:gml="http://www.opengis.net/gml" xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <sourceModel name="{{ model.name }}">
+    {% for geom_id, result, subgeom in geometries %}
+    <areaSource tectonicRegion="Active Shallow Crust" id="{{ geom_id }}" name="HUAS082">
+      <areaGeometry>
+        <gml:Polygon>
+          <gml:exterior>
+            <gml:LinearRing>
+              <gml:posList>{{ subgeom }}</gml:posList>
+            </gml:LinearRing>
+          </gml:exterior>
+        </gml:Polygon>
+        <upperSeismoDepth>0.0</upperSeismoDepth>
+        <lowerSeismoDepth>30.0</lowerSeismoDepth>
+      </areaGeometry>
+      <magScaleRel>WC1994</magScaleRel>
+      <ruptAspectRatio>1.0</ruptAspectRatio>
+      <truncGutenbergRichterMFD
+        aValue="{{ result.a_value }}"
+        bValue="{{ result.b_value }}"
+        maxMag="{{ max_mag }}"
+        minMag="{{ result.mc_value }}"/>
+    <nodalPlaneDist>
+        <nodalPlane probability="1.0" strike="0.0" dip="90.0" rake="0.0" />
+    </nodalPlaneDist>
+      <hypoDepthDist>
+        <hypoDepth probability="0.25" depth="1.0" />                          
+        <hypoDepth probability="0.25" depth="2.0" />
+        <hypoDepth probability="0.25" depth="3.0" />
+        <hypoDepth probability="0.25" depth="4.0" />
+      </hypoDepthDist>
+      <upperSeismoDepth>0.0</upperSeismoDepth>
+      <lowerSeismoDepth>10.0</lowerSeismoDepth>
+    </areaSource>
+  {% endfor %}
+  </sourceModel>
+</nrml>

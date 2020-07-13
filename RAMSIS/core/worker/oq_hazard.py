@@ -1,8 +1,8 @@
 # Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
-Seismicity forecast model (SFM) worker related facilities.
+Openquake worker facilities
 """
-
+from os.path import dirname, join
 import enum
 import functools
 import uuid
@@ -17,14 +17,9 @@ from marshmallow import Schema, fields, validate
 from RAMSIS.core.worker import WorkerHandleBase
 
 
+DATETIME_FORMAT = '%Y-%m-%dT-%H-%M'
 KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'
-
-
-class MyGreatClass:
-    def fetch_json(self, url):
-        response = requests.get(url)
-        return response.json()
 
 
 class StatusCode(enum.Enum):
@@ -58,25 +53,27 @@ class FilterSchema(Schema):
 
 
 # -----------------------------------------------------------------------------
-class RemoteSeismicityWorkerHandle(WorkerHandleBase):
+class OQHazardWorkerHandle(WorkerHandleBase):
     """
-    Base class simplifying the communication with *RT-RAMSIS* remote seismicity
+    Base class simplifying the communication with *RT-RAMSIS* oq hazard
     forecast model worker implementations (i.e. webservice implementations of
     scientific forecast models). Concrete implementations are intended to
     abstract the communication with their corresponding worker.
 
     .. code::
 
-        class EM1WorkerHandle(SeismicityWorkerHandle):
+        class EM1WorkerHandle(OQHazardWorkerHandle):
             MODEL_ID = 'EM1'
             API_VERSION = 'v1'
 
     """
     API_VERSION = 'v1'
-    PATH_RAMSIS_WORKER_SCENARIOS = '/runs'
+    PATH_CALC_RUN = '/calc/run'
+    PATH_QUERY_STATUS = '/calc/{}/status'
+    PATH_RESULTS_RUN = '/calc/{}/results'
 
     MIMETYPE = 'application/json'
-    LOGGER = 'ramsis.core.worker.remote_seismicity_worker_handle'
+    LOGGER = 'ramsis.core.worker.oq_hazard_worker_handle'
 
     class EncodingError(WorkerHandleBase.WorkerHandleError):
         """Error while encoding payload ({})."""
@@ -110,7 +107,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self._resp = resp
 
         @classmethod
-        def from_requests(cls, resp, deserializer=None):
+        def from_requests(cls, resp, deserializer=None, resp_format='json',
+                          **kwargs):
             """
             :param resp: SFM worker responses.
             :type resp: list of :py:class:`requests.Response or
@@ -129,32 +127,24 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 try:
                     resp_json = [r.json() for r in resp]
                 except ValueError as err:
-                    raise RemoteSeismicityWorkerHandle.DecodingError(err)
+                    raise OQHazardWorkerHandle.DecodingError(err)
 
                 return resp_json
 
-            def demux_data(resp):
-                """
-                Demultiplex the responses' primary data. :code:`errors` and
-                :code:`meta` are ignored.
-                """
-                retval = []
-                for r in resp:
-                    if KEY_DATA in r:
-                        if isinstance(r[KEY_DATA], list):
-                            for d in r[KEY_DATA]:
-                                retval.append({KEY_DATA: d})
-                        else:
-                            retval.append({KEY_DATA: r[KEY_DATA]})
-
-                return retval
-
             if not isinstance(resp, list):
                 resp = [resp]
+            ikwargs = {}
+            if kwargs.get('output_type'):
+                ikwargs['output_type'] = kwargs.get('output_type')
 
-            if deserializer is None:
-                return cls(demux_data(_json(resp)))
-            return cls(deserializer._loado(demux_data(_json(resp))))
+            if resp_format == 'json':
+                if deserializer is None:
+                    return cls(_json(resp))
+                return cls(deserializer._loado(_json(resp, **ikwargs)))
+            if resp_format == 'xml':
+                print("format in xml", resp)
+                resp_cls = cls(deserializer._loado(resp, **ikwargs))
+                return resp_cls
 
         def filter_by(self, **kwargs):
             """
@@ -169,7 +159,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             try:
                 filter_conditions = FilterSchema().load(kwargs)
             except marshmallow.exceptions.ValidationError as err:
-                raise RemoteSeismicityWorkerHandle.WorkerHandleError(err)
+                raise OQHazardWorkerHandle.WorkerHandleError(err)
 
             retval = []
 
@@ -212,7 +202,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         def _wrap(value):
             return {KEY_DATA: value}
 
-    def __init__(self, base_url, **kwargs):
+    def __init__(self, base_url, model_run_id,
+                 scenario_id, **kwargs):
         """
         :param str base_url: The worker's base URL
         :param str model_id: Model indentifier
@@ -222,40 +213,62 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         """
         super().__init__(**kwargs)
 
-        base_url, model_id = self.validate_ctor_args(
-            base_url, model_id=kwargs.get('model_id', self.MODEL_ID))
+        self.base_url = self.validate_ctor_args(base_url)
+        self.model_run_id = model_run_id
+        self.scenario_id = scenario_id
 
-        self._url_base = base_url
-        self._model_id = model_id
-
-        self._url_path = ('/{version}/{model}'.format(
-            version=self.API_VERSION,
-            model=self._model_id) + self.PATH_RAMSIS_WORKER_SCENARIOS)
+        self._url_path = f"/{self.API_VERSION}"
 
         self._timeout = kwargs.get('timeout')
 
     @classmethod
     def from_run(cls, model_run):
         """
-        Create a :py:class:`RemoteSeismicityWorkerHandle` from a model run.
+        Create a :py:class:`OQHazardWorkerHandle` from a model run.
 
         :param model_run:
         :type model_run:
-            :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
+            :py:class:`ramsis.datamodel.hazard.HazardModelRun`
         """
         # XXX(damb): Where to get additional configuration options from?
         # model_run.config? model.config? From somewhere else?
-        return cls(model_run.model.url, model_id=model_run.model.sfmwid)
-
-    @property
-    def model(self):
-        return self._model_id
+        return cls(model_run.model.url, model_run.id,
+                   model_run.forecaststage.scenario.id)
 
     @property
     def url(self):
-        return self._url_base + self._url_path
+        return self.base_url + self._url_path
 
-    def query(self, task_ids=[], deserializer=None):
+    @property
+    def model(self):
+        return self.model_id
+
+    def query(self, task_id):
+        """
+        Query the result for worker's tasks.
+
+        :param task_ids: List of task identifiers (:py:class:`uuid.UUID`). If
+            an empty list is passed all results are requested.
+        :type task_ids: list or :py:class:`uuid.UUID`
+        """
+        print("query")
+        query_url = f'{self.PATH_QUERY_STATUS}'.format(task_id)
+        url = f'{self.url}{query_url}'
+        self.logger.debug(
+            f'Requesting result OQ hazard(url={url}, task_id={task_id}).')
+
+        req = functools.partial(
+            requests.get, url, timeout=self._timeout)
+
+        response = self._handle_exceptions(req)
+
+        self.logger.debug(
+            'Task result OQ hazard(task_id={task_id}): {response}')
+
+        return self.QueryResult.from_requests(
+            response)
+
+    def query_results(self, task_id, deserializer=None):
         """
         Query the result for worker's tasks.
 
@@ -268,83 +281,98 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             values.
         :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
         """
-        if not task_ids:
-            self.logger.debug(
-                'Requesting tasks results (model={!r}) (bulk mode).'.format(
-                    self.model))
-            req = functools.partial(
-                requests.get, self.url, timeout=self._timeout)
+        query_url = f'{self.PATH_RESULTS_RUN}'.format(task_id)
+        url = f'{self.url}{query_url}'
+        self.logger.debug(
+            f'Requesting result OQ hazard(url={url}, task_id={task_id}).')
 
-            resp = self._handle_exceptions(req)
+        req = functools.partial(
+            requests.get, url, timeout=self._timeout)
 
-            return self.QueryResult.from_requests(
-                resp, deserializer=deserializer)
-
-        # query results sequentially
-        if isinstance(task_ids, uuid.UUID):
-            task_ids = [task_ids]
+        response = self._handle_exceptions(req)
 
         self.logger.debug(
-            'Requesting tasks results (model={!r}, task_ids={!r}).'.format(
-                self.model, task_ids))
-        resp = []
-        for t in task_ids:
-            url = '{url}/{task_id}'.format(url=self.url, task_id=t)
-            self.logger.debug(
-                'Requesting result (model={!r}, url={!r}, task_id={!r}).'.
-                format(self.model, url, t))
+            'Task result OQ hazard(task_id={task_id}): {response}')
 
-            req = functools.partial(
-                requests.get, url, timeout=self._timeout)
-
-            response = self._handle_exceptions(req)
-
-            self.logger.debug(
-                'Task result (model={!r}, task_id={!r}): {!r}'.format(
-                    self.model, t, response))
-            resp.append(response)
         return self.QueryResult.from_requests(
-            resp, deserializer=deserializer)
+            response, deserializer=deserializer)
 
-    def compute(self, _payload, **kwargs):
+    def query_result_file(self, result_dict, deserializer=None):
         """
-        Issue a task to a remote seismicity forecast worker.
+        Query the result for worker's tasks.
+
+        :param task_ids: List of task identifiers (:py:class:`uuid.UUID`). If
+            an empty list is passed all results are requested.
+        :type task_ids: list or :py:class:`uuid.UUID`
+        :param deserializer: Deserializer instance to be used for data
+            deserialization.  If :code:`None` no deserialization is performed
+            at all. The deserializer must be configured to deserialize *many*
+            values.
+        :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+        """
+        url = result_dict['url']
+        htype = result_dict['type']
+        self.logger.debug(
+            f'Requesting result file for OQ hazard (url={url}, type={htype}).')
+
+        req = functools.partial(
+            requests.get, url, params={'export_type': 'xml'},
+            timeout=self._timeout)
+
+        response = self._handle_exceptions(req)
+
+        self.logger.debug(
+            'Task result OQ hazard (url={url}): {response}')
+        return self.QueryResult.from_requests(
+            response, deserializer=deserializer,
+            resp_format='xml', output_type=htype)
+
+    def compute(self, job_config_filename, logic_tree_filename,
+                gmpe_logic_tree_filename, model_source_filenames,
+                oq_input_dir, **kwargs):
+        """
+        Issue a task to a hazard forecast worker.
 
         :param payload: Payload sent to the remote worker
-        :type payload: str
+        :type payload: :py:class:`HazardWorkerHandle.Payload`
         :param deserializer: Optional deserializer instance used to load the
             response
         """
-        # TODO(damb): Howto extract the correct hydraulics catalog for the
-        # injection well?
-        # -> Something like well.snapshot(hydraulics_idx=0) might be
-        # implemented returning the current well with an hydraulics catalog
-        # snapshot.
-
-        deserializer = kwargs.get('deserializer')
-
+        url_post = f'{self.url}{self.PATH_CALC_RUN}'
         self.logger.debug(
-            'Sending computation request (model={!r}, url={!r}).'.format(
-                self.model, self.url))
+            'Sending computation request OQ hazard '
+            f'(dir={dirname(job_config_filename)}, url={url_post})')
+        oq_input_files = [
+            (job_config_filename, (job_config_filename,
+             open(join(oq_input_dir, job_config_filename), 'rb'), "text/ini")),
+            (logic_tree_filename, (logic_tree_filename,
+             open(join(oq_input_dir, logic_tree_filename), 'rb'), "text/xml")),
+            (gmpe_logic_tree_filename, (gmpe_logic_tree_filename,
+             open(join(oq_input_dir, gmpe_logic_tree_filename), 'rb'),
+             "text/xml"))]
 
-        headers = {'Content-Type': self.MIMETYPE,
-                   'Accept': 'application/json'}
+        model_index = 1
+        for source_file in model_source_filenames:
+            oq_input_files.append(
+                (f'input_model_{model_index}',
+                 (source_file, open(join(oq_input_dir, source_file), 'rb'),
+                  "text/xml")))
+            model_index += 1
+
         req = functools.partial(
-            requests.post, self.url, data=_payload, headers=headers,
-            timeout=self._timeout)
+            requests.post, url_post, files=oq_input_files)
         response = self._handle_exceptions(req)
-
         try:
             result = response.json()
-            if deserializer:
-                result = deserializer._loado(result)
-        except (ValueError, marshmallow.exceptions.ValidationError) as err:
+        except ValueError as err:
             raise self.DecodingError(err)
 
         self.logger.debug(
-            'Worker response (model={!r}, url={!r}): {!r}.'.format(
-                self.model, self.url, result))
+            f'Worker response OQ hazard (dir={dirname(job_config_filename)},'
+            f' url={url_post}, result: {result})')
         return result
+
+    _run = compute
 
     def delete(self, task_ids=[]):
         """
@@ -359,23 +387,22 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             task_ids = [task_ids]
 
         self.logger.debug(
-            'Removing tasks (model={!r}, task_ids={!r}).'.format(
-                self.model, task_ids))
+            f'Removing tasks (model_run={self.model_run_id}, '
+            f'task_ids={task_ids})')
 
         resp = []
         for t in task_ids:
             url = '{url}/{task_id}'.format(url=self.url, task_id=t)
             self.logger.debug(
-                'Removing task (model={!r}, url={!r}, task_id={!r}).'.
-                format(self.model, url, t))
-
+                f'Removing task (model={self.model_run_id}, url={url}, '
+                f'task_id={t})')
             req = functools.partial(requests.delete, url,
                                     timeout=self._timeout)
             response = self._handle_exceptions(req)
 
             self.logger.debug(
-                'Task removed (model={!r}, task_id={!r}): {!r}'.format(
-                    self.model, t, response))
+                f'Task removed (model={self.model_run_id}, task_id={t}): '
+                f'{response}')
 
             resp.append(response)
 
@@ -400,26 +427,22 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 raise self.HTTPError(self.url, err)
         except requests.exceptions.ConnectionError as err:
             raise self.ConnectionError(self.url, err)
-        except requests.exceptions.RequestsError as err:
+        except requests.exceptions.RequestException as err:
             raise self.RemoteWorkerError(err)
 
         return resp
 
     def __repr__(self):
         return '<%s (model=%r, url=%r)>' % (type(self).__name__,
-                                            self.model, self.url)
+                                            self.model_run_id, self.url)
 
     @staticmethod
-    def validate_ctor_args(base_url, model_id):
+    def validate_ctor_args(base_url):
         url = urlparse(base_url)
         if url.path or url.params or url.query or url.fragment:
             raise ValueError(f"Invalid URL: {url!r}.")
 
-        if not model_id:
-            raise ValueError("Missing: model id.")
-
-        return url.geturl(), model_id
+        return url.geturl()
 
 
-SeismicityWorkerHandle = RemoteSeismicityWorkerHandle
-WorkerHandleBase.register(SeismicityWorkerHandle)
+WorkerHandleBase.register(OQHazardWorkerHandle)

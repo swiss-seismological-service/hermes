@@ -1,5 +1,5 @@
 """
-test_forecast_flow.py
+test_hazard_flow.py
 
 Integration test for core workflow. This test requires set-up of
 a docker container to run the code in (not recommended to use the RAMSIS
@@ -26,6 +26,9 @@ logging https://github.com/pytest-dev/pytest/issues/5502
 where the buffer for pytest is closed before the core loggers and this
 leads to errors.
 """
+from copy import copy
+from io import BufferedReader
+import zipfile
 import unittest
 from unittest import mock
 import time
@@ -34,17 +37,15 @@ import psycopg2
 import argparse
 import json
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ramsis.datamodel.forecast import (  # noqa
     Forecast, ForecastScenario, ForecastStage, SeismicityForecastStage,
     SeismicitySkillStage, HazardStage, RiskStage, EStage)
 from ramsis.datamodel.hydraulics import (  # noqa
     Hydraulics, InjectionPlan, HydraulicSample)
-from ramsis.datamodel.model import Model, ModelRun  # noqa
+from ramsis.datamodel.model import Model, ModelRun, EModel  # noqa
 from ramsis.datamodel.project import Project  # noqa
-from ramsis.datamodel.hazard import (  # noqa
-    HazardModel)
 from ramsis.datamodel.seismicity import (  # noqa
     SeismicityModel, SeismicityModelRun, ReservoirSeismicityPrediction,
     SeismicityPredictionBin)
@@ -52,6 +53,7 @@ from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.status import Status, EStatus  # noqa
 from ramsis.datamodel.well import InjectionWell, WellSection  # noqa
+from ramsis.datamodel.hazard import HazardModel, HazardModelRun, GeoPoint
 
 from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
@@ -60,7 +62,25 @@ from RAMSIS.core.store import Store
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 
+PATH_SEISMICS = 'catalog_data/seismics.qml'
+# Only ~this many files can be imported and merged before
+# memory error occurs.
+PATHS_HYDRAULICS = [
+    'hyd_data/basel-2006-01.json']
+
 dirpath = os.path.dirname(os.path.abspath(__file__))
+
+LOGIC_TREE_TEMPLATE = os.path.join(dirpath,
+                                   'hazard_templates',
+                                   'logic_tree_template.xml')
+GMPE_TEMPLATE = os.path.join(dirpath,
+                             'hazard_templates',
+                             'gmpe_file.xml')
+JOB_CONFIG_TEMPLATE = os.path.join(dirpath,
+                                   'hazard_templates',
+                                   'job.ini')
+SOURCE_MODEL_TEMPLATE = os.path.join(
+    dirpath, 'hazard_templates', 'single_reservoir_seismicity_template.xml')
 
 RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m "
                "+x_0=0.0 +y_0=0.0 +no_defs")
@@ -72,11 +92,21 @@ PATH_SEISMICS = 'catalog_data/seismics.qml'
 # Only ~this many files can be imported and merged before
 # memory error occurs.
 PATHS_HYDRAULICS = [
-    'hyd_data/basel-2006-01.json']
+    'hyd_data/hyd-arnaud-alt.json']
 
 PATH_INJECTION_PLAN = 'injection_data/injectionplan-mignan.json'
 
-PROJECT_STARTTIME = datetime(2006, 12, 3, 0, 2)
+POST_RESPONSE1 = 'oq_responses/post_response1'
+POST_RESPONSE2 = 'oq_responses/post_response2'
+XML_RESULTS_BINARY1 = 'oq_responses/xml_result_curves_zip1'
+XML_RESULTS_BINARY2 = 'oq_responses/xml_result_curves_zip2'
+XML_RESULTS_BINARY_MAPS1 = 'oq_responses/xml_result_maps_zip1'
+XML_RESULTS_BINARY_MAPS2 = 'oq_responses/xml_result_maps_zip2'
+RESPONSE_LIST_BINARY = 'oq_responses/response_result_list1'
+RESPONSE_STATUS_BINARY = 'oq_responses/response_result_status1'
+
+
+PROJECT_STARTTIME = datetime(2006, 12, 2)
 PROJECT_ENDTIME = None
 
 FORECAST_STARTTIME = PROJECT_STARTTIME
@@ -91,8 +121,7 @@ Y_MAX = 2000
 Z_MIN = -4000
 Z_MAX = 0
 
-JSON_POSTED_DATA1 = 'results_data/json_posted_data1.json'
-JSON_POSTED_DATA2 = 'results_data/json_posted_data2.json'
+GEOPOINTS = 'results_data/hazard_geopoints.txt'
 
 JSON_GET_TEMPLATE = {
     "data": {
@@ -192,13 +221,17 @@ JSON_POST_TEMPLATE = {
     }}
 
 
-def create_json_response(task_id, response_template, **kwargs):
-    resp = response_template.copy()
-    resp['data']['id'] = task_id
+def return_filepath(filename, **kwargs):
+    return os.path.join(dirpath, filename)
+
+
+def create_json_response(filename, **kwargs):
+    with open(os.path.join(dirpath, filename), 'rb') as open_resp:
+        resp = BufferedReader(open_resp).read()
     return resp
 
 
-def create_models():
+def create_seismicity_models():
     URL_EM1 = 'http://localhost:5000'
     EM1_SFMWID = 'EM1'
     HOUR_IN_SECS = 3600
@@ -222,6 +255,7 @@ def create_models():
                 **{"em1_training_epoch_duration": DAY_IN_SECS}},
         sfmwid=EM1_SFMWID,
         enabled=True,
+        seismicitymodeltemplate=SOURCE_MODEL_TEMPLATE,
         url=URL_EM1)
     retval.append(m)
 
@@ -230,19 +264,23 @@ def create_models():
         config={**base_config,
                 **{"em1_training_epoch_duration": HOUR_IN_SECS}},
         sfmwid=EM1_SFMWID,
+        seismicitymodeltemplate=SOURCE_MODEL_TEMPLATE,
         enabled=True,
         url=URL_EM1)
     retval.append(m)
 
-    m = HazardModel(
+    return retval
+
+
+def create_hazard_model():
+
+    return HazardModel(
         name='default',
-        logictreetemplate='text',
-        gmpefile='text',
-        jobconfigfile='text',
+        logictreetemplate=LOGIC_TREE_TEMPLATE,
+        gmpefile=GMPE_TEMPLATE,
+        jobconfigfile=JOB_CONFIG_TEMPLATE,
         enabled=True,
         url="http://localhost:8800")
-    retval.append(m)
-    return retval
 
 
 def parse_cli():
@@ -255,14 +293,31 @@ def parse_cli():
     return parser.parse_args()
 
 
+def create_seismicity_samples(datetimes, a_values, b_values, mc_values):
+    samples = []
+    for index, starttime in enumerate(datetimes[:-1]):
+        endtime = datetimes[index + 1]
+        sample = SeismicityPredictionBin(
+            starttime=starttime,
+            endtime=endtime,
+            a_value=a_values[index],
+            b_value=b_values[index],
+            mc_value=mc_values[index])
+        samples.append(sample)
+    return samples
+
+
 def insert_test_data(db_url):
 
     store = Store(db_url)
     store.init_db()
     # create models
-    models = create_models()
-    for m in models:
+    seismicity_models = create_seismicity_models()
+    for m in seismicity_models:
         store.add(m)
+    hazard_model = create_hazard_model()
+
+    store.add(hazard_model)
     store.save()
 
     # FIXME(damb): The project and deserializers are configured without any
@@ -316,10 +371,14 @@ def insert_test_data(db_url):
     scenario = default_scenario(store, name='Basel Scenario')
     fc.scenarios = [scenario]
     seismicity_stage = scenario[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 7200}
-    scenario.reservoirgeom = RESERVOIR_INPUT
+    seismicity_stage.config = {'prediction_bin_duration': 21600}
+    seismicity_stage.status.state = EStatus.COMPLETE
+    risk_stage = scenario[EStage.RISK]
+    risk_stage.enabled = False
     hazard_stage = scenario[EStage.HAZARD]
-    hazard_stage.enabled = False
+    hazard_stage.enabled = True
+    hazard_stage.model = hazard_model
+    scenario.reservoirgeom = RESERVOIR_INPUT
 
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=RAMSIS_PROJ,
@@ -334,6 +393,32 @@ def insert_test_data(db_url):
     store.add(project)
     store.add(fc)
     store.add(scenario)
+    runids = ["1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
+              "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"]
+    starttime = datetime(2006, 12, 8, 8, 45)
+    datetimes = [starttime + timedelta(seconds=21600 * x) for x in range(3)]
+    a_values = [1.2, 1.5]
+    b_values = [1.6, 1.7]
+    mc_values = [2.5, 2.5]
+
+    store.save()
+    runs = scenario[EStage.SEISMICITY].runs
+    for index, seis_run in enumerate(runs):
+        seis_run.runid = runids[index]
+        samples = create_seismicity_samples(
+            datetimes, a_values, b_values, mc_values)
+        seis_run.result = ReservoirSeismicityPrediction(
+            x_min=X_MIN,
+            y_min=Y_MIN,
+            z_min=Z_MIN,
+            x_max=X_MAX,
+            y_max=Y_MAX,
+            z_max=Z_MAX,
+            samples=samples)
+        seis_run.status.state = EStatus.COMPLETE
+        store.add(seis_run.result)
+        for sample in samples:
+            store.add(sample)
     try:
         store.save()
     except Exception:
@@ -345,66 +430,82 @@ def insert_test_data(db_url):
 
 
 class MockResponse:
-    def __init__(self, json_data, status_code):
-        self.json_data = json_data
-        self.status_code = status_code
+    def __init__(self, status, resp):
+        self.status = status
+        self.resp = resp
+        self.content = self.json()
 
     def raise_for_status(self):
         pass
 
     def json(self):
-        return self.json_data
+        resp = self.resp
+        if isinstance(self.resp, bytes):
+            resp = json.loads(copy(self.resp).decode())
+        return resp
 
 
-def mocked_requests_post(*args, **kwargs):
-    training_epoch = (json.loads(kwargs['data'])['data']['attributes']
-                      ['model_parameters']
-                      ['em1_training_epoch_duration'])
-    if args[0] == 'http://localhost:5000/v1/EM1/runs':
-        if training_epoch == 3600:
-            return MockResponse(
-                create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-                                     JSON_POST_TEMPLATE),
-                200)
-        elif training_epoch == 86400:
-            return MockResponse(
-                create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-                                     JSON_POST_TEMPLATE),
-                200)
-    elif args[0] == 'http://localhost:5000':
-        return MockResponse({"key2": "value2"}, 200)
+class MockPostResponse:
+    def __init__(self, status, resp):
+        self.status = status
+        self.resp = resp
 
-    return MockResponse(None, 404)
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        resp = json.loads(copy(self.resp).decode())
+        return resp
+
+
+class MockedRequestsPost:
+    def __init__(self):
+        self.number_run = 1
+
+    def mocked_requests_post(self, *args, **kwargs):
+        if args[0] == 'http://localhost:8800/v1/calc/run':
+            if self.number_run == 1:
+                with open(os.path.join(dirpath, POST_RESPONSE1),
+                          'rb') as open_resp:
+                    resp = BufferedReader(open_resp).read()
+                    self.number_run += 1
+                    return MockPostResponse(200, resp)
+            elif self.number_run == 2:
+                with open(os.path.join(dirpath, POST_RESPONSE2),
+                          'rb') as open_resp:
+                    resp = BufferedReader(open_resp).read()
+                    self.number_run += 1
+                    return MockPostResponse(200, resp)
+        return MockResponse(404, None)
 
 
 def mocked_requests_get(*args, **kwargs):
 
-    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
+    if args[0] == "http://localhost:8800/v1/calc/result/1031":
         return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-                                 JSON_GET_TEMPLATE), 200)
-    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
+            200, return_filepath(XML_RESULTS_BINARY1))
+    elif args[0] == "http://localhost:8800/v1/calc/result/1033":
         return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-                                 JSON_GET_TEMPLATE), 200)
-    return MockResponse(None, 404)
-
-
-def mocked_requests_get_error(*args, **kwargs):
-
-    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
+            200, return_filepath(XML_RESULTS_BINARY2))
+    elif args[0] == "http://localhost:8800/v1/calc/result/1056":
         return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef419dd",
-                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
-    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
+            200, return_filepath(XML_RESULTS_BINARY_MAPS1))
+    elif args[0] == "http://localhost:8800/v1/calc/result/1057":
         return MockResponse(
-            create_json_response("1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-                                 JSON_GET_TOO_FEW_EVENTS_TEMPLATE), 200)
-    return MockResponse(None, 404)
+            200, return_filepath(XML_RESULTS_BINARY_MAPS2))
+    elif args[0] == "http://localhost:8800/v1/calc/10/results":
+        return MockResponse(
+            200, create_json_response(RESPONSE_LIST_BINARY))
+    elif args[0] == "http://localhost:8800/v1/calc/10/status":
+        return MockResponse(
+            200, create_json_response(RESPONSE_STATUS_BINARY))
+    elif args[0] == "http://localhost:8800/v1/calc/11/results":
+        return MockResponse(
+            200, create_json_response(RESPONSE_LIST_BINARY))
+    elif args[0] == "http://localhost:8800/v1/calc/11/status":
+        return MockResponse(
+            200, create_json_response(RESPONSE_STATUS_BINARY))
+    return MockResponse(404, None)
 
 
 def mocked_pyqtsignal(*args, **kwargs):
@@ -420,6 +521,18 @@ def signal_factory():
     return MockSignal()
 
 
+def zipfile_archive(arg):
+    with open(arg, 'rb') as open_resp:
+        resp = zipfile.ZipFile(open_resp)
+        infolist = resp.infolist()
+        for zipinfo_obj in infolist:
+            obj_filename = zipinfo_obj.filename
+            yield resp.read(obj_filename).decode()
+
+
+mocked_requests_post_init = MockedRequestsPost()
+
+
 class IntegrationTestCase(unittest.TestCase):
     # The default user and password are added by default from the
     # kartoza/postgis image
@@ -431,13 +544,14 @@ class IntegrationTestCase(unittest.TestCase):
     TEST_DBNAME = 'test'
     TEST_USER = 'test'
     TEST_PASSWORD = 'test'
+    TMP_DIR = os.path.join(dirpath, 'tmp_dir')
 
     def postgres_test_url(self):
 
         return(f'postgresql://{self.TEST_USER}:{self.TEST_PASSWORD}@'
                f'{self.DEFAULT_HOST}:{self.DEFAULT_PORT}/{self.TEST_DBNAME}')
 
-    def setUp(self):
+    def setUpSingleGeom(self):
         # Login with default credentials and create a new
         # testing database
         conn0 = psycopg2.connect(
@@ -482,49 +596,60 @@ class IntegrationTestCase(unittest.TestCase):
         cursor0.execute(
             "select pg_terminate_backend(pg_stat_activity.pid)"
             " from pg_stat_activity where pg_stat_activity.datname="
-            "'{self.TEST_DBNAME}'")
+            "'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
+        cursor0.execute(f"DROP DATABASE IF EXISTS {self.TEST_DBNAME}")
         cursor0.close()
         conn0.close()
+        if not os.path.exists(self.TMP_DIR):
+            os.mkdir(self.TMP_DIR)
 
     def connect_ramsis(self):
-        controller = Controller(mock.MagicMock(), LaunchMode.LAB)
+        app = mock.Mock(app_settings={'data_dir': self.TMP_DIR})
+        controller = Controller(app, LaunchMode.LAB, )
         controller.connect(self.postgres_test_url())
 
         store = controller.store
         return controller, store
 
-    def reset_statuses(self):
-        """
-        Test the flow with only the seismicity stage enabled and two models
-        enabled.
-        """
-        controller, store = self.connect_ramsis()
-        statuses = store.session.query(Status).all()
-        for item_status in statuses:
-            item_status.state = EStatus.PENDING
-
-        # seismicity_models = store.session.query(SeismicityModel).all()
-        # for model in seismicity_models:
-        #     model.sfwid =  'http://localhost:5007'
-        store.save()
-
-    @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
+    @mock.patch('RAMSIS.core.engine.engine.HazardHandler.'
                 'execution_status_update', side_effect=signal_factory)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
                 side_effect=mocked_requests_get)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
-                side_effect=mocked_requests_post)
-    def test_successful_seismicity_flow(self, mock_post, mock_get,
-                                        mock_signal):
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
+                side_effect=mocked_requests_post_init.mocked_requests_post)
+    @mock.patch('RAMSIS.io.oq_hazard.'
+                'OQHazardOMessageDeserializer._read_ziparchive',
+                side_effect=zipfile_archive)
+    def test_successful_hazard_flow(self,
+                                    mock_ziparchive,
+                                    mock_post,
+                                    mock_get,
+                                    mock_signal):
         """
-        Test the flow with only the seismicity stage enabled and two models
-        enabled.
+        Test the flow with only the seismicity & hazard stage enabled
+        and seismicity stage complete.
         """
+        self.setUpSingleGeom()
         self.maxDiff = None
         controller, store = self.connect_ramsis()
-        statuses = store.session.query(Status).all()
-        for item_status in statuses:
-            item_status.state = EStatus.PENDING
+        forecast = store.session.query(Forecast).first()
+        forecast.status.state = EStatus.RUNNING
+
+        scenario = forecast.scenarios[0]
+        scenario.status.state = EStatus.RUNNING
+
+        seismicity_stage = scenario[EStage.SEISMICITY]
+        seismicity_stage.status.state = EStatus.COMPLETE
+
+        hazard_stage = scenario[EStage.HAZARD]
+        hazard_stage.status.state = EStatus.PENDING
+
+        risk_stage = scenario[EStage.RISK]
+        risk_stage.enabled = False
+
+        seis_model_runs = seismicity_stage.runs
+        for run in seis_model_runs:
+            run.status.state = EStatus.COMPLETE
 
         store.save()
         project = store.session.query(Project).first()
@@ -537,54 +662,32 @@ class IntegrationTestCase(unittest.TestCase):
         for i in range(50):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
-            statuses = store.session.query(Status).all()
             store.session.close()
-            self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
-                time.sleep(1)
-            time.sleep(2)
+            time.sleep(4)
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 4)
+        self.assertEqual(len(signal_list), 5)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
-            self.assertEqual(prefect_status.message, "Task run succeeded.")
+            self.assertTrue(prefect_status.message in [
+                "Task run succeeded.", "All reference tasks succeeded."])
             self.assertTrue(prefect_status.is_successful())
 
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            self.assertTrue(parent_type in [
+                type(HazardModelRun()), type(HazardStage())])
 
         # Check data send to remote worker
-        posted_data = mock_post.call_args_list[0][1]['data']
-        posted_data2 = mock_post.call_args_list[1][1]['data']
+        posted_data = mock_post.call_args_list[0][1]
+        posted_data2 = mock_post.call_args_list[1][1]
 
-        # with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'w') as json_d:
-        #     if (json.loads(posted_data)["data"]["attributes"]["model_parameters"] # noqa
-        #         ["em1_training_epoch_duration"] == 86400):
-        #         json.dump(posted_data, json_d)
-        #     else:
-        #         json.dump(posted_data2, json_d)
-        # with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'w') as json_d:
-        #     if (json.loads(posted_data)["data"]["attributes"]["model_parameters"] # noqa
-        #         ["em1_training_epoch_duration"] == 86400):
-        #         json.dump(posted_data2, json_d)
-        #     else:
-        #         json.dump(posted_data, json_d)
-        with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'r') as json_d:
-            json_data = json.load(json_d)
-        with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'r') as json_d:
-            json_data2 = json.load(json_d)
-        # As we are not sure which order the models are processed,
-        # we cannot be sure which status is produced first
-        if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
-                ["em1_training_epoch_duration"] == 86400):
-            self.assertEqual(posted_data, json_data)
-            self.assertEqual(posted_data2, json_data2)
-        else:
-            self.assertEqual(posted_data, json_data2)
-            self.assertEqual(posted_data2, json_data)
+        self.assertEqual(len(
+            posted_data['files']), 5)
+        self.assertEqual(len(
+            posted_data2['files']), 5)
 
         # Check that forecast, scenario and model runs all have completed
         non_stage_statuses = store.session.query(Status).\
@@ -594,266 +697,164 @@ class IntegrationTestCase(unittest.TestCase):
                  for s in non_stage_statuses]))
         # Check that the seismicity stage has completed.
         forecast = store.session.query(Forecast).first()
-        stage = forecast.scenarios[0][EStage.SEISMICITY]
+        stage = forecast.scenarios[0][EStage.HAZARD]
         self.assertEqual(stage.status.state, EStatus.COMPLETE)
 
         # Check number of samples produced in total
-        results = [run.result for run in stage.runs]
-        self.assertEqual(len(results), 2)
-        bins_nested = [res.samples for res in results]
-        bins = [item for sublist in bins_nested for item in sublist]
-        self.assertEqual(len(bins), 6)
-        # Check the content of the results
-        self.assertEqual(results[0].x_min, X_MIN)
-        self.assertEqual(results[0].x_max, X_MAX)
-        self.assertEqual(results[0].y_min, Y_MIN)
-        self.assertEqual(results[0].y_max, Y_MAX)
-        self.assertEqual(results[0].z_min, Z_MIN)
-        self.assertEqual(results[0].z_max, Z_MAX)
+        pointvalues_list = [run.hazardpointvalues for run in stage.runs]
+        pointvalues = [value for sublist in pointvalues_list for value
+                       in sublist]
+        self.assertEqual(len(pointvalues), 3264)
+        curves_list = [run.hazardcurves for run in stage.runs]
+        curves = [value for sublist in curves_list for value in sublist]
+        self.assertEqual(len(curves), 272)
 
-        bin_starttimes = [item.starttime for item in bins]
-        self.assertEqual(sorted(bin_starttimes), [
-            datetime(2015, 5, 7),
-            datetime(2015, 5, 7),
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 8),
-            datetime(2015, 5, 7, 8)])
+        geopoints = [(point.geopoint.lat, point.geopoint.lon)
+                     for point in pointvalues]
+        geopoints = sorted(set(geopoints))
+        # rewrite geopoints file in case results are altered
+        #with open(os.path.join(dirpath, GEOPOINTS), 'w') as geopoints_read: # noqa
+        #    for tup in geopoints:
+        #        lat, lon = tup
+        #        geopoints_read.write(f"{lat} {lon}\n")
+        with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
+            geopoint_lines = geopoints_read.readlines()
+        geopoints_stored = []
 
-        bin_endtimes = [item.endtime for item in bins]
-        self.assertEqual(sorted(bin_endtimes), [
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 4),
-            datetime(2015, 5, 7, 8),
-            datetime(2015, 5, 7, 8),
-            datetime(2015, 5, 7, 12),
-            datetime(2015, 5, 7, 12)])
+        for line in geopoint_lines:
+            lat_str, lon_str = line.split()
+            geopoints_stored.append((float(lat_str), float(lon_str)))
 
-        bin_events = [item.numberevents_value for item in bins]
-        self.assertEqual(sorted(bin_events), sorted([
-            1.8, 1.8, 2.1, 2.1, 2.4, 2.4]))
-        bin_a = [item.a_value for item in bins]
-        self.assertTrue(all(item == 14.2516247073 for item in bin_a))
-
-        bin_b = [item.b_value for item in bins]
-        self.assertTrue(all(item == 4.342944819 for item in bin_b))
-
-        bin_mc = [item.mc_value for item in bins]
-        self.assertTrue(all(item == 4.4 for item in bin_mc))
-
-        statuses = store.session.query(Status).all()
+        geopoints_stored = sorted(set(geopoints_stored))
+        self.assertEqual(geopoints, geopoints_stored)
         store.session.remove()
         store.engine.dispose()
 
-    @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
+    @mock.patch('RAMSIS.core.engine.engine.HazardHandler.'
                 'execution_status_update', side_effect=signal_factory)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
-                side_effect=mocked_requests_get_error)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
-                side_effect=mocked_requests_post)
-    def test_model_error(self, mock_post, mock_get, mock_signal):
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
+                side_effect=mocked_requests_get)
+    @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
+                side_effect=mocked_requests_post_init.mocked_requests_post)
+    @mock.patch('RAMSIS.io.oq_hazard.'
+                'OQHazardOMessageDeserializer._read_ziparchive',
+                side_effect=zipfile_archive)
+    def test_successful_hazard_flow_geopoints(
+            self,
+            mock_ziparchive,
+            mock_post,
+            mock_get,
+            mock_signal):
         """
-        Test workflow when an Error is returned in the get
-        request from remote worker.
+        Test the flow with only the seismicity & hazard stage enabled
+        and seismicity stage complete.
         """
+        self.setUpSingleGeom()
+        self.maxDiff = None
         controller, store = self.connect_ramsis()
-        statuses = store.session.query(Status).all()
-        for item_status in statuses:
-            item_status.state = EStatus.PENDING
+        forecast = store.session.query(Forecast).first()
+        forecast.status.state = EStatus.RUNNING
+
+        scenario = forecast.scenarios[0]
+        scenario.status.state = EStatus.RUNNING
+
+        seismicity_stage = scenario[EStage.SEISMICITY]
+        seismicity_stage.status.state = EStatus.COMPLETE
+
+        hazard_stage = scenario[EStage.HAZARD]
+        hazard_stage.status.state = EStatus.PENDING
+
+        risk_stage = scenario[EStage.RISK]
+        risk_stage.enabled = False
+
+        seis_model_runs = seismicity_stage.runs
+        for run in seis_model_runs:
+            run.status.state = EStatus.COMPLETE
+
+        with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
+            geopoint_lines = geopoints_read.readlines()
+        for geopoint_line in geopoint_lines:
+            lat, lon = [float(item) for item in geopoint_line.split(" ")]
+            # Set up geopoints
+            print("add geopoints for lat, lon:", lat, lon)
+            _ = store.session.add(GeoPoint(lat=lat, lon=lon))
 
         store.save()
         project = store.session.query(Project).first()
         forecast = store.session.query(Forecast).first()
         controller.open_project(project)
         store.session.close()
-
         controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # Allow main thread to wait until other threads triggered by
-        # workflow complete for 200 seconds maximum
-        for i in range(10):
-            forecast_status = store.session.query(Forecast).first().\
-                status.state
-            store.session.close()
-            if forecast_status == EStatus.ERROR:
-                break
-            time.sleep(5)
-
-        # Check that forecast, scenario and model all have an error status
-        non_stage_statuses = store.session.query(Status).\
-            filter(Status.stage_id is None).all()
-        self.assertTrue(all([s.state == EStatus.ERROR
-                             for s in non_stage_statuses]))
-        # Check that the seismicity stage has completed.
-        forecast = store.session.query(Forecast).first()
-        stage = forecast.scenarios[0][EStage.SEISMICITY]
-        self.assertEqual(stage.status.state, EStatus.ERROR)
-
-        # Check pyqtsignals that were produced
-        signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 4)
-        for i, call_tuple in enumerate(signal_list):
-            prefect_status = call_tuple[0][0][0]
-            if i in [0, 1]:
-                self.assertEqual(prefect_status.message, "Task run succeeded.")
-                self.assertTrue(prefect_status.is_successful())
-            elif i in [2, 3]:
-                self.assertTrue(prefect_status.message in ["Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef419dd: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef419dd')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))", "Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef41123: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef41123')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))"]) # noqa
-                self.assertTrue(prefect_status.is_failed())
-
-            parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
-        store.session.remove()
-        store.engine.dispose()
-
-    @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
-                'execution_status_update', side_effect=signal_factory)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
-                side_effect=mocked_requests_get)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
-                side_effect=mocked_requests_post)
-    def test_models_already_dispatched(self, mock_post, mock_get, mock_signal):
-        self.execution_statuses = []
-        controller, store = self.connect_ramsis()
-
-        model_runs = store.session.query(SeismicityModelRun).all()
-        model_run_ids = zip(model_runs, [
-            "1bcc9e3f-d9bd-4dd2-a626-735cbef41123",
-            "1bcc9e3f-d9bd-4dd2-a626-735cbef419dd"])
-        for model_run, runid in model_run_ids:
-            model_run.runid = runid
-
-        statuses = store.session.query(Status).all()
-        for item_status in statuses:
-            if item_status.run_id is not None:
-                item_status.state = EStatus.DISPATCHED
-            else:
-                item_status.state = EStatus.PENDING
-
-        store.save()
-        project = store.session.query(Project).first()
-        forecast = store.session.query(Forecast).first()
-        controller.open_project(project)
-        store.session.close()
-        controller.engine.run(datetime(2006, 12, 2), forecast.id)
         # workflow complete for 200 seconds maximum
         for i in range(50):
             forecast_status = store.session.query(Forecast).first().\
                 status.state
             store.session.close()
-            self.assertNotEqual(forecast_status, EStatus.ERROR)
             if forecast_status == EStatus.COMPLETE:
                 break
-            time.sleep(2)
+            time.sleep(4)
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 2)
+        self.assertEqual(len(signal_list), 5)
         for call_tuple in signal_list:
             prefect_status = call_tuple[0][0][0]
-            self.assertEqual(prefect_status.message,
-                             "Task run succeeded.")
+            self.assertTrue(prefect_status.message in [
+                "Task run succeeded.", "All reference tasks succeeded."])
             self.assertTrue(prefect_status.is_successful())
 
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            self.assertTrue(parent_type in [
+                type(HazardModelRun()), type(HazardStage())])
 
-        # Check that no POST requests were made
-        mock_post.assert_not_called()
+        # Check data send to remote worker
+        posted_data = mock_post.call_args_list[0][1]
+        posted_data2 = mock_post.call_args_list[1][1]
+
+        self.assertEqual(len(
+            posted_data['files']), 5)
+        self.assertEqual(len(
+            posted_data2['files']), 5)
 
         # Check that forecast, scenario and model runs all have completed
         non_stage_statuses = store.session.query(Status).\
             filter(Status.stage_id is None).all()
-        self.assertTrue(all([s.state == EStatus.COMPLETE
-                             for s in non_stage_statuses]))
-
+        self.assertTrue(
+            all([s.state == EStatus.COMPLETE
+                 for s in non_stage_statuses]))
         # Check that the seismicity stage has completed.
         forecast = store.session.query(Forecast).first()
-        stage = forecast.scenarios[0][EStage.SEISMICITY]
+        stage = forecast.scenarios[0][EStage.HAZARD]
         self.assertEqual(stage.status.state, EStatus.COMPLETE)
 
         # Check number of samples produced in total
-        results = [run.result for run in stage.runs]
-        self.assertEqual(len(results), 2)
-        bins_nested = [res.samples for res in results]
-        bins = [item for sublist in bins_nested for item in sublist]
-        self.assertEqual(len(bins), 6)
-        store.session.remove()
-        store.engine.dispose()
+        pointvalues_list = [run.hazardpointvalues for run in stage.runs]
+        pointvalues = [value for sublist in pointvalues_list for value
+                       in sublist]
+        self.assertEqual(len(pointvalues), 3264)
+        curves_list = [run.hazardcurves for run in stage.runs]
+        curves = [value for sublist in curves_list for value in sublist]
+        self.assertEqual(len(curves), 272)
 
-    @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
-                'execution_status_update', side_effect=signal_factory)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
-                side_effect=mocked_requests_get)
-    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
-                side_effect=mocked_requests_post)
-    def test_one_model_already_dispatched(self, mock_post, mock_get,
-                                          mock_signal):
-        controller, store = self.connect_ramsis()
-        statuses = store.session.query(Status).all()
+        geopoints = [(point.geopoint.lat, point.geopoint.lon)
+                     for point in pointvalues]
+        geopoints = sorted(set(geopoints))
+        # rewrite geopoints file in case results are altered
+        #with open(os.path.join(dirpath, GEOPOINTS), 'w') as geopoints_read: # noqa
+        #    for tup in geopoints:
+        #        lat, lon = tup
+        #        geopoints_read.write(f"{lat} {lon}\n")
+        with open(os.path.join(dirpath, GEOPOINTS), 'r') as geopoints_read:
+            geopoint_lines = geopoints_read.readlines()
+        geopoints_stored = []
 
-        model_runs = store.session.query(SeismicityModelRun).all()
-        for model_run in model_runs:
-            if model_run.model.id == 1:
-                model_run.runid = "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"
-                model_run.status.state = EStatus.DISPATCHED
-            else:
-                model_run.status.state = EStatus.PENDING
+        for line in geopoint_lines:
+            lat_str, lon_str = line.split()
+            geopoints_stored.append((float(lat_str), float(lon_str)))
 
-        # Alter so that only one model is dispatched.
-        for item_status in statuses:
-            if item_status.run_id is None:
-                item_status.state = EStatus.PENDING
-
-        store.save()
-        project = store.session.query(Project).first()
-        forecast = store.session.query(Forecast).first()
-        controller.open_project(project)
-        store.session.close()
-        controller.engine.run(datetime(2006, 12, 2), forecast.id)
-        # workflow complete for 200 seconds maximum
-        for i in range(5):
-            forecast_status = store.session.query(Forecast).first().\
-                status.state
-            store.session.close()
-            self.assertNotEqual(forecast_status, EStatus.ERROR)
-            if forecast_status == EStatus.COMPLETE:
-                break
-            time.sleep(10)
-
-        # Check pyqtsignals that were produced
-        signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 3)
-        for call_tuple in signal_list:
-            prefect_status = call_tuple[0][0][0]
-            self.assertEqual(prefect_status.message,
-                             "Task run succeeded.")
-            self.assertTrue(prefect_status.is_successful())
-
-            parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
-
-        # Check that only one POST request was made, as only one
-        # model is pending
-        mock_post.assert_called_once()
-        self.assertEqual(mock_get.call_count, 2)
-
-        # Check that forecast, scenario and model runs all have completed
-        non_stage_statuses = store.session.query(Status).\
-            filter(Status.stage_id is None).all()
-        self.assertTrue(all([s.state == EStatus.COMPLETE
-                             for s in non_stage_statuses]))
-
-        # Check that the seismicity stage has completed.
-        forecast = store.session.query(Forecast).first()
-        stage = forecast.scenarios[0][EStage.SEISMICITY]
-        self.assertEqual(stage.status.state, EStatus.COMPLETE)
-
-        # Check number of samples produced in total
-        results = [run.result for run in stage.runs]
-        self.assertEqual(len(results), 2)
-        bins_nested = [res.samples for res in results]
-        bins = [item for sublist in bins_nested for item in sublist]
-        self.assertEqual(len(bins), 6)
+        geopoints_stored = sorted(set(geopoints_stored))
+        self.assertEqual(geopoints, geopoints_stored)
         store.session.remove()
         store.engine.dispose()
 
