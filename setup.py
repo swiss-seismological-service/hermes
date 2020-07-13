@@ -52,16 +52,15 @@ _install_requires = [
     "transitions==0.6.9",
     "prefect[viz]",
     "pyproj==2.3.0",
+    "pyproj==2.3.0",
     "jinja2",
-    "xmltodict"]
+    "xmltodict",
+    "sqlalchemy==1.3.13"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",
     "sphinx==1.4.1",
     "sphinx-rtd-theme==0.1.9", ]}
-
-_tests_require = [
-    "sqlalchemy==1.2.0", ]
 
 _dependency_links = [(
     "git+https://gitlab.seismo.ethz.ch/indu/pyqtgraph.git"
@@ -113,7 +112,6 @@ setup(
     dependency_links=_dependency_links,
     install_requires=_install_requires,
     extras_require=_extras_require,
-    tests_require=_tests_require,
     packages=find_packages(),
     data_files=_data_files,
     scripts=_scripts,
