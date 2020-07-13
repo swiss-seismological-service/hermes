@@ -567,9 +567,9 @@ class IntegrationTestCase(unittest.TestCase):
         cursor0.execute(f"CREATE DATABASE {self.TEST_DBNAME} with owner "
                         f"{self.TEST_USER}")
         cursor0.execute(
-            f"select pg_terminate_backend(pg_stat_activity.pid)"
+            "select pg_terminate_backend(pg_stat_activity.pid)"
             " from pg_stat_activity where pg_stat_activity.datname="
-            "'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
+            f"'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
         cursor0.close()
         conn0.close()
         conn = psycopg2.connect(
@@ -577,7 +577,7 @@ class IntegrationTestCase(unittest.TestCase):
             user=self.TEST_USER, password=self.TEST_PASSWORD,
             dbname=self.TEST_DBNAME)
         cursor = conn.cursor()
-        cursor.execute(f"CREATE EXTENSION IF NOT EXISTS postgis;")
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
         cursor.close()
         conn.commit()
         conn.close()
@@ -594,7 +594,7 @@ class IntegrationTestCase(unittest.TestCase):
         cursor0 = conn0.cursor()
         # Sometimes not all connctions close successfully so force close them.
         cursor0.execute(
-            f"select pg_terminate_backend(pg_stat_activity.pid)"
+            "select pg_terminate_backend(pg_stat_activity.pid)"
             " from pg_stat_activity where pg_stat_activity.datname="
             "'{self.TEST_DBNAME}' AND pid <> pg_backend_pid()")
         cursor0.execute(f"DROP DATABASE IF EXISTS {self.TEST_DBNAME}")

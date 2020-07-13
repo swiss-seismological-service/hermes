@@ -27,7 +27,7 @@ from RAMSIS.ui.dialog import (
     ForecastConfigDialog, CreateForecastSequenceDialog, ScenarioConfigDialog)
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
     ForecastTreeModel)
-from RAMSIS.ui.styles import StatusColor
+# from RAMSIS.ui.styles import StatusColor
 
 
 class ContentPresenter(object):
@@ -111,7 +111,7 @@ class ContentPresenter(object):
         Show the overall status of the currently selected forecast
 
         """
-        color = StatusColor.OTHER
+        # color = StatusColor.OTHER
         errors = False
         msg = ''
         self.current_scenario = self.ramsis_core.store.get_fresh(
@@ -153,12 +153,12 @@ class ContentPresenter(object):
 
         if errors:
             msg += ' (with errors)'
-            color = StatusColor.ERROR
-        text_color = 'black' if color == StatusColor.OTHER else 'white'
+            # color = StatusColor.ERROR
+        # text_color = 'black' if color == StatusColor.OTHER else 'white'
         self.ui.fcStatusLabel.setText(msg)
         self.ui.statusAreaWidget.setStyleSheet('background-color: transparent;'
-                                               'color: transparent;'
-                                               .format(color, text_color))
+                                               'color: transparent;')
+        #                                       .format(color, text_color))
         general_tab = next(t for t in self.tab_presenters
                            if isinstance(t, GeneralTabPresenter))
         general_tab.refresh_status(scenario, self.ramsis_core.store)

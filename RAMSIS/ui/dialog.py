@@ -325,11 +325,11 @@ class ScenarioConfigDialog(
         else:
             _ = QMessageBox.critical(
                 self, 'RAMSIS',
-                f'Invalid injection strategy configuration.',
+                'Invalid injection strategy configuration.',
                 buttons=QMessageBox.Close)
 
             raise ValidationError(
-                f'Invalid injection strategy configuration.')
+                'Invalid injection strategy configuration.')
 
         # complete scenario
         self._data.config = {}
@@ -360,7 +360,7 @@ class ScenarioConfigDialog(
             if not seismicity_stage.enabled:
                 _ = QMessageBox.critical(
                     self, 'RAMSIS',
-                    f'The seismicity stage must be enabled for the '
+                    'The seismicity stage must be enabled for the '
                     'hazard stage to proceed.',
                     buttons=QMessageBox.Close)
                 raise ValidationError(
@@ -389,7 +389,7 @@ class ScenarioConfigDialog(
                         except ValueError:
                             _ = QMessageBox.critical(
                                 self, 'RAMSIS',
-                                f'The weights entered for the hazard stage '
+                                'The weights entered for the hazard stage '
                                 'cannot be accepted.',
                                 buttons=QMessageBox.Close)
                             raise ValidationError()
