@@ -90,7 +90,7 @@ class TestEditingContext(unittest.TestCase):
                          'Item additions should be merged upon save()')
 
     def test_add_top_level(self):
-        project = Project(starttime=datetime.now(), spatialreference='4326')
+        project = Project(starttime=datetime.utcnow(), spatialreference='4326')
         self.editing_context.add(project)
         self.editing_context.save()
         self.assertEqual(len(self.store.all_projects()), 2,

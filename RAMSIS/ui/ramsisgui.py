@@ -31,11 +31,8 @@ class RamsisGui(QObject):
         self._managed_windows = set()
         self._logger = logging.getLogger(__name__)
 
-        # By convention, we show local times in the GUI and work with UTC
-        # internally. We customize the default Qt control interface factory
-        # accordingly.
         QtIf.register_interface(QDateTimeEdit,
-                                QtIf.QDateTimeEditInterfaceLocal)
+                                QtIf.QDateTimeEditInterface)
 
     def show(self):
         self.main_window.show()

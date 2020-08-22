@@ -8,6 +8,7 @@ central coordinator for all core (i.e. non UI) components.
 
 import logging
 
+from datetime import datetime
 from enum import Enum
 from operator import attrgetter
 
@@ -79,8 +80,6 @@ class Controller(QtCore.QObject):
     def __init__(self, app, launch_mode):
         super(Controller, self).__init__()
         self._settings = app.app_settings
-        assert (launch_mode == LaunchMode.LAB), \
-            f'Mode {launch_mode} is not implemented'
         self._launch_mode = launch_mode
         self.store = None
         self.project = None
@@ -170,6 +169,12 @@ class Controller(QtCore.QObject):
                     f'{project.starttime}.')
                 start = project.starttime
             self.clock.reset(start)
+        elif self.launch_mode == LaunchMode.REAL_TIME:
+            # sarsonl perhaps update to get datetime from another source
+            # I think this is a dummy variable to set time graphically
+            time_now = datetime.utcnow()
+            self.clock.start_realtime(time_now)
+            self.start_realtime(time_now)
         self.project_loaded.emit(project)
         self._update_data_sources()
         self._logger.info('... done loading project')
@@ -200,24 +205,36 @@ class Controller(QtCore.QObject):
 
     # Other user actions
 
-    def start(self, time_range=None, speed=1):
+    def start(self, time_range=None, speed=1.0):
         """
         Start the core
 
         This essentially enables the task manager and with it any scheduled
-        operations. If a time_range is given, the simulator will be started
+        operations. If a LAB mode, the simulator will be started
         to simulate the passing of time through the time range at the speed
         given in the speed paramenter.
+        Otherwise, a realtime simulation will be started.
 
         :param time_range: datetime tuple indicating simulation start / end
         :param speed: simulation speed, -1 for as fast as possible
 
         """
-        # TODO LH: implement real time operation mode
-        if time_range:
-            self.start_simulation(time_range, speed)
+        if self.launch_mode == LaunchMode.LAB:
+            if not time_range:
+                try:
+                    start = min(self.project.forecast_iter(),
+                                key=attrgetter('starttime')).starttime
+                except ValueError:
+                    self._logger.warning(
+                        'No forecasts configured. Use project starttime: '
+                        f'{self.project.starttime}.')
+                    start = self.project.starttime
+            if speed == 1.0:
+                speed = self._settings['simulation']['speed']
+            self.start_simulation([start], speed)
         else:
-            self._logger.info('RAMSIS only works in sim mode at the moment')
+            self._logger.info('Trying to start RAMSIS in real-time mode.')
+            self.start_realtime(datetime.utcnow())
 
     def pause(self):
         if self.simulator.state == SimulatorState.RUNNING:
@@ -226,6 +243,21 @@ class Controller(QtCore.QObject):
     def stop(self):
         if self.simulator.state == SimulatorState.RUNNING:
             self.stop_simulation()
+
+    def start_realtime(self, time_now):
+
+        if self.project is None:
+            return
+        self._logger.info(f'Starting realtime operation at {time_now}')
+        self._init_realtime(time_now)
+        self.simulator.configure(None, speed=1.0)
+        self.simulator.start_realtime(time_now)
+
+    def _init_realtime(self, time_now):
+        self.task_manager.reset(time_now)
+        self.clock.mode = WallClockMode.REAL_TIME
+        self.clock.time = time_now
+        self.clock.arm()
 
     # Simulation
 

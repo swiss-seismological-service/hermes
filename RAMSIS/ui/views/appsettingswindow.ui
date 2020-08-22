@@ -259,14 +259,14 @@
          <property name="title">
           <string>Launch Mode</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_6" columnstretch="0,1">
+         <layout class="QGridLayout" name="gridLayout_6" columnstretch="0,0">
           <item row="0" column="0">
            <widget class="QComboBox" name="launchModeComboBox"/>
           </item>
           <item row="0" column="1">
            <widget class="QLabel" name="label_5">
             <property name="text">
-             <string>Changes to the launch mode will take effect on restart</string>
+             <string>Alter config in ramsis_config.yml rather than here for now.</string>
             </property>
            </widget>
           </item>

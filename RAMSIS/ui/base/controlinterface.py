@@ -21,7 +21,7 @@ another one at runtime using :func:`register_interface`.
 from PyQt5.QtWidgets import (QCheckBox, QRadioButton, QSpinBox, QDoubleSpinBox,
                              QDateTimeEdit, QLineEdit, QPlainTextEdit,
                              QComboBox)
-from RAMSIS.ui.base.utils import utc_to_local, pyqt_local_to_utc_ua
+from RAMSIS.ui.base.utils import pyqt_local_to_utc_ua
 
 
 class ControlInterface:
@@ -91,30 +91,10 @@ class QRadioButtonInterface(ControlInterface):
 class QDateTimeEditInterface(ControlInterface):
     """ Default interface for QDateTimeEdit """
     def get_value(self):
-        return pyqt_local_to_utc_ua(self.control.dateTime())
+        return self.control.dateTime()
 
     def set_value(self, value):
-        self.control.setDateTime(utc_to_local(value))
-
-    def change_signal(self):
-        return self.control.editingFinished
-
-
-class QDateTimeEditInterfaceLocal(QDateTimeEditInterface):
-    """
-    Local time interface for QDateTimeEdit
-
-    This is an alternative for :class:`QDateTimeEditInterface` that displays
-    local time but receives and outputs UTC.
-    """
-    def get_value(self):
-        return self.control.dateTime().toPyDateTime()
-
-    def set_value(self, value):
-        if value:
-            self.control.setDateTime(value)
-        else:
-            self.control.clear()
+        self.control.setDateTime(value)
 
     def change_signal(self):
         return self.control.editingFinished

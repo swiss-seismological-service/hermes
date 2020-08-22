@@ -55,11 +55,16 @@ class WallClock(QObject):
         """
         super().__init__()
         self.resolution = resolution or timedelta(seconds=1)
-        self._time = datetime.now()
+        self._time = datetime.utcnow()
         self._rt_update_timer = QTimer()
-        self._rt_update_timer.timeout.connect(self._on_rt_timer_timout)
+        # self._rt_update_timer.timeout.connect(self._on_rt_timer_timout)
         self.armed = False
         self._mode = mode
+
+    def start_realtime(self, time_now):
+        self.mode = WallClockMode.REAL_TIME
+        self._time = time_now
+        self.arm()
 
     @property
     def time(self):
@@ -76,9 +81,9 @@ class WallClock(QObject):
 
         :param datetime.datetime time: The new time.
         """
-        emit = self.armed and time > self._time + self.resolution
-        self._time = time
+        emit = self.armed and time >= self._time + self.resolution
         if emit:
+            self._time = time
             self.time_changed.emit(self._time)
 
     @property
@@ -124,4 +129,4 @@ class WallClock(QObject):
         self._time = time
 
     def _on_rt_timer_timout(self):
-        self.time = datetime.now()
+        self.time = datetime.utcnow()

@@ -485,6 +485,7 @@ class Engine(QObject):
         :param forecast: Forecast to execute
         :type forecast: ramsis.datamodel.forecast.Forecast
         """
+        print("engine.run called")
         assert self.core.project
         if not self.session:
             self.session = self.core.store.session
@@ -528,7 +529,7 @@ class FlowRunner:
         self.forecast_id = forecast_id
         self.session = session
         self.data_dir = data_dir
-        self.system_time = datetime.now()
+        self.system_time = datetime.utcnow()
         self.logger = logging.getLogger()
         self.forecast_handler = ForecastHandler(
             self.threadpool, self.synchronous_thread)
@@ -579,6 +580,7 @@ class FlowRunner:
         return seismicity_stage_states
 
     def hazard_flow(self, seismicity_stage_states, scenario_ref):
+        print("called hazard flow function, getting scenario for hazard")
         scenario = scenario_for_hazard(scenario_ref.id, self.session)
         seismicity_status = scenario[EStage.SEISMICITY].status.state
         if seismicity_status == EStatus.ERROR:

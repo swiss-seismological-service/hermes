@@ -6,7 +6,6 @@ for long periods of time since they are executed on the main thread.
 """
 
 import logging
-from datetime import timedelta
 
 
 class Task(object):
@@ -39,35 +38,6 @@ class Task(object):
 
         """
         pass
-
-
-class PeriodicTask(Task):
-    """
-    A  periodic task.
-
-    The task manages its own scheduling interval and time for next execution.
-
-    """
-
-    def __init__(self, task_function, name='PeriodicTask'):
-        super().__init__(task_function, name)
-        self.t0 = None
-        self.dt = None
-
-        self._last_run = None
-
-    def run(self, t):
-        """
-        Runs the task by invoking the run_function and passing the time at
-        which the task is run.
-
-        """
-        self.task_function(t, last_run=self._last_run)
-        self._last_run = t
-
-    def schedule(self, t):
-        r = int((t - self.t0).total_seconds()) % int(self.dt.total_seconds())
-        self.run_time = t - timedelta(seconds=r) + self.dt
 
 
 class TaskScheduler:

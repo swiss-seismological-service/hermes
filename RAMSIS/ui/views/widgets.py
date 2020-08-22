@@ -93,7 +93,7 @@ class TimePlotWidget(pg.PlotWidget):
         self.getAxis('bottom').setLabel('Time', self.get_bottom_axis_units())
 
     def get_bottom_axis_units(self):
-        xmin, xmax = [datetime.utcfromtimestamp(v - time.timezone)
+        xmin, xmax = [datetime.utcfromtimestamp(v)
                       for v in self.viewRange()[0]]
         if xmin.year != xmax.year:
             return ''

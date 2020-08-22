@@ -75,7 +75,7 @@ class TimeLinePresenter(QObject):
         start = (start_time - DATETIME_POSIX_START).total_seconds()
         # TODO(damb): Set endtime to either project endtime or latest forecast
         # endtime
-        end_time = project.endtime or datetime.now()
+        end_time = project.endtime or datetime.utcnow()
         end = (end_time - DATETIME_POSIX_START).total_seconds()
         self.time_line.setRange(xRange=(start, end))
         self.replot()

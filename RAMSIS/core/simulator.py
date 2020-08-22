@@ -68,6 +68,18 @@ class Simulator(QtCore.QObject):
         self._speed = speed
         self._time_range = time_range
 
+    def start_realtime(self, time_now):
+        """
+        Starts the simulation at start of the simulation time range
+
+        If invoked after `pause`, the simulation is continued from where it
+        stopped. The first time step is scheduled to execute immediately.
+
+        """
+        self._simulation_time = time_now
+        self._transition_to_state(SimulatorState.RUNNING)
+        self._timer.start(self.SIMULATION_INTERVAL)
+
     def start(self):
         """
         Starts the simulation at start of the simulation time range
@@ -103,8 +115,9 @@ class Simulator(QtCore.QObject):
         dt = timedelta(seconds=seconds)
         self._simulation_time += dt
 
-        if self._simulation_time >= self._time_range[1]:
-            simulation_ended = True
+        if self._time_range and len(self._time_range) >= 2:
+            if self._simulation_time >= self._time_range[1]:
+                simulation_ended = True
 
         self._handler(self._simulation_time)
 
