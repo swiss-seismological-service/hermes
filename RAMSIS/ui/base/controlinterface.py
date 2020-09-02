@@ -21,7 +21,6 @@ another one at runtime using :func:`register_interface`.
 from PyQt5.QtWidgets import (QCheckBox, QRadioButton, QSpinBox, QDoubleSpinBox,
                              QDateTimeEdit, QLineEdit, QPlainTextEdit,
                              QComboBox)
-from RAMSIS.ui.base.utils import pyqt_local_to_utc_ua
 
 
 class ControlInterface:

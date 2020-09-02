@@ -9,7 +9,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
 from matplotlib.figure import Figure
 import numpy as np
 from datetime import datetime
-import time
 
 
 CUR_FC_BRUSH = (205, 72, 66, 100)

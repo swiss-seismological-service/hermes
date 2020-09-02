@@ -155,7 +155,6 @@ class ApplicationSettingsWindow(SettingsWindow,
             return
         key = self.key_map[widget]
         self.app.app_settings[key] = value
-        print("have set app settings ", key, self.app.app_settings[key], self.app, self.app.app_settings)
 
     # UI Signal Slots
 
