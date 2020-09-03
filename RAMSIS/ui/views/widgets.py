@@ -99,10 +99,10 @@ class TimePlotWidget(pg.PlotWidget):
         if xmin.month != xmax.month:
             return xmin.strftime('%Y')
         if xmin.day != xmax.day:
-            return xmin.strftime('%B %Y')
+            return xmin.strftime('%m-%Y')
         if xmin.minute != xmax.minute:
-            return xmin.strftime('%d %B %Y').lstrip('0')
-        return xmin.strftime('%d %B %Y, %H:%M').lstrip('0')
+            return xmin.strftime('%d-%m-%Y').lstrip('0')
+        return xmin.strftime('%d-%m-%Y %H:%M').lstrip('0')
 
 
 class TimeLinePlotWidget(TimePlotWidget):

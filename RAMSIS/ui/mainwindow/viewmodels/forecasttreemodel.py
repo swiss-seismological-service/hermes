@@ -72,6 +72,7 @@ class ForecastNode(Node):
         default = super().data(column, role)
 
         if role == Qt.DisplayRole and column == 0:
+<<<<<<< HEAD
             return self.item.id
         elif role == Qt.DisplayRole and column == 1:
             starttime = self.item.starttime
@@ -79,6 +80,9 @@ class ForecastNode(Node):
         elif role == Qt.DisplayRole and column == 2:
             forecast_status = self.item.status.state
             return forecast_status
+=======
+            return self.item.starttime.strftime('%d-%m-%Y %H:%M')
+>>>>>>> [BUG] Fix dates consistently all to UTC (graph still showing error)
         return default
 
     def update_children(self, project):
