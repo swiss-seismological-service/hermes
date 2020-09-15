@@ -162,39 +162,88 @@ as a virtual machine, however it is not ready yet.
 
 # Installation of the RT-RAMSIS core (for developers)
 
+GDAL is required. This can be tricky to install so it is recommended to install
+miniconda, and then use a conda environment to install dependencies into.
+
+This can be done on the command line on a linux machine:
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+chmod +x Miniconda3-latest-Linux-x86_64.sh
+./Miniconda3-latest-Linux-x86_64.sh
+conda create -n ramsis python=3.6
+conda activate ramsis
+```
+
 Make sure the dependencies
 
 * git
 * graphviz
 * libxml2-dev
 * libxslt1-dev
-* python3.6
-* python3-pip
-* python-virtualenv
 * zlib1g-dev
+* GDAL
 
 are installed on your system.
 
+
+```
+sudo apt-get update -y
+sudo apt install graphviz
+sudo apt-get install libxml2-dev
+sudo apt-get install -y libxslt1-dev
+sudo apt-get install -y zlib1g-dev
+conda install -c conda-forge gdal
+```
+
+Set up a Postgresql database
+
+If you don't have postgresql already on your system, it is recommended to
+install a docker container containing everything needed for convenience.
+
+```
+sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+```
+
+Create Docker postgres container
+Configure with whatever parameters are correct for the situation
+```
+docker pull postgres:11
+mkdir -p $HOME/docker/volumes/postgres
+docker run --rm   --name ramsis -e POSTGRES_PASSWORD=ramsis -d -p 5432:5432 \
+    -v $HOME/docker/volumes/postgres:/var/lib/postgresql/data  postgres:11
+```
+Check that the docker image is running
+```
+docker ps
+# Should show the runnng container
+```
+
 Clone the repository
 
-```bash
+```
 $ export PATH_PROJECTS=$HOME/work/projects
 $ mkdir -pv $PATH_PROJECTS
 $ git clone https://gitlab.seismo.ethz.ch/indu/RAMSIS.git $PATH_PROJECTS/RAMSIS
-```
-
-Set up a virtual environment
-
-```bash
-$ virtualenv -p $(which python3.6) $PATH_PROJECTS/RAMSIS/venv3
-$ source $PATH_PROJECTS/RAMSIS/venv3/bin/activate
+$ git checkout develop
 ```
 
 Finally install RAMSIS
 
 ```bash
 $ cd $PATH_PROJECTS/RAMSIS
-$ make install
+$ pip install -e .
 ```
 
 Test your installation with
@@ -204,6 +253,19 @@ $ ramsis -h
 ```
 **NOTE:** In the description above the variables `PATH_PROJECTS` and
 `PATH_THIRD` are used. Adjust the corresponding values according to your needs.
+
+Set up the RAMSIS config
+* Open $PATH_PROJECTS/config/ramsis_config.yml
+* update name of the db (any name), port (same as setup in docker), password (same as setup for docker), user (postgres user as setup for docker)
+
+Initialize database
+start RAMSIS
+`ramsis`
+On RAMSIS open application settings from file
+Press 'Init DB'
+
+Close ramsis
+Install any project data that might be required, or set up first project.
 
 
 ## Developers and Contributors
