@@ -230,20 +230,30 @@ docker ps
 # Should show the runnng container
 ```
 
-Clone the repository
-
+Create directory
 ```
 $ export PATH_PROJECTS=$HOME/work/projects
 $ mkdir -pv $PATH_PROJECTS
+```
+
+
+Clone the datamodel dependency and install
+```
+$ cd $PATH_PROJECTS
+$ git clone https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git
+$ cd ramsis.datamodel
+$ git checkout develop
+$ pip install -e .
+```
+
+
+Clone the repository and install RAMSIS
+
+```
 $ cd $PATH_PROJECTS
 $ git clone https://gitlab.seismo.ethz.ch/indu/RAMSIS.git
 $ cd rt-ramsis
 $ git checkout develop
-```
-
-Finally install RAMSIS
-
-```bash
 $ cd $PATH_PROJECTS/RAMSIS
 $ pip install -e .
 ```
