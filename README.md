@@ -235,7 +235,9 @@ Clone the repository
 ```
 $ export PATH_PROJECTS=$HOME/work/projects
 $ mkdir -pv $PATH_PROJECTS
-$ git clone https://gitlab.seismo.ethz.ch/indu/RAMSIS.git $PATH_PROJECTS/RAMSIS
+$ cd $PATH_PROJECTS
+$ git clone https://gitlab.seismo.ethz.ch/indu/RAMSIS.git
+$ cd rt-ramsis
 $ git checkout develop
 ```
 
