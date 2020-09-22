@@ -183,6 +183,7 @@ Make sure the dependencies
 * zlib1g-dev
 * GDAL
 
+
 are installed on your system.
 
 
@@ -246,6 +247,16 @@ $ git checkout develop
 $ pip install -e .
 ```
 
+Clone the pyqtgraph SED repo and checkout the date-axis-time branch and install
+
+
+```
+git clone https://gitlab.seismo.ethz.ch/indu/pyqtgraph
+git checkout -b date-axis-time remotes/origin/date-axis-item
+pip install .
+```
+
+
 
 Clone the repository and install RAMSIS
 
@@ -258,6 +269,10 @@ $ cd $PATH_PROJECTS/RAMSIS
 $ pip install -e .
 ```
 
+Compile the images_rc file for pyqt
+
+`pyrcc5 -o RAMSIS/ui/views/images_rc.py RAMSIS/ui/views/images.qrc`
+
 Test your installation with
 
 ```bash
@@ -269,6 +284,14 @@ $ ramsis -h
 Set up the RAMSIS config
 * Open $PATH_PROJECTS/config/ramsis_config.yml
 * update name of the db (any name), port (same as setup in docker), password (same as setup for docker), user (postgres user as setup for docker)
+
+Copy config to location that it will be looked for by Flask
+(This SED path name is defined as an app property)
+```
+mkdir -p $HOME/.config/SED/Ramsis
+ln -s $PATH_PROJECTS/config/ramsis_config.yml $HOME/.config/SED/Ramsis/settings.yml
+```
+
 
 Initialize database
 start RAMSIS
