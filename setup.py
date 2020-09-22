@@ -52,7 +52,7 @@ _install_requires = [
     "transitions==0.6.9",
     "prefect[viz]",
     "pyproj==2.3.0",
-    "pyproj==2.3.0",
+    "psycopg2==2.8.3",
     "jinja2",
     "xmltodict",
     "sqlalchemy==1.3.13"]
