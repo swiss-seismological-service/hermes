@@ -219,6 +219,10 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io
 
 Create Docker postgres container
 Configure with whatever parameters are correct for the situation
+Note: This will create a postgres instance with a username=postgres, port=5432
+If 5432 is already used, please alter the entry as follows: -p 5433:5432 where
+5433 is the port on your local machine used. The second port must be 5432 as
+this is the automatically configured port used inside the docker container for postgresql.
 ```
 docker pull postgres:11
 mkdir -p $HOME/docker/volumes/postgres
@@ -230,6 +234,17 @@ Check that the docker image is running
 docker ps
 # Should show the runnng container
 ```
+
+Log into postgres instance and create ramsis database
+Note: If you have changed the port used for the docker container, you will need
+to alter it here.
+```
+psql -p 5432 -h localhost -U postgres
+create database ramsis;
+\q
+```
+
+
 
 Create directory
 ```
@@ -297,6 +312,10 @@ Initialize database
 start RAMSIS
 `ramsis`
 On RAMSIS open application settings from file
+Note: If there is an error message on startup for the postgres credentials, it is likely
+that the variables set in the config file are incorrect. Please set these to the
+ones used when entering psql commands.
+
 Press 'Init DB'
 
 Close ramsis
