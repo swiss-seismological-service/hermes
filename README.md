@@ -262,6 +262,14 @@ $ git checkout develop
 $ pip install -e .
 ```
 
+Clone the ramsis.utils repository
+
+```
+git clone https://gitlab.seismo.ethz.ch/indu/ramsis.utils.git
+git checkout develop
+pip install .
+```
+
 Clone the pyqtgraph SED repo and checkout the date-axis-time branch and install
 
 
