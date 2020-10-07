@@ -92,6 +92,7 @@ class ContentPresenter(object):
     def show_project(self):
         self.fc_tree_model = ForecastTreeModel(self.ramsis_core)
         self.ui.forecastTreeView.setModel(self.fc_tree_model)
+        self.ui.forecastTreeView.resizeColumnToContents(0)
         # observe selection changes
         fc_selection = self.ui.forecastTreeView.selectionModel()
         fc_selection.selectionChanged.connect(self.on_fc_selection_change)

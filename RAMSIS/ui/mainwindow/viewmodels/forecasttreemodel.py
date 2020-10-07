@@ -20,7 +20,7 @@ from RAMSIS.ui.base.tree.model import TreeModel, Node
 from RAMSIS.ui.base.utils import utc_to_local
 
 
-COLUMNS = ('FC / Scenario', 'Status')
+COLUMNS = ('ID', 'FC / Scenario', 'Status')
 
 
 class ScenarioNode(Node):
@@ -33,15 +33,16 @@ class ScenarioNode(Node):
 
     def data(self, column, role):
         default = super(ScenarioNode, self).data(column, role)
-        if column == 0:
-            if role == Qt.DisplayRole:
-                # TODO LH: we could define __str__ on the model entities
-                return self.item.name
-        if column == 1:
+        if column == 0 and role == Qt.DisplayRole:
+            return self.item.id
+        elif column == 1 and role == Qt.DisplayRole:
+            # TODO LH: we could define __str__ on the model entities
+            return self.item.name
+        elif column == 2:
             if role == Qt.DisplayRole:
                 # TODO LH: this doesn't exist in the new model atm
                 # return self.item.summary_status
-                return 'n/a'
+                return self.item.status.state
             elif role == Qt.ForegroundRole:
                 return QBrush(Qt.gray)
             elif role == Qt.FontRole:
@@ -70,9 +71,15 @@ class ForecastNode(Node):
 
     def data(self, column, role):
         default = super().data(column, role)
+
         if role == Qt.DisplayRole and column == 0:
-            local = utc_to_local(self.item.starttime)
-            return local.strftime('%Y-%m-%d %H:%M')
+            return self.item.id
+        elif role == Qt.DisplayRole and column == 1:
+            starttime = self.item.starttime
+            return starttime.strftime('%Y-%m-%d %H:%M')
+        elif role == Qt.DisplayRole and column == 2:
+            forecast_status = self.item.status.state
+            return forecast_status
         return default
 
     def update_children(self, project):

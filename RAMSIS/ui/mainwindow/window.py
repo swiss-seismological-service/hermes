@@ -73,7 +73,7 @@ class StatusBar(QStatusBar):
         self.statusWidget.setText(txt)
 
     def set_time(self, t):
-        txt = utc_to_local(t).strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
+        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
         self.timeWidget.setText('Time: {}'.format(txt))
 
     def show_activity(self, message, id='default'):
