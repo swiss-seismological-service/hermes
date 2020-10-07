@@ -100,7 +100,7 @@ class StageStatusPresenter(QObject):
                     widget.set_stage_status('DISABLED')
                 self.refresh_methods.append(widget_method)
             except KeyError:
-                if stage in self.widgets.keys():
+                if stage not in self.widgets.keys():
                     del self.widgets[stage]
                 pass
 

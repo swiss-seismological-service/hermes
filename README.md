@@ -183,6 +183,7 @@ Make sure the dependencies
 * zlib1g-dev
 * GDAL
 
+
 are installed on your system.
 
 
@@ -218,6 +219,10 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io
 
 Create Docker postgres container
 Configure with whatever parameters are correct for the situation
+Note: This will create a postgres instance with a username=postgres, port=5432
+If 5432 is already used, please alter the entry as follows: -p 5433:5432 where
+5433 is the port on your local machine used. The second port must be 5432 as
+this is the automatically configured port used inside the docker container for postgresql.
 ```
 docker pull postgres:11
 mkdir -p $HOME/docker/volumes/postgres
@@ -229,6 +234,17 @@ Check that the docker image is running
 docker ps
 # Should show the runnng container
 ```
+
+Log into postgres instance and create ramsis database
+Note: If you have changed the port used for the docker container, you will need
+to alter it here.
+```
+psql -p 5432 -h localhost -U postgres
+create database ramsis;
+\q
+```
+
+
 
 Create directory
 ```
@@ -246,6 +262,24 @@ $ git checkout develop
 $ pip install -e .
 ```
 
+Clone the ramsis.utils repository
+
+```
+git clone https://gitlab.seismo.ethz.ch/indu/ramsis.utils.git
+git checkout develop
+pip install .
+```
+
+Clone the pyqtgraph SED repo and checkout the date-axis-time branch and install
+
+
+```
+git clone https://gitlab.seismo.ethz.ch/indu/pyqtgraph
+git checkout -b date-axis-time remotes/origin/date-axis-item
+pip install .
+```
+
+
 
 Clone the repository and install RAMSIS
 
@@ -257,6 +291,10 @@ $ git checkout develop
 $ cd $PATH_PROJECTS/RAMSIS
 $ pip install -e .
 ```
+
+Compile the images_rc file for pyqt
+
+`pyrcc5 -o RAMSIS/ui/views/images_rc.py RAMSIS/ui/views/images.qrc`
 
 Test your installation with
 
@@ -270,10 +308,22 @@ Set up the RAMSIS config
 * Open $PATH_PROJECTS/config/ramsis_config.yml
 * update name of the db (any name), port (same as setup in docker), password (same as setup for docker), user (postgres user as setup for docker)
 
+Copy config to location that it will be looked for by Flask
+(This SED path name is defined as an app property)
+```
+mkdir -p $HOME/.config/SED/Ramsis
+ln -s $PATH_PROJECTS/config/ramsis_config.yml $HOME/.config/SED/Ramsis/settings.yml
+```
+
+
 Initialize database
 start RAMSIS
 `ramsis`
 On RAMSIS open application settings from file
+Note: If there is an error message on startup for the postgres credentials, it is likely
+that the variables set in the config file are incorrect. Please set these to the
+ones used when entering psql commands.
+
 Press 'Init DB'
 
 Close ramsis
