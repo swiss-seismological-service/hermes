@@ -2,7 +2,7 @@
 """
 Utilities for hydraulics data import/export.
 """
-
+import logging
 import enum
 import functools
 
@@ -18,6 +18,7 @@ from RAMSIS.io.utils import (DeserializerBase, SerializerBase,
                              DateTime, Percentage, Uncertainty,
                              validate_positive, append_ms_zeroes)
 
+logger = logging.getLogger(__name__)
 
 # XXX(damb): Additional parameter validation to be implemented.
 validate_longitude = validate.Range(min=-180., max=180.)
@@ -490,6 +491,15 @@ class _InjectionWellSchema(_SchemaBase):
         self.context[key] = value
 
     @pre_load
+    def preload_data(self, data, **kwargs):
+        data = self.flatten(data, **kwargs)
+        if len(data['sections']) == 0:
+            raise ValidationError(
+                'Hydraulic data has no sections')
+        elif len(data['sections']) > 1:
+            data = self.remove_extra_sections(data, **kwargs)
+        return data
+
     def flatten(self, data, **kwargs):
         if ('time' in self.context and
             self.context['time'] in (self.EContext.PAST,
@@ -528,11 +538,20 @@ class _InjectionWellSchema(_SchemaBase):
             return self._nest_dict(self._clear_missing(data))
         return data
 
-    @validates_schema
-    def validate_sections(self, data, **kwargs):
-        if 'sections' not in data or len(data['sections']) != 1:
-            raise ValidationError(
-                'InjectionWells are required to have a single section.')
+    def remove_extra_sections(self, data, **kwargs):
+        logger.warning(
+            f"Well has multiple sections {len(data['sections'])},"
+            'reducing to first '
+            'valid section with hydraulic samples.')
+        data['sections'].sort(key=lambda x: x['starttime'])
+        data['sections'] = [data['sections'][0]]
+        logger.info(
+            "Using section with starttime:"
+            f"{data['sections'][0]['starttime']}")
+        logger.info(
+            "Number of hydraulics in section: "
+            f"{len(data['sections'][0]['hydraulics'])}")
+        return data
 
     class Meta:
         unknown = EXCLUDE

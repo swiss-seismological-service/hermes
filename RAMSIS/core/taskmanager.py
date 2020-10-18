@@ -7,6 +7,7 @@ import logging
 from datetime import timedelta, datetime
 from PyQt5.QtCore import QThread
 from .tools.scheduler import Task, TaskScheduler
+from ramsis.datamodel.status import EStatus
 
 
 class TaskManager:
@@ -24,6 +25,7 @@ class TaskManager:
         # Add forecast Task
         self.forecast_task = ForecastTask(task_function=self.run_forecasts,
                                           core=self.core)
+        print("added forecast_task")
         self.scheduler.add_task(self.forecast_task)
         self.core.clock.time_changed.connect(self.on_time_changed)
         self.core.project_loaded.connect(self.on_project_loaded)
@@ -42,10 +44,11 @@ class TaskManager:
         if self.scheduler.has_due_tasks(time):
             self.logger.debug('Scheduler has due tasks. Executing.')
             self.scheduler.run_due_tasks(time)
+        self.forecast_task.update_forecasts(time)
 
     def run_forecasts(self, t):
-        self.forecasts_runner = RunForecasts(self.core,
-                                             self.forecast_task.forecasts, t)
+        self.forecasts_runner = RunForecasts(
+            self.core, self.forecast_task.forecasts_to_run(t), t)
         self.forecasts_runner.start()
 
 
@@ -66,7 +69,7 @@ class RunForecasts(QThread):
     def run(self):
         self.fetch_fdsn(self.time_scheduled)
         self.fetch_hydws(self.time_scheduled)
-        self.logger.info('Forecasts due {self.forecasts} start run at '
+        self.logger.info(f'Forecasts due {self.forecasts} start run at '
                          f'{datetime.utcnow()}')
         for ind, forecast in enumerate(self.forecasts):
             self.logger.info('forecasts #{}'.format(ind))
@@ -81,6 +84,7 @@ class RunForecasts(QThread):
         :param last_run: Execution time of the previous execution
         :type last_run: :py:class:`datetime.datetime`
         """
+        print("fetch fdsn called")
         if None in (self.core.project, self.core.seismics_data_source):
             self.logger.info("No FSDN URL configured")
             return
@@ -93,7 +97,7 @@ class RunForecasts(QThread):
                 f'Invalid project configuration: {err}')
         else:
             start = p.starttime
-            if len(p.seismiccatalog) and last_run:
+            if p.seismiccatalog and len(p.seismiccatalog) and last_run:
                 start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.seismics_data_source.fetch(
@@ -109,6 +113,7 @@ class RunForecasts(QThread):
         :param last_run: Execution time of the previous execution
         :type last_run: :py:class:`datetime.datetime`
         """
+        print("fetch hydws called")
         if None in (self.core.project, self.core.hydraulics_data_source):
             self.logger.info("No HYDWS URL configured")
             return
@@ -127,7 +132,7 @@ class RunForecasts(QThread):
                 start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.hydraulics_data_source.fetch(
-                starttime=start, endtime=t)
+                starttime=start, endtime=t, level='hydraulic')
             self.core.hydraulics_data_source.wait()
 
 
@@ -150,16 +155,24 @@ class ForecastTask(Task):
         completed yet and whose forecast_time is after t.
 
         """
-
         if self.core.project is None:
             return
+        self.update_forecasts(t)
 
-        forecasts = self.core.project.forecasts
+    def update_forecasts(self, t):
         try:
-            self.forecasts = [f for f in forecasts if f.starttime >= t]
-            # If any forecasts have a starttime that is less than the wallclock
-            # time, run task.
-            self.run_time = min([f.starttime for f in self.forecasts])
+            # Update self.forecasts to be up to date with which
+            # forecasts are still pending.
+            self.forecasts = [
+                f for f in self.core.project.forecasts if
+                f.starttime >= t and
+                f.status.state == EStatus.PENDING]
+            # Find the next run time for a forecast.
+            if self.forecasts:
+                self.run_time = min([f.starttime for f in self.forecasts])
         except (StopIteration, ValueError):
             self.forecasts = []
             self.run_time = None
+
+    def forecasts_to_run(self, t):
+        return [f for f in self.forecasts if f.starttime < t]

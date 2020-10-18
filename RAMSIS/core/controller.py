@@ -403,10 +403,7 @@ class Controller(QtCore.QObject):
 
     def _on_seismic_data_received(self, cat):
         if cat is not None:
-            if not self.project.seismiccatalog:
-                self.project.seismiccatalog = cat
-            else:
-                self.project.seismiccatalog.merge(cat)
+            self.project.seismiccatalogs.append(cat)
 
             self.store.save()
 
@@ -416,17 +413,12 @@ class Controller(QtCore.QObject):
 
     def _on_hydraulic_data_received(self, well):
         if well is not None:
-            try:
-                well_project = self.project.wells[0]
-            except (TypeError, AttributeError, IndexError):
-                self.project.wells = [well]
-                well_project = self.project.wells[0]
-            else:
-                well_project.merge(well)
+            self.project.wells.append(well)
+            well_project = self.project.well
 
             self.store.save()
-
-            if well_project.sections:
+            print("well project: ", well_project, well)
+            if well_project and well_project.sections:
                 msg = ('Project borehole data '
                        f'(sections={len(well_project.sections)}')
                 if well_project.sections[0].hydraulics:
@@ -436,4 +428,4 @@ class Controller(QtCore.QObject):
 
                 self._logger.debug(msg)
 
-            self.project_data_changed.emit(self.project.wells[0])
+            self.project_data_changed.emit(well_project)

@@ -55,7 +55,7 @@ class HYDWSDataSource(QtCore.QThread):
     def run(self):
         bh = None
 
-        self.logger.debug(
+        self.logger.info(
             f"Request borehole / hydraulic data from hydws (url={self.url}, "
             f"params={self._args}).")
         try:
@@ -120,7 +120,7 @@ class FDSNWSDataSource(QtCore.QThread):
     def run(self):
         cat = None
 
-        self.logger.debug(
+        self.logger.info(
             f"Request seismic catalog from fdsnws-event (url={self.url}, "
             f"params={self._args}).")
         try:
