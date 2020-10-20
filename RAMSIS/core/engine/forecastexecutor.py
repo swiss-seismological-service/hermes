@@ -28,6 +28,7 @@ import logging
 from prefect import task, Task
 import prefect
 from prefect.engine.signals import LOOP, FAIL
+from prefect.triggers import any_successful
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.forecast import EStage
 
@@ -326,7 +327,7 @@ class SeismicityModelRunExecutor(Task):
         return model_run
 
 
-@task
+@task(trigger=any_successful)
 def dispatched_model_runs(forecast, estage):
     logger = prefect.context.get('logger')
     stages = [s[estage] for s in forecast.scenarios
