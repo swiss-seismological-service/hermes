@@ -25,7 +25,6 @@ from RAMSIS.ui.settingswindow import (
     ApplicationSettingsWindow, ProjectSettingsWindow)
 from RAMSIS.ui.simulationwindow import SimulationWindow
 from RAMSIS.ui.reservoirwindow import ReservoirWindow
-from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.ui.base.roles import CustomRoles
 from RAMSIS.ui.dialog import ForecastConfigDialog, ScenarioConfigDialog
 from RAMSIS.ui.utils import UiForm
@@ -73,7 +72,7 @@ class StatusBar(QStatusBar):
         self.statusWidget.setText(txt)
 
     def set_time(self, t):
-        txt = t.strftime('%d.%m.%Y %H:%M:%S') if t else 'N/A'
+        txt = t.strftime('%d-%m-%Y %H:%M:%S') if t else 'N/A'
         self.timeWidget.setText('Time: {}'.format(txt))
 
     def show_activity(self, message, id='default'):
@@ -243,6 +242,7 @@ class MainWindow(QMainWindow,
 
     @pyqtSlot(name='on_actionStart_Simulation_triggered')
     def action_start_simulation(self):
+        # No such thing as speedBox exists yet
         # speed = self.ui.speedBox.value()
         # self.ramsis_core.simulator.speed = speed
         self.app.ramsis_core.start()

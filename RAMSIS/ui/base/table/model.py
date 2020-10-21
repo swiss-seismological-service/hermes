@@ -122,7 +122,7 @@ class TableColumn:
             if not data:
                 return None
             elif isinstance(data, datetime):
-                return data.strftime('%d.%m.%Y')
+                return data.strftime('%d-%m-%Y')
             else:
                 return str(data)
         elif role == CustomRoles.SortRole:

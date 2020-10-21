@@ -9,7 +9,6 @@ from .stagewidget import StageWidget
 from .tlwidget import TrafficLightWidget
 
 from ramsis.datamodel.forecast import EStage
-from RAMSIS.ui.base.utils import utc_to_local
 from RAMSIS.core.reset_stages import reset_stage
 
 
@@ -26,7 +25,7 @@ class GeneralTabPresenter(TabPresenter):
     def refresh(self, scenario=None, store=None):
         if scenario:
             t = scenario.forecast.starttime
-            t_str = utc_to_local(t).strftime('%d.%m.%Y %H:%M')
+            t_str = t.strftime('%d-%m-%Y %H:%M')
             title = 'Forecast {}    {}'.format(t_str, scenario.name)
         else:
             title = 'Nothing selected'

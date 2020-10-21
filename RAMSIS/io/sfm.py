@@ -331,7 +331,8 @@ class _SeismicityForecastSamplesSchema(_SeismicityForecastGeomSchema):
     Schema representation of seismicity forecast samples.
     """
     samples = fields.Nested(_ModelResultSampleSchema, many=True)
-    subgeometries = fields.Nested('self', exclude=('subgeometries',), many=True)
+    subgeometries = fields.Nested('self', exclude=('subgeometries',),
+                                  many=True)
 
     @post_load
     def post_load_data(self, data, **kwargs):

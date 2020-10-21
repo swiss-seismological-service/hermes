@@ -10,7 +10,6 @@ from operator import attrgetter
 from PyQt5.QtWidgets import QDialog
 
 from RAMSIS.core.simulator import SimulatorState
-from RAMSIS.ui.base.utils import pyqt_local_to_utc_ua, utc_to_local
 from RAMSIS.ui.utils import UiForm
 
 
@@ -72,11 +71,11 @@ class SimulationWindow(
             except ValueError:
                 start = project.starttime
             finally:
-                start = utc_to_local(start)
+                start = start
 
             self.ui.startTimeEdit.setDateTime(start)
             if project.endtime:
-                end = utc_to_local(project.endtime)
+                end = project.endtime
                 self.ui.endTimeEdit.setDateTime(end)
             else:
                 self.ui.endTimeEdit.setDateTime(start)
@@ -85,8 +84,8 @@ class SimulationWindow(
 
     def action_start_simulation(self):
         # Convert from QDateTime to Python datetime
-        start_time = pyqt_local_to_utc_ua(self.ui.startTimeEdit.dateTime())
-        end_time = pyqt_local_to_utc_ua(self.ui.endTimeEdit.dateTime())
+        start_time = self.ui.startTimeEdit.dateTime()
+        end_time = self.ui.endTimeEdit.dateTime()
 
         time_range = (start_time, end_time)
         self.ramsis_core.start(time_range, self.ui.speedSpinBox.value())

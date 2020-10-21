@@ -42,7 +42,8 @@ class Binding(abc.ABC):
 
     def refresh_ui(self):
         """ Refresh the UI with the current value from the target """
-        control_interface(self.widget).set_value(self.target_value)
+        if self.target_value:
+            control_interface(self.widget).set_value(self.target_value)
 
     @abc.abstractmethod
     def on_widget_changed(self):

@@ -54,13 +54,13 @@
        <item row="1" column="1">
         <widget class="QDateTimeEdit" name="projectStartEdit">
          <property name="displayFormat">
-          <string>dd.MM.yyyy HH:mm</string>
+          <string>dd-MM-yyyy HH:mm</string>
          </property>
          <property name="calendarPopup">
           <bool>true</bool>
          </property>
          <property name="timeSpec">
-          <enum>Qt::LocalTime</enum>
+          <enum>Qt::UTC</enum>
          </property>
         </widget>
        </item>
@@ -80,13 +80,13 @@
        <item row="2" column="1">
         <widget class="QDateTimeEdit" name="projectEndEdit">
          <property name="displayFormat">
-          <string>dd.MM.yyyy HH:mm</string>
+          <string>dd-MM-yyyy HH:mm</string>
          </property>
          <property name="calendarPopup">
           <bool>true</bool>
          </property>
          <property name="timeSpec">
-          <enum>Qt::LocalTime</enum>
+          <enum>Qt::UTC</enum>
          </property>
         </widget>
        </item>
@@ -169,17 +169,17 @@
           </item>
           <item row="0" column="1">
            <widget class="QLineEdit" name="proj4Edit">
-            <property name="fixedSize">
-             <size>
-              <width>400</width>
-              <height>16777215</height>
-             </size>
-            </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
             <property name="placeholderText">
              <string>+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m +no_defs</string>
+            </property>
+            <property name="fixedSize" stdset="0">
+             <size>
+              <width>400</width>
+              <height>16777215</height>
+             </size>
             </property>
            </widget>
           </item>

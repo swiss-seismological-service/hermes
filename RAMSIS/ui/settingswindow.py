@@ -5,9 +5,8 @@ Controller class for the settings window
 
 import logging
 import os
-
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, QDateTime
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from RAMSIS.core.controller import LaunchMode
@@ -275,6 +274,10 @@ class ProjectSettingsWindow(SettingsWindow):
 
     @pyqtSlot(name='on_saveButton_clicked')
     def action_save(self):
+        if isinstance(self.project.starttime, QDateTime):
+            self.project.starttime = self.project.starttime.toPyDateTime()
+        if isinstance(self.project.endtime, QDateTime):
+            self.project.endtime = self.project.endtime.toPyDateTime()
         self.project.settings.commit()
         if self.save_callback:
             self.save_callback(self.project)
