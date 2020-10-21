@@ -274,9 +274,9 @@ class ProjectSettingsWindow(SettingsWindow):
 
     @pyqtSlot(name='on_saveButton_clicked')
     def action_save(self):
-        if isinstance(self.project.starttime, QDateTime): 
+        if isinstance(self.project.starttime, QDateTime):
             self.project.starttime = self.project.starttime.toPyDateTime()
-        if isinstance(self.project.endtime, QDateTime): 
+        if isinstance(self.project.endtime, QDateTime):
             self.project.endtime = self.project.endtime.toPyDateTime()
         self.project.settings.commit()
         if self.save_callback:
