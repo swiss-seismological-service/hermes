@@ -1,8 +1,7 @@
 """
-Bootstrap the Bedretto 2020 Jan/Feb data projects
+Create new project for November stimulations, borehole: CB1
 """
 import os
-from os.path import join
 import argparse
 
 from datetime import datetime
@@ -27,40 +26,17 @@ from ramsis.datamodel.model import EModel # noqa
 from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from RAMSIS.core.store import Store
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
 
 DIRPATH = os.path.dirname(os.path.abspath(__file__))
-DIR_HYDRAULICS = "hyd"
 
-DIR_SEISMICS = "seismics"
-PATH_SEISMICS = 'Bedretto_test_seismic_catalog.xml'
-PATH_HYDRAULICS_1 = \
-    "ben_dyer_cb1_minute_sampled_20200205110837_20200206104800_193.22m.json"
+PROJECT_STARTTIME_1 = datetime(2020, 11, 5, 0, 0)
 
-PROJECT_STARTTIME_1 = datetime(2020, 2, 5, 11, 0)
-PROJECT_ENDTIME_1 = datetime(2020, 2, 6, 11, 0)
-
-FORECAST_STARTTIME_1 = datetime(2020, 2, 5, 19, 0)
-FORECAST_ENDTIME_1 = datetime(2020, 2, 6, 10, 48)
-
-PATH_HYDRAULICS_2 = \
-    "ben_dyer_cb1_minute_sampled_20200206115312_20200207101100_176.78m.json"
-
-PROJECT_STARTTIME_2 = datetime(2020, 2, 6, 11, 50)
-PROJECT_ENDTIME_2 = datetime(2020, 2, 7, 10, 11)
-
-FORECAST_STARTTIME_2 = datetime(2020, 2, 6, 19, 0)
-FORECAST_ENDTIME_2 = datetime(2020, 2, 7, 10, 11)
+FORECAST_STARTTIME_1 = datetime(2020, 11, 5, 12, 0)
+# making up the forecast times as we are not sure when stimulation will begin.
+FORECAST_ENDTIME_1 = datetime(2020, 11, 5, 15, 0)
 
 # NOTE(sarsonl): Reservoir definition containing all seismic events.
-#RESERVOIR = {"x": [-200, -180, -160, -140, -120, -100, -80, -60, -40, -20, 0],
-#             "y": [-200, -180, -160, -140, -120, -100, -80, -60, -40, -20, 0],
-#             "z": [1200, 1220, 1240, 1260, 1280, 1300, 1320, 1340,
-#                   1360, 1380, 1400]}
-
-RESERVOIR = {
-    "x": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
+RESERVOIR = {"x": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
        -210., -200., -190., -180., -170., -160., -150., -140., -130.,
        -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40.,
         -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50.,
@@ -68,7 +44,7 @@ RESERVOIR = {
         150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230.,
         240.,  250.,  260.,  270.,  280.,  290.,  300.,  310.,  320.,
         330.],
-    "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
+        "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
        -210., -200., -190., -180., -170., -160., -150., -140., -130.,
        -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40.,
         -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50.,
@@ -76,7 +52,7 @@ RESERVOIR = {
         150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230.,
         240.,  250.,  260.,  270.,  280.,  290.,  300.,  310.,  320.,
         330.],
-    "z": [1069., 1079., 1089., 1099., 1109., 1119., 1129., 1139., 1149.,
+       "z": [1069., 1079., 1089., 1099., 1109., 1119., 1129., 1139., 1149.,
        1159., 1169., 1179., 1189., 1199., 1209., 1219., 1229., 1239.,
        1249., 1259., 1269., 1279., 1289., 1299., 1309., 1319., 1329.,
        1339., 1349., 1359., 1369., 1379., 1389., 1399., 1409., 1419.,
@@ -84,6 +60,7 @@ RESERVOIR = {
        1519., 1529., 1539., 1549., 1559., 1569., 1579., 1589., 1599.,
        1609., 1619., 1629., 1639., 1649., 1659., 1669., 1679., 1689.,
        1699.]}
+
 RAMSIS_PROJ = ("+proj=somerc +lat_0=46.95240555555556 "
                "+lon_0=7.439583333333333 +k_0=1 +x_0=2600000 "
                "+y_0=1200000 +ellps=bessel "
@@ -94,10 +71,13 @@ WGS84_PROJ = "epsg:4326"
 REFERENCE_X = 2679720.70
 REFERENCE_Y = 1151600.13
 
+# the interval parameters are not used - todo remove
+FDSNWS_URL = "http://bedretto-events.ethz.ch/fdsnws/event/1/query"
+HYDWS_URL = "http://geo-ws03.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL0NCMQ=="
 
 def create_models():
     path_templates = "/home/sarsonl/repos/em1/rt-ramsis/oq_templates_bootstrap"
-    URL_EM1 = 'http://ramsis-em1'
+    URL_EM1 = 'http://ramsis-em1:8080'
     URL_HM1 = 'http://ramsiswin:5007'
     EM1_SFMWID = 'EM1'
     HM1_SFMWID = 'HM1'
@@ -133,7 +113,7 @@ def create_models():
         config={**base_config,
                 **{"em1_training_epoch_duration": HOUR_IN_SECS}},
         sfmwid=EM1_SFMWID,
-        enabled=False,
+        enabled=True,
         url=URL_EM1,
         seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
     retval.append(m)
@@ -240,6 +220,7 @@ def create_models():
         "hm1_caps_kd_settings": {
             "RefinementRatio": 2,
             "EnableScrOutput": False}},
+
         #config={"hm1_test_mode": False,
         #        "hm1_training_epoch_duration": 3600,
         #        "hm1_training_magnitude_bin": 0.1,
@@ -282,149 +263,61 @@ def create_models():
     return retval
 
 
-def create_bedretto_5_6_feb_project(store):
+def create_bedretto_nov_project(store, proj_name, proj_startdate,
+                                proj_enddate, proj_description, create_forecast,
+                                forecast_startdate,
+                                forecast_enddate):
     # FIXME(damb): TheV project and deserializers are configured without any
     # srid. As a consequence, no transformation is performed when importing
     # data.
-
-    # import seismic catalog
-    deserializer = QuakeMLCatalogDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    with open(join(DIRPATH, DIR_SEISMICS, PATH_SEISMICS), 'rb') as ifd:
-        cat = deserializer.load(ifd)
 
     # create project
     project_1 = default_project(
-        name='Bedretto 2020 5th-6th Feb',
-        description='Bedretto project 5th-6th Feb',
-        starttime=PROJECT_STARTTIME_1,
-        endtime=PROJECT_ENDTIME_1,
+        name=proj_name,
+        description=proj_description,
+        starttime=proj_startdate,
+        endtime=proj_enddate,
         spatialreference=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
-    # import the rest of hydraulics
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    print("reading: ", PATH_HYDRAULICS_1)
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_1), 'rb') as ifd:
-        well_1 = deserializer.load(ifd)
-    project_1.seismiccatalogs = [cat]
-    project_1.wells = [well_1]
     store.add(project_1)
-
+    print("project settings: ", type(project_1.settings), dir(project_1.settings))
+    project_1.settings['fdsnws_enable'] = True
+    project_1.settings['hydws_enable'] = True
+    project_1.settings['fdsnws_url'] = FDSNWS_URL
+    project_1.settings['hydws_url'] = HYDWS_URL
+    project_1.settings.commit()
     store.save()
 
-    # create forecast
-    fc_1 = default_forecast(store, starttime=FORECAST_STARTTIME_1,
-                            endtime=FORECAST_ENDTIME_1,
-                            num_scenarios=0,
-                            name='Bedretto Forecast default')
+    if create_forecast:
+        # create forecast
+        fc_1 = default_forecast(store, starttime=FORECAST_STARTTIME_1,
+                                endtime=FORECAST_ENDTIME_1,
+                                num_scenarios=0,
+                                name='Bedretto Forecast default')
 
-    # add exemplary scenario
-    fc_1.project = project_1
-    scenario_1 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
-    fc_1.scenarios = [scenario_1]
-    seismicity_stage = scenario_1[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 3600}
-    scenario_1.reservoirgeom = RESERVOIR
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords',
-        plan=True)
+        # add exemplary scenario
+        fc_1.project = project_1
+        scenario_1 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
+        fc_1.scenarios = [scenario_1]
+        seismicity_stage = scenario_1[EStage.SEISMICITY]
+        # have not decided what bin duration should be, so set an hour as default
+        seismicity_stage.config = {'prediction_bin_duration': 3600}
+        scenario_1.reservoirgeom = RESERVOIR
 
-    hazard_stage = scenario_1[EStage.HAZARD]
-    hazard_models = store.load_models(model_type=EModel.HAZARD)
-    hazard_stage.model = hazard_models[0]
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_1), 'rb') as ifd:
-        scenario_1.well = deserializer.load(ifd)
-    store.add(fc_1)
-    store.add(scenario_1)
+        hazard_stage = scenario_1[EStage.HAZARD]
+        hazard_models = store.load_models(model_type=EModel.HAZARD)
+        hazard_stage.model = hazard_models[0]
+        store.add(fc_1)
+        store.add(scenario_1)
 
-
-def create_bedretto_6_7_feb_project(store):
-    # FIXME(damb): TheV project and deserializers are configured without any
-    # srid. As a consequence, no transformation is performed when importing
-    # data.
-
-    # import seismic catalog
-    deserializer = QuakeMLCatalogDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    with open(join(DIRPATH, DIR_SEISMICS, PATH_SEISMICS), 'rb') as ifd:
-        cat2 = deserializer.load(ifd)
-
-    # create project
-    project_2 = default_project(
-        name='Bedretto 2020 6th-7th Feb',
-        description='Bedretto project 6th-7th Feb',
-        starttime=PROJECT_STARTTIME_2,
-        endtime=PROJECT_ENDTIME_2,
-        spatialreference=RAMSIS_PROJ,
-        referencepoint_x=REFERENCE_X,
-        referencepoint_y=REFERENCE_Y)
-
-    # import the rest of hydraulics
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    print("reading: ", PATH_HYDRAULICS_2)
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_2), 'rb') as ifd:
-        well_2 = deserializer.load(ifd)
-    project_2.seismiccatalogs = [cat2]
-    project_2.wells = [well_2]
-    store.add(project_2)
-    store.save()
-
-    # create second forecast
-    fc_2 = default_forecast(store, starttime=FORECAST_STARTTIME_2,
-                            endtime=FORECAST_ENDTIME_2,
-                            num_scenarios=0,
-                            name='Bedretto Forecast default')
-
-    # add exemplary scenario
-    fc_2.project = project_2
-    scenario_2 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
-    fc_2.scenarios = [scenario_2]
-    seismicity_stage = scenario_2[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 3600}
-    scenario_2.reservoirgeom = RESERVOIR
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords',
-        plan=True)
-
-    hazard_stage = scenario_2[EStage.HAZARD]
-    hazard_models = store.load_models(model_type=EModel.HAZARD)
-    hazard_stage.model = hazard_models[0]
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_2), 'rb') as ifd:
-        scenario_2.well = deserializer.load(ifd)
-    store.add(fc_2)
-    store.add(scenario_2)
+def valid_date(s):
+    try:
+        return datetime.strptime(s, "%d-%m-%YT%H:%M")
+    except ValueError:
+        msg = "Not a valid date: '{0}'.".format(s)
+        raise argparse.ArgumentTypeError(msg)
 
 
 def parse_cli():
@@ -433,12 +326,30 @@ def parse_cli():
         'db_url', type=str, metavar='URL',
         help=('DB URL indicating the database dialect and connection '
               'arguments.'))
+    parser.add_argument("proj_startdate",
+            help="The project start datetime - format DD-MM-YYYYTHH:MM",
+            type=valid_date)
+
+    parser.add_argument('proj_name', type=str)
+    parser.add_argument('create_forecast', type=bool)
+    parser.add_argument("--proj_enddate",
+            help="The project end datetime - format DD-MM-YYYYTHH:MM",
+            type=valid_date)
+    parser.add_argument('--proj_description', type=str, default='')
+    parser.add_argument("--forecast_startdate",
+            help="The forecast start datetime - format DD-MM-YYYYTHH:MM",
+            type=valid_date)
+    parser.add_argument("--forecast_enddate",
+            help="The forecast_endtime - format DD-MM-YYYYTHH:MM",
+            type=valid_date)
 
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_cli()
+    if args.create_forecast:
+        assert (args.forecast_startdate and args.forecast_enddate)
 
     store = Store(args.db_url)
     success = store.init_db()
@@ -450,18 +361,7 @@ if __name__ == '__main__':
 
     projects = store.session.query(Project).all()
     project_names = [p.name for p in projects]
-    assert 'Bedretto 2020 6th-7th Feb' not in project_names, \
-        "Project name already exists"
-    assert 'Bedretto 2020 5th-6th Feb' not in project_names, \
-        "Project name already exists"
-
-    # import first file in hydraulics list.
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
+    assert args.proj_name not in project_names, "Project name already exists"
 
     seis_models_db = store.session.query(SeismicityModel).all()
     haz_models_db = store.session.query(HazardModel).all()
@@ -482,9 +382,10 @@ if __name__ == '__main__':
     print(f"The db now has {len(seis_models_db)} seismicity models configured"
           f" and {len(haz_models_db)} hazard models configured")
 
-    create_bedretto_5_6_feb_project(store)
-    print("created project for bedretto data 5-6th feb")
-    create_bedretto_6_7_feb_project(store)
-    print("created project for bedretto data 6-7th feb")
+    create_bedretto_nov_project(
+        store, args.proj_name, args.proj_startdate,
+        args.proj_enddate, args.proj_description, args.create_forecast,
+        args.forecast_startdate, args.forecast_enddate)
+    print("created project for Bedretto")
     store.save()
     store.close()
