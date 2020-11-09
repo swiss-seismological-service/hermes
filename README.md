@@ -44,6 +44,16 @@ subvolumes, for which it is executed.
 All these configurations and settings are done in a QT-based GUI local to the 
 machine running the RAMSIS core.
 
+**IMPORTANT**
+The machine that RAMSIS is run on should be set to UTC time for the graph
+showing data to display the dates correctly.
+
+```
+sudo apt-get install tzdata
+sudo dpkg-reconfigure tzdata
+```
+
+
 RAMSIS constantly checks the available configuration, and if current (or 
 modelled) time matches a scenario execution time, it
 1.  Invokes all due seismicity models via a web service interface, providing 
