@@ -3,11 +3,14 @@
 Manages scheduled tasks in ramsis
 """
 
+from time import sleep
 import logging
 from datetime import timedelta, datetime
 from PyQt5.QtCore import QThread
 from .tools.scheduler import Task, TaskScheduler
 from ramsis.datamodel.status import EStatus
+
+datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
 
 class TaskManager:
@@ -71,6 +74,7 @@ class RunForecasts(QThread):
         self.fetch_hydws(self.time_scheduled)
         self.logger.info(f'Forecasts due {self.forecasts} start run at '
                          f'{datetime.utcnow()}')
+        sleep(3)
         for ind, forecast in enumerate(self.forecasts):
             self.logger.info('forecasts #{}'.format(ind))
             self.core.engine.run(self.time_scheduled, forecast.id)
@@ -101,7 +105,9 @@ class RunForecasts(QThread):
                 start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.seismics_data_source.fetch(
-                starttime=start, endtime=t)
+                starttime=datetime.strftime(
+                    start, datetime_format),
+                endtime=datetime.strftime(t, datetime_format))
             self.core.seismics_data_source.wait()
 
     def fetch_hydws(self, t, last_run=None):
@@ -132,7 +138,9 @@ class RunForecasts(QThread):
                 start = (last_run - timedelta(minutes=dt) -
                          self.THRESHOLD_DATASOURCES)
             self.core.hydraulics_data_source.fetch(
-                starttime=start, endtime=t, level='hydraulic')
+                starttime=datetime.strftime(start, datetime_format),
+                endtime=datetime.strftime(t, datetime_format),
+                level='hydraulic')
             self.core.hydraulics_data_source.wait()
 
 

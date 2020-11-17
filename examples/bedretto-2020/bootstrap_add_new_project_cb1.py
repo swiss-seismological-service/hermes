@@ -29,11 +29,6 @@ from RAMSIS.core.store import Store
 
 DIRPATH = os.path.dirname(os.path.abspath(__file__))
 
-PROJECT_STARTTIME_1 = datetime(2020, 11, 5, 0, 0)
-
-FORECAST_STARTTIME_1 = datetime(2020, 11, 5, 12, 0)
-# making up the forecast times as we are not sure when stimulation will begin.
-FORECAST_ENDTIME_1 = datetime(2020, 11, 5, 15, 0)
 
 # NOTE(sarsonl): Reservoir definition containing all seismic events.
 RESERVOIR = {"x": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
@@ -72,13 +67,13 @@ REFERENCE_X = 2679720.70
 REFERENCE_Y = 1151600.13
 
 # the interval parameters are not used - todo remove
-FDSNWS_URL = "http://bedretto-events.ethz.ch/fdsnws/event/1/query"
-HYDWS_URL = "http://geo-ws03.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL0NCMQ=="
+FDSNWS_URL = "http://bedretto-events.ethz.ch/fdsnws/event/1/query?"
+HYDWS_URL = "http://geo-ws03.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMg=="
 
 def create_models():
     path_templates = "/home/sarsonl/repos/em1/rt-ramsis/oq_templates_bootstrap"
-    URL_EM1 = 'http://ramsis-em1:8080'
-    URL_HM1 = 'http://ramsiswin:5007'
+    URL_EM1 = 'http://ramsis-em1.ethz.ch'
+    URL_HM1 = 'http://ramsiswin.ethz.ch:5007'
     EM1_SFMWID = 'EM1'
     HM1_SFMWID = 'HM1'
     HOUR_IN_SECS = 3600
@@ -292,8 +287,8 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
 
     if create_forecast:
         # create forecast
-        fc_1 = default_forecast(store, starttime=FORECAST_STARTTIME_1,
-                                endtime=FORECAST_ENDTIME_1,
+        fc_1 = default_forecast(store, starttime=forecast_startdate,
+                                endtime=forecast_enddate,
                                 num_scenarios=0,
                                 name='Bedretto Forecast default')
 
