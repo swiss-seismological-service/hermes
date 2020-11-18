@@ -190,7 +190,7 @@ class InjectionPlotter(object):
         epoch = DATETIME_POSIX_START
         if project:
             try:
-                hydraulics = project.wells[0].sections[0].hydraulics
+                hydraulics = project.well.sections[0].hydraulics
             except (TypeError, AttributeError):
                 hydraulics = []
 
