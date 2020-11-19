@@ -319,8 +319,8 @@ def create_bedretto_5_6_feb_project(store):
     print("reading: ", PATH_HYDRAULICS_1)
     with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_1), 'rb') as ifd:
         well_1 = deserializer.load(ifd)
-    project_1.seismiccatalogs = [cat]
-    project_1.wells = [well_1]
+    project_1.seismiccatalog = cat
+    project_1.well = well_1
     store.add(project_1)
 
     store.save()
@@ -392,8 +392,8 @@ def create_bedretto_6_7_feb_project(store):
     print("reading: ", PATH_HYDRAULICS_2)
     with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_2), 'rb') as ifd:
         well_2 = deserializer.load(ifd)
-    project_2.seismiccatalogs = [cat2]
-    project_2.wells = [well_2]
+    project_2.seismiccatalog = cat2
+    project_2.well = well_2
     store.add(project_2)
     store.save()
 

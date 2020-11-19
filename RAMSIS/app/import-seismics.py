@@ -161,7 +161,7 @@ class ImportSeismicsApp:
             except Exception as err:
                 raise ImportSeismicsAppError(f"Deserialization Error: {err!r}")
 
-            p.seismiccatalogs = [cat]
+            p.seismiccatalog = cat
 
             self.logger.info(
                 f'Imported seismic catalog {cat!r}.')
