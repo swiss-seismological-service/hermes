@@ -5,6 +5,7 @@ Manages scheduled tasks in ramsis
 
 from time import sleep
 import logging
+import operator
 from datetime import timedelta, datetime
 from PyQt5.QtCore import QThread
 from .tools.scheduler import Task, TaskScheduler
@@ -88,7 +89,7 @@ class RunForecasts(QThread):
         :param last_run: Execution time of the previous execution
         :type last_run: :py:class:`datetime.datetime`
         """
-        print("fetch fdsn called")
+        self.logger.info("Fetch fdsn called")
         if None in (self.core.project, self.core.seismics_data_source):
             self.logger.info("No FSDN URL configured")
             return
@@ -119,7 +120,7 @@ class RunForecasts(QThread):
         :param last_run: Execution time of the previous execution
         :type last_run: :py:class:`datetime.datetime`
         """
-        print("fetch hydws called")
+        self.logger.info("Fetch hydws called")
         if None in (self.core.project, self.core.hydraulics_data_source):
             self.logger.info("No HYDWS URL configured")
             return
@@ -171,10 +172,10 @@ class ForecastTask(Task):
         try:
             # Update self.forecasts to be up to date with which
             # forecasts are still pending.
-            self.forecasts = [
+            self.forecasts = sorted([
                 f for f in self.core.project.forecasts if
-                f.starttime >= t and
-                f.status.state == EStatus.PENDING]
+                f.status.state == EStatus.PENDING],
+                key=operator.attrgetter('starttime'))
             # Find the next run time for a forecast.
             if self.forecasts:
                 self.run_time = min([f.starttime for f in self.forecasts])

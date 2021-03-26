@@ -27,6 +27,7 @@ from RAMSIS.ui.dialog import (
     ForecastConfigDialog, CreateForecastSequenceDialog, ScenarioConfigDialog)
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
     ForecastTreeModel)
+from RAMSIS.core.taskmanager import RunForecasts
 # from RAMSIS.ui.styles import StatusColor
 
 
@@ -168,7 +169,12 @@ class ContentPresenter(object):
 
     def action_run_now(self, indexes):
         """ Run a forecast on demand """
+        # Also runs fetch_fdsn and fetch_hydws if configured to do so.
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
+        run_tasks = RunForecasts(self.ramsis_core, [forecast],
+                                 datetime.datetime.utcnow())
+        run_tasks.run()
+
         self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast.id)
 
     def action_create_sequence(self, indices):
