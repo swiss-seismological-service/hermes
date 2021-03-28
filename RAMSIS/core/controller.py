@@ -93,6 +93,11 @@ class Controller(QtCore.QObject):
         self.clock = WallClock()
         self.external_proj = WGS84_EPSG
 
+        # Save time range and speed of the simulator
+        self.start_time_range = None
+        self.end_time_range = None
+        self.speed = 1000
+
         def simulation_handler(time):
             self.clock.time = time
 
@@ -161,14 +166,15 @@ class Controller(QtCore.QObject):
 
         if self.launch_mode == LaunchMode.LAB:
             try:
-                start = min(project.forecast_iter(),
-                            key=attrgetter('starttime')).starttime
+                self.start_time_range = min(
+                    project.forecast_iter(),
+                    key=attrgetter('starttime')).starttime
             except ValueError:
                 self._logger.warning(
                     'No forecasts configured. Use project starttime: '
                     f'{project.starttime}.')
-                start = project.starttime
-            self.clock.reset(start)
+                self.start_time_range = project.starttime
+            self.clock.reset(self.start_time_range)
         elif self.launch_mode == LaunchMode.REAL_TIME:
             # sarsonl perhaps update to get datetime from another source
             # I think this is a dummy variable to set time graphically
@@ -229,9 +235,21 @@ class Controller(QtCore.QObject):
                         'No forecasts configured. Use project starttime: '
                         f'{self.project.starttime}.')
                     start = self.project.starttime
+                finally:
+                    # TODO decide if this is appropriate
+                    # Would we ever want a simulation to continue beyond
+                    # this time?
+                    end = datetime.utcnow()
+            else:
+                start_pyqt, end_pyqt = time_range
+                start = start_pyqt.toPyDateTime()
+                end = end_pyqt.toPyDateTime()
             if speed == 1.0:
                 speed = self._settings['simulation']['speed']
-            self.start_simulation([start], speed)
+            self.start_time_range = start
+            self.end_time_range = end
+            self.speed = speed
+            self.start_simulation()
         else:
             self._logger.info('Trying to start RAMSIS in real-time mode.')
             self.start_realtime(datetime.utcnow())
@@ -250,7 +268,7 @@ class Controller(QtCore.QObject):
             return
         self._logger.info(f'Starting realtime operation at {time_now}')
         self._init_realtime(time_now)
-        self.simulator.configure(None, speed=1.0)
+        self.simulator.configure(None, None, speed=1.0)
         self.simulator.start_realtime(time_now)
 
     def _init_realtime(self, time_now):
@@ -261,7 +279,7 @@ class Controller(QtCore.QObject):
 
     # Simulation
 
-    def start_simulation(self, time_range, speed):
+    def start_simulation(self):
         """
         Starts the simulation.
 
@@ -281,20 +299,22 @@ class Controller(QtCore.QObject):
             return
         self._logger.info('Starting simulation')
         if self.simulator.state == SimulatorState.STOPPED:
-            self._init_simulation(time_range, speed)
+            self._init_simulation()
         # Start simulator
         self.simulator.start()
 
-    def _init_simulation(self, time_range, speed):
+    def _init_simulation(self):
         """
         (Re)initialize simulator and scheduler for a new simulation
         """
-        self._logger.info('Simulating at {:.0f}x'.format(speed))
-        self.simulator.configure(time_range, speed=speed)
+        self._logger.info('Simulating at {:.0f}x'.format(self.speed))
+        self.simulator.configure(self.start_time_range,
+                                 self.end_time_range,
+                                 speed=self.speed)
 
-        self.task_manager.reset(time_range[0])
+        self.task_manager.reset(self.start_time_range)
         self.clock.mode = WallClockMode.MANUAL
-        self.clock.time = time_range[0]
+        self.clock.time = self.start_time_range
         self.clock.arm()
 
     def pause_simulation(self):
@@ -311,6 +331,7 @@ class Controller(QtCore.QObject):
         """
         self._logger.info('Stopping simulation')
         self.simulator.stop()
+        self._init_simulation()
 
     # Signal slots
 
@@ -417,7 +438,6 @@ class Controller(QtCore.QObject):
             well_project = self.project.well
 
             self.store.save()
-            print("well project: ", well_project, well)
             if well_project and well_project.sections:
                 msg = ('Project borehole data '
                        f'(sections={len(well_project.sections)}')

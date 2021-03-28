@@ -34,11 +34,12 @@ class Simulator(QtCore.QObject):
         """
         super().__init__()
         self._logger = logging.getLogger(__name__)
-        self._speed = 1000
-
         self._handler = handler
+
         self._simulation_time = 0
-        self._time_range = None
+        self._start_time_range = None
+        self._end_time_range = None
+        self._speed = 1000
 
         self._timer = QtCore.QTimer()
         self._state = SimulatorState.STOPPED
@@ -49,14 +50,14 @@ class Simulator(QtCore.QObject):
         return self._simulation_time
 
     @property
-    def speed(self):
-        return self._speed
+    def time_range(self):
+        return [self._start_time_range, self._end_time_range]
 
     @property
     def state(self):
         return self._state
 
-    def configure(self, time_range, speed=1000):
+    def configure(self, start_time_range, end_time_range, speed=1000):
         """
         Configures the simulator.
 
@@ -66,7 +67,8 @@ class Simulator(QtCore.QObject):
             Ignored if step_on is specified.
         """
         self._speed = speed
-        self._time_range = time_range
+        self._start_time_range = start_time_range
+        self._end_time_range = end_time_range
 
     def start_realtime(self, time_now):
         """
@@ -76,6 +78,7 @@ class Simulator(QtCore.QObject):
         stopped. The first time step is scheduled to execute immediately.
 
         """
+        self._start_range_time = time_now
         self._simulation_time = time_now
         self._transition_to_state(SimulatorState.RUNNING)
         self._timer.start(self.SIMULATION_INTERVAL)
@@ -88,10 +91,10 @@ class Simulator(QtCore.QObject):
         stopped. The first time step is scheduled to execute immediately.
 
         """
-        assert self._time_range is not None, \
+        assert self._start_time_range is not None, \
             'Set a time range before simulating'
         if self.state != SimulatorState.PAUSED:
-            self._simulation_time = self._time_range[0]
+            self._simulation_time = self._start_time_range
         self._transition_to_state(SimulatorState.RUNNING)
         self._timer.start(self.SIMULATION_INTERVAL)
 
@@ -111,12 +114,12 @@ class Simulator(QtCore.QObject):
             return
 
         simulation_ended = False
-        seconds = self.SIMULATION_INTERVAL / 1000.0 * self.speed
+        seconds = self.SIMULATION_INTERVAL / 1000.0 * self._speed
         dt = timedelta(seconds=seconds)
         self._simulation_time += dt
 
-        if self._time_range and len(self._time_range) >= 2:
-            if self._simulation_time >= self._time_range[1]:
+        if self._end_time_range:
+            if self._simulation_time >= self._end_time_range:
                 simulation_ended = True
 
         self._handler(self._simulation_time)
