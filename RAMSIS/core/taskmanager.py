@@ -34,7 +34,7 @@ class TaskManager:
         self.core.project_loaded.connect(self.on_project_loaded)
 
     def reset(self, t0=None):
-        self.scheduler.reset(t0 or self.core.project.start_date)
+        self.scheduler.reset(t0 or self.core.project.starttime)
 
     # Signal handlers
 
