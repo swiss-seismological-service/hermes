@@ -29,32 +29,38 @@ from RAMSIS.core.store import Store
 
 DIRPATH = os.path.dirname(os.path.abspath(__file__))
 
+PROJECT_STARTTIME_1 = datetime(2020, 11, 5, 0, 0)
+
+FORECAST_STARTTIME_1 = datetime(2020, 11, 5, 12, 0)
+# making up the forecast times as we are not sure when stimulation will begin.
+FORECAST_ENDTIME_1 = datetime(2020, 11, 5, 15, 0)
 
 # NOTE(sarsonl): Reservoir definition containing all seismic events.
-RESERVOIR = {"x": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
-       -210., -200., -190., -180., -170., -160., -150., -140., -130.,
-       -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40.,
-        -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50.,
-         60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140.,
-        150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230.,
-        240.,  250.,  260.,  270.,  280.,  290.,  300.,  310.,  320.,
-        330.],
-        "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
-       -210., -200., -190., -180., -170., -160., -150., -140., -130.,
-       -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40.,
-        -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50.,
-         60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140.,
-        150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230.,
-        240.,  250.,  260.,  270.,  280.,  290.,  300.,  310.,  320.,
-        330.],
-       "z": [1069., 1079., 1089., 1099., 1109., 1119., 1129., 1139., 1149.,
-       1159., 1169., 1179., 1189., 1199., 1209., 1219., 1229., 1239.,
-       1249., 1259., 1269., 1279., 1289., 1299., 1309., 1319., 1329.,
-       1339., 1349., 1359., 1369., 1379., 1389., 1399., 1409., 1419.,
-       1429., 1439., 1449., 1459., 1469., 1479., 1489., 1499., 1509.,
-       1519., 1529., 1539., 1549., 1559., 1569., 1579., 1589., 1599.,
-       1609., 1619., 1629., 1639., 1649., 1659., 1669., 1679., 1689.,
-       1699.]}
+RESERVOIR = {
+    "x": [-300., -290., -280., -270., -260., -250., -240., -230., -220., # noqa
+          -210., -200., -190., -180., -170., -160., -150., -140., -130., # noqa
+          -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40., # noqa
+           -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50., # noqa
+            60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140., # noqa
+           150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230., # noqa
+           240.,  250.,  260.,  270.,  280.,  290.,  300.,  310.,  320., # noqa
+           330.], # noqa
+    "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220., # noqa
+          -210., -200., -190., -180., -170., -160., -150., -140., -130., # noqa
+          -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40., # noqa
+           -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50., # noqa
+            60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140., # noqa
+           150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230., # noqa
+           240.,  250.,  260.,  270.,  280.,  290.,  300.,  310.,  320., # noqa
+           330.], # noqa
+    "z": [1069., 1079., 1089., 1099., 1109., 1119., 1129., 1139., 1149., # noqa
+          1159., 1169., 1179., 1189., 1199., 1209., 1219., 1229., 1239., # noqa
+          1249., 1259., 1269., 1279., 1289., 1299., 1309., 1319., 1329., # noqa
+          1339., 1349., 1359., 1369., 1379., 1389., 1399., 1409., 1419., # noqa
+          1429., 1439., 1449., 1459., 1469., 1479., 1489., 1499., 1509., # noqa
+          1519., 1529., 1539., 1549., 1559., 1569., 1579., 1589., 1599., # noqa
+          1609., 1619., 1629., 1639., 1649., 1659., 1669., 1679., 1689., # noqa
+          1699.]} # noqa
 
 RAMSIS_PROJ = ("+proj=somerc +lat_0=46.95240555555556 "
                "+lon_0=7.439583333333333 +k_0=1 +x_0=2600000 "
@@ -67,13 +73,14 @@ REFERENCE_X = 2679720.70
 REFERENCE_Y = 1151600.13
 
 # the interval parameters are not used - todo remove
-FDSNWS_URL = "http://bedretto-events.ethz.ch/fdsnws/event/1/query?"
-HYDWS_URL = "http://geo-ws03.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMg=="
+FDSNWS_URL = "http://bedretto-events.ethz.ch/fdsnws/event/1/query"
+HYDWS_URL = "http://geo-ws03.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL0NCMQ==" # noqa
+
 
 def create_models():
     path_templates = "/home/sarsonl/repos/em1/rt-ramsis/oq_templates_bootstrap"
-    URL_EM1 = 'http://ramsis-em1.ethz.ch'
-    URL_HM1 = 'http://ramsiswin.ethz.ch:5007'
+    URL_EM1 = 'http://ramsis-em1:8080'
+    URL_HM1 = 'http://ramsiswin:5007'
     EM1_SFMWID = 'EM1'
     HM1_SFMWID = 'HM1'
     HOUR_IN_SECS = 3600
@@ -176,68 +183,47 @@ def create_models():
                 "hm1_training_magnitude_bin": 0.01,
                 "hm1_training_events_threshold": 4,
                 "hm1_max_iterations": -1,
-                "hm1_seed_settings":  {
-            "slope_sigma1": 0.0,
-            "slope_sigma3": 0.0,
-            "sigma1_std": 20, #optimized
-            "sigma3_std": 0,
-            "fluid_density": 985,
-            "gravity": 0,
-            "inter_sigma1": 22.5,
-            "inter_sigma3": 10,
-            "b_vs_depth_range": True,
-            "min_failure_pressure": 15, #optimized
-            "stressdrop_coeff": 1., #optimized
-            "cohesion_mean": 0,
-            "friction_mean": 0.6,
-            "PoissonDensity": 1.e-6}, # optimized
-        "hm1_external_solution_settings": {
-            # CAPS: Order of columns for numpy array pressure, time, coordinates (1 in 1D)
-            "FileCols": [2, 0, 1],
-            # CAPS: Coefficients of pressure, time, coordinates
-            "FileConvs": [1.e-6, 24.*3600., 1.],
-            # CAPS: Number of lines to skip when reading Tecplot files
-            "SkipLines": 6,
-            # HM1 properties
-            "fraction_seismic_cloud": 2.5, #extent of stimulation area
-            "borehole_storage_coefficient": 0.002,
-            "borehole_transmissivity": 1000,
-            "initial_storage_coeff": 0.002,
-            "initial_transmissivity": 5.E-07,
-            # Input to Dieter's HM1 code as a parameter
-            # The smaller the time step, the more rapidly the adaption of the
-            # calibration parameters.
-            "deltat": 10,
-            # HM1 mesh geometry
-            "mesh_extent": 300,
-            "alfa_rate_of_growth": 2,
-            "size_first_element": 0.02},
-        "hm1_caps_kd_settings": {
-            "RefinementRatio": 2,
-            "EnableScrOutput": False}},
-
-        #config={"hm1_test_mode": False,
-        #        "hm1_training_epoch_duration": 3600,
-        #        "hm1_training_magnitude_bin": 0.1,
-        #        "hm1_training_events_threshold": 5,
-        #        "hm1_max_iterations": -1,
-        #        "hm1_seed_settings": {
-        #            "slope_sigma1": 0.0,
-        #            "slope_sigma3": 0.0,
-        #            "sigma3_std": 10.0,
-        #            "fluid_density": 985.0,
-        #            "gravity": 0.0,
-        #            "inter_sigma1": 16.5,
-        #            "inter_sigma3": 4.0,
-        #            "friction_mean": 0.6,
-        #            "cohesion_mean": 0.0,
-        #            "stressdrop_coeff": 3.0,
-        #            "PoissonDensity": 1.0e-6,
-        #            "sigma1_std": 10.0,
-        #            "min_failure_pressure": 15.0},
-        #        "hm1_external_solution_settings": {
-        #            "deltat": 6}
-        #        },
+                "hm1_seed_settings": {
+                    "slope_sigma1": 0.0,
+                    "slope_sigma3": 0.0,
+                    "sigma1_std": 20,  # optimized
+                    "sigma3_std": 0,
+                    "fluid_density": 985,
+                    "gravity": 0,
+                    "inter_sigma1": 22.5,
+                    "inter_sigma3": 10,
+                    "b_vs_depth_range": True,
+                    "min_failure_pressure": 15,  # optimized
+                    "stressdrop_coeff": 1.,  # optimized
+                    "cohesion_mean": 0,
+                    "friction_mean": 0.6,
+                    "PoissonDensity": 1.e-6},  # optimized
+                "hm1_external_solution_settings": {
+                    # CAPS: Order of columns for numpy array pressure, time,
+                    # coordinates (1 in 1D)
+                    "FileCols": [2, 0, 1],
+                    # CAPS: Coefficients of pressure, time, coordinates
+                    "FileConvs": [1.e-6, 24. * 3600., 1.],
+                    # CAPS: Number of lines to skip when reading Tecplot files
+                    "SkipLines": 6,
+                    # HM1 properties
+                    # extent of stimulation area
+                    "fraction_seismic_cloud": 2.5,
+                    "borehole_storage_coefficient": 0.002,
+                    "borehole_transmissivity": 1000,
+                    "initial_storage_coeff": 0.002,
+                    "initial_transmissivity": 5.E-07,
+                    # Input to Dieter's HM1 code as a parameter
+                    # The smaller the time step, the more rapidly the adaption
+                    # of calibration parameters.
+                    "deltat": 10,
+                    # HM1 mesh geometry
+                    "mesh_extent": 300,
+                    "alfa_rate_of_growth": 2,
+                    "size_first_element": 0.02},
+                "hm1_caps_kd_settings": {
+                    "RefinementRatio": 2,
+                    "EnableScrOutput": False}},
         sfmwid=HM1_SFMWID,
         enabled=True,
         url=URL_HM1,
@@ -259,7 +245,8 @@ def create_models():
 
 
 def create_bedretto_nov_project(store, proj_name, proj_startdate,
-                                proj_enddate, proj_description, create_forecast,
+                                proj_enddate, proj_description,
+                                create_forecast,
                                 forecast_startdate,
                                 forecast_enddate):
     # FIXME(damb): TheV project and deserializers are configured without any
@@ -277,7 +264,8 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
         referencepoint_y=REFERENCE_Y)
 
     store.add(project_1)
-    print("project settings: ", type(project_1.settings), dir(project_1.settings))
+    print("project settings: ", type(project_1.settings),
+          dir(project_1.settings))
     project_1.settings['fdsnws_enable'] = True
     project_1.settings['hydws_enable'] = True
     project_1.settings['fdsnws_url'] = FDSNWS_URL
@@ -287,8 +275,8 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
 
     if create_forecast:
         # create forecast
-        fc_1 = default_forecast(store, starttime=forecast_startdate,
-                                endtime=forecast_enddate,
+        fc_1 = default_forecast(store, starttime=FORECAST_STARTTIME_1,
+                                endtime=FORECAST_ENDTIME_1,
                                 num_scenarios=0,
                                 name='Bedretto Forecast default')
 
@@ -297,7 +285,8 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
         scenario_1 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
         fc_1.scenarios = [scenario_1]
         seismicity_stage = scenario_1[EStage.SEISMICITY]
-        # have not decided what bin duration should be, so set an hour as default
+        # have not decided what bin duration should be,
+        # so set an hour as default
         seismicity_stage.config = {'prediction_bin_duration': 3600}
         scenario_1.reservoirgeom = RESERVOIR
 
@@ -306,6 +295,7 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
         hazard_stage.model = hazard_models[0]
         store.add(fc_1)
         store.add(scenario_1)
+
 
 def valid_date(s):
     try:
@@ -322,21 +312,25 @@ def parse_cli():
         help=('DB URL indicating the database dialect and connection '
               'arguments.'))
     parser.add_argument("proj_startdate",
-            help="The project start datetime - format DD-MM-YYYYTHH:MM",
-            type=valid_date)
+                        help="The project start datetime - "
+                             "format DD-MM-YYYYTHH:MM",
+                        type=valid_date)
 
     parser.add_argument('proj_name', type=str)
     parser.add_argument('create_forecast', type=bool)
-    parser.add_argument("--proj_enddate",
-            help="The project end datetime - format DD-MM-YYYYTHH:MM",
-            type=valid_date)
+    parser.add_argument(
+        "--proj_enddate",
+        help="The project end datetime - format DD-MM-YYYYTHH:MM",
+        type=valid_date)
     parser.add_argument('--proj_description', type=str, default='')
-    parser.add_argument("--forecast_startdate",
-            help="The forecast start datetime - format DD-MM-YYYYTHH:MM",
-            type=valid_date)
-    parser.add_argument("--forecast_enddate",
-            help="The forecast_endtime - format DD-MM-YYYYTHH:MM",
-            type=valid_date)
+    parser.add_argument(
+        "--forecast_startdate",
+        help="The forecast start datetime - format DD-MM-YYYYTHH:MM",
+        type=valid_date)
+    parser.add_argument(
+        "--forecast_enddate",
+        help="The forecast_endtime - format DD-MM-YYYYTHH:MM",
+        type=valid_date)
 
     return parser.parse_args()
 

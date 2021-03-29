@@ -52,36 +52,29 @@ PROJECT_STARTTIME_2 = datetime(2020, 2, 6, 11, 50)
 PROJECT_ENDTIME_2 = datetime(2020, 2, 9, 10, 11)
 
 FORECAST_STARTTIME_2 = datetime(2020, 2, 6, 20, 0)
-#FORECAST_ENDTIME_2 = datetime(2020, 2, 7, 15, 11)
 FORECAST_ENDTIME_2 = datetime(2020, 2, 7, 22, 1)
 
-# NOTE(sarsonl): Reservoir definition containing all seismic events.
-#RESERVOIR = {"x": [-200, -180, -160, -140, -120, -100, -80, -60, -40, -20, 0],
-#             "y": [-200, -180, -160, -140, -120, -100, -80, -60, -40, -20, 0],
-#             "z": [1200, 1220, 1240, 1260, 1280, 1300, 1320, 1340,
-#                   1360, 1380, 1400]}
-
 RESERVOIR = {
-    "x": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
-       -210., -200., -190., -180., -170., -160., -150., -140., -130.,
-       -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40.,
-        -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50.,
-         60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140.,
-        150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230.,
-        240.,  250.,  260.,  270.,  280.,  290.,  300.],
-    "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220.,
-       -210., -200., -190., -180., -170., -160., -150., -140., -130.,
-       -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40.,
-        -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50.,
-         60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140.,
-        150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230.,
-        240.,  250.,  260.,  270.,  280.,  290.,  300.],
-     "z": [1185, 1195, 1205, 1215, 1225, 1235, 1245, 1255, 1265, 1275, 1285,
-       1295, 1305, 1315, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395,
-       1405, 1415, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1505,
-       1515, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1605, 1615,
-       1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1705, 1715, 1725,
-       1735, 1745, 1755, 1765, 1775, 1785]}
+    "x": [-300., -290., -280., -270., -260., -250., -240., -230., -220., # noqa
+          -210., -200., -190., -180., -170., -160., -150., -140., -130., # noqa
+          -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40., # noqa
+           -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50., # noqa
+            60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140., # noqa
+           150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230., # noqa
+           240.,  250.,  260.,  270.,  280.,  290.,  300.], # noqa
+    "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220., # noqa
+          -210., -200., -190., -180., -170., -160., -150., -140., -130., # noqa
+          -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40., # noqa
+           -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50., # noqa
+            60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140., # noqa
+           150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230., # noqa
+           240.,  250.,  260.,  270.,  280.,  290.,  300.], # noqa
+     "z": [1185, 1195, 1205, 1215, 1225, 1235, 1245, 1255, 1265, 1275, 1285, # noqa
+           1295, 1305, 1315, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, # noqa
+           1405, 1415, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1505, # noqa
+           1515, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1605, 1615, # noqa
+           1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1705, 1715, 1725, # noqa
+           1735, 1745, 1755, 1765, 1775, 1785]} # noqa
 RAMSIS_PROJ = ("+proj=somerc +lat_0=46.95240555555556 "
                "+lon_0=7.439583333333333 +k_0=1 +x_0=2600000 "
                "+y_0=1200000 +ellps=bessel "
@@ -199,68 +192,48 @@ def create_models():
                 "hm1_training_magnitude_bin": 0.01,
                 "hm1_training_events_threshold": 5,
                 "hm1_max_iterations": -1,
-                "hm1_seed_settings":  {
-            "slope_sigma1": 0.0,
-            "slope_sigma3": 0.0,
-            "sigma1_std": 20, #optimized
-            "sigma3_std": 0,
-            "fluid_density": 985,
-            "gravity": 0,
-            "inter_sigma1": 22.5,
-            "inter_sigma3": 10,
-            "b_vs_depth_range": True,
-            "min_failure_pressure": 15, #optimized
-            "stressdrop_coeff": 1., #optimized
-            "cohesion_mean": 0,
-            "friction_mean": 0.6,
-            "PoissonDensity": 1.e-6}, # optimized
-        "hm1_external_solution_settings": {
-            # CAPS: Order of columns for numpy array pressure, time, coordinates (1 in 1D)
-            "FileCols": [2, 0, 1],
-            # CAPS: Coefficients of pressure, time, coordinates
-            "FileConvs": [1.e-6, 24.*3600., 1.],
-            # CAPS: Number of lines to skip when reading Tecplot files
-            "SkipLines": 6,
-            # HM1 properties
-            "fraction_seismic_cloud": 2.5, #extent of stimulation area
-            "borehole_storage_coefficient": 0.002,
-            "borehole_transmissivity": 1000,
-            "initial_storage_coeff": 0.002,
-            "initial_transmissivity": 5.E-07,
-            # Input to Dieter's HM1 code as a parameter
-            # The smaller the time step, the more rapidly the adaption of the
-            # calibration parameters.
-            "deltat": 10,
-            # HM1 mesh geometry
-            "mesh_extent": 300,
-            "alfa_rate_of_growth": 2,
-            "size_first_element": 0.02},
-        "hm1_caps_kd_settings": {
-            "RefinementRatio": 2,
-            "EnableScrOutput": False}
-        },
-        #config={"hm1_test_mode": False,
-        #        "hm1_training_epoch_duration": 3600,
-        #        "hm1_training_magnitude_bin": 0.1,
-        #        "hm1_training_events_threshold": 5,
-        #        "hm1_max_iterations": -1,
-        #        "hm1_seed_settings": {
-        #            "slope_sigma1": 0.0,
-        #            "slope_sigma3": 0.0,
-        #            "sigma3_std": 10.0,
-        #            "fluid_density": 985.0,
-        #            "gravity": 0.0,
-        #            "inter_sigma1": 16.5,
-        #            "inter_sigma3": 4.0,
-        #            "friction_mean": 0.6,
-        #            "cohesion_mean": 0.0,
-        #            "stressdrop_coeff": 3.0,
-        #            "PoissonDensity": 1.0e-6,
-        #            "sigma1_std": 10.0,
-        #            "min_failure_pressure": 15.0},
-        #        "hm1_external_solution_settings": {
-        #            "deltat": 6}
-        #        },
+                "hm1_seed_settings": {
+                    "slope_sigma1": 0.0,
+                    "slope_sigma3": 0.0,
+                    "sigma1_std": 20,  # optimized
+                    "sigma3_std": 0,
+                    "fluid_density": 985,
+                    "gravity": 0,
+                    "inter_sigma1": 22.5,
+                    "inter_sigma3": 10,
+                    "b_vs_depth_range": True,
+                    "min_failure_pressure": 15,  # optimized
+                    "stressdrop_coeff": 1.,  # optimized
+                    "cohesion_mean": 0,
+                    "friction_mean": 0.6,
+                    "PoissonDensity": 1.e-6},  # optimized
+                "hm1_external_solution_settings": {
+                    # CAPS: Order of columns for numpy array pressure,
+                    # time, coordinates (1 in 1D)
+                    "FileCols": [2, 0, 1],
+                    # CAPS: Coefficients of pressure, time, coordinates
+                    "FileConvs": [1.e-6, 24. * 3600., 1.],
+                    # CAPS: Number of lines to skip when reading Tecplot files
+                    "SkipLines": 6,
+                    # HM1 properties
+                    # extent of stimulation area
+                    "fraction_seismic_cloud": 2.5,
+                    "borehole_storage_coefficient": 0.002,
+                    "borehole_transmissivity": 1000,
+                    "initial_storage_coeff": 0.002,
+                    "initial_transmissivity": 5.E-07,
+                    # Input to Dieter's HM1 code as a parameter
+                    # The smaller the time step, the more rapidly
+                    # the adaption of the
+                    # calibration parameters.
+                    "deltat": 10,
+                    # HM1 mesh geometry
+                    "mesh_extent": 300,
+                    "alfa_rate_of_growth": 2,
+                    "size_first_element": 0.02},
+                "hm1_caps_kd_settings": {
+                    "RefinementRatio": 2,
+                    "EnableScrOutput": False}},
         sfmwid=HM1_SFMWID,
         enabled=True,
         url=URL_HM1,

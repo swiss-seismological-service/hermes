@@ -1,7 +1,7 @@
-
 import argparse
 from ramsis.datamodel.status import Status, EStatus
 from RAMSIS.core.store import Store
+
 
 def parse_cli():
     parser = argparse.ArgumentParser()
@@ -24,5 +24,3 @@ if __name__ == '__main__':
         s.state = EStatus.PENDING
     store.save()
     store.close()
-
-
