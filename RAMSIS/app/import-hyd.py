@@ -144,7 +144,7 @@ class ImportHydApp:
 
             self.logger.debug(f'Found project {p!r}.')
 
-            if not self.args.force and p.wells and p.wells[0]:
+            if not self.args.force and p.well:
                 raise ImportHydAppError(
                     'Found present hydraulics; use --force|-f to '
                     'overwrite.')
@@ -160,7 +160,7 @@ class ImportHydApp:
             except Exception as err:
                 raise ImportHydAppError(f"Deserialization Error: {err!r}")
 
-            p.wells = [bh]
+            p.well = bh
 
             self.logger.debug('Number of hydraulic samples: '
                               f'{len(bh.sections[0].hydraulics)}')

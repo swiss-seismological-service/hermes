@@ -424,7 +424,7 @@ class Controller(QtCore.QObject):
 
     def _on_seismic_data_received(self, cat):
         if cat is not None:
-            self.project.seismiccatalogs.append(cat)
+            self.project.seismiccatalog = cat
 
             self.store.save()
 
@@ -434,7 +434,7 @@ class Controller(QtCore.QObject):
 
     def _on_hydraulic_data_received(self, well):
         if well is not None:
-            self.project.wells.append(well)
+            self.project.well = well
             well_project = self.project.well
 
             self.store.save()

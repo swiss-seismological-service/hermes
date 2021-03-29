@@ -302,8 +302,8 @@ def insert_test_data(db_url):
         referencepoint_y=REFERENCE_Y)
 
     # configure project: project settings
-    project.seismiccatalogs = [cat]
-    project.wells = [well]
+    project.seismiccatalog = cat
+    project.well = well
 
     # create forecast
     fc = default_forecast(store, starttime=FORECAST_STARTTIME,

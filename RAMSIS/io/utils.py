@@ -205,6 +205,7 @@ def binary_request(request, url, params={}, timeout=None,
     """
     try:
         r = request(url, params=params, timeout=timeout, **kwargs)
+        print("request", r, type(r))
         if r.status_code in nocontent_codes:
             raise NoContent(r.url, r.status_code, response=r)
 

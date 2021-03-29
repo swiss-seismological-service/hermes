@@ -135,10 +135,10 @@ def forecast_for_seismicity(forecast_id, session):
             subqueryload(Forecast.well)).\
         options(
             subqueryload(Forecast.project).\
-            subqueryload(Project.seismiccatalogs)).\
+            subqueryload(Project.seismiccatalog)).\
         options(
             subqueryload(Forecast.project).\
-            subqueryload(Project.wells)).\
+            subqueryload(Project.well)).\
         options(
             subqueryload(Forecast.scenarios).\
             subqueryload(ForecastScenario.well)).\
