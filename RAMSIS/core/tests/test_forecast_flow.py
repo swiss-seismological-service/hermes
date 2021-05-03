@@ -33,6 +33,8 @@ import os
 import psycopg2
 import argparse
 import json
+import collections
+import numpy as np
 
 from datetime import datetime
 
@@ -190,6 +192,47 @@ JSON_POST_TEMPLATE = {
             "status_code": 202
         }
     }}
+
+
+def assert_all_close(items1, items2, atol=1e-6, rtol=0.0):
+    return np.testing.assert_allclose(items1, items2, atol=atol, rtol=rtol)
+
+
+def flatten(d, parent_key='', sep='_'):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, collections.MutableMapping):
+            items.extend(flatten(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
+def seperate_floats(item):
+    data = []
+
+    def choose_case(item):
+        if isinstance(item, dict):
+            return iterate_dict(item)
+        elif isinstance(item, list):
+            return iterate_list(item)
+        elif isinstance(item, float):
+            data.append(item)
+        else:
+            pass
+
+    def iterate_list(lst):
+        for item in lst:
+            return choose_case(item)
+
+    def iterate_dict(dct):
+        dct = flatten(dct)
+        for value in dct.values():
+            choose_case(value)
+
+    choose_case(item)
+    return data
 
 
 def create_json_response(task_id, response_template, **kwargs):
@@ -426,7 +469,7 @@ class IntegrationTestCase(unittest.TestCase):
     DEFAULT_USER = 'docker'
     DEFAULT_HOST = 'localhost'
     DEFAULT_PASSWORD = 'docker'
-    DEFAULT_PORT = 5435
+    DEFAULT_PORT = 5438
     DEFAULT_DBNAME = 'postgres'
     TEST_DBNAME = 'test'
     TEST_USER = 'test'
@@ -547,44 +590,51 @@ class IntegrationTestCase(unittest.TestCase):
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 4)
-        for call_tuple in signal_list:
+        self.assertEqual(len(signal_list), 5)
+        for i, call_tuple in enumerate(signal_list):
             prefect_status = call_tuple[0][0][0]
-            self.assertEqual(prefect_status.message, "Task run succeeded.")
-            self.assertTrue(prefect_status.is_successful())
-
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            if i in [0, 1, 2, 3]:
+                self.assertEqual(prefect_status.message, "Task run succeeded.")
+                self.assertTrue(prefect_status.is_successful())
+                self.assertEqual(parent_type, type(SeismicityModelRun()))
+            elif i == 4:
+                self.assertEqual(parent_type, type(ForecastScenario()))
+                self.assertEqual(prefect_status, EStatus.RUNNING)
 
         # Check data send to remote worker
         posted_data = mock_post.call_args_list[0][1]['data']
         posted_data2 = mock_post.call_args_list[1][1]['data']
 
+        posted_items1 = seperate_floats(posted_data)
+        posted_items2 = seperate_floats(posted_data2)
+
         # with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'w') as json_d:
         #     if (json.loads(posted_data)["data"]["attributes"]["model_parameters"] # noqa
         #         ["em1_training_epoch_duration"] == 86400):
-        #         json.dump(posted_data, json_d)
+        #         json_d.write(posted_data)
         #     else:
-        #         json.dump(posted_data2, json_d)
+        #         json_d.write(posted_data2)
         # with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'w') as json_d:
         #     if (json.loads(posted_data)["data"]["attributes"]["model_parameters"] # noqa
         #         ["em1_training_epoch_duration"] == 86400):
-        #         json.dump(posted_data2, json_d)
+        #         json_d.write(posted_data2)
         #     else:
-        #         json.dump(posted_data, json_d)
+        #         json_d.write(posted_data)
         with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'r') as json_d:
             json_data = json.load(json_d)
+        comparison_items1 = seperate_floats(json_data)
         with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'r') as json_d:
             json_data2 = json.load(json_d)
-        # As we are not sure which order the models are processed,
-        # we cannot be sure which status is produced first
+        comparison_items2 = seperate_floats(json_data2)
+
         if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
                 ["em1_training_epoch_duration"] == 86400):
-            self.assertEqual(posted_data, json_data)
-            self.assertEqual(posted_data2, json_data2)
+            assert_all_close(comparison_items1, posted_items1)
+            assert_all_close(comparison_items2, posted_items2)
         else:
-            self.assertEqual(posted_data, json_data2)
-            self.assertEqual(posted_data2, json_data)
+            assert_all_close(comparison_items1, posted_items2)
+            assert_all_close(comparison_items2, posted_items1)
 
         # Check that forecast, scenario and model runs all have completed
         non_stage_statuses = store.session.query(Status).\
@@ -690,7 +740,7 @@ class IntegrationTestCase(unittest.TestCase):
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 4)
+        self.assertEqual(len(signal_list), 5)
         for i, call_tuple in enumerate(signal_list):
             prefect_status = call_tuple[0][0][0]
             if i in [0, 1]:
@@ -699,9 +749,14 @@ class IntegrationTestCase(unittest.TestCase):
             elif i in [2, 3]:
                 self.assertTrue(prefect_status.message in ["Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef419dd: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef419dd')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))", "Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef41123: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef41123')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))"]) # noqa
                 self.assertTrue(prefect_status.is_failed())
+            elif i == 4:
+                self.assertEqual(prefect_status, EStatus.ERROR)
 
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            if i == 4:
+                self.assertEqual(parent_type, type(ForecastScenario()))
+            else:
+                self.assertEqual(parent_type, type(SeismicityModelRun()))
         store.session.remove()
         store.engine.dispose()
 
@@ -747,15 +802,20 @@ class IntegrationTestCase(unittest.TestCase):
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 2)
-        for call_tuple in signal_list:
+        self.assertEqual(len(signal_list), 3)
+        for i, call_tuple in enumerate(signal_list):
             prefect_status = call_tuple[0][0][0]
-            self.assertEqual(prefect_status.message,
-                             "Task run succeeded.")
-            self.assertTrue(prefect_status.is_successful())
-
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            if i in [0, 1]:
+                self.assertEqual(prefect_status.message,
+                                 "Task run succeeded.")
+                self.assertTrue(prefect_status.is_successful())
+
+                parent_type = call_tuple[0][0][1]
+                self.assertEqual(parent_type, type(SeismicityModelRun()))
+            elif i == 2:
+                self.assertEqual(parent_type, type(ForecastScenario()))
+                self.assertEqual(prefect_status, EStatus.RUNNING)
 
         # Check that no POST requests were made
         mock_post.assert_not_called()
@@ -822,15 +882,20 @@ class IntegrationTestCase(unittest.TestCase):
 
         # Check pyqtsignals that were produced
         signal_list = mock_signal.emit.call_args_list
-        self.assertEqual(len(signal_list), 3)
-        for call_tuple in signal_list:
+        self.assertEqual(len(signal_list), 4)
+        for i, call_tuple in enumerate(signal_list):
             prefect_status = call_tuple[0][0][0]
-            self.assertEqual(prefect_status.message,
-                             "Task run succeeded.")
-            self.assertTrue(prefect_status.is_successful())
-
             parent_type = call_tuple[0][0][1]
-            self.assertEqual(parent_type, type(SeismicityModelRun()))
+            if i in [0, 1, 2]:
+                self.assertEqual(prefect_status.message,
+                                 "Task run succeeded.")
+                self.assertTrue(prefect_status.is_successful())
+
+                parent_type = call_tuple[0][0][1]
+                self.assertEqual(parent_type, type(SeismicityModelRun()))
+            elif i == 3:
+                self.assertEqual(parent_type, type(ForecastScenario()))
+                self.assertEqual(prefect_status, EStatus.RUNNING)
 
         # Check that only one POST request was made, as only one
         # model is pending
@@ -841,7 +906,7 @@ class IntegrationTestCase(unittest.TestCase):
         non_stage_statuses = store.session.query(Status).\
             filter(Status.stage_id is None).all()
         self.assertTrue(all([s.state == EStatus.COMPLETE
-                             for s in non_stage_statuses]))
+                        for s in non_stage_statuses]))
 
         # Check that the seismicity stage has completed.
         forecast = store.session.query(Forecast).first()
