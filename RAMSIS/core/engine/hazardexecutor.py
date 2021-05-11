@@ -111,12 +111,12 @@ class OQSourceModelFiles(Task):
                 # is still created (equivalent to zero seismicity)
                 geoms = []
                 try:
-                    children = result.children
+                    subgeometries = result.subgeometries
                 except DetachedInstanceError:
-                    children = None
+                    subgeometries = None
 
-                if children:
-                    for index, child_result in enumerate(children):
+                if subgeometries:
+                    for index, child_result in enumerate(subgeometries):
                         geoms = self.append_geometry(geoms, result, serializer,
                                                      start, end, index + 1)
                 else:
