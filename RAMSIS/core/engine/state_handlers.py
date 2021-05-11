@@ -528,7 +528,6 @@ class HazardHandler(BaseHandler):
         Set the scenario state according to the end state
         of the flow.
         """
-        print("start flow state handler")
         logger = prefect.context.get("logger")
         scenario_id = prefect.context.scenario_id
         worker = Worker(self.update_hazard_statuses, new_state, logger,
