@@ -424,7 +424,6 @@ class HazardFlow(QObject):
 
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(scenario_id=self.scenario.id):
-            print("running hazard flow")
             hazard_flow.run(parameters=dict(scenario=self.scenario,
                                             data_dir=self.data_dir),
                             executor=executor)
@@ -485,7 +484,6 @@ class Engine(QObject):
         :param forecast: Forecast to execute
         :type forecast: ramsis.datamodel.forecast.Forecast
         """
-        print("engine.run called")
         assert self.core.project
         if not self.session:
             self.session = self.core.store.session
@@ -580,7 +578,6 @@ class FlowRunner:
         return seismicity_stage_states
 
     def hazard_flow(self, seismicity_stage_states, scenario_ref):
-        print("called hazard flow function, getting scenario for hazard")
         scenario = scenario_for_hazard(scenario_ref.id, self.session)
         seismicity_status = scenario[EStage.SEISMICITY].status.state
         if seismicity_status == EStatus.ERROR:
@@ -599,9 +596,7 @@ class FlowRunner:
                     scenario, self.hazard_preparation_handler,
                     self.data_dir)
                 hazard_prep_flow.run()
-                print("waiting for done")
                 self.threadpool.waitForDone()
-                print("waited for done")
                 # Will the hazard status update here?
                 if hazard_status == EStatus.ERROR:
                     self.update_forecast_status(EStatus.ERROR)
@@ -615,10 +610,9 @@ class FlowRunner:
             hazard_flow = HazardFlow(scenario,
                                      self.hazard_handler,
                                      self.data_dir)
-            print("#### start hazard flow")
             hazard_flow.run()
             self.threadpool.waitForDone()
-            while (self.synchronous_thread.model_runs_count <
+            while (self.synchronous_thread.model_runs <
                    self.synchronous_thread.model_runs_count):
                 time.sleep(5)
             hazard_stage_states = self.stage_states(EStage.HAZARD)
@@ -631,10 +625,8 @@ class FlowRunner:
             for scenario in scenarios:
                 if scenario[estage].enabled:
                     stage_enabled = True
-        except AttributeError as err:
-            print('err...', err)
+        except AttributeError:
             pass
-        print("stage enabled", stage_enabled)
         return stage_enabled
 
     def run(self, progress_callback):
@@ -665,4 +657,3 @@ class FlowRunner:
             self.update_forecast_status(EStatus.COMPLETE)
         else:
             self.update_forecast_status(EStatus.ERROR)
-        print("at the real end of the engine/...")
