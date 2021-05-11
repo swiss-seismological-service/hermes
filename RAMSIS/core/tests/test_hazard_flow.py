@@ -530,7 +530,8 @@ def zipfile_archive(arg):
             yield resp.read(obj_filename).decode()
 
 
-mocked_requests_post_init = MockedRequestsPost()
+mocked_requests_post_init1 = MockedRequestsPost()
+mocked_requests_post_init2 = MockedRequestsPost()
 
 
 class IntegrationTestCase(unittest.TestCase):
@@ -616,15 +617,15 @@ class IntegrationTestCase(unittest.TestCase):
     @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
                 side_effect=mocked_requests_get)
     @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
-                side_effect=mocked_requests_post_init.mocked_requests_post)
+                side_effect=mocked_requests_post_init1.mocked_requests_post)
     @mock.patch('RAMSIS.io.oq_hazard.'
                 'OQHazardOMessageDeserializer._read_ziparchive',
                 side_effect=zipfile_archive)
-    def test_successful_hazard_flow(self,
-                                    mock_ziparchive,
-                                    mock_post,
-                                    mock_get,
-                                    mock_signal):
+    def test_successful_hazard_flow_simple(self,
+                                           mock_ziparchive,
+                                           mock_post,
+                                           mock_get,
+                                           mock_signal):
         """
         Test the flow with only the seismicity & hazard stage enabled
         and seismicity stage complete.
@@ -735,7 +736,7 @@ class IntegrationTestCase(unittest.TestCase):
     @mock.patch('RAMSIS.core.worker.oq_hazard.requests.get',
                 side_effect=mocked_requests_get)
     @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
-                side_effect=mocked_requests_post_init.mocked_requests_post)
+                side_effect=mocked_requests_post_init2.mocked_requests_post)
     @mock.patch('RAMSIS.io.oq_hazard.'
                 'OQHazardOMessageDeserializer._read_ziparchive',
                 side_effect=zipfile_archive)
@@ -776,7 +777,6 @@ class IntegrationTestCase(unittest.TestCase):
         for geopoint_line in geopoint_lines:
             lat, lon = [float(item) for item in geopoint_line.split(" ")]
             # Set up geopoints
-            print("add geopoints for lat, lon:", lat, lon)
             _ = store.session.add(GeoPoint(lat=lat, lon=lon))
 
         store.save()
