@@ -44,7 +44,8 @@ def _read(path):
 
 class QuakeMLObservationCatalogDeserializerTestCase(unittest.TestCase):
     """
-    Test for :py:class:`RAMSIS.io.seismics.QuakeMLObservationCatalogDeserializer` class.
+    Test for :py:class:
+        `RAMSIS.io.seismics.QuakeMLObservationCatalogDeserializer` class.
     """
     PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   'resources')
@@ -201,7 +202,8 @@ class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(
-        unittest.makeSuite(QuakeMLObservationCatalogDeserializerTestCase, 'test'))
+        unittest.makeSuite(
+            QuakeMLObservationCatalogDeserializerTestCase, 'test'))
     suite.addTest(
         unittest.makeSuite(QuakeMLCatalogSerializerTestCase, 'test'))
     return suite
