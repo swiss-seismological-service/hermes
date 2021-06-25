@@ -66,8 +66,8 @@ class _SeismicCatalogSchema(_SchemaBase):
     def make_catalog(self, data, **kwargs):
         """
         Convert an instance of
-        :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog` into its `QuakeML
-        <https://quake.ethz.ch/quakeml/>`_ representation.
+        :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
+        into its `QuakeML <https://quake.ethz.ch/quakeml/>`_ representation.
         """
         if 'quakeml' in data:
             data['quakeml'] = QuakeMLCatalogSerializer(

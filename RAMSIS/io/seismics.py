@@ -189,7 +189,8 @@ class QuakeMLCatalogSerializer(SerializerBase, IOBase):
         Serialize a seismic catalog.
 
         :param data: Seismic catalog
-        :type data: :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
+        :type data: :py:class:
+            `ramsis.datamodel.seismics.SeismicObservationCatalog`
 
         :returns: Serialized QuakeML seismic catalog
         :rtype: str
