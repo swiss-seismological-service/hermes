@@ -49,7 +49,7 @@ from ramsis.datamodel.project import Project  # noqa
 from ramsis.datamodel.seismicity import (  # noqa
     SeismicityModel, SeismicityModelRun, ReservoirSeismicityPrediction,
     SeismicityPredictionBin)
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.status import Status, EStatus  # noqa
 from ramsis.datamodel.well import InjectionWell, WellSection  # noqa

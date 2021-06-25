@@ -50,7 +50,7 @@ from ramsis.datamodel.hazard import (  # noqa
 from ramsis.datamodel.seismicity import (  # noqa
     SeismicityModel, SeismicityModelRun, ReservoirSeismicityPrediction,
     SeismicityPredictionBin)
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.status import Status, EStatus  # noqa
 from ramsis.datamodel.well import InjectionWell, WellSection  # noqa
@@ -469,7 +469,7 @@ class IntegrationTestCase(unittest.TestCase):
     DEFAULT_USER = 'docker'
     DEFAULT_HOST = 'localhost'
     DEFAULT_PASSWORD = 'docker'
-    DEFAULT_PORT = 5438
+    DEFAULT_PORT = 5434
     DEFAULT_DBNAME = 'postgres'
     TEST_DBNAME = 'test'
     TEST_USER = 'test'
@@ -747,7 +747,7 @@ class IntegrationTestCase(unittest.TestCase):
                 self.assertEqual(prefect_status.message, "Task run succeeded.")
                 self.assertTrue(prefect_status.is_successful())
             elif i in [2, 3]:
-                self.assertTrue(prefect_status.message in ["Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef419dd: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef419dd')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))", "Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef41123: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef41123')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))"]) # noqa
+                self.assertTrue(prefect_status.message in ["Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef419dd: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef419dd')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))", "Remote Seismicity Model Worker has returned an unsuccessful status code.(runid=1bcc9e3f-d9bd-4dd2-a626-735cbef41123: OrderedDict([('data', OrderedDict([('id', UUID('1bcc9e3f-d9bd-4dd2-a626-735cbef41123')), ('attributes', OrderedDict([('status', 'ModelError-ModelAdaptor'), ('status_code', 500), ('warning', 'Caught in default model exception handler. Too few seismic events found, model will not continue.')]))]))]))"])  # noqa
                 self.assertTrue(prefect_status.is_failed())
             elif i == 4:
                 self.assertEqual(prefect_status, EStatus.ERROR)

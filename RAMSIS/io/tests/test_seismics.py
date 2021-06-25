@@ -14,7 +14,7 @@ from unittest import mock
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.datamodel.seismicity import SeismicityModel  # noqa
 from ramsis.datamodel.forecast import Forecast  # noqa
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent  # noqa
 from ramsis.datamodel.well import InjectionWell  # noqa
 from ramsis.datamodel.hydraulics import Hydraulics, InjectionPlan  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
@@ -186,7 +186,7 @@ class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
                   SeismicEvent(quakeml=event_1),
                   SeismicEvent(quakeml=event_2)]
 
-        catalog = SeismicCatalog(events=events)
+        catalog = SeismicObservationCatalog(events=events)
 
         result = QuakeMLCatalogSerializer(
             ramsis_proj=RAMSIS_PROJ,

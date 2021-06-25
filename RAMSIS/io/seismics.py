@@ -9,7 +9,7 @@ import io
 from lxml import etree
 from obspy import read_events
 
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent
+from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent
 from RAMSIS.io.utils import (IOBase, DeserializerBase, SerializerBase,
                              _IOError, TransformationError, )
 
@@ -64,7 +64,7 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         :param data: Data to be deserialized.
 
         :returns: Seismic catalog
-        :rtype: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
+        :rtype: :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
         """
         if isinstance(data, str):
             data = data.encode(encoding='utf-8')
@@ -73,12 +73,12 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
             raise TypeError('The data object must be str, bytes or bytearray, '
                             'not {!r}'.format(data.__class__.__name__))
 
-        return SeismicCatalog(
+        return SeismicObservationCatalog(
             creationinfo_creationtime=datetime.datetime.utcnow(),
             events=[e for e in self._get_events(io.BytesIO(data))])
 
     def _loado(self, data):
-        return SeismicCatalog(
+        return SeismicObservationCatalog(
             creationinfo_creationtime=datetime.datetime.utcnow(),
             events=[e for e in self._get_events(data, parser=etree.iterwalk)])
 
@@ -183,12 +183,13 @@ class QuakeMLCatalogSerializer(SerializerBase, IOBase):
     Serializes a RT-RAMSIS seismic catalog into `QuakeML
     <https://quake.ethz.ch/quakeml/>`_.
     """
+
     def _serialize(self, data):
         """
         Serialize a seismic catalog.
 
         :param data: Seismic catalog
-        :type data: :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
+        :type data: :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
 
         :returns: Serialized QuakeML seismic catalog
         :rtype: str

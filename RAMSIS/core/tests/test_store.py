@@ -14,7 +14,7 @@ from sqlalchemy.sql import select, func
 
 from ramsis.datamodel.seismicity import SeismicityModel, EModel  # noqa
 from ramsis.datamodel.project import Project  # noqa
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent  # noqa
 from RAMSIS.core.builder import default_project  # noqa
 from RAMSIS.core.store import Store, EditingContext  # noqa
 
@@ -54,7 +54,7 @@ class TestEditingContext(unittest.TestCase):
         # We use a simple 1..* relation for these tests
         self.project = default_project(name='TestProject',
                                        starttime=datetime.utcnow())
-        self.project.seismiccatalog = SeismicCatalog(
+        self.project.seismiccatalog = SeismicObservationCatalog(
             events=[make_event(m) for m in range(5)])
         self.store.add(self.project)
 

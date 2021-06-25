@@ -16,12 +16,12 @@ import dateutil.parser
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.datamodel.seismicity import SeismicityModel  # noqa
 from ramsis.datamodel.forecast import Forecast  # noqa
-from ramsis.datamodel.seismics import SeismicCatalog, SeismicEvent  # noqa
+from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent  # noqa
 from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
                                          SeismicityPredictionBin)
 from ramsis.datamodel.well import InjectionWell, WellSection  # noqa
 from ramsis.datamodel.hydraulics import (Hydraulics, InjectionPlan,  # noqa
-                                         HydraulicSample) # noqa
+                                         HydraulicSample)  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
@@ -131,7 +131,7 @@ class SFMWorkerIMessageSerializerTestCase(unittest.TestCase):
                   SeismicEvent(quakeml=event_1),
                   SeismicEvent(quakeml=event_2)]
 
-        catalog = SeismicCatalog(events=events)
+        catalog = SeismicObservationCatalog(events=events)
 
         s0 = HydraulicSample(
             datetime_value=datetime.datetime(2019, 5, 3, 13, 27, 9, 117623))
