@@ -60,7 +60,7 @@ from RAMSIS.core.builder import (
 from RAMSIS.core.controller import Controller, LaunchMode
 from RAMSIS.core.store import Store
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
 
 PATH_SEISMICS = 'catalog_data/seismics.qml'
 # Only ~this many files can be imported and merged before
@@ -325,7 +325,7 @@ def insert_test_data(db_url):
     # data.
 
     # import seismic catalog
-    deserializer = QuakeMLCatalogDeserializer(
+    deserializer = QuakeMLObservationCatalogDeserializer(
         ramsis_proj=RAMSIS_PROJ,
         external_proj=WGS84_PROJ,
         ref_easting=REFERENCE_X,

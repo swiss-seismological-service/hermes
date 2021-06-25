@@ -28,7 +28,7 @@ from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from RAMSIS.core.store import Store
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
 
 DIRPATH = os.path.dirname(os.path.abspath(__file__))
 DIR_HYDRAULICS = "hyd"
@@ -263,7 +263,7 @@ def create_bedretto_5_6_feb_project(store):
     # data.
 
     # import seismic catalog
-    deserializer = QuakeMLCatalogDeserializer(
+    deserializer = QuakeMLObservationCatalogDeserializer(
         ramsis_proj=RAMSIS_PROJ,
         external_proj=WGS84_PROJ,
         ref_easting=REFERENCE_X,
@@ -336,7 +336,7 @@ def create_bedretto_6_7_feb_project(store):
     # data.
 
     # import seismic catalog
-    deserializer = QuakeMLCatalogDeserializer(
+    deserializer = QuakeMLObservationCatalogDeserializer(
         ramsis_proj=RAMSIS_PROJ,
         external_proj=WGS84_PROJ,
         ref_easting=REFERENCE_X,

@@ -8,6 +8,7 @@ import io
 
 from lxml import etree
 from obspy import read_events
+from ramsis.datamodel.seismicity import SeismicCatalogPredictionBin
 
 from ramsis.datamodel.seismics import SeismicObservationCatalog, SeismicEvent
 from RAMSIS.io.utils import (IOBase, DeserializerBase, SerializerBase,
@@ -55,32 +56,6 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
         super().__init__(**kwargs)
 
         self._mag_type = mag_type
-
-    def _deserialize(self, data):
-        """
-        Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
-        RT-RAMSIS seismic catalog.
-
-        :param data: Data to be deserialized.
-
-        :returns: Seismic catalog
-        :rtype: :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
-        """
-        if isinstance(data, str):
-            data = data.encode(encoding='utf-8')
-
-        if not isinstance(data, (bytes, bytearray)):
-            raise TypeError('The data object must be str, bytes or bytearray, '
-                            'not {!r}'.format(data.__class__.__name__))
-
-        return SeismicObservationCatalog(
-            creationinfo_creationtime=datetime.datetime.utcnow(),
-            events=[e for e in self._get_events(io.BytesIO(data))])
-
-    def _loado(self, data):
-        return SeismicObservationCatalog(
-            creationinfo_creationtime=datetime.datetime.utcnow(),
-            events=[e for e in self._get_events(data, parser=etree.iterwalk)])
 
     def _deserialize_event(self, event_element, **kwargs):
         """
@@ -178,6 +153,64 @@ class QuakeMLCatalogDeserializer(DeserializerBase, IOBase):
             raise QuakeMLCatalogIOError(err)
 
 
+class QuakeMLObservationCatalogDeserializer(QuakeMLCatalogDeserializer):
+
+    def _deserialize(self, data):
+        """
+        Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
+        RT-RAMSIS seismic catalog.
+
+        :param data: Data to be deserialized.
+
+        :returns: Seismic catalog
+        :rtype: :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
+        """
+        if isinstance(data, str):
+            data = data.encode(encoding='utf-8')
+
+        if not isinstance(data, (bytes, bytearray)):
+            raise TypeError('The data object must be str, bytes or bytearray, '
+                            'not {!r}'.format(data.__class__.__name__))
+
+        return SeismicObservationCatalog(
+            creationinfo_creationtime=datetime.datetime.utcnow(),
+            events=[e for e in self._get_events(io.BytesIO(data))])
+
+    def _loado(self, data):
+        return SeismicObservationCatalog(
+            creationinfo_creationtime=datetime.datetime.utcnow(),
+            events=[e for e in self._get_events(data, parser=etree.iterwalk)])
+
+
+class QuakeMLForecastCatalogDeserializer(QuakeMLCatalogDeserializer):
+
+    def _deserialize(self, data):
+        """
+        Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
+        RT-RAMSIS seismic catalog.
+
+        :param data: Data to be deserialized.
+
+        :returns: Seismic catalog
+        :rtype: :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
+        """
+        if isinstance(data, str):
+            data = data.encode(encoding='utf-8')
+
+        if not isinstance(data, (bytes, bytearray)):
+            raise TypeError('The data object must be str, bytes or bytearray, '
+                            'not {!r}'.format(data.__class__.__name__))
+
+        return SeismicCatalogPredictionBin(
+            creationinfo_creationtime=datetime.datetime.utcnow(),
+            events=[e for e in self._get_events(io.BytesIO(data))])
+
+    def _loado(self, data):
+        return SeismicCatalogPredictionBin(
+            creationinfo_creationtime=datetime.datetime.utcnow(),
+            events=[e for e in self._get_events(data, parser=etree.iterwalk)])
+
+
 class QuakeMLCatalogSerializer(SerializerBase, IOBase):
     """
     Serializes a RT-RAMSIS seismic catalog into `QuakeML
@@ -201,7 +234,9 @@ class QuakeMLCatalogSerializer(SerializerBase, IOBase):
                 _QUAKEML_FOOTER).decode('utf-8')
 
 
-IOBase.register(QuakeMLCatalogDeserializer)
+IOBase.register(QuakeMLObservationCatalogDeserializer)
+IOBase.register(QuakeMLForecastCatalogDeserializer)
 IOBase.register(QuakeMLCatalogSerializer)
-DeserializerBase.register(QuakeMLCatalogDeserializer)
+DeserializerBase.register(QuakeMLForecastCatalogDeserializer)
+DeserializerBase.register(QuakeMLObservationCatalogDeserializer)
 SerializerBase.register(QuakeMLCatalogSerializer)

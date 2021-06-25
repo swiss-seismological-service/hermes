@@ -23,7 +23,7 @@ from ramsis.datamodel.seismicity import SeismicityModelRun  # noqa
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import ExitCode
-from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
 
 
 def url(url):
@@ -149,7 +149,7 @@ class ImportSeismicsApp:
                     'Found present seimic catalog; use --force|-f to '
                     'overwrite.')
 
-            deserializer = QuakeMLCatalogDeserializer(
+            deserializer = QuakeMLObservationCatalogDeserializer(
                 ramsis_proj=p.spatialreference,
                 external_proj=4326,
                 ref_easting=p.referencepoint_x,

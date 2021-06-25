@@ -12,7 +12,7 @@ from PyQt5 import QtCore
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
 from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSJSONIOError)
-from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
+from RAMSIS.io.seismics import (QuakeMLObservationCatalogDeserializer,
                                 QuakeMLCatalogIOError)
 from RAMSIS.io.utils import (binary_request,
                              NoContent, RequestsError)
@@ -87,7 +87,7 @@ class FDSNWSDataSource(QtCore.QThread):
     Fetches seismic event data from a web service in the background.
     """
 
-    DESERIALZER = QuakeMLCatalogDeserializer
+    DESERIALZER = QuakeMLObservationCatalogDeserializer
 
     data_received = QtCore.pyqtSignal(object)
 

@@ -20,7 +20,7 @@ from ramsis.datamodel.hydraulics import Hydraulics, InjectionPlan  # noqa
 from ramsis.datamodel.settings import ProjectSettings  # noqa
 from ramsis.datamodel.project import Project  # noqa
 
-from RAMSIS.io.seismics import (QuakeMLCatalogDeserializer,
+from RAMSIS.io.seismics import (QuakeMLObservationCatalogDeserializer,
                                 QuakeMLCatalogSerializer)
 from RAMSIS.io.utils import binary_request
 
@@ -42,15 +42,15 @@ def _read(path):
     return retval.strip()
 
 
-class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
+class QuakeMLObservationCatalogDeserializerTestCase(unittest.TestCase):
     """
-    Test for :py:class:`RAMSIS.io.seismics.QuakeMLCatalogDeserializer` class.
+    Test for :py:class:`RAMSIS.io.seismics.QuakeMLObservationCatalogDeserializer` class.
     """
     PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                   'resources')
 
     def test_with_ifs(self):
-        deserializer = QuakeMLCatalogDeserializer(
+        deserializer = QuakeMLObservationCatalogDeserializer(
             ramsis_proj=RAMSIS_PROJ,
             external_proj=WGS84_PROJ,
             ref_easting=REFERENCE_X,
@@ -83,7 +83,7 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
         self.assertEqual(e_1.z_value, -10300.0)
 
     def test_with_bytes(self):
-        deserializer = QuakeMLCatalogDeserializer(
+        deserializer = QuakeMLObservationCatalogDeserializer(
             ramsis_proj=RAMSIS_PROJ,
             external_proj=WGS84_PROJ,
             ref_easting=REFERENCE_X,
@@ -136,7 +136,7 @@ class QuakeMLCatalogDeserializerTestCase(unittest.TestCase):
             'format': 'xml',
             'magnitudetype': 'ML,Mc,MS,Mw', }
 
-        deserializer = QuakeMLCatalogDeserializer(
+        deserializer = QuakeMLObservationCatalogDeserializer(
             ramsis_proj=RAMSIS_PROJ,
             external_proj=WGS84_PROJ,
             ref_easting=REFERENCE_X,
@@ -201,7 +201,7 @@ class QuakeMLCatalogSerializerTestCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(
-        unittest.makeSuite(QuakeMLCatalogDeserializerTestCase, 'test'))
+        unittest.makeSuite(QuakeMLObservationCatalogDeserializerTestCase, 'test'))
     suite.addTest(
         unittest.makeSuite(QuakeMLCatalogSerializerTestCase, 'test'))
     return suite

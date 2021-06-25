@@ -36,7 +36,7 @@ from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
 from RAMSIS.core.worker import WorkerHandle, EWorkerHandle
 from RAMSIS.core.worker.sfm import KEY_DATA, RemoteSeismicityWorkerHandle
-from RAMSIS.io.seismics import QuakeMLCatalogDeserializer
+from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from RAMSIS.io.sfm import SFMWorkerOMessageDeserializer
 
@@ -380,7 +380,8 @@ class WorkerClientApp(object):
             resp = requests.get(args.url_fdsnws_event)
             resp.raise_for_status()
             self.logger.debug('Received seismic catalog. Deserializing ...')
-            cat = QuakeMLCatalogDeserializer(proj=None).loads(resp.content)
+            cat = QuakeMLObservationCatalogDeserializer(
+                proj=None).loads(resp.content)
             self.logger.debug('Number of seismic events: %d' % len(cat))
             return cat
 

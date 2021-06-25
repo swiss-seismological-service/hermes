@@ -53,6 +53,18 @@ class _SchemaBase(Schema):
 
         return retval
 
+    @classmethod
+    def _append_zero_milliseconds(cls, data):
+        # XXX(damb): This is a workaround since the DateTime format is being
+        # configured with a date string. Is there a better solution provided by
+        # marshmallow.
+        if 'starttime' in data:
+            data['starttime'] = append_ms_zeroes(data['starttime'])
+
+        if 'endtime' in data:
+            data['endtime'] = append_ms_zeroes(data['endtime'])
+        return data
+
 
 class _SeismicCatalogSchema(_SchemaBase):
     """
@@ -66,7 +78,7 @@ class _SeismicCatalogSchema(_SchemaBase):
     def make_catalog(self, data, **kwargs):
         """
         Convert an instance of
-        :py:class:`ramsis.datamodel.seismics.SeismicObservationCatalog`
+        :py:class:`ramsis.datamodel.seismics.SeismicCatalog`
         into its `QuakeML <https://quake.ethz.ch/quakeml/>`_ representation.
         """
         if 'quakeml' in data:
@@ -90,6 +102,13 @@ class _SeismicCatalogSchema(_SchemaBase):
                 data['quakeml'].encode('utf8')).decode('utf8')
 
         return data
+
+
+class _SeismicForecastCatalogSchema(_SeismicCatalogSchema):
+    @pre_load
+    def normalize_datetime(self, data, **kwargs):
+        data = self._append_zero_milliseconds(data)
+        return self._flatten_dict(data)
 
 
 class _ModelResultSampleSchema(_SchemaBase):
@@ -130,16 +149,8 @@ class _ModelResultSampleSchema(_SchemaBase):
     hydraulicvol_confidencelevel = Percentage()
 
     @pre_load
-    def append_zero_milliseconds(self, data, **kwargs):
-        # XXX(damb): This is a workaround since the DateTime format is being
-        # configured with a date string. Is there a better solution provided by
-        # marshmallow.
-        if 'starttime' in data:
-            data['starttime'] = append_ms_zeroes(data['starttime'])
-
-        if 'endtime' in data:
-            data['endtime'] = append_ms_zeroes(data['endtime'])
-
+    def normalize_datetime(self, data, **kwargs):
+        data = self._append_zero_milliseconds(data)
         return self._flatten_dict(data)
 
     @post_load
@@ -331,6 +342,7 @@ class _SeismicityForecastSamplesSchema(_SeismicityForecastGeomSchema):
     Schema representation of seismicity forecast samples.
     """
     samples = fields.Nested(_ModelResultSampleSchema, many=True)
+    catalogs = fields.Nested(_SeismicForecastCatalogSchema, many=True)
     subgeometries = fields.Nested('self', exclude=('subgeometries',),
                                   many=True)
 
