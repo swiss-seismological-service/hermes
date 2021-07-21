@@ -26,6 +26,7 @@ logging https://github.com/pytest-dev/pytest/issues/5502
 where the buffer for pytest is closed before the core loggers and this
 leads to errors.
 """
+import base64
 import unittest
 from unittest import mock
 import time
@@ -168,6 +169,28 @@ JSON_GET_TEMPLATE = {
                         }
                     }
                 ]
+            }
+        }
+    }}
+
+JSON_GET_CATALOG_TEMPLATE = {
+    "data": {
+        "id": None,
+        "attributes": {
+            "status": "TaskCompleted",
+            "status_code": 200,
+            "forecast": {
+                "x_min": X_MIN,
+                "y_min": Y_MIN,
+                "z_min": Z_MIN,
+                "x_max": X_MAX,
+                "y_max": Y_MAX,
+                "z_max": Z_MAX,
+                "catalogs": [{
+                    "starttime": "2015-05-07T00:00:00",
+                    "endtime": "2015-05-07T04:00:00",
+                    'quakeml': "",
+                }]
             }
         }
     }}
@@ -435,6 +458,29 @@ def mocked_requests_get(*args, **kwargs):
     return MockResponse(None, 404)
 
 
+def mocked_requests_get_catalog(*args, **kwargs):
+    with open(os.path.join(dirpath, PATH_SEISMICS)) as file:
+        data = file.read()
+    data = base64.b64encode(data.encode('utf8')).decode('utf8')
+
+    ctlg = JSON_GET_CATALOG_TEMPLATE.copy()
+    (ctlg['data']['attributes']
+     ['forecast']['catalogs'][0]
+     ['quakeml']) = data
+
+    if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
+            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
+        ctlg['data']['id'] = '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd'
+        return MockResponse(ctlg, 200)
+
+    elif args[0] == 'http://localhost:5000/v1/EM1/runs/'\
+            '1bcc9e3f-d9bd-4dd2-a626-735cbef41123':
+        ctlg['data']['id'] = "1bcc9e3f-d9bd-4dd2-a626-735cbef41123"
+        return MockResponse(ctlg, 200)
+
+    return MockResponse(None, 404)
+
+
 def mocked_requests_get_error(*args, **kwargs):
 
     if args[0] == 'http://localhost:5000/v1/EM1/runs/'\
@@ -690,6 +736,126 @@ class IntegrationTestCase(unittest.TestCase):
 
         bin_mc = [item.mc_value for item in bins]
         self.assertTrue(all(item == 4.4 for item in bin_mc))
+
+        statuses = store.session.query(Status).all()
+        store.session.remove()
+        store.engine.dispose()
+
+    @mock.patch('RAMSIS.core.engine.engine.ForecastHandler.'
+                'execution_status_update', side_effect=signal_factory)
+    @mock.patch('RAMSIS.core.worker.sfm.requests.get',
+                side_effect=mocked_requests_get_catalog)
+    @mock.patch('RAMSIS.core.worker.sfm.requests.post',
+                side_effect=mocked_requests_post)
+    def test_successful_seismicity_flow_with_catalogs(self, mock_post,
+                                                      mock_get,
+                                                      mock_signal):
+        """
+        Test the flow with only the seismicity stage enabled and two models
+        enabled.
+        """
+        self.maxDiff = None
+        controller, store = self.connect_ramsis()
+        statuses = store.session.query(Status).all()
+        for item_status in statuses:
+            item_status.state = EStatus.PENDING
+
+        store.save()
+        project = store.session.query(Project).first()
+        forecast = store.session.query(Forecast).first()
+        controller.open_project(project)
+        store.session.close()
+        controller.engine.run(datetime(2006, 12, 2), forecast.id)
+        # Allow main thread to wait until other threads triggered by
+        # workflow complete for 200 seconds maximum
+        for i in range(50):
+            forecast_status = store.session.query(Forecast).first().\
+                status.state
+            statuses = store.session.query(Status).all()
+            store.session.close()
+            self.assertNotEqual(forecast_status, EStatus.ERROR)
+            if forecast_status == EStatus.COMPLETE:
+                break
+                time.sleep(1)
+            time.sleep(2)
+
+        # Check pyqtsignals that were produced
+        signal_list = mock_signal.emit.call_args_list
+        self.assertEqual(len(signal_list), 5)
+        for i, call_tuple in enumerate(signal_list):
+            prefect_status = call_tuple[0][0][0]
+            parent_type = call_tuple[0][0][1]
+            if i in [0, 1, 2, 3]:
+                self.assertEqual(prefect_status.message, "Task run succeeded.")
+                self.assertTrue(prefect_status.is_successful())
+                self.assertEqual(parent_type, type(SeismicityModelRun()))
+            elif i == 4:
+                self.assertEqual(parent_type, type(ForecastScenario()))
+                self.assertEqual(prefect_status, EStatus.RUNNING)
+
+        # Check data send to remote worker
+        posted_data = mock_post.call_args_list[0][1]['data']
+        posted_data2 = mock_post.call_args_list[1][1]['data']
+
+        posted_items1 = seperate_floats(posted_data)
+        posted_items2 = seperate_floats(posted_data2)
+
+        with open(os.path.join(dirpath, JSON_POSTED_DATA1), 'r') as json_d:
+            json_data = json.load(json_d)
+        comparison_items1 = seperate_floats(json_data)
+        with open(os.path.join(dirpath, JSON_POSTED_DATA2), 'r') as json_d:
+            json_data2 = json.load(json_d)
+        comparison_items2 = seperate_floats(json_data2)
+
+        if (json.loads(posted_data)["data"]["attributes"]["model_parameters"]
+                ["em1_training_epoch_duration"] == 86400):
+            assert_all_close(comparison_items1, posted_items1)
+            assert_all_close(comparison_items2, posted_items2)
+        else:
+            assert_all_close(comparison_items1, posted_items2)
+            assert_all_close(comparison_items2, posted_items1)
+
+        # Check that forecast, scenario and model runs all have completed
+        non_stage_statuses = store.session.query(Status).\
+            filter(Status.stage_id is None).all()
+        self.assertTrue(
+            all([s.state == EStatus.COMPLETE
+                 for s in non_stage_statuses]))
+        # Check that the seismicity stage has completed.
+        forecast = store.session.query(Forecast).first()
+        stage = forecast.scenarios[0][EStage.SEISMICITY]
+        self.assertEqual(stage.status.state, EStatus.COMPLETE)
+
+        # Check number of catalogs produced in total
+        results = [run.result for run in stage.runs]
+        self.assertEqual(len(results), 2)
+        bins_nested = [res.catalogs for res in results]
+        bins = [item for sublist in bins_nested for item in sublist]
+
+        self.assertEqual(len(bins), 2)
+
+        # Check the content of the results
+        self.assertEqual(results[0].x_min, X_MIN)
+        self.assertEqual(results[0].x_max, X_MAX)
+        self.assertEqual(results[0].y_min, Y_MIN)
+        self.assertEqual(results[0].y_max, Y_MAX)
+        self.assertEqual(results[0].z_min, Z_MIN)
+        self.assertEqual(results[0].z_max, Z_MAX)
+
+        bin_starttimes = [item.starttime for item in bins]
+        self.assertEqual(sorted(bin_starttimes), [
+            datetime(2015, 5, 7),
+            datetime(2015, 5, 7)])
+
+        bin_endtimes = [item.endtime for item in bins]
+        self.assertEqual(sorted(bin_endtimes), [
+            datetime(2015, 5, 7, 4),
+            datetime(2015, 5, 7, 4)])
+
+        self.assertEqual(len(bins[0].events), 1982)
+        self.assertAlmostEqual(bins[0].events[1].x_value, -287673.31920465664)
+        self.assertAlmostEqual(bins[0].events[187].y_value, 4092199.257186631)
+        self.assertEqual(bins[0].events[187].magnitude_value, 0.9)
 
         statuses = store.session.query(Status).all()
         store.session.remove()
