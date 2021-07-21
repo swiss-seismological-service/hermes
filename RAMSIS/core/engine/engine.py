@@ -203,6 +203,7 @@ def scenario_for_hazard(scenario_id, session):
                 SeismicityForecastStage)).\
             subqueryload(SeismicityForecastStage.runs).\
             subqueryload(SeismicityModelRun.result).\
+            subqueryload(ReservoirSeismicityPrediction.catalogs).\
             subqueryload(ReservoirSeismicityPrediction.samples)).\
         options(
             # Load models from seismicity stage
@@ -242,6 +243,7 @@ class ForecastFlow(QObject):
     A flow is created for every forecast that is run by the
     engine.
     """
+
     def __init__(self, forecast, system_time, forecast_handler):
         super().__init__()
         self.forecast_handler = forecast_handler
@@ -327,6 +329,7 @@ class HazardPreparationFlow(QObject):
     A flow is created for every forecast that is run by the
     engine.
     """
+
     def __init__(self, scenario, hazard_handler, data_dir):
         super().__init__()
         self.hazard_handler = hazard_handler
@@ -380,6 +383,7 @@ class HazardFlow(QObject):
     A flow is created for every forecast that is run by the
     engine.
     """
+
     def __init__(self, scenario, hazard_handler, data_dir):
         super().__init__()
         self.hazard_handler = hazard_handler

@@ -184,7 +184,7 @@ class QuakeMLObservationCatalogDeserializer(QuakeMLCatalogDeserializer):
 
 class QuakeMLForecastCatalogDeserializer(QuakeMLCatalogDeserializer):
 
-    def _deserialize(self, data):
+    def _deserialize(self, data, **kwargs):
         """
         Deserialize `QuakeML <https://quake.ethz.ch/quakeml/>`_ data into an
         RT-RAMSIS seismic catalog.
@@ -203,12 +203,13 @@ class QuakeMLForecastCatalogDeserializer(QuakeMLCatalogDeserializer):
 
         return SeismicCatalogPredictionBin(
             creationinfo_creationtime=datetime.datetime.utcnow(),
-            events=[e for e in self._get_events(io.BytesIO(data))])
+            events=[e for e in self._get_events(io.BytesIO(data))], **kwargs)
 
-    def _loado(self, data):
+    def _loado(self, data, **kwargs):
         return SeismicCatalogPredictionBin(
             creationinfo_creationtime=datetime.datetime.utcnow(),
-            events=[e for e in self._get_events(data, parser=etree.iterwalk)])
+            events=[e for e in self._get_events(data, parser=etree.iterwalk)],
+            **kwargs)
 
 
 class QuakeMLCatalogSerializer(SerializerBase, IOBase):

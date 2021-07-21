@@ -10,7 +10,8 @@ from osgeo import gdal
 
 from ramsis.datamodel.seismicity import (ReservoirSeismicityPrediction,
                                          SeismicityPredictionBin)
-from RAMSIS.io.seismics import QuakeMLCatalogSerializer
+from RAMSIS.io.seismics import (QuakeMLCatalogSerializer,
+                                QuakeMLForecastCatalogDeserializer)
 from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsSerializer
 from RAMSIS.io.utils import (SerializerBase, DeserializerBase, IOBase,
                              _IOError, DateTime, TransformationError,
@@ -105,10 +106,33 @@ class _SeismicCatalogSchema(_SchemaBase):
 
 
 class _SeismicForecastCatalogSchema(_SeismicCatalogSchema):
+    """
+    Schema representation for a Seismic Forecast Catalog.
+    """
+    starttime = DateTime(required=True)
+    endtime = DateTime(required=True)
+
     @pre_load
     def normalize_datetime(self, data, **kwargs):
         data = self._append_zero_milliseconds(data)
         return self._flatten_dict(data)
+
+    @post_load
+    def make_object(self, data, **kwargs):
+        if 'quakeml' in data:
+
+            data['quakeml'] = base64.b64decode(
+                data['quakeml'].encode('utf8')).decode('utf8')
+
+            data = QuakeMLForecastCatalogDeserializer(
+                transform_func_name=self.context.get('transform_func_name'),
+                ramsis_proj=self.context.get('ramsis_proj'),
+                external_proj=self.context.get('external_proj'),
+                ref_easting=self.context.get('ref_easting'),
+                ref_northing=self.context.get('ref_northing')).\
+                loads(data.pop('quakeml'), **data)
+
+        return data
 
 
 class _ModelResultSampleSchema(_SchemaBase):

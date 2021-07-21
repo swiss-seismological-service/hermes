@@ -155,14 +155,14 @@ class DeserializerBase(abc.ABC):
         """
         return self._deserialize(ifd.read())
 
-    def loads(self, data):
+    def loads(self, data, **kwargs):
         """
         Deserialize :code:`data` from string.
 
         :param data: Data to be deserialized.
         :type data: str or bytes
         """
-        return self._deserialize(data)
+        return self._deserialize(data, **kwargs)
 
     def _loado(self, data, **kwargs):
         """
