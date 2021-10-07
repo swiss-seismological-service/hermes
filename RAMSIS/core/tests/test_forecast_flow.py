@@ -65,7 +65,7 @@ from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
 
 dirpath = os.path.dirname(os.path.abspath(__file__))
 
-RAMSIS_PROJ = ("+proj=utm +zone=32N +ellps=WGS84 +datum=WGS84 +units=m "
+RAMSIS_PROJ = ("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m "
                "+x_0=0.0 +y_0=0.0 +no_defs")
 WGS84_PROJ = "epsg:4326"
 REFERENCE_X = 681922

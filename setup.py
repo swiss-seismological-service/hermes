@@ -37,10 +37,9 @@ _install_requires = [
     "GDAL",
     "lxml>=3.3.3",
     "matplotlib",
-    "marshmallow==3.0.0rc8",
-    # TODO (damb): check if valid version: "numpy==1.8.2",
-    "numpy>=1.8.2",
-    "obspy==1.1.0",
+    "marshmallow==3.13.0",
+    "numpy>=1.21.2",
+    "obspy==1.2.2",
     "PyOpenGL>=3.1.1a1",
     "PyQt5 >=5.12, <5.13",
     "pymap3d",
@@ -51,11 +50,11 @@ _install_requires = [
     "requests>=2.18.4",
     "transitions==0.6.9",
     "prefect[viz]",
-    "pyproj==2.3.0",
+    "pyproj==3.2.1",
     "psycopg2==2.8.3",
     "jinja2",
     "xmltodict",
-    "sqlalchemy==1.3.13"]
+    "sqlalchemy==1.4"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",
