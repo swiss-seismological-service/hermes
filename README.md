@@ -315,7 +315,7 @@ $ ramsis -h
 `PATH_THIRD` are used. Adjust the corresponding values according to your needs.
 
 Set up the RAMSIS config
-* Open $PATH_PROJECTS/config/ramsis_config.yml
+* Copy $PATH_PROJECTS/config/ramsis_config_public.yml to $PATH_PROJECTS/config/ramsis_config.yml and open the newly created file.
 * update name of the db (any name), port (same as setup in docker), password (same as setup for docker), user (postgres user as setup for docker)
 
 Copy config to location that it will be looked for by Flask

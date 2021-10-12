@@ -46,7 +46,7 @@ _install_requires = [
     "pyqtgraph==0.10.0",
     "python-dateutil>=2.8.0",
     "PyYAML>=5.1.1",
-    "ramsis.datamodel==0.3rc1",
+    "ramsis.datamodel==0.4",
     "requests>=2.18.4",
     "transitions==0.6.9",
     "prefect[viz]",
