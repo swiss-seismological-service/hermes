@@ -10,11 +10,11 @@ import requests
 from PyQt5 import QtCore
 
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
-from RAMSIS.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
+from ramsis.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSJSONIOError)
-from RAMSIS.io.seismics import (QuakeMLObservationCatalogDeserializer,
+from ramsis.io.seismics import (QuakeMLObservationCatalogDeserializer,
                                 QuakeMLCatalogIOError)
-from RAMSIS.io.utils import (binary_request,
+from ramsis.io.utils import (binary_request,
                              NoContent, RequestsError)
 
 

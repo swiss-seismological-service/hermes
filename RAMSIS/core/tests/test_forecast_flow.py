@@ -60,8 +60,8 @@ from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from RAMSIS.core.controller import Controller, LaunchMode
 from RAMSIS.core.store import Store
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 
 dirpath = os.path.dirname(os.path.abspath(__file__))
 
@@ -512,11 +512,11 @@ def signal_factory():
 class IntegrationTestCase(unittest.TestCase):
     # The default user and password are added by default from the
     # kartoza/postgis image
-    DEFAULT_USER = 'docker'
+    DEFAULT_USER = 'ramsis'
     DEFAULT_HOST = 'localhost'
-    DEFAULT_PASSWORD = 'docker'
-    DEFAULT_PORT = 5434
-    DEFAULT_DBNAME = 'postgres'
+    DEFAULT_PASSWORD = 'ramsis'
+    DEFAULT_PORT = 25432
+    DEFAULT_DBNAME = 'ramsis'
     TEST_DBNAME = 'test'
     TEST_USER = 'test'
     TEST_PASSWORD = 'test'

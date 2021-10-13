@@ -11,10 +11,10 @@ from sqlalchemy.orm.exc import DetachedInstanceError
 import prefect
 from prefect.engine.signals import FAIL, LOOP
 from prefect import task, Task
-from RAMSIS.io.sfm import OQGeomSerializer
-from RAMSIS.io.oq_hazard import OQHazardOMessageDeserializer, \
+from ramsis.io.sfm import OQGeomSerializer
+from ramsis.io.oq_hazard import OQHazardOMessageDeserializer, \
     OQHazardResultsListDeserializer
-from RAMSIS.io.utils import TransformationError
+from ramsis.io.utils import TransformationError
 from RAMSIS.core.worker.oq_hazard import OQHazardWorkerHandle
 from ramsis.datamodel.forecast import EStage
 from ramsis.datamodel.status import EStatus, Status

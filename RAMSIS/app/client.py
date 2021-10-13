@@ -36,9 +36,9 @@ from ramsis.utils.error import Error, ExitCode
 from RAMSIS import __version__
 from RAMSIS.core.worker import WorkerHandle, EWorkerHandle
 from RAMSIS.core.worker.sfm import KEY_DATA, RemoteSeismicityWorkerHandle
-from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.sfm import SFMWorkerOMessageDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.sfm import SFMWorkerOMessageDeserializer
 
 
 TIMEOUT_POLLING = 60

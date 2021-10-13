@@ -27,8 +27,8 @@ from ramsis.datamodel.model import EModel  # noqa
 from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from RAMSIS.core.store import Store
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 
 DIRPATH = os.path.dirname(os.path.abspath(__file__))
 DIR_HYDRAULICS = "hyd"

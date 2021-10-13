@@ -23,7 +23,7 @@ from ramsis.datamodel.seismicity import SeismicityModelRun  # noqa
 from ramsis.datamodel.status import Status  # noqa
 from ramsis.utils.app import CustomParser, AppError
 from ramsis.utils.error import ExitCode
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 
 
 def url(url):
