@@ -14,8 +14,8 @@ from ramsis.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSJSONIOError)
 from ramsis.io.seismics import (QuakeMLObservationCatalogDeserializer,
                                 QuakeMLCatalogIOError)
-from ramsis.io.utils import (binary_request,
-                             NoContent, RequestsError)
+from ramsis.utils.clients import (binary_request,
+                                  NoContent, RequestsError)
 
 
 class HYDWSDataSource(QtCore.QThread):
