@@ -59,8 +59,8 @@ from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from RAMSIS.core.controller import Controller, LaunchMode
 from RAMSIS.core.store import Store
-from RAMSIS.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from RAMSIS.io.seismics import QuakeMLObservationCatalogDeserializer
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 
 PATH_SEISMICS = 'catalog_data/seismics.qml'
 # Only ~this many files can be imported and merged before
@@ -618,7 +618,7 @@ class IntegrationTestCase(unittest.TestCase):
                 side_effect=mocked_requests_get)
     @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
                 side_effect=mocked_requests_post_init1.mocked_requests_post)
-    @mock.patch('RAMSIS.io.oq_hazard.'
+    @mock.patch('ramsis.io.oq_hazard.'
                 'OQHazardOMessageDeserializer._read_ziparchive',
                 side_effect=zipfile_archive)
     def test_successful_hazard_flow_simple(self,
@@ -737,7 +737,7 @@ class IntegrationTestCase(unittest.TestCase):
                 side_effect=mocked_requests_get)
     @mock.patch('RAMSIS.core.worker.oq_hazard.requests.post',
                 side_effect=mocked_requests_post_init2.mocked_requests_post)
-    @mock.patch('RAMSIS.io.oq_hazard.'
+    @mock.patch('ramsis.io.oq_hazard.'
                 'OQHazardOMessageDeserializer._read_ziparchive',
                 side_effect=zipfile_archive)
     def test_successful_hazard_flow_geopoints(

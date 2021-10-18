@@ -117,7 +117,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 :py:class:`requests.Response`
             :param deserializer: Deserializer used. The deserializer must be
                 configured to deserialize *many* values.
-            :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+            :type deserializer: :py:class:`ramsis.io.DeserializerBase` or None
             """
             def _json(resp):
                 """
@@ -266,7 +266,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             deserialization.  If :code:`None` no deserialization is performed
             at all. The deserializer must be configured to deserialize *many*
             values.
-        :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+        :type deserializer: :py:class:`ramsis.io.DeserializerBase` or None
         """
         if not task_ids:
             self.logger.debug(

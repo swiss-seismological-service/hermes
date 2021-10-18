@@ -115,7 +115,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
                 :py:class:`requests.Response`
             :param deserializer: Deserializer used. The deserializer must be
                 configured to deserialize *many* values.
-            :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+            :type deserializer: :py:class:`ramsis.io.DeserializerBase` or None
             """
             def _json(resp):
                 """
@@ -279,7 +279,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             deserialization.  If :code:`None` no deserialization is performed
             at all. The deserializer must be configured to deserialize *many*
             values.
-        :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+        :type deserializer: :py:class:`ramsis.io.DeserializerBase` or None
         """
         query_url = f'{self.PATH_RESULTS_RUN}'.format(task_id)
         url = f'{self.url}{query_url}'
@@ -308,7 +308,7 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             deserialization.  If :code:`None` no deserialization is performed
             at all. The deserializer must be configured to deserialize *many*
             values.
-        :type deserializer: :py:class:`RAMSIS.io.DeserializerBase` or None
+        :type deserializer: :py:class:`ramsis.io.DeserializerBase` or None
         """
         url = result_dict['url']
         htype = result_dict['type']

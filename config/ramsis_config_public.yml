@@ -17,7 +17,7 @@ database:
   name: ramsis
   password: ramsis
   url: postgresql://localhost:5432
-  user: ramsis
+  user: postgres
 
 # simulation settings
 simulation:

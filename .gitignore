@@ -9,7 +9,7 @@
 
 # Other
 images_rc.py
-
+ramsis_config.yml
 
 ## Development Tools
 
@@ -28,7 +28,7 @@ doc/_build
 
 # Virtual environment
 venv*
-
+env/
 
 ## OS specific files
 

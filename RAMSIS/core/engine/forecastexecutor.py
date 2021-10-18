@@ -33,7 +33,7 @@ from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.forecast import EStage
 
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
-from RAMSIS.io.sfm import (SFMWorkerIMessageSerializer,
+from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
 log = logging.getLogger(__name__)

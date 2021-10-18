@@ -17,9 +17,9 @@ from ramsis.datamodel import HazardModel
 from ramsis.datamodel.well import InjectionWell
 
 from ramsis.datamodel.model import EModel
-from RAMSIS.io.hydraulics import (
+from ramsis.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
-from RAMSIS.io.sfm import _ReservoirSchema
+from ramsis.io.sfm import _ReservoirSchema
 from RAMSIS.ui.utils import UiForm
 
 
