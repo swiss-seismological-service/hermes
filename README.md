@@ -322,7 +322,7 @@ Copy config to location that it will be looked for by Flask
 (This SED path name is defined as an app property)
 ```
 mkdir -p $HOME/.config/SED/Ramsis
-ln -s $PATH_PROJECTS/config/ramsis_config.yml $HOME/.config/SED/Ramsis/settings.yml
+ln -s $PATH_PROJECTS/config/ramsis_config_public.yml $HOME/.config/SED/Ramsis/settings.yml
 ```
 
 
