@@ -1,5 +1,5 @@
 """
-Bootstrap the Bedretto 2020 Jan/Feb data projects
+Bootstrap the Bedretto 2020 Nov data projects
 """
 import os
 from os.path import join
@@ -34,71 +34,40 @@ DIRPATH = os.path.dirname(os.path.abspath(__file__))
 DIR_HYDRAULICS = "hyd"
 
 DIR_SEISMICS = "seismics"
-PATH_SEISMICS = 'Bedretto_test_seismic_catalog.xml'
-PATH_HYDRAULICS_1 = \
-    "ben_dyer_cb1_minute_sampled_20200205110837_20200206104800_193.22m.json"
+PATH_SEISMICS = "catalog_em1.qml"
 
-PATH_SCENARIO = "scenario_antonio_2L.json"
-PROJECT_STARTTIME_1 = datetime(2020, 2, 5, 11, 0)
-PROJECT_ENDTIME_1 = datetime(2020, 2, 6, 11, 0)
+PATH_SCENARIO = "scenario_st2_section_5_20.json"
+PROJECT_STARTTIME_1 = datetime(2020, 11, 24, 13, 0)
+PROJECT_ENDTIME_1 = datetime(2020, 11, 26, 0, 0)
 
-FORECAST_STARTTIME_1 = datetime(2020, 2, 5, 19, 0)
-FORECAST_ENDTIME_1 = datetime(2020, 2, 6, 10, 48)
-
-PATH_HYDRAULICS_2 = \
-    "ben_dyer_cb1_minute_sampled_20200206115312_20200207101100_176.78m.json"
-
-PROJECT_STARTTIME_2 = datetime(2020, 2, 6, 11, 50)
-PROJECT_ENDTIME_2 = datetime(2020, 2, 9, 10, 11)
-
-FORECAST_STARTTIME_2 = datetime(2020, 2, 6, 20, 0)
-FORECAST_ENDTIME_2 = datetime(2020, 2, 7, 22, 1)
+FORECAST_STARTTIME_1 = datetime(2020, 11, 25, 4, 0)
+FORECAST_ENDTIME_1 = datetime(2020, 11, 25, 22, 50)
 
 # autopep8: off
-RESERVOIR = {
-    "x": [-300., -290., -280., -270., -260., -250., -240., -230., -220., # noqa
-          -210., -200., -190., -180., -170., -160., -150., -140., -130., # noqa
-          -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40., # noqa
-           -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50., # noqa
-            60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140., # noqa
-           150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230., # noqa
-           240.,  250.,  260.,  270.,  280.,  290.,  300.], # noqa
-    "y": [-300., -290., -280., -270., -260., -250., -240., -230., -220., # noqa
-          -210., -200., -190., -180., -170., -160., -150., -140., -130., # noqa
-          -120., -110., -100.,  -90.,  -80.,  -70.,  -60.,  -50.,  -40., # noqa
-           -30.,  -20.,  -10.,    0.,   10.,   20.,   30.,   40.,   50., # noqa
-            60.,   70.,   80.,   90.,  100.,  110.,  120.,  130.,  140., # noqa
-           150.,  160.,  170.,  180.,  190.,  200.,  210.,  220.,  230., # noqa
-           240.,  250.,  260.,  270.,  280.,  290.,  300.], # noqa
-     "z": [1185, 1195, 1205, 1215, 1225, 1235, 1245, 1255, 1265, 1275, 1285, # noqa
-           1295, 1305, 1315, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, # noqa
-           1405, 1415, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1505, # noqa
-           1515, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1605, 1615, # noqa
-           1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1705, 1715, 1725, # noqa
-           1735, 1745, 1755, 1765, 1775, 1785]} # noqa
+
+RESERVOIR = {"x": [2679355.36334284, 2679655.36334284],
+             "y": [1151313.82210478, 1151613.82210478],
+             "z": [1122.33103153, 1422.33103153]}
+
 # autopep8: on
 
-RAMSIS_PROJ = ("+proj=somerc +lat_0=46.95240555555556 "
-               "+lon_0=7.439583333333333 +k_0=1 +x_0=2600000 "
-               "+y_0=1200000 +ellps=bessel "
-               "+towgs84=674.374,15.056,405.346,0,0,0,0 "
-               "+units=m +no_defs")
-
+RAMSIS_PROJ = "epsg:2056"
 WGS84_PROJ = "epsg:4326"
-REFERENCE_X = 2679720.70
-REFERENCE_Y = 1151600.13
+# use the 0 point of the swiss grid as the reference point.
+REFERENCE_X = 0.0
+REFERENCE_Y = 0.0
 
 
 def create_models():
     path_templates = "/home/sarsonl/repos/em1/rt-ramsis/oq_templates_bootstrap"
-    URL_EM1 = 'http://ramsis-em1'
-    URL_HM1 = 'http://ramsiswin.ethz.ch:5007'
-    EM1_SFMWID = 'EM1'
-    HM1_SFMWID = 'HM1'
-    HOUR_IN_SECS = 3600
-    DAY_IN_SECS = 86400
-    HIGH_EVENT_THRESH = 100
-    LOW_EVENT_THRESH = 10
+    URL_EM1 = "http://localhost:5000"#'http://ramsis-em1'
+    MODEL_PARAMS = {"Tau": 60, "dM": 0.02, "Mc": None,
+                    "tau_force": False, "mode": "MLE", "Nsim": 100}
+    WRAPPER_PARAMS = {"well_section_publicid": "smi:ch.ethz.sed/bh/ST2/section_05_20",
+            "reference_point": [2679505.3633428435, 1151463.8221047814, 1272.33103152695]}
+    CONFIG = {"model_parameters": MODEL_PARAMS, "wrapper_parameters": WRAPPER_PARAMS }
+    EM1_SFMWID = 'em1'
+
     SEISMICITY_MODEL_TEMPLATE = \
         f"{path_templates}/single_reservoir_seismicity_template.xml"
 
@@ -107,139 +76,14 @@ def create_models():
     # maximum length of time possible from data provided, which is the time
     # between first and last hydraulic sample with with positive topflow.
 
-    base_config = {"em1_training_events_threshold": LOW_EVENT_THRESH,
-                   "em1_training_magnitude_bin": 0.1,
-                   "em1_threshold_magnitude": 0}
-
     retval = []
 
     m = SeismicityModel(
-        name='EM1-Full-Training-Low-Event-Threshold',
-        config=base_config,
+        name='EM1-MLE',
+        config=CONFIG,
         sfmwid=EM1_SFMWID,
         enabled=True,
         url=URL_EM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='EM1-Hour-Moving-Window-Low-Event-Threshold',
-        config={**base_config,
-                **{"em1_training_epoch_duration": HOUR_IN_SECS}},
-        sfmwid=EM1_SFMWID,
-        enabled=False,
-        url=URL_EM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='EM1-Day-Moving-Window-Low-Event-Threshold',
-        config={**base_config,
-                **{"em1_training_epoch_duration": DAY_IN_SECS}},
-        sfmwid=EM1_SFMWID,
-        enabled=True,
-        url=URL_EM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='EM1-Full-Training-High-Event-Threshold',
-        config={**base_config,
-                **{"em1_training_events_threshold": HIGH_EVENT_THRESH}},
-        sfmwid=EM1_SFMWID,
-        enabled=False,
-        url=URL_EM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='EM1-Hour-Moving-Window-High-Event-Threshold',
-        config={**base_config,
-                **{"em1_training_epoch_duration": HOUR_IN_SECS,
-                   "em1_training_events_threshold": HIGH_EVENT_THRESH}},
-        sfmwid=EM1_SFMWID,
-        enabled=False,
-        url=URL_EM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='EM1-Day-Moving-Window-High-Event-Threshold',
-        config={**base_config,
-                **{"em1_training_epoch_duration": DAY_IN_SECS,
-                   "em1_training_events_threshold": HIGH_EVENT_THRESH}},
-        sfmwid=EM1_SFMWID,
-        enabled=False,
-        url=URL_EM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='HM1-default-config',
-        config={"hm1_test_mode": False,
-                "hm1_training_epoch_duration": 3600,
-                "hm1_training_magnitude_bin": 0.1,
-                "hm1_training_events_threshold": 5,
-                "hm1_max_iterations": -1
-                },
-        sfmwid=HM1_SFMWID,
-        enabled=False,
-        url=URL_HM1,
-        seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
-    retval.append(m)
-
-    m = SeismicityModel(
-        name='HM1-full_bedretto_config',
-        config={"hm1_test_mode": False,
-                "hm1_training_epoch_duration": 180,
-                "hm1_training_magnitude_bin": 0.01,
-                "hm1_training_events_threshold": 5,
-                "hm1_max_iterations": -1,
-                "hm1_seed_settings": {
-                    "slope_sigma1": 0.0,
-                    "slope_sigma3": 0.0,
-                    "sigma1_std": 20,  # optimized
-                    "sigma3_std": 0,
-                    "fluid_density": 985,
-                    "gravity": 0,
-                    "inter_sigma1": 22.5,
-                    "inter_sigma3": 10,
-                    "b_vs_depth_range": True,
-                    "min_failure_pressure": 15,  # optimized
-                    "stressdrop_coeff": 1.,  # optimized
-                    "cohesion_mean": 0,
-                    "friction_mean": 0.6,
-                    "PoissonDensity": 1.e-6},  # optimized
-                "hm1_external_solution_settings": {
-                    # CAPS: Order of columns for numpy array pressure,
-                    # time, coordinates (1 in 1D)
-                    "FileCols": [2, 0, 1],
-                    # CAPS: Coefficients of pressure, time, coordinates
-                    "FileConvs": [1.e-6, 24. * 3600., 1.],
-                    # CAPS: Number of lines to skip when reading Tecplot files
-                    "SkipLines": 6,
-                    # HM1 properties
-                    # extent of stimulation area
-                    "fraction_seismic_cloud": 2.5,
-                    "borehole_storage_coefficient": 0.002,
-                    "borehole_transmissivity": 1000,
-                    "initial_storage_coeff": 0.002,
-                    "initial_transmissivity": 5.E-07,
-                    # Input to Dieter's HM1 code as a parameter
-                    # The smaller the time step, the more rapidly
-                    # the adaption of the
-                    # calibration parameters.
-                    "deltat": 10,
-                    # HM1 mesh geometry
-                    "mesh_extent": 300,
-                    "alfa_rate_of_growth": 2,
-                    "size_first_element": 0.02},
-                "hm1_caps_kd_settings": {
-                    "RefinementRatio": 2,
-                    "EnableScrOutput": False}},
-        sfmwid=HM1_SFMWID,
-        enabled=True,
-        url=URL_HM1,
         seismicitymodeltemplate=SEISMICITY_MODEL_TEMPLATE)
     retval.append(m)
 
@@ -256,8 +100,7 @@ def create_models():
 
     return retval
 
-
-def create_bedretto_5_6_feb_project(store):
+def create_bedretto_25_nov_project(store):
     # FIXME(damb): TheV project and deserializers are configured without any
     # srid. As a consequence, no transformation is performed when importing
     # data.
@@ -275,31 +118,25 @@ def create_bedretto_5_6_feb_project(store):
 
     # create project
     project_1 = default_project(
-        name='Bedretto 2020 5th-6th Feb',
-        description='Bedretto project 5th-6th Feb',
+        name='Bedretto 2020 25th Nov',
+        description='Bedretto project 25th Nov',
         starttime=PROJECT_STARTTIME_1,
         endtime=PROJECT_ENDTIME_1,
-        spatialreference=RAMSIS_PROJ,
+        proj_string=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
-    # import the rest of hydraulics
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    print("reading: ", PATH_HYDRAULICS_1)
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_1), 'rb') as ifd:
-        well_1 = deserializer.load(ifd)
     project_1.seismiccatalog = cat
-    project_1.well = well_1
     store.add(project_1)
 
     store.save()
+    project_1.settings['hydws_enable'] = True
+    project_1.settings['hydws_url'] = "http://inducat.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMg==?level=hydraulic"
 
+    project_1.settings['fdsnws_enable'] = True
+    project_1.settings['fdsnws_url'] = "http://inducat.ethz.ch:8081/fdsnws/event/1/query?contributor=GES202111"
+    project_1.settings.commit()
+    store.save()
     # create forecast
     fc_1 = default_forecast(store, starttime=FORECAST_STARTTIME_1,
                             endtime=FORECAST_ENDTIME_1,
@@ -308,10 +145,10 @@ def create_bedretto_5_6_feb_project(store):
 
     # add exemplary scenario
     fc_1.project = project_1
-    scenario_1 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
+    scenario_1 = default_scenario(store, name='Bedretto Scenario 1, 30 mins')
     fc_1.scenarios = [scenario_1]
     seismicity_stage = scenario_1[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 3600}
+    seismicity_stage.config = {'epoch_duration': 1800}
     scenario_1.reservoirgeom = RESERVOIR
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=RAMSIS_PROJ,
@@ -324,83 +161,10 @@ def create_bedretto_5_6_feb_project(store):
     hazard_stage = scenario_1[EStage.HAZARD]
     hazard_models = store.load_models(model_type=EModel.HAZARD)
     hazard_stage.model = hazard_models[0]
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_1), 'rb') as ifd:
+    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_SCENARIO), 'rb') as ifd:
         scenario_1.well = deserializer.load(ifd)
     store.add(fc_1)
     store.add(scenario_1)
-
-
-def create_bedretto_6_7_feb_project(store):
-    # FIXME(damb): TheV project and deserializers are configured without any
-    # srid. As a consequence, no transformation is performed when importing
-    # data.
-
-    # import seismic catalog
-    deserializer = QuakeMLObservationCatalogDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    with open(join(DIRPATH, DIR_SEISMICS, PATH_SEISMICS), 'rb') as ifd:
-        cat2 = deserializer.load(ifd)
-
-    # create project
-    project_2 = default_project(
-        name='Bedretto 2020 6th-7th Feb',
-        description='Bedretto project 6th-7th Feb',
-        starttime=PROJECT_STARTTIME_2,
-        endtime=PROJECT_ENDTIME_2,
-        spatialreference=RAMSIS_PROJ,
-        referencepoint_x=REFERENCE_X,
-        referencepoint_y=REFERENCE_Y)
-
-    # import the rest of hydraulics
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords')
-
-    print("reading: ", PATH_HYDRAULICS_2)
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_HYDRAULICS_2), 'rb') as ifd:
-        well_2 = deserializer.load(ifd)
-    project_2.seismiccatalog = cat2
-    project_2.well = well_2
-    store.add(project_2)
-    store.save()
-
-    # create second forecast
-    fc_2 = default_forecast(store, starttime=FORECAST_STARTTIME_2,
-                            endtime=FORECAST_ENDTIME_2,
-                            num_scenarios=0,
-                            name='Bedretto Forecast default')
-
-    # add exemplary scenario
-    fc_2.project = project_2
-    scenario_2 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
-    fc_2.scenarios = [scenario_2]
-    seismicity_stage = scenario_2[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 3600}
-    scenario_2.reservoirgeom = RESERVOIR
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=RAMSIS_PROJ,
-        external_proj=WGS84_PROJ,
-        ref_easting=REFERENCE_X,
-        ref_northing=REFERENCE_Y,
-        transform_func_name='pyproj_transform_to_local_coords',
-        plan=True)
-
-    hazard_stage = scenario_2[EStage.HAZARD]
-    hazard_models = store.load_models(model_type=EModel.HAZARD)
-    hazard_stage.model = hazard_models[0]
-    with open(join(DIRPATH, DIR_HYDRAULICS, PATH_SCENARIO), 'rb') as ifd:
-        scenario_2.well = deserializer.load(ifd)
-    store.add(fc_2)
-    store.add(scenario_2)
-
 
 def parse_cli():
     parser = argparse.ArgumentParser()
@@ -425,10 +189,8 @@ if __name__ == '__main__':
 
     projects = store.session.query(Project).all()
     project_names = [p.name for p in projects]
-    assert 'Bedretto 2020 6th-7th Feb' not in project_names, \
-        "Project name already exists"
-    assert 'Bedretto 2020 5th-6th Feb' not in project_names, \
-        "Project name already exists"
+    #assert 'Bedretto 2020 25th Nov' not in project_names, \
+    #    "Project name already exists"
 
     # import first file in hydraulics list.
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
@@ -457,9 +219,7 @@ if __name__ == '__main__':
     print(f"The db now has {len(seis_models_db)} seismicity models configured"
           f" and {len(haz_models_db)} hazard models configured")
 
-    create_bedretto_5_6_feb_project(store)
-    print("created project for bedretto data 5-6th feb")
-    create_bedretto_6_7_feb_project(store)
-    print("created project for bedretto data 6-7th feb")
+    create_bedretto_25_nov_project(store)
+    print("created project")
     store.save()
     store.close()

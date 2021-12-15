@@ -154,7 +154,7 @@ class MainWindow(QMainWindow,
             self.app.ramsis_core.store,
             fc_duration=(fc.endtime - fc.starttime).total_seconds(),
             deserializer_args={
-                'ramsis_proj': self.app.ramsis_core.project.spatialreference,
+                'ramsis_proj': self.app.ramsis_core.project.proj_string,
                 'external_proj': self.app.ramsis_core.external_proj,
                 'ref_easting': self.app.ramsis_core.project.referencepoint_x,
                 'ref_northing': self.app.ramsis_core.project.referencepoint_y,

@@ -171,9 +171,14 @@ class ContentPresenter(object):
         """ Run a forecast on demand """
         # Also runs fetch_fdsn and fetch_hydws if configured to do so.
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
-        run_tasks = RunForecasts(self.ramsis_core, [forecast],
-                                 datetime.datetime.utcnow())
-        run_tasks.run()
+
+        forecast = self.ramsis_core.store.get_fresh(forecast)
+        # I don't think tasks should be run here anymore, have moved the data fetch tasks to within the forecast - If need to do separate data retrieval in future, design another way to execute this that doesn't involve starting forecasts as well.
+        #run_tasks = RunForecasts(self.ramsis_core, [forecast],
+        #                         forecast.starttime)#datetime.datetime.utcnow())
+        #print("running tasks from presenter")
+        #run_tasks.run()
+        print("running engine from presenter")
 
         self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast.id)
 
@@ -227,7 +232,7 @@ class ContentPresenter(object):
                     self.ramsis_core.store,
                     deserializer_args={
                         'ramsis_proj':
-                        self.ramsis_core.project.spatialreference,
+                        self.ramsis_core.project.proj_string,
                         'external_proj':
                         self.ramsis_core.external_proj,
                         'ref_easting':

@@ -50,7 +50,7 @@ _install_requires = [
     "requests>=2.18.4",
     "transitions==0.6.9",
     "prefect[viz]",
-    "pyproj==3.2.1",
+    "pyproj>=3.2.1",
     "psycopg2==2.8.3",
     "jinja2",
     "xmltodict",

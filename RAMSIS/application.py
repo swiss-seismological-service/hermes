@@ -120,8 +120,11 @@ class Application(QtCore.QObject):
         locations = QStandardPaths.\
             standardLocations(QStandardPaths.AppConfigLocation)
         paths = (os.path.join(loc, 'settings.yml') for loc in locations)
-        settings_file = next((p for p in paths if os.path.isfile(p)),
+        settings_file = next((p for p in paths if os.path.isfile(p) or
+                              os.path.islink(p)),
                              'settings.yml')
+        if os.path.islink(settings_file):
+            settings_file = os.readlink(settings_file)
         self.app_settings = AppSettings(settings_file)
         # Enable Ctrl-C
         signal.signal(signal.SIGINT, self._on_sigint)

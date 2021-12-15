@@ -260,7 +260,7 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
         description=proj_description,
         starttime=proj_startdate,
         endtime=proj_enddate,
-        spatialreference=RAMSIS_PROJ,
+        proj_string=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
@@ -288,7 +288,7 @@ def create_bedretto_nov_project(store, proj_name, proj_startdate,
         seismicity_stage = scenario_1[EStage.SEISMICITY]
         # have not decided what bin duration should be,
         # so set an hour as default
-        seismicity_stage.config = {'prediction_bin_duration': 3600}
+        seismicity_stage.config = {'epoch_duration': 3600}
         scenario_1.reservoirgeom = RESERVOIR
 
         hazard_stage = scenario_1[EStage.HAZARD]

@@ -165,15 +165,7 @@ class Controller(QtCore.QObject):
         self.project = project
 
         if self.launch_mode == LaunchMode.LAB:
-            try:
-                self.start_time_range = min(
-                    project.forecast_iter(),
-                    key=attrgetter('starttime')).starttime
-            except ValueError:
-                self._logger.warning(
-                    'No forecasts configured. Use project starttime: '
-                    f'{project.starttime}.')
-                self.start_time_range = project.starttime
+            self.start_time_range = project.starttime
             self.clock.reset(self.start_time_range)
         elif self.launch_mode == LaunchMode.REAL_TIME:
             # sarsonl perhaps update to get datetime from another source
@@ -182,7 +174,6 @@ class Controller(QtCore.QObject):
             self.clock.start_realtime(time_now)
             self.start_realtime(time_now)
         self.project_loaded.emit(project)
-        self._update_data_sources()
         self._logger.info('... done loading project')
 
     def close_project(self):
@@ -365,7 +356,8 @@ class Controller(QtCore.QObject):
     # TODO LH: this needs a trigger. It used to react to the settings_changed
     #   signal on project settings.
     def _on_project_settings_changed(self, _):
-        self._update_data_sources()
+        # In future reimplement data source update
+        pass  # self._update_data_sources()
 
     def _update_data_sources(self):
         try:

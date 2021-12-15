@@ -251,7 +251,7 @@ class ProjectSettingsWindow(SettingsWindow):
             AttrBinding(project, 'description', self.ui.descriptionEdit),
             AttrBinding(project, 'starttime', self.ui.projectStartEdit),
             AttrBinding(project, 'endtime', self.ui.projectEndEdit),
-            AttrBinding(project, 'spatialreference', self.ui.proj4Edit),
+            AttrBinding(project, 'proj_string', self.ui.proj4Edit),
             AttrBinding(project, 'referencepoint_x', self.ui.refXEdit),
             AttrBinding(project, 'referencepoint_y', self.ui.refYEdit),
             DictBinding(settings, 'fdsnws_enable', self.ui.enableFdsnCheckBox),

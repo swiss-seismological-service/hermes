@@ -64,16 +64,10 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     forecast model worker implementations (i.e. webservice implementations of
     scientific forecast models). Concrete implementations are intended to
     abstract the communication with their corresponding worker.
-
-    .. code::
-
-        class EM1WorkerHandle(SeismicityWorkerHandle):
-            MODEL_ID = 'EM1'
-            API_VERSION = 'v1'
-
     """
-    API_VERSION = 'v1'
-    PATH_RAMSIS_WORKER_SCENARIOS = '/runs'
+
+    URI_BASE = '/v1/sfm/models/'
+    URI_RUN = '/run'
 
     MIMETYPE = 'application/json'
     LOGGER = 'ramsis.core.worker.remote_seismicity_worker_handle'
@@ -228,9 +222,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         self._url_base = base_url
         self._model_id = model_id
 
-        self._url_path = ('/{version}/{model}'.format(
-            version=self.API_VERSION,
-            model=self._model_id) + self.PATH_RAMSIS_WORKER_SCENARIOS)
+        self._url_path = f"{self.URI_BASE}{self._model_id}{self.URI_RUN}"
 
         self._timeout = kwargs.get('timeout')
 
@@ -329,12 +321,15 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         headers = {'Content-Type': self.MIMETYPE,
                    'Accept': 'application/json'}
+        print("before req partial")
         req = functools.partial(
             requests.post, self.url, data=_payload, headers=headers,
             timeout=self._timeout)
+        print("before response")
         response = self._handle_exceptions(req)
 
         try:
+            print("before response json", type(response))
             result = response.json()
             if deserializer:
                 result = deserializer._loado(result)
@@ -413,7 +408,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     def validate_ctor_args(base_url, model_id):
         url = urlparse(base_url)
         if url.path or url.params or url.query or url.fragment:
-            raise ValueError(f"Invalid URL: {url!r}.")
+            print("Invalid url")
+            raise ValueError(f"Invalid URL: {url}.")
 
         if not model_id:
             raise ValueError("Missing: model id.")
