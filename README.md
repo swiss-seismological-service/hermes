@@ -180,7 +180,7 @@ This can be done on the command line on a linux machine:
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 chmod +x Miniconda3-latest-Linux-x86_64.sh
 ./Miniconda3-latest-Linux-x86_64.sh
-conda create -n ramsis python=3.6
+conda create -n ramsis python=3.8
 conda activate ramsis
 ```
 
