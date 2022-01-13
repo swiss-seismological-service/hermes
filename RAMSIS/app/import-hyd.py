@@ -150,7 +150,7 @@ class ImportHydApp:
                     'overwrite.')
 
             deserializer = HYDWSBoreholeHydraulicsDeserializer(
-                ramsis_proj=p.spatialreference,
+                ramsis_proj=p.proj_string,
                 external_proj=4326,
                 ref_easting=p.referencepoint_x,
                 ref_northing=p.referencepoint_y,
@@ -161,9 +161,9 @@ class ImportHydApp:
                 raise ImportHydAppError(f"Deserialization Error: {err!r}")
 
             p.well = bh
-
-            self.logger.debug('Number of hydraulic samples: '
-                              f'{len(bh.sections[0].hydraulics)}')
+            for section in bh.sections:
+                self.logger.debug('Number of hydraulic samples: '
+                                  f'{len(section.hydraulics)}')
             self.logger.info(f'Imported hydraulics {bh!r}.')
 
     def _setup_logger(self):

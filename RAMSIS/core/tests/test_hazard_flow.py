@@ -352,7 +352,7 @@ def insert_test_data(db_url):
         description='Basel Project 2006',
         starttime=PROJECT_STARTTIME,
         endtime=PROJECT_ENDTIME,
-        spatialreference=RAMSIS_PROJ,
+        proj_string=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
@@ -371,7 +371,7 @@ def insert_test_data(db_url):
     scenario = default_scenario(store, name='Basel Scenario')
     fc.scenarios = [scenario]
     seismicity_stage = scenario[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 21600}
+    seismicity_stage.config = {'epoch_duration': 21600}
     seismicity_stage.status.state = EStatus.COMPLETE
     risk_stage = scenario[EStage.RISK]
     risk_stage.enabled = False

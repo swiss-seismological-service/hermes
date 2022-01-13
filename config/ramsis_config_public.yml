@@ -14,10 +14,10 @@ launch_mode: 'lab'  # one of: 'lab', 'real-time'
 
 # Application DB connection information
 database:
-  name: ramsis
+  name: ramsis_res
   password: ramsis
-  url: postgresql://localhost:5432
-  user: postgres
+  url: postgresql://localhost:5433
+  user: ramsis
 
 # simulation settings
 simulation:

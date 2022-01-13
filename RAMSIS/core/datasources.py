@@ -21,6 +21,7 @@ from ramsis.utils.clients import (binary_request,
 class HYDWSDataSource(QtCore.QThread):
     """
     QThread fetching and deserializing data from *HYDWS*.
+    #changed from background thread to standard thread
     """
     DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
@@ -36,7 +37,7 @@ class HYDWSDataSource(QtCore.QThread):
         self.logger = logging.getLogger(__name__)
 
         self._deserializer = self.DESERIALZER(
-            ramsis_proj=project.spatialreference,
+            ramsis_proj=project.proj_string,
             external_proj=4326,
             ref_easting=project.referencepoint_x,
             ref_northing=project.referencepoint_y,
@@ -50,7 +51,8 @@ class HYDWSDataSource(QtCore.QThread):
         """
         self._args = kwargs
         if self.enabled:
-            self.start()
+            bh = self.run()
+        return bh
 
     def run(self):
         bh = None
@@ -79,7 +81,8 @@ class HYDWSDataSource(QtCore.QThread):
 
                 self.logger.info(msg)
 
-        self.data_received.emit(bh)
+        # self.data_received.emit(bh)
+        return bh
 
 
 class FDSNWSDataSource(QtCore.QThread):
@@ -101,7 +104,7 @@ class FDSNWSDataSource(QtCore.QThread):
         self.logger = logging.getLogger(__name__)
 
         self._deserializer = self.DESERIALZER(
-            ramsis_proj=project.spatialreference,
+            ramsis_proj=project.proj_string,
             external_proj=4326,
             ref_easting=project.referencepoint_x,
             ref_northing=project.referencepoint_y,
@@ -110,12 +113,14 @@ class FDSNWSDataSource(QtCore.QThread):
     def fetch(self, **kwargs):
         """
         Fetch data by means of a background-thread
+        #changed from background thread to standard thread
 
         :param kwargs: args dict forwarded to fdsnws-event
         """
         self._args = kwargs
         if self.enabled:
-            self.start()
+            cat = self.run()
+        return cat
 
     def run(self):
         cat = None
@@ -127,7 +132,6 @@ class FDSNWSDataSource(QtCore.QThread):
             with binary_request(
                 requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
-                print(ifd, type(ifd))
                 cat = self._deserializer.load(ifd)
 
         except NoContent:
@@ -140,4 +144,4 @@ class FDSNWSDataSource(QtCore.QThread):
             self.logger.info(
                 f"Received catalog with {len(cat)} events.")
 
-        self.data_received.emit(cat)
+        return cat

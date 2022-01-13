@@ -132,9 +132,9 @@ class ScenarioConfigDialog(
                 self.ui.predictionBinDurationDoubleSpinBox.setMaximum(
                     fc_duration)
 
-            if stage.config and 'prediction_bin_duration' in stage.config:
+            if stage.config and 'epoch_duration' in stage.config:
                 self.ui.predictionBinDurationDoubleSpinBox.setValue(
-                    stage.config['prediction_bin_duration'])
+                    stage.config['epoch_duration'])
 
             # configure seismicity models
 
@@ -343,7 +343,7 @@ class ScenarioConfigDialog(
         else:
             seismicity_stage.enabled = seismicity_stage_enabled
             seismicity_stage.config = {
-                'prediction_bin_duration':
+                'epoch_duration':
                 self.ui.predictionBinDurationDoubleSpinBox.value(), }
             cbox = self.ui.seismicityModelsComboBox
             seismicity_stage.runs = [cbox.itemData(i) for i

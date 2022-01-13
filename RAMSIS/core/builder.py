@@ -172,7 +172,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
 empty_forecast = functools.partial(default_forecast, None, num_scenarios=0)
 
 
-def default_project(spatialreference='', referencepoint_x=0,
+def default_project(proj_string='', referencepoint_x=0,
                     referencepoint_y=0, name='Project', description='',
                     starttime=datetime.datetime.utcnow(), endtime=None):
     """
@@ -186,7 +186,7 @@ def default_project(spatialreference='', referencepoint_x=0,
     :type endtime: :py:class:`datetime.datetime`
     """
     return Project(name=name, description=description, starttime=starttime,
-                   endtime=endtime, spatialreference=spatialreference,
+                   endtime=endtime, proj_string=proj_string,
                    referencepoint_x=referencepoint_x,
                    referencepoint_y=referencepoint_y,
                    creationinfo_creationtime=datetime.datetime.utcnow())

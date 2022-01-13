@@ -23,8 +23,8 @@ stage is managed by a respective StageExecutor class:
 """
 import json
 import time
-import copy
 import logging
+from datetime import datetime
 from prefect import task, Task
 import prefect
 from prefect.engine.signals import LOOP, FAIL
@@ -36,7 +36,82 @@ from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
+from RAMSIS.core.datasources import HYDWSDataSource, FDSNWSDataSource
 log = logging.getLogger(__name__)
+
+datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
+
+
+class UpdateFdsn(Task):
+
+    def fetch_fdsn(self, url, core, t):
+        """
+        FDSN task function
+
+        :param t: Current execution time
+        :type t: :py:class:`datetime.datetime`
+        :param last_run: Execution time of the previous execution
+        :type last_run: :py:class:`datetime.datetime`
+        """
+        logger = prefect.context.get('logger')
+        logger.info("Fetch fdsn called")
+        p = core.project
+        seismics_data_source = FDSNWSDataSource(
+            url, timeout=None, project=p)
+        seismics_data_source.enabled = True
+
+        cat = seismics_data_source.fetch(
+            starttime=datetime.strftime(p.starttime, datetime_format),
+            endtime=datetime.strftime(t, datetime_format))
+        seismics_data_source.wait()
+        return cat
+
+    def run(self, core, t):
+
+        fdsnws_enabled = core.project.settings['fdsnws_enable']
+        fdsnws_url = core.project.settings['fdsnws_url']
+        updated = False
+        cat = None
+        if fdsnws_enabled and fdsnws_url:
+            cat = self.fetch_fdsn(fdsnws_url, core, t)
+            updated = True
+        return cat, updated
+
+
+class UpdateHyd(Task):
+
+    def fetch_hyd(self, url, core, t):
+        """
+        HYDWS task function
+
+        :param t: Current execution time
+        :type t: :py:class:`datetime.datetime`
+        :param last_run: Execution time of the previous execution
+        :type last_run: :py:class:`datetime.datetime`
+        """
+        logger = prefect.context.get('logger')
+        logger.info("Fetch hydws called")
+        p = core.project
+        hydraulics_data_source = HYDWSDataSource(
+            url, timeout=None, project=p)
+        hydraulics_data_source.enabled = True
+
+        well = hydraulics_data_source.fetch(
+            starttime=datetime.strftime(p.starttime, datetime_format),
+            endtime=datetime.strftime(t, datetime_format),
+            level='hydraulic')
+        hydraulics_data_source.wait()
+        return well
+
+    def run(self, core, t):
+        hydws_enabled = core.project.settings['hydws_enable']
+        hydws_url = core.project.settings['hydws_url']
+        updated = False
+        well = None
+        if hydws_enabled and hydws_url:
+            well = self.fetch_hyd(hydws_url, core, t)
+            updated = True
+        return well, updated
 
 
 @task
@@ -201,7 +276,7 @@ class ForecastSerializeData(Task):
         seismiccatalog = forecast.seismiccatalog[0]
 
         serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj=project.spatialreference,
+            ramsis_proj=project.proj_string,
             external_proj="epsg:4326",
             ref_easting=project.referencepoint_x,
             ref_northing=project.referencepoint_y,
@@ -209,12 +284,9 @@ class ForecastSerializeData(Task):
         payload = {
             'data': {
                 'attributes': {
-                    'seismic_catalog': {'quakeml': seismiccatalog},
-                    'well': well,
-                    'spatialreference': project.spatialreference,
-                    'referencepoint': {
-                        'x': project.referencepoint_x,
-                        'y': project.referencepoint_y}}}}
+                    'seismic_catalog': seismiccatalog,
+                    'observed_well': well,
+                    'local_proj_string': project.proj_string}}}
 
         data = serializer._serialize_dict(payload)
         return data
@@ -248,7 +320,7 @@ class ScenarioSerializeData(Task):
         injection_plan = scenario.well
 
         serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj=project.spatialreference,
+            ramsis_proj=project.proj_string,
             external_proj="epsg:4326",
             ref_easting=project.referencepoint_x,
             ref_northing=project.referencepoint_y,
@@ -256,8 +328,8 @@ class ScenarioSerializeData(Task):
         payload = {
             'data': {
                 'attributes': {
-                    'scenario': {'well': injection_plan},
-                    'reservoir': {'geom': scenario.reservoirgeom}}}}
+                    'scenario_well': injection_plan,
+                    'reservoir_geometry': scenario.reservoirgeom}}}
 
         data = serializer._serialize_dict(payload)
         return (scenario.id, data)
@@ -287,23 +359,21 @@ class SeismicityModelRunExecutor(Task):
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
-        model_parameters = copy.deepcopy(model_run.config)
-        model_parameters.update(
-            {'datetime_start': forecast.starttime.isoformat(),
-             'datetime_end': forecast.endtime.isoformat(),
-             'epoch_duration': stage.config['prediction_bin_duration']})
-        payload = forecast_data
-        attributes = payload["data"]["attributes"]
-        scenario_attributes = scenario_data["data"]["attributes"]
-        attributes["model_parameters"] = model_parameters
-        attributes["reservoir"] = scenario_attributes["reservoir"]
-        attributes["scenario"] = scenario_attributes["scenario"]
-
+        config_attributes = {
+            'forecast_start': forecast.starttime.isoformat(),
+            'forecast_end': forecast.endtime.isoformat(),
+            'epoch_duration': stage.config['epoch_duration'],
+            'input_parameters': model_run.model.config}
+        payload = {"data":
+                   {"attributes":
+                    {**config_attributes,
+                     **forecast_data["data"]["attributes"],
+                     **scenario_data["data"]["attributes"]}}}
         try:
             resp = _worker_handle.compute(
                 json.dumps(payload),
                 deserializer=SFMWorkerOMessageDeserializer(
-                    ramsis_proj=project.spatialreference,
+                    ramsis_proj=project.proj_string,
                     external_proj="epsg:4326",
                     ref_easting=project.referencepoint_x,
                     ref_northing=project.referencepoint_y,
@@ -318,10 +388,10 @@ class SeismicityModelRunExecutor(Task):
         status = resp['data']['attributes']['status_code']
 
         if status != self.TASK_ACCEPTED:
-            raise FAIL(message=f"model run {resp['data']['id']} "
+            raise FAIL(message=f"model run {resp['data']['task_id']} "
                        f"has returned an error: {resp}", result=model_run)
 
-        model_run.runid = resp['data']['id']
+        model_run.runid = resp['data']['task_id']
         # Next task requires knowledge of status, so update status inside task.
         model_run.status.state = EStatus.DISPATCHED
         return model_run
@@ -371,7 +441,7 @@ class SeismicityModelRunPoller(Task):
             model_run)
 
         deserializer = SFMWorkerOMessageDeserializer(
-            ramsis_proj=project.spatialreference,
+            ramsis_proj=project.proj_string,
             external_proj="epsg:4326",
             ref_easting=project.referencepoint_x,
             ref_northing=project.referencepoint_y,

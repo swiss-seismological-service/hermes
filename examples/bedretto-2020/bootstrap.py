@@ -280,7 +280,7 @@ def create_bedretto_5_6_feb_project(store):
         description='Bedretto project 5th-6th Feb',
         starttime=PROJECT_STARTTIME_1,
         endtime=PROJECT_ENDTIME_1,
-        spatialreference=RAMSIS_PROJ,
+        proj_string=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
@@ -312,7 +312,7 @@ def create_bedretto_5_6_feb_project(store):
     scenario_1 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
     fc_1.scenarios = [scenario_1]
     seismicity_stage = scenario_1[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 3600}
+    seismicity_stage.config = {'epoch_duration': 3600}
     scenario_1.reservoirgeom = RESERVOIR
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=RAMSIS_PROJ,
@@ -353,7 +353,7 @@ def create_bedretto_6_7_feb_project(store):
         description='Bedretto project 6th-7th Feb',
         starttime=PROJECT_STARTTIME_2,
         endtime=PROJECT_ENDTIME_2,
-        spatialreference=RAMSIS_PROJ,
+        proj_string=RAMSIS_PROJ,
         referencepoint_x=REFERENCE_X,
         referencepoint_y=REFERENCE_Y)
 
@@ -384,7 +384,7 @@ def create_bedretto_6_7_feb_project(store):
     scenario_2 = default_scenario(store, name='Bedretto Scenario 1, 1hr')
     fc_2.scenarios = [scenario_2]
     seismicity_stage = scenario_2[EStage.SEISMICITY]
-    seismicity_stage.config = {'prediction_bin_duration': 3600}
+    seismicity_stage.config = {'epoch_duration': 3600}
     scenario_2.reservoirgeom = RESERVOIR
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=RAMSIS_PROJ,
