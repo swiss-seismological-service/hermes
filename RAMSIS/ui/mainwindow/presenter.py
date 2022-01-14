@@ -1,4 +1,4 @@
-# Cepyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
+# Copyright (C) 2017, ETH Zurich - Swiss Seismological Service SED
 """
 Content presentation logic for the main window
 
@@ -27,8 +27,6 @@ from RAMSIS.ui.dialog import (
     ForecastConfigDialog, CreateForecastSequenceDialog, ScenarioConfigDialog)
 from RAMSIS.ui.mainwindow.viewmodels.forecasttreemodel import (
     ForecastTreeModel)
-from RAMSIS.core.taskmanager import RunForecasts
-# from RAMSIS.ui.styles import StatusColor
 
 
 class ContentPresenter(object):
@@ -173,12 +171,6 @@ class ContentPresenter(object):
         forecast = indexes[0].data(CustomRoles.RepresentedItemRole)
 
         forecast = self.ramsis_core.store.get_fresh(forecast)
-        # I don't think tasks should be run here anymore, have moved the data fetch tasks to within the forecast - If need to do separate data retrieval in future, design another way to execute this that doesn't involve starting forecasts as well.
-        #run_tasks = RunForecasts(self.ramsis_core, [forecast],
-        #                         forecast.starttime)#datetime.datetime.utcnow())
-        #print("running tasks from presenter")
-        #run_tasks.run()
-        print("running engine from presenter")
 
         self.ramsis_core.engine.run(datetime.datetime.utcnow(), forecast.id)
 
