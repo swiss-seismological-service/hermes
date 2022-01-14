@@ -19,7 +19,7 @@ from ramsis.datamodel.well import InjectionWell
 from ramsis.datamodel.model import EModel
 from ramsis.io.hydraulics import (
     HYDWSBoreholeHydraulicsDeserializer, HYDWSJSONIOError)
-from ramsis.io.sfm import _ReservoirSchema
+from ramsis.io.sfm import _ReservoirSchemaBase
 from RAMSIS.ui.utils import UiForm
 
 
@@ -268,10 +268,11 @@ class ScenarioConfigDialog(
 
     def _on_accept(self):
 
-        self._update_hazard_table()
         seismicity_stage_enabled = self.ui.seismicityStageEnable.isChecked()
         hazard_stage_enabled = self.ui.hazardStageEnable.isChecked()
         risk_stage_enabled = self.ui.riskStageEnable.isChecked()
+        if hazard_stage_enabled:
+            self._update_hazard_table()
         if (hazard_stage_enabled and not seismicity_stage_enabled or
             risk_stage_enabled and not (seismicity_stage_enabled and
                                         hazard_stage_enabled)):
@@ -284,9 +285,8 @@ class ScenarioConfigDialog(
 
         geom = self.ui.reservoirGeometryPlainTextEdit.toPlainText()
         try:
-            geom = _ReservoirSchema().loads(json_data=geom)
+            geom = _ReservoirSchemaBase().loads(json_data=geom)
         except AssertionError as err:
-            print(err)
             _ = QMessageBox.critical(self, 'RAMSIS',
                                      f"Reservoir Invalid: {err}")
             raise ValidationError(f"Reservoir Invalid, {err}")
@@ -402,6 +402,7 @@ class ScenarioConfigDialog(
             pass
         else:
             stage.enabled = risk_stage_enabled
+        self._data = self.store.get_fresh(self._data)
 
     @pyqtSlot(name='on_injectionStrategyImportFromFilePushButton_clicked')
     def import_plan_from_file(self):
