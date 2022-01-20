@@ -1,0 +1,48 @@
+{
+    "PROJECTS": [
+        {
+            "PROJECT_NAME": "PROJECT ###",
+            "PROJECT_DESCRIPTION": "Default project",
+            "PROJECT_STARTTIME": "2020-11-24T13:00:00",
+            "PROJECT_ENDTIME": "2020-11-26T00:00:00",
+            "HYDWS_URL": "http://inducat.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMg==?level=hydraulic",
+            "HYDWS_ENABLE": true,
+            "FDSNWS_URL": "http://inducat.ethz.ch:8081/fdsnws/event/1/query?contributor=GES202111",
+            "FDSNWS_ENABLE": true,
+            "RAMSIS_PROJ": "epsg:2056",
+            "WGS84_PROJ": "epsg:4326",
+            "REFERENCE_X": 0.0,
+            "REFERENCE_Y": 0.0,
+	    "RUN_MODELS": "ALL", 
+            "FORECASTS": [
+                {
+		    "FORECAST_NAME": "Forecast ###",
+                    "FORECAST_STARTTIME": "2020-11-25T04:00:00",
+                    "FORECAST_ENDTIME": "2020-11-25T22:50:00",
+                    "SCENARIOS": [
+                        {
+			    "SCENARIO_NAME": "Scenario ###",
+			    "EPOCH_DURATION": 1800,
+			    "SCENARIO_DIR": "hyd",
+                            "SCENARIO_JSON": "scenario_st2_section_5_20.json",
+                            "RESERVOIR": {
+                                "x": [
+                                    2679355.36334284,
+                                    2679655.36334284
+                                ],
+                                "y": [
+                                    1151313.82210478,
+                                    1151613.82210478
+                                ],
+                                "z": [
+                                    1122.33103153,
+                                    1422.33103153
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
