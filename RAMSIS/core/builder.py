@@ -68,10 +68,10 @@ def default_scenario(store, name='Scenario', **kwargs):
                 'enabled': False,
                 'config': {}, }},
             {'hazard': {
-                'enabled': True,
+                'enabled': False,
                 'config': {}, }},
             {'risk': {
-                'enabled': True,
+                'enabled': False,
                 'config': {}, }}
         ]
     }
