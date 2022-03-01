@@ -57,7 +57,7 @@ class WallClock(QObject):
         self.resolution = resolution or timedelta(seconds=1)
         self._time = datetime.utcnow()
         self._rt_update_timer = QTimer()
-        # self._rt_update_timer.timeout.connect(self._on_rt_timer_timout)
+        self._rt_update_timer.timeout.connect(self._on_rt_timer_timout)
         self.armed = False
         self._mode = mode
 
@@ -82,8 +82,8 @@ class WallClock(QObject):
         :param datetime.datetime time: The new time.
         """
         emit = self.armed and time >= self._time + self.resolution
-        self._time = time
         if emit:
+            self._time = time
             self.time_changed.emit(self._time)
 
     @property
