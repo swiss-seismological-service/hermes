@@ -67,7 +67,7 @@ class RunForecasts(QThread):
 
         self.logger.info(f'Forecasts due {forecasts} initiated at {t}')
 
-    def update_forecast_status(self, forecast, status=EStatus.PENDING):
+    def update_forecast_status(self, forecast, status=EStatus.RUNNING):
         forecast.status.state = status
         session = self.core.store.session
         session.commit()
