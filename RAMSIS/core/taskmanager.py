@@ -77,7 +77,7 @@ class RunForecasts(QThread):
         self.logger.info(f'Forecasts due {self.forecasts} start run at '
                          f'{datetime.utcnow()}')
         for ind, forecast in enumerate(self.forecasts):
-            self.logger.info('forecasts #{}'.format(ind))
+            self.logger.info('forecasts #{} will be run'.format(ind))
             self.update_forecast_status(forecast)
             self.core.engine.run(self.time_scheduled, forecast.id)
 
@@ -109,6 +109,7 @@ class ForecastTask(Task):
         try:
             # Update self.forecasts to be up to date with which
             # forecasts are still pending.
+            self.project = self.core.store.get_fresh(self.core.project)
             self.forecasts = sorted([
                 f for f in self.core.project.forecasts if
                 f.status.state == EStatus.PENDING],
