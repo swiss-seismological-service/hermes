@@ -67,11 +67,18 @@ class RunForecasts(QThread):
 
         self.logger.info(f'Forecasts due {forecasts} initiated at {t}')
 
+    def update_forecast_status(self, forecast, status=EStatus.PENDING):
+        forecast.status.state = status
+        session = self.core.store.session
+        session.commit()
+        session.remove()
+
     def run(self):
         self.logger.info(f'Forecasts due {self.forecasts} start run at '
                          f'{datetime.utcnow()}')
         for ind, forecast in enumerate(self.forecasts):
             self.logger.info('forecasts #{}'.format(ind))
+            self.update_forecast_status(forecast)
             self.core.engine.run(self.time_scheduled, forecast.id)
 
 
