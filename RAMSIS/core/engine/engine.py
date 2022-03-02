@@ -667,6 +667,7 @@ class FlowRunner:
         return stage_enabled
 
     def run(self, progress_callback):
+        self.update_forecast_status(EStatus.RUNNING)
         forecast_starttime = self.get_forecast_starttime(self.forecast_id)
         datasource_flow = DataSourceFlow(forecast_starttime,
                                          self.core,
@@ -677,7 +678,6 @@ class FlowRunner:
         forecast_input = forecast_for_seismicity(self.forecast_id,
                                                  self.session)
         assert forecast_input.status.state != EStatus.COMPLETE
-        self.update_forecast_status(EStatus.RUNNING)
 
         if self.run_stage(forecast_input, EStage.SEISMICITY):
             seismicity_stage_states = self.seismicity_flow(forecast_input)
