@@ -3,6 +3,9 @@ from sqlalchemy.orm import lazyload, subqueryload
 from time import time, sleep
 from prefect.engine.result import NoResultType
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
+from sqlalchemy import inspect
+from datetime import datetime
+from datetime import timedelta
 
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismicity import SeismicityModelRun
@@ -13,6 +16,9 @@ import logging
 
 logger = logging.getLogger('status_handler')
 
+# Time in minutes from the datasource creation time
+# where the datasource will not be updated again.
+DATASOURCE_TIMELIMIT = 1
 
 class Worker(QRunnable):
     '''
@@ -345,9 +351,29 @@ class ForecastHandler(BaseHandler):
             # A forecast may only have one seismiccatalog associated
             # This is enforced in code rather than at db level.
             if updated and well:
-                project.well = well
-                self.session.merge(project)
-                self.update_db()
+                if project.well:
+                    creation_time = project.well.creationinfo_creationtime
+                    if datetime.utcnow() < creation_time + timedelta(
+                            minutes=DATASOURCE_TIMELIMIT):
+                        # If this datasource was updated recently,
+                        # don't update again ad this can cause multiple
+                        # wells/catalogs to be added to project
+                        print("##################3 Exiting well update")
+                        return new_state
+                    else:
+                        print("#################3 Updating the well")
+
+                project_session = inspect(project).session
+                if project.well:
+                    try:
+                        project.well = None
+                        project_session.commit()
+                    except Exception as err:
+                        logger.error(err)
+
+                self.session.add(well)
+                well.project_id = project.id
+                self.session.commit()
                 logger.info(f"Project={project.name} has updated"
                             " the well")
             else:
@@ -369,9 +395,27 @@ class ForecastHandler(BaseHandler):
 
             cat, updated = new_state.result
             if updated and cat:
-                project.seismiccatalog = cat
-                self.session.merge(project)
-                self.update_db()
+                if project.seismiccatalog:
+                    creation_time = project.seismiccatalog.creationinfo_creationtime
+                    if datetime.utcnow() < creation_time + timedelta(
+                            minutes=DATASOURCE_TIMELIMIT):
+                        # If this datasource was updated recently,
+                        # don't update again ad this can cause multiple
+                        # wells/catalogs to be added to project
+                        print("############3 Exiting seismiccatalog update")
+                        return new_state
+                    else:
+                        print("############ Updating the catalog")
+                project_session = inspect(project).session
+                if project.seismiccatalog:
+                    try:
+                        project.seismiccatalog = None
+                        project_session.commit()
+                    except Exception as err:
+                        logger.error(err)
+                self.session.add(cat)
+                cat.project_id = project.id
+                self.session.commit()
                 logger.info(f"Project={project.name} has updated"
                             " the seismic catalog")
             else:

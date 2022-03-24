@@ -44,7 +44,7 @@ datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
 class UpdateFdsn(Task):
 
-    def fetch_fdsn(self, url, core, t):
+    def fetch_fdsn(self, url, core, t, real_time):
         """
         FDSN task function
 
@@ -60,27 +60,34 @@ class UpdateFdsn(Task):
             url, timeout=None, project=p)
         seismics_data_source.enabled = True
 
+        if real_time:
+            endtime = datetime.utcnow()
+        else:
+            endtime=t
+
+        endtime=datetime.strftime(endtime, datetime_format)
+
         cat = seismics_data_source.fetch(
             starttime=datetime.strftime(p.starttime, datetime_format),
-            endtime=datetime.strftime(t, datetime_format))
+            endtime=endtime)
         seismics_data_source.wait()
         return cat
 
-    def run(self, core, t):
+    def run(self, core, t, real_time):
 
         fdsnws_enabled = core.project.settings['fdsnws_enable']
         fdsnws_url = core.project.settings['fdsnws_url']
         updated = False
         cat = None
         if fdsnws_enabled and fdsnws_url:
-            cat = self.fetch_fdsn(fdsnws_url, core, t)
+            cat = self.fetch_fdsn(fdsnws_url, core, t, real_time)
             updated = True
         return cat, updated
 
 
 class UpdateHyd(Task):
 
-    def fetch_hyd(self, url, core, t):
+    def fetch_hyd(self, url, core, t, real_time):
         """
         HYDWS task function
 
@@ -96,20 +103,27 @@ class UpdateHyd(Task):
             url, timeout=None, project=p)
         hydraulics_data_source.enabled = True
 
+        if real_time:
+            endtime = datetime.utcnow()
+        else:
+            endtime=t
+
+        endtime=datetime.strftime(endtime, datetime_format)
+
         well = hydraulics_data_source.fetch(
             starttime=datetime.strftime(p.starttime, datetime_format),
-            endtime=datetime.strftime(t, datetime_format),
+            endtime=endtime,
             level='hydraulic')
         hydraulics_data_source.wait()
         return well
 
-    def run(self, core, t):
+    def run(self, core, t, real_time):
         hydws_enabled = core.project.settings['hydws_enable']
         hydws_url = core.project.settings['hydws_url']
         updated = False
         well = None
         if hydws_enabled and hydws_url:
-            well = self.fetch_hyd(hydws_url, core, t)
+            well = self.fetch_hyd(hydws_url, core, t, real_time)
             updated = True
         return well, updated
 

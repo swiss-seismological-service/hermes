@@ -238,12 +238,13 @@ def scenario_for_hazard(scenario_id, session):
 
 
 class DataSourceFlow(QObject):
-    def __init__(self, forecast_starttime, core, forecast_handler):
+    def __init__(self, forecast_starttime, core, forecast_handler, real_time):
         super().__init__()
         self.forecast_handler = forecast_handler
         self.forecast_starttime = forecast_starttime
         self.core = core
         self.project = self.core.project
+        self.real_time = real_time
 
     def run(self):
         with Flow("Update_Data_Sources"
@@ -251,12 +252,12 @@ class DataSourceFlow(QObject):
             update_fdsn = UpdateFdsn(
                 state_handlers=[
                     self.forecast_handler.catalog_project_state_handler])
-            update_fdsn(self.core, self.forecast_starttime)
+            update_fdsn(self.core, self.forecast_starttime, self.real_time)
 
             update_hyd = UpdateHyd(
                 state_handlers=[
                     self.forecast_handler.well_project_state_handler])
-            update_hyd(self.core, self.forecast_starttime)
+            update_hyd(self.core, self.forecast_starttime, self.real_time)
         executor = LocalDaskExecutor(scheduler='threads')
         with prefect.context(project=self.project):
             data_flow.run(executor=executor)
@@ -500,7 +501,7 @@ class Engine(QObject):
         self.core = core
         self.session = None
 
-    def run(self, t, forecast_id):
+    def run(self, t, forecast_id, real_time=True):
         """
         Runs the forecast with a prefect flow.
 
@@ -522,7 +523,7 @@ class Engine(QObject):
                 data_dir = None
 
         self.flow_runner = FlowRunner(
-            forecast_id, self.session, data_dir, self.core)
+            forecast_id, self.session, data_dir, self.core, real_time)
         worker = Worker(self.flow_runner.run)
         self.flow_runner.forecast_handler.execution_status_update.connect(
             self.on_executor_status_changed)
@@ -540,16 +541,11 @@ class Engine(QObject):
 
         :param RAMSIS.core.tools.executor.ExecutionStatus status: Status
         """
-        # if status.origin == self._forecast_executor:
-        #     done = [ExecutionStatus.Flag.SUCCESS, ExecutionStatus.Flag.ERROR]
-        #     if status.flag in done:
-        #         self.busy = False
-        #         self.forecast_complete.emit()
         self.execution_status_update.emit(status)
 
 
 class FlowRunner:
-    def __init__(self, forecast_id, session, data_dir, core):
+    def __init__(self, forecast_id, session, data_dir, core, real_time):
         self.threadpool = QThreadPool()
         self.synchronous_thread = SynchronousThread()
         self.forecast_id = forecast_id
@@ -568,6 +564,7 @@ class FlowRunner:
         self.hazard_preparation_handler.session = self.session
         self.stage_results = []
         self.core = core
+        self.real_time = real_time
 
     def update_forecast_status(self, estatus):
         forecast = self.session.query(Forecast).filter(
@@ -596,12 +593,9 @@ class FlowRunner:
         return stage_states
 
     def seismicity_flow(self, forecast_input):
+        print("seismicity flow")
         seismicity_stage_states = self.stage_states(EStage.SEISMICITY)
-        if any(state == EStatus.ERROR for state in seismicity_stage_states):
-            self.update_forecast_status(EStatus.ERROR)
-            raise ValueError("One or more seismicity stages has a state "
-                             "of ERROR. The next stages cannot continue")
-        elif any(state != EStatus.COMPLETE for state in
+        if any(state != EStatus.COMPLETE for state in
                  seismicity_stage_states):
 
             forecast_flow = ForecastFlow(forecast_input,
@@ -671,7 +665,8 @@ class FlowRunner:
         forecast_starttime = self.get_forecast_starttime(self.forecast_id)
         datasource_flow = DataSourceFlow(forecast_starttime,
                                          self.core,
-                                         self.forecast_handler)
+                                         self.forecast_handler,
+                                         self.real_time)
         datasource_flow.run()
 
         self.threadpool.waitForDone()
