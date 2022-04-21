@@ -42,90 +42,83 @@ log = logging.getLogger(__name__)
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
 
-class UpdateFdsn(Task):
+class DummyTask(Task):
+    """Dummy task to allow action to be taken
+    on forecast with state handler.
+    """
+    def run(self, forecast):
+        return forecast
 
-    def fetch_fdsn(self, url, core, t, real_time):
+
+class UpdateFdsn(Task):
+    def fetch_fdsn(self, url, project, forecast):
         """
         FDSN task function
-
-        :param t: Current execution time
-        :type t: :py:class:`datetime.datetime`
-        :param last_run: Execution time of the previous execution
-        :type last_run: :py:class:`datetime.datetime`
         """
         logger = prefect.context.get('logger')
         logger.info("Fetch fdsn called")
-        p = core.project
         seismics_data_source = FDSNWSDataSource(
-            url, timeout=None, project=p)
+            url, timeout=None, project=project)
         seismics_data_source.enabled = True
 
-        if real_time:
-            endtime = datetime.utcnow()
-        else:
-            endtime=t
-
-        endtime=datetime.strftime(endtime, datetime_format)
+        starttime = datetime.strftime(project.starttime, datetime_format)
+        endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         cat = seismics_data_source.fetch(
-            starttime=datetime.strftime(p.starttime, datetime_format),
+            starttime=starttime,
             endtime=endtime)
         seismics_data_source.wait()
         return cat
 
-    def run(self, core, t, real_time):
+    def run(self, forecast, dttime):
 
-        fdsnws_enabled = core.project.settings['fdsnws_enable']
-        fdsnws_url = core.project.settings['fdsnws_url']
-        updated = False
-        cat = None
+        project = forecast.project
+        fdsnws_enabled = project.settings['fdsnws_enable']
+        fdsnws_url = project.settings['fdsnws_url']
+
         if fdsnws_enabled and fdsnws_url:
-            cat = self.fetch_fdsn(fdsnws_url, core, t, real_time)
-            updated = True
-        return cat, updated
+            cat = self.fetch_fdsn(fdsnws_url, project, forecast)
+            assert(hasattr(cat, 'events'))
+            cat.forecast_id = forecast.id
+            cat.creationinfo_creationtime = dttime
+            forecast.seismiccatalog = [cat]
+        return forecast
 
 
 class UpdateHyd(Task):
 
-    def fetch_hyd(self, url, core, t, real_time):
+    def fetch_hyd(self, url, project, forecast):
         """
         HYDWS task function
-
-        :param t: Current execution time
-        :type t: :py:class:`datetime.datetime`
-        :param last_run: Execution time of the previous execution
-        :type last_run: :py:class:`datetime.datetime`
         """
         logger = prefect.context.get('logger')
         logger.info("Fetch hydws called")
-        p = core.project
         hydraulics_data_source = HYDWSDataSource(
-            url, timeout=None, project=p)
+            url, timeout=None, project=project)
         hydraulics_data_source.enabled = True
 
-        if real_time:
-            endtime = datetime.utcnow()
-        else:
-            endtime=t
-
-        endtime=datetime.strftime(endtime, datetime_format)
+        starttime = datetime.strftime(project.starttime, datetime_format)
+        endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         well = hydraulics_data_source.fetch(
-            starttime=datetime.strftime(p.starttime, datetime_format),
-            endtime=endtime,
+            start=starttime,
+            end=endtime,
             level='hydraulic')
         hydraulics_data_source.wait()
         return well
 
-    def run(self, core, t, real_time):
-        hydws_enabled = core.project.settings['hydws_enable']
-        hydws_url = core.project.settings['hydws_url']
-        updated = False
-        well = None
+    def run(self, forecast, dttime):
+        project = forecast.project
+        hydws_enabled = project.settings['hydws_enable']
+        hydws_url = project.settings['hydws_url']
+
         if hydws_enabled and hydws_url:
-            well = self.fetch_hyd(hydws_url, core, t, real_time)
-            updated = True
-        return well, updated
+            well = self.fetch_hyd(hydws_url, project, forecast)
+            assert(hasattr(well, 'sections'))
+            well.creationinfo_creationtime = dttime
+            well.forecast_id = forecast.id
+            forecast.well = [well]
+        return forecast
 
 
 @task
@@ -174,61 +167,61 @@ def check_stage_enabled(scenario, estage):
     return stage_enabled
 
 
-class WellSnapshot(Task):
-    """
-    Prefect task to attach snapshot in time of the
-    hydraulic well to a forecast.
-    """
-    def run(self, forecast, dttime):
-        """
-        Returns updated forecast with new snapshot of well.
-        If a well is already associated with the forecast,
-        the task is skipped.
-        """
-        def filter_future(event):
-            return event.datetime_value < forecast.starttime
-
-        if forecast.well:
-            # If a snapshot is already attached, skip task
-            # (sarsonl) bug in prefect meaning that raise SKIP
-            # cannot be used, this is the work-around.
-            pass
-        else:
-            well = forecast.project.well.\
-                snapshot(sample_filter_cond=filter_future)
-
-            assert(hasattr(well, 'sections'))
-            well.creationinfo_creationtime = dttime
-            well.forecast_id = forecast.id
-            forecast.well.append(well)
-        return forecast
-
-
-class CatalogSnapshot(Task):
-    """
-    Prefect task to attach snapshot in time of the
-    hydraulic well to a forecast.
-    """
-    def run(self, forecast, dttime):
-        """
-        Returns updated forecast with new snapshot of catalog.
-        If a catalog is already associated with the forecast,
-        the task is skipped.
-        """
-        def filter_future(event):
-            return event.datetime_value < forecast.starttime
-
-        if forecast.seismiccatalog:
-            pass
-        else:
-            seismiccatalog = forecast.project.seismiccatalog.\
-                snapshot(filter_cond=filter_future)
-
-            assert(hasattr(seismiccatalog, 'events'))
-            seismiccatalog.forecast_id = forecast.id
-            seismiccatalog.creationinfo_creationtime = dttime
-            forecast.seismiccatalog.append(seismiccatalog)
-        return forecast
+#class WellSnapshot(Task):
+#    """
+#    Prefect task to attach snapshot in time of the
+#    hydraulic well to a forecast.
+#    """
+#    def run(self, forecast, dttime):
+#        """
+#        Returns updated forecast with new snapshot of well.
+#        If a well is already associated with the forecast,
+#        the task is skipped.
+#        """
+#        def filter_future(event):
+#            return event.datetime_value < forecast.starttime
+#
+#        if forecast.well:
+#            # If a snapshot is already attached, skip task
+#            # (sarsonl) bug in prefect meaning that raise SKIP
+#            # cannot be used, this is the work-around.
+#            pass
+#        else:
+#            well = forecast.project.well.\
+#                snapshot(sample_filter_cond=filter_future)
+#
+#            assert(hasattr(well, 'sections'))
+#            well.creationinfo_creationtime = dttime
+#            well.forecast_id = forecast.id
+#            forecast.well.append(well)
+#        return forecast
+#
+#
+#class CatalogSnapshot(Task):
+#    """
+#    Prefect task to attach snapshot in time of the
+#    hydraulic well to a forecast.
+#    """
+#    def run(self, forecast, dttime):
+#        """
+#        Returns updated forecast with new snapshot of catalog.
+#        If a catalog is already associated with the forecast,
+#        the task is skipped.
+#        """
+#        def filter_future(event):
+#            return event.datetime_value < forecast.starttime
+#
+#        if forecast.seismiccatalog:
+#            pass
+#        else:
+#            seismiccatalog = forecast.project.seismiccatalog.\
+#                snapshot(filter_cond=filter_future)
+#
+#            assert(hasattr(seismiccatalog, 'events'))
+#            seismiccatalog.forecast_id = forecast.id
+#            seismiccatalog.creationinfo_creationtime = dttime
+#            forecast.seismiccatalog.append(seismiccatalog)
+#        return forecast
 
 
 @task
@@ -302,7 +295,9 @@ class ForecastSerializeData(Task):
                     'observed_well': well,
                     'local_proj_string': project.proj_string}}}
 
+        print("before serialization", [len(s.hydraulics) for s in well.sections])
         data = serializer._serialize_dict(payload)
+        print("after serialization", [len(s["hydraulics"]) for s in payload["data"]["attributes"]["observed_well"]["sections"]])
         return data
 
 

@@ -79,7 +79,7 @@ class RunForecasts(QThread):
         for ind, forecast in enumerate(self.forecasts):
             self.logger.info('forecasts #{} will be run'.format(ind))
             self.update_forecast_status(forecast)
-            self.core.engine.run(self.time_scheduled, forecast.id, real_time=True)
+            self.core.engine.run(self.time_scheduled, forecast.id)
         self.forecasts = []
 
 

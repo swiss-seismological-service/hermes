@@ -359,85 +359,85 @@ class Controller(QtCore.QObject):
         # In future reimplement data source update
         pass  # self._update_data_sources()
 
-    def _update_data_sources(self):
-        try:
-            enabled = self.project.settings['fdsnws_enable']
-            url = self.project.settings['fdsnws_url']
-        except KeyError as err:
-            self._logger.warning(
-                f'Invalid project configuration: {err}')
-        else:
-            if url is None:
-                self.seismics_data_source = None
-            elif self.seismics_data_source:
-                if self.seismics_data_source.url != url:
-                    self.seismics_data_source.url = url
-                    self._logger.info(
-                        f'fdsnws-event changed to {url}.')
-                if self.seismics_data_source.enabled != enabled:
-                    self.seismics_data_source.enabled = enabled
-                    self._logger.info(
-                        'fdsnws-event {}.'.format(
-                            'enabled' if enabled else 'disabled'))
-            else:
-                self.seismics_data_source = FDSNWSDataSource(
-                    url, timeout=None, project=self.project)
-                self.seismics_data_source.enabled = enabled
-                self.seismics_data_source.data_received.connect(
-                    self._on_seismic_data_received)
+    #def _update_data_sources(self):
+    #    try:
+    #        enabled = self.project.settings['fdsnws_enable']
+    #        url = self.project.settings['fdsnws_url']
+    #    except KeyError as err:
+    #        self._logger.warning(
+    #            f'Invalid project configuration: {err}')
+    #    else:
+    #        if url is None:
+    #            self.seismics_data_source = None
+    #        elif self.seismics_data_source:
+    #            if self.seismics_data_source.url != url:
+    #                self.seismics_data_source.url = url
+    #                self._logger.info(
+    #                    f'fdsnws-event changed to {url}.')
+    #            if self.seismics_data_source.enabled != enabled:
+    #                self.seismics_data_source.enabled = enabled
+    #                self._logger.info(
+    #                    'fdsnws-event {}.'.format(
+    #                        'enabled' if enabled else 'disabled'))
+    #        else:
+    #            self.seismics_data_source = FDSNWSDataSource(
+    #                url, timeout=None, project=self.project)
+    #            self.seismics_data_source.enabled = enabled
+    #            self.seismics_data_source.data_received.connect(
+    #                self._on_seismic_data_received)
 
-        try:
-            enabled = self.project.settings['hydws_enable']
-            url = self.project.settings['hydws_url']
-        except KeyError as err:
-            self._logger.warning(
-                f'Invalid project configuration: {err}')
-        else:
-            # XXX(damb): Borehole is specified in the hydws URL; for
-            # multiple boreholes add a list of borehole identifiers
-            if url is None:
-                self.hydraulics_data_source = None
-            elif self.hydraulics_data_source:
-                if self.hydraulics_data_source.url != url:
-                    self.hydraulics_data_source.url = url
-                    self._logger.info(
-                        f'hydws changed to {url}.')
-                if self.hydraulics_data_source.enabled != enabled:
-                    self.hydraulics_data_source.enabled = enabled
-                    self._logger.info(
-                        'hydws {}'.format(
-                            'enabled' if enabled else 'disabled'))
-            else:
-                self.hydraulics_data_source = HYDWSDataSource(
-                    url, timeout=None, project=self.project)
-                self.hydraulics_data_source.enabled = enabled
-                self.hydraulics_data_source.data_received.connect(
-                    self._on_hydraulic_data_received)
+    #    try:
+    #        enabled = self.project.settings['hydws_enable']
+    #        url = self.project.settings['hydws_url']
+    #    except KeyError as err:
+    #        self._logger.warning(
+    #            f'Invalid project configuration: {err}')
+    #    else:
+    #        # XXX(damb): Borehole is specified in the hydws URL; for
+    #        # multiple boreholes add a list of borehole identifiers
+    #        if url is None:
+    #            self.hydraulics_data_source = None
+    #        elif self.hydraulics_data_source:
+    #            if self.hydraulics_data_source.url != url:
+    #                self.hydraulics_data_source.url = url
+    #                self._logger.info(
+    #                    f'hydws changed to {url}.')
+    #            if self.hydraulics_data_source.enabled != enabled:
+    #                self.hydraulics_data_source.enabled = enabled
+    #                self._logger.info(
+    #                    'hydws {}'.format(
+    #                        'enabled' if enabled else 'disabled'))
+    #        else:
+    #            self.hydraulics_data_source = HYDWSDataSource(
+    #                url, timeout=None, project=self.project)
+    #            self.hydraulics_data_source.enabled = enabled
+    #            self.hydraulics_data_source.data_received.connect(
+    #                self._on_hydraulic_data_received)
 
-    def _on_seismic_data_received(self, cat):
-        if cat is not None:
-            self.project.seismiccatalog = cat
+    #def _on_seismic_data_received(self, cat):
+    #    if cat is not None:
+    #        self.project.seismiccatalog = cat
 
-            self.store.save()
+    #        self.store.save()
 
-            self._logger.debug(
-                f'Project seismic data ({self.project.seismiccatalog}).')
-            self.project_data_changed.emit(self.project.seismiccatalog)
+    #        self._logger.debug(
+    #            f'Project seismic data ({self.project.seismiccatalog}).')
+    #        self.project_data_changed.emit(self.project.seismiccatalog)
 
-    def _on_hydraulic_data_received(self, well):
-        if well is not None:
-            self.project.well = well
-            well_project = self.project.well
+    #def _on_hydraulic_data_received(self, well):
+    #    if well is not None:
+    #        self.project.well = well
+    #        well_project = self.project.well
 
-            self.store.save()
-            if well_project and well_project.sections:
-                msg = ('Project borehole data '
-                       f'(sections={len(well_project.sections)}')
-                if well_project.sections[0].hydraulics:
-                    msg += (', samples='
-                            f'{len(well_project.sections[0].hydraulics)}')
-                msg += ').'
+    #        self.store.save()
+    #        if well_project and well_project.sections:
+    #            msg = ('Project borehole data '
+    #                   f'(sections={len(well_project.sections)}')
+    #            if well_project.sections[0].hydraulics:
+    #                msg += (', samples='
+    #                        f'{len(well_project.sections[0].hydraulics)}')
+    #            msg += ').'
 
-                self._logger.debug(msg)
+    #            self._logger.debug(msg)
 
-            self.project_data_changed.emit(well_project)
+    #        self.project_data_changed.emit(well_project)

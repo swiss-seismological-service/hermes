@@ -7,6 +7,7 @@ from sqlalchemy import inspect
 from datetime import datetime
 from datetime import timedelta
 
+from ramsis.datamodel import InjectionWell, SeismicObservationCatalog
 from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.seismicity import SeismicityModelRun
 from ramsis.datamodel.hazard import HazardModelRun, GeoPoint,\
@@ -335,112 +336,14 @@ class ForecastHandler(BaseHandler):
         self.session.add(model_result)
         self.update_db()
 
-    def well_project_state_handler(self, obj, old_state, new_state):
-        """
-        When the catalog snapshot task has been skipped, then the forecast
-        already has a catalog snapshot and this is not overwritten.
-        If this task has completed successfully, the new snapshot is added
-        to the session and forecast merged as an attribute was modified.
-        """
-        logger = prefect.context.get("logger")
-        project = prefect.context.get("project")
-        if self.state_evaluator(new_state, [self.task_finished,
-                                            self.successful_result]):
-
-            well, updated = new_state.result
-            # A forecast may only have one seismiccatalog associated
-            # This is enforced in code rather than at db level.
-            if updated and well:
-                if project.well:
-                    creation_time = project.well.creationinfo_creationtime
-                    if datetime.utcnow() < creation_time + timedelta(
-                            minutes=DATASOURCE_TIMELIMIT):
-                        # If this datasource was updated recently,
-                        # don't update again ad this can cause multiple
-                        # wells/catalogs to be added to project
-                        print("##################3 Exiting well update")
-                        return new_state
-                    else:
-                        print("#################3 Updating the well")
-
-                project_session = inspect(project).session
-                if project.well:
-                    try:
-                        project.well = None
-                        project_session.commit()
-                    except Exception as err:
-                        logger.error(err)
-
-                self.session.add(well)
-                well.project_id = project.id
-                self.session.commit()
-                logger.info(f"Project={project.name} has updated"
-                            " the well")
-            else:
-                logger.info(f"Project={project.name} has not had"
-                            " the well updated")
-        return new_state
-
-    def catalog_project_state_handler(self, obj, old_state, new_state):
-        """
-        When the catalog snapshot task has been skipped, then the forecast
-        already has a catalog snapshot and this is not overwritten.
-        If this task has completed successfully, the new snapshot is added
-        to the session and forecast merged as an attribute was modified.
-        """
-        logger = prefect.context.get("logger")
-        project = prefect.context.get("project")
-        if self.state_evaluator(new_state, [self.task_finished,
-                                            self.successful_result]):
-
-            cat, updated = new_state.result
-            if updated and cat:
-                if project.seismiccatalog:
-                    creation_time = project.seismiccatalog.creationinfo_creationtime
-                    if datetime.utcnow() < creation_time + timedelta(
-                            minutes=DATASOURCE_TIMELIMIT):
-                        # If this datasource was updated recently,
-                        # don't update again ad this can cause multiple
-                        # wells/catalogs to be added to project
-                        print("############3 Exiting seismiccatalog update")
-                        return new_state
-                    else:
-                        print("############ Updating the catalog")
-                project_session = inspect(project).session
-                if project.seismiccatalog:
-                    try:
-                        project.seismiccatalog = None
-                        project_session.commit()
-                    except Exception as err:
-                        logger.error(err)
-                self.session.add(cat)
-                cat.project_id = project.id
-                self.session.commit()
-                logger.info(f"Project={project.name} has updated"
-                            " the seismic catalog")
-            else:
-                logger.info(f"Project={project.name} has not had"
-                            " the catalog updated")
-        return new_state
 
     def add_catalog(self, new_state, logger):
         forecast = new_state.result
-        # A forecast may only have one seismiccatalog associated
-        # This is enforced in code rather than at db level.
-        assert(len(forecast.seismiccatalog) == 1)
-        if forecast.seismiccatalog[0] not in self.session():
-            self.session.add(forecast.seismiccatalog[0])
-            self.session.commit()
-            self.session.merge(forecast)
-            self.update_db()
-            logger.info(f"Forecast id={forecast.id} has made a snapshot"
-                        " of the seismic catalog")
-        else:
-            logger.info(f"Forecast id={forecast.id} already has a snapshot"
-                        " of the seismic catalog. "
-                        "No new snapshot is being made.")
+        self.session.add_all(forecast.seismiccatalog)
+        self.update_db()
+        logger.info(f"Forecast id={forecast.id} has {len(forecast.seismiccatalog)} catalogs added")
 
-    def catalog_snapshot_state_handler(self, obj, old_state, new_state):
+    def forecast_catalog_state_handler(self, obj, old_state, new_state):
         """
         When the catalog snapshot task has been skipped, then the forecast
         already has a catalog snapshot and this is not overwritten.
@@ -456,24 +359,31 @@ class ForecastHandler(BaseHandler):
             self.threadpool.start(worker)
         return new_state
 
+    def delete_data(self, new_state, logger, **kwargs):
+        print("starting to deleting data")
+        forecast = new_state.result
+        d = self.session.query(InjectionWell).filter(InjectionWell.forecast_id == forecast.id).delete()
+        d = self.session.query(SeismicObservationCatalog).filter(SeismicObservationCatalog.forecast_id == forecast.id).delete()
+        self.update_db()
+        print("have finished deleting data")
+
+    def forecast_data_delete(self, obj, old_state, new_state):
+        logger = prefect.context.get("logger")
+        if self.state_evaluator(new_state, [self.task_finished,
+                                            self.successful_result]):
+
+            worker = Worker(self.delete_data, new_state, logger,
+                            synchronous_thread=self.synchronous_thread)
+            self.threadpool.start(worker)
+        return new_state
+
     def add_well(self, new_state, logger, **kwargs):
         forecast = new_state.result
-        # A forecast may only have one well associated
-        # This is enforced in code rather than at db level.
-        assert(len(forecast.well) == 1)
-        if forecast.well[0] not in self.session():
-            self.session.add(forecast.well[0])
-            self.session.commit()
-            self.session.merge(forecast)
-            self.update_db()
-            logger.info(f"Forecast id={forecast.id} has made a snapshot"
-                        " of the hydraulic well")
-        else:
-            logger.info(f"Forecast id={forecast.id} already has a snapshot"
-                        " of the hydraulic well. "
-                        "No new snapshot is being made.")
+        self.session.add_all(forecast.well)
+        self.update_db()
+        logger.info(f"Forecast id={forecast.id} has {len(forecast.well)} wells added")
 
-    def well_snapshot_state_handler(self, obj, old_state, new_state):
+    def forecast_well_state_handler(self, obj, old_state, new_state):
         """
         When the well snapshot task has been skipped, then the forecast
         already has a well snapshot and this is not overwritten.

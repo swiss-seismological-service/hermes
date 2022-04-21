@@ -137,8 +137,8 @@ class TimeLinePresenter(QObject):
         # TODO LH: this is obv. a bit ugly, see controller signals
         if obj == self.core.project.forecasts:
             self.show_forecasts()
-        elif obj == self.core.project.seismiccatalog:
-            self.replot()
+        #elif obj == self.core.project.seismiccatalog:
+        #    self.replot()
         elif obj == self.core.project.settings:
             self.present_time_line_for_project(self.core.project)
 
@@ -161,18 +161,18 @@ class SeismicityPlotter(object):
 
     def replot(self, project=None, max_time=None):
         epoch = DATETIME_POSIX_START
-        if project and project.seismiccatalog:
-            events = project.seismiccatalog.events
-            if max_time:
-                data = [((e.datetime_value - epoch).total_seconds(),
-                         e.magnitude_value)
-                        for e in events if e.date_time < max_time]
-            else:
-                data = [((e.datetime_value - epoch).total_seconds(),
-                         e.magnitude_value)
-                        for e in events]
-        else:
-            data = []
+        #if project and project.seismiccatalog:
+        #    events = project.seismiccatalog.events
+        #    if max_time:
+        #        data = [((e.datetime_value - epoch).total_seconds(),
+        #                 e.magnitude_value)
+        #                for e in events if e.date_time < max_time]
+        #    else:
+        #        data = [((e.datetime_value - epoch).total_seconds(),
+        #                 e.magnitude_value)
+        #                for e in events]
+        #else:
+        data = []
         x, y = list(map(list, list(zip(*data)))) if len(data) > 0 else ([], [])
         self.widget.setYRange(min(y) if y else 0, max(y) if y else 4)
         self.widget.plot.setData(x, y)
@@ -189,10 +189,10 @@ class InjectionPlotter(object):
     def replot(self, project=None, max_time=None):
         epoch = DATETIME_POSIX_START
         if project:
-            try:
-                hydraulics = project.well.sections[0].hydraulics
-            except (TypeError, AttributeError):
-                hydraulics = []
+            #try:
+            #    hydraulics = project.well.sections[0].hydraulics
+            #except (TypeError, AttributeError):
+            hydraulics = []
 
             if max_time:
                 data = [((s.datetime_value - epoch).total_seconds(),

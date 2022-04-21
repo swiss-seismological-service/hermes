@@ -30,16 +30,17 @@ class ReservoirWindow(QWidget, UiForm('reservoirwindow.ui')):
             return
         scaling = self.ui.scaleSpinBox.value()
         t_max = datetime.max if show_all else self.core.clock.time
-        events = [e for e in self.core.project.seismiccatalog
-                  if e.datetime_value < t_max]
+        events = []#[e for e in self.core.project.seismiccatalog
+        #          if e.datetime_value < t_max]
         loc = np.array([(e.x_value, e.y_value, e.z_value)
                         for e in events])
         mag = np.array([e.magnitude_value for e in events]) * scaling
         self.ui.viewerWidget.show_events(np.array(loc), size=mag)
 
     def on_project_loaded(self, project):
-        project.seismiccatalog.history_changed.connect(
-            self.on_catalog_changed)
+        pass
+        #project.seismiccatalog.history_changed.connect(
+        #    self.on_catalog_changed)
 
     def on_project_will_unload(self):
         self.clear_events()
