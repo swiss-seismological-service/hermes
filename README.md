@@ -236,8 +236,7 @@ this is the automatically configured port used inside the docker container for p
 ```
 docker pull postgres:11
 mkdir -p $HOME/docker/volumes/postgres
-docker run --rm   --name ramsis -e POSTGRES_PASSWORD=ramsis -d -p 5432:5432 \
-    -v $HOME/docker/volumes/postgres:/var/lib/postgresql/data  postgres:11
+docker run  --name ramsis -e POSTGRES_PASSWORD=ramsis -d -p 5432:5432 -v $HOME/docker/volumes/postgres:/var/lib/postgresql/data --restart unless-stopped postgres:11
 ```
 Check that the docker image is running
 ```
