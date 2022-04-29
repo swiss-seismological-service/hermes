@@ -22,7 +22,7 @@ class Simulator(QtCore.QObject):
     The simulator works with an internal timer to simulate a time step after
     the number of milliseconds set in *step_time* has passed.
     """
-    SIMULATION_INTERVAL = 200  # simulate a time step every X ms
+    SIMULATION_INTERVAL = 900  # simulate a time step every X ms
 
     # Signals
     state_changed = QtCore.pyqtSignal(int)

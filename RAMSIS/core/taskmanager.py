@@ -2,13 +2,13 @@
 """
 Manages scheduled tasks in ramsis
 """
-
 import logging
 import operator
 from datetime import timedelta, datetime
 from PyQt5.QtCore import QThread
 from .tools.scheduler import Task, TaskScheduler
 from ramsis.datamodel.status import EStatus
+from sqlalchemy import inspect
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
@@ -42,10 +42,10 @@ class TaskManager:
         self.scheduler.reset(project.starttime)
 
     def on_time_changed(self, time):
+        self.forecast_task.update_forecasts(time)
         if self.scheduler.has_due_tasks(time):
             self.logger.debug('Scheduler has due tasks. Executing.')
             self.scheduler.run_due_tasks(time)
-        self.forecast_task.update_forecasts(time)
 
     def run_forecasts(self, t):
         self.forecasts_runner = RunForecasts(
@@ -69,9 +69,8 @@ class RunForecasts(QThread):
 
     def update_forecast_status(self, forecast, status=EStatus.RUNNING):
         forecast.status.state = status
-        session = self.core.store.session
+        session = inspect(forecast).session
         session.commit()
-        session.remove()
 
     def run(self):
         self.logger.info(f'Forecasts due {self.forecasts} start run at '
@@ -80,6 +79,7 @@ class RunForecasts(QThread):
             self.logger.info('forecasts #{} will be run'.format(ind))
             self.update_forecast_status(forecast)
             self.core.engine.run(self.time_scheduled, forecast.id)
+        self.forecasts = []
 
 
 class ForecastTask(Task):
@@ -109,7 +109,6 @@ class ForecastTask(Task):
         try:
             # Update self.forecasts to be up to date with which
             # forecasts are still pending.
-            self.project = self.core.store.get_fresh(self.core.project)
             self.forecasts = sorted([
                 f for f in self.core.project.forecasts if
                 f.status.state == EStatus.PENDING],
@@ -122,4 +121,5 @@ class ForecastTask(Task):
             self.run_time = None
 
     def forecasts_to_run(self, t):
-        return [f for f in self.forecasts if f.starttime < t]
+        rval = [f for f in self.forecasts if f.starttime < t]
+        return rval

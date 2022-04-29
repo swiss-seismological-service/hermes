@@ -82,6 +82,7 @@ class HYDWSDataSource(QtCore.QThread):
                 self.logger.info(msg)
 
         # self.data_received.emit(bh)
+        print("returning borehole at end of task in datasources", bh)
         return bh
 
 
