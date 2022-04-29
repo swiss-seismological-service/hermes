@@ -131,6 +131,7 @@ def project_for_datasource_update(project_id, session):
     session.remove()
     return project
 
+
 def forecast_for_seismicity(forecast_id, session):
     """
     Returns the forecast for seismicity forcast flow.

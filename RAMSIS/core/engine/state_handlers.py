@@ -3,9 +3,6 @@ from sqlalchemy.orm import lazyload, subqueryload
 from time import time, sleep
 from prefect.engine.result import NoResultType
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
-from sqlalchemy import inspect
-from datetime import datetime
-from datetime import timedelta
 
 from ramsis.datamodel import InjectionWell, SeismicObservationCatalog
 from ramsis.datamodel.status import EStatus
@@ -20,6 +17,7 @@ logger = logging.getLogger('status_handler')
 # Time in minutes from the datasource creation time
 # where the datasource will not be updated again.
 DATASOURCE_TIMELIMIT = 1
+
 
 class Worker(QRunnable):
     '''
@@ -336,12 +334,12 @@ class ForecastHandler(BaseHandler):
         self.session.add(model_result)
         self.update_db()
 
-
     def add_catalog(self, new_state, logger):
         forecast = new_state.result
         self.session.add_all(forecast.seismiccatalog)
         self.update_db()
-        logger.info(f"Forecast id={forecast.id} has {len(forecast.seismiccatalog)} catalogs added")
+        logger.info(f"Forecast id={forecast.id} has "
+                    f"{len(forecast.seismiccatalog)} catalogs added")
 
     def forecast_catalog_state_handler(self, obj, old_state, new_state):
         """
@@ -362,8 +360,10 @@ class ForecastHandler(BaseHandler):
     def delete_data(self, new_state, logger, **kwargs):
         print("starting to deleting data")
         forecast = new_state.result
-        d = self.session.query(InjectionWell).filter(InjectionWell.forecast_id == forecast.id).delete()
-        d = self.session.query(SeismicObservationCatalog).filter(SeismicObservationCatalog.forecast_id == forecast.id).delete()
+        self.session.query(InjectionWell).filter(
+            InjectionWell.forecast_id == forecast.id).delete()
+        self.session.query(SeismicObservationCatalog).filter(
+            SeismicObservationCatalog.forecast_id == forecast.id).delete()
         self.update_db()
         print("have finished deleting data")
 
@@ -381,7 +381,8 @@ class ForecastHandler(BaseHandler):
         forecast = new_state.result
         self.session.add_all(forecast.well)
         self.update_db()
-        logger.info(f"Forecast id={forecast.id} has {len(forecast.well)} wells added")
+        logger.info(f"Forecast id={forecast.id} has {len(forecast.well)} "
+                    "wells added")
 
     def forecast_well_state_handler(self, obj, old_state, new_state):
         """

@@ -167,63 +167,6 @@ def check_stage_enabled(scenario, estage):
     return stage_enabled
 
 
-#class WellSnapshot(Task):
-#    """
-#    Prefect task to attach snapshot in time of the
-#    hydraulic well to a forecast.
-#    """
-#    def run(self, forecast, dttime):
-#        """
-#        Returns updated forecast with new snapshot of well.
-#        If a well is already associated with the forecast,
-#        the task is skipped.
-#        """
-#        def filter_future(event):
-#            return event.datetime_value < forecast.starttime
-#
-#        if forecast.well:
-#            # If a snapshot is already attached, skip task
-#            # (sarsonl) bug in prefect meaning that raise SKIP
-#            # cannot be used, this is the work-around.
-#            pass
-#        else:
-#            well = forecast.project.well.\
-#                snapshot(sample_filter_cond=filter_future)
-#
-#            assert(hasattr(well, 'sections'))
-#            well.creationinfo_creationtime = dttime
-#            well.forecast_id = forecast.id
-#            forecast.well.append(well)
-#        return forecast
-#
-#
-#class CatalogSnapshot(Task):
-#    """
-#    Prefect task to attach snapshot in time of the
-#    hydraulic well to a forecast.
-#    """
-#    def run(self, forecast, dttime):
-#        """
-#        Returns updated forecast with new snapshot of catalog.
-#        If a catalog is already associated with the forecast,
-#        the task is skipped.
-#        """
-#        def filter_future(event):
-#            return event.datetime_value < forecast.starttime
-#
-#        if forecast.seismiccatalog:
-#            pass
-#        else:
-#            seismiccatalog = forecast.project.seismiccatalog.\
-#                snapshot(filter_cond=filter_future)
-#
-#            assert(hasattr(seismiccatalog, 'events'))
-#            seismiccatalog.forecast_id = forecast.id
-#            seismiccatalog.creationinfo_creationtime = dttime
-#            forecast.seismiccatalog.append(seismiccatalog)
-#        return forecast
-
-
 @task
 def forecast_scenarios(forecast):
     scenarios = [s for s in forecast.scenarios if s.enabled]
@@ -294,9 +237,7 @@ class ForecastSerializeData(Task):
                     'observed_well': well,
                     'local_proj_string': project.proj_string}}}
 
-        print("before serialization", [len(s.hydraulics) for s in well.sections])
         data = serializer._serialize_dict(payload)
-        print("after serialization", [len(s["hydraulics"]) for s in payload["data"]["attributes"]["observed_well"]["sections"]])
         return data
 
 

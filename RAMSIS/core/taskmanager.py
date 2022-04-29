@@ -2,7 +2,6 @@
 """
 Manages scheduled tasks in ramsis
 """
-from time import sleep
 import logging
 import operator
 from datetime import timedelta, datetime
@@ -110,7 +109,6 @@ class ForecastTask(Task):
         try:
             # Update self.forecasts to be up to date with which
             # forecasts are still pending.
-            #self.project = self.core.store.get_fresh(self.core.project)
             self.forecasts = sorted([
                 f for f in self.core.project.forecasts if
                 f.status.state == EStatus.PENDING],
