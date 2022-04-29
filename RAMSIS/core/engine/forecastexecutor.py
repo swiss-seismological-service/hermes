@@ -101,8 +101,8 @@ class UpdateHyd(Task):
         endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         well = hydraulics_data_source.fetch(
-            start=starttime,
-            end=endtime,
+            starttime=starttime,
+            endtime=endtime,
             level='hydraulic')
         hydraulics_data_source.wait()
         return well
@@ -238,8 +238,7 @@ class ModelRuns(Task):
     # are included), the model_run is allowed to
     # rerun.
     STATUS_POSTED = [EStatus.DISPATCHED,
-                     EStatus.COMPLETE,
-                     EStatus.ERROR]
+                     EStatus.COMPLETE]
 
     def run(self, scenario, stage_type):
         model_runs = []
