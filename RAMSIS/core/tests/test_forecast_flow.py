@@ -363,9 +363,7 @@ def insert_test_data(db_url):
         description='Basel Project 2006',
         starttime=PROJECT_STARTTIME,
         endtime=PROJECT_ENDTIME,
-        proj_string=RAMSIS_PROJ,
-        referencepoint_x=REFERENCE_X,
-        referencepoint_y=REFERENCE_Y)
+        proj_string=RAMSIS_PROJ)
 
     # configure project: project settings
     project.seismiccatalog = cat

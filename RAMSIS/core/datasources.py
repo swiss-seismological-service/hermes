@@ -39,8 +39,8 @@ class HYDWSDataSource(QtCore.QThread):
         self._deserializer = self.DESERIALZER(
             ramsis_proj=project.proj_string,
             external_proj=4326,
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
+            ref_easting=0.0,
+            ref_northing=0.0,
             transform_func_name='pyproj_transform_to_local_coords')
 
     def fetch(self, **kwargs):
@@ -107,8 +107,8 @@ class FDSNWSDataSource(QtCore.QThread):
         self._deserializer = self.DESERIALZER(
             ramsis_proj=project.proj_string,
             external_proj=4326,
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
+            ref_easting=0.0,
+            ref_northing=0.0,
             transform_func_name='pyproj_transform_to_local_coords')
 
     def fetch(self, **kwargs):

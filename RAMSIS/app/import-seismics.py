@@ -152,8 +152,8 @@ class ImportSeismicsApp:
             deserializer = QuakeMLObservationCatalogDeserializer(
                 ramsis_proj=p.proj_string,
                 external_proj=4326,
-                ref_easting=p.referencepoint_x,
-                ref_northing=p.referencepoint_y,
+                ref_easting=0.0,
+                ref_northing=0.0,
                 transform_func_name='pyproj_transform_to_local_coords')
 
             try:

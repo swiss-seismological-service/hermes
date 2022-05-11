@@ -31,7 +31,7 @@ class ModelConfigurationWindow(QDialog):
         self.setWindowTitle("{} model configuration".format(self.model))
 
         # Show current settings
-        settings = self.project.settings['forecast_models'][self.model]
+        settings = self.project.settings.config['forecast_models'][self.model]
         self.ui.titleLineEdit.clear()
         self.ui.titleLineEdit.insert(settings['title'])
         self.ui.urlLineEdit.clear()
@@ -47,9 +47,9 @@ class ModelConfigurationWindow(QDialog):
         title = self.ui.titleLineEdit.text()
         url = self.ui.urlLineEdit.text()
         params = json.loads(self.ui.paramsTextEdit.toPlainText())
-        self.project.settings['forecast_models'][self.model]['title'] = title
-        self.project.settings['forecast_models'][self.model]['url'] = url
-        self.project.settings['forecast_models'][self.model]['parameters'] = \
+        self.project.settings.config['forecast_models'][self.model]['title'] = title
+        self.project.settings.config['forecast_models'][self.model]['url'] = url
+        self.project.settings.config['forecast_models'][self.model]['parameters'] = \
             params
         self.project.settings.commit()
         self.project.store.commit()

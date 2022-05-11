@@ -227,10 +227,6 @@ class ContentPresenter(object):
                         self.ramsis_core.project.proj_string,
                         'external_proj':
                         self.ramsis_core.external_proj,
-                        'ref_easting':
-                        self.ramsis_core.project.referencepoint_x,
-                        'ref_northing':
-                        self.ramsis_core.project.referencepoint_y,
                         'transform_func_name':
                         'pyproj_transform_to_local_coords'})
                 dlg.exec_()

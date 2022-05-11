@@ -94,8 +94,8 @@ class OQSourceModelFiles(Task):
             project = scenario.forecast.project
             serializer = OQGeomSerializer(
                 ramsis_proj=project.proj_string,
-                ref_easting=project.referencepoint_x,
-                ref_northing=project.referencepoint_y,
+                ref_easting=0.0,
+                ref_northing=0.0,
                 transform_func_name='pyproj_transform_from_local_coords')
 
             seis_context = []

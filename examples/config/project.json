@@ -1,19 +1,29 @@
 {
     "PROJECTS": [
         {
-            "PROJECT_NAME": "PROJECT ###",
+            "PROJECT_NAME": "Project 4",
             "PROJECT_DESCRIPTION": "Default project",
             "PROJECT_STARTTIME": "2020-11-24T13:00:00",
             "PROJECT_ENDTIME": "2020-11-26T00:00:00",
             "HYDWS_URL": "http://inducat.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMg==?level=hydraulic",
-            "HYDWS_ENABLE": true,
             "FDSNWS_URL": "http://inducat.ethz.ch:8081/fdsnws/event/1/query?contributor=GES202111",
-            "FDSNWS_ENABLE": true,
             "RAMSIS_PROJ": "epsg:2056",
+	    "SEISMIC_CATALOG": "REQUIRED",
+	    "WELL": "REQUIRED",
+	    "SCENARIO": "REQUIRED",
             "WGS84_PROJ": "epsg:4326",
-            "REFERENCE_X": 0.0,
-            "REFERENCE_Y": 0.0,
 	    "RUN_MODELS": "ALL", 
+	    "MODEL_PROJECT_CONFIG":
+	        {
+                "wrapper_parameters":{
+                    "well_section_publicid":"smi:ch.ethz.sed/bh/ST2/section_05_20",
+                    "reference_point":[
+                        2679505.3633428435,
+                        1151463.8221047814,
+                        1272.33103152695
+                        ]
+		    }
+		},
             "FORECASTS": [
                 {
 		    "FORECAST_NAME": "Forecast ###",

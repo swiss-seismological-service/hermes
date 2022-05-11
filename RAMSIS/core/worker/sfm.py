@@ -212,7 +212,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :param str model_id: Model indentifier
         :param timeout: Timeout parameters past to the `requests
             <http://docs.python-requests.org/en/master/>`_ library functions
-        :type timeout: float or tuple
+        :type timeout: float or tlple
         """
         super().__init__(**kwargs)
 
@@ -321,15 +321,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         headers = {'Content-Type': self.MIMETYPE,
                    'Accept': 'application/json'}
-        print("before req partial")
         req = functools.partial(
             requests.post, self.url, data=_payload, headers=headers,
             timeout=self._timeout)
-        print("before response")
         response = self._handle_exceptions(req)
 
         try:
-            print("before response json", type(response))
             result = response.json()
             if deserializer:
                 result = deserializer._loado(result)

@@ -429,11 +429,15 @@ class ScenarioConfigDialog(
 
         self.ui.modelEnableCheckBox.setChecked(m.enabled)
         if m.config:
+            print("just m.config")
             self.ui.modelPlainTextEdit.setPlainText(
                 json.dumps(m.config, indent=self.JSON_INDENT))
         else:
+            model_config = {**m.model.config,
+                            **m.forecast.project.model_settings}
+            print("model config", model_config, m.forecast.project.model_settings)
             self.ui.modelPlainTextEdit.setPlainText(
-                json.dumps(m.model.config, indent=self.JSON_INDENT))
+                json.dumps(model_config, indent=self.JSON_INDENT))
 
     @pyqtSlot(int, name='on_modelEnableCheckBox_stateChanged')
     def update_sfm_config_enabled(self, state):

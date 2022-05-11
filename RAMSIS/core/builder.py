@@ -49,7 +49,7 @@ def risk_stage(**kwargs):
     return ForecastStage.create(EStage.RISK, status=Status(), **kwargs)
 
 
-def default_scenario(store, name='Scenario', **kwargs):
+def default_scenario(store, project_model_config, name='Scenario', **kwargs):
     """
     Build a *default* forecast scenario.
 
@@ -76,7 +76,7 @@ def default_scenario(store, name='Scenario', **kwargs):
         ]
     }
 
-    def create_stages(store, stage_config):
+    def create_stages(store, stage_config, project_model_config):
         """
         Create stages from a stage configuration.
 
@@ -95,7 +95,8 @@ def default_scenario(store, name='Scenario', **kwargs):
             enabled = seismicity_stage_config.get('enabled', True)
             if enabled:
                 runs = [SeismicityModelRun(model=m, enabled=True,
-                                           config=m.config,
+                                           config={**m.config,
+                                                   **project_model_config},
                                            status=Status(),
                                            weight=1.0)
                         for m in store.load_models(
@@ -143,7 +144,8 @@ def default_scenario(store, name='Scenario', **kwargs):
         config={},
         enabled=True,
         status=Status(),
-        stages=create_stages(store, DEFAULT_SCENARIO_CONFIG['stages']))
+        stages=create_stages(store, DEFAULT_SCENARIO_CONFIG['stages'],
+                             project_model_config))
 
 
 def default_forecast(store, starttime, endtime, num_scenarios=1,
@@ -172,8 +174,7 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
 empty_forecast = functools.partial(default_forecast, None, num_scenarios=0)
 
 
-def default_project(proj_string='', referencepoint_x=0,
-                    referencepoint_y=0, name='Project', description='',
+def default_project(proj_string='', name='Project', description='',
                     starttime=datetime.datetime.utcnow(), endtime=None):
     """
     Build a *default* project.
@@ -187,6 +188,4 @@ def default_project(proj_string='', referencepoint_x=0,
     """
     return Project(name=name, description=description, starttime=starttime,
                    endtime=endtime, proj_string=proj_string,
-                   referencepoint_x=referencepoint_x,
-                   referencepoint_y=referencepoint_y,
                    creationinfo_creationtime=datetime.datetime.utcnow())
