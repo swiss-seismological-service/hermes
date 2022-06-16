@@ -156,8 +156,6 @@ class MainWindow(QMainWindow,
             deserializer_args={
                 'ramsis_proj': self.app.ramsis_core.project.proj_string,
                 'external_proj': self.app.ramsis_core.external_proj,
-                'ref_easting': self.app.ramsis_core.project.referencepoint_x,
-                'ref_northing': self.app.ramsis_core.project.referencepoint_y,
                 'transform_func_name': 'pyproj_transform_to_local_coords'})
         dlg.exec_()
 
@@ -290,12 +288,12 @@ class MainWindow(QMainWindow,
             self.ui.actionPause_Simulation.setEnabled(False)
             self.ui.actionStop_Simulation.setEnabled(False)
 
-        en = (project.settings['fdsnws_enable'] is True and
-              project.settings['fdsnws_url'] is not None)
+        print(project.settings)
+        print(project.settings.config)
+        en = (project.settings.config['fdsnws_url'] is not None)
         self.ui.actionFetch_from_fdsnws.setEnabled(en)
 
-        en = (project.settings['hydws_enable'] is True and
-              project.settings['hydws_url'] is not None)
+        en = (project.settings.config['hydws_url'] is not None)
         self.ui.actionFetch_from_hydws.setEnabled(en)
 
     # Status Updates

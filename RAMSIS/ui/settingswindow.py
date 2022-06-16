@@ -245,15 +245,13 @@ class ProjectSettingsWindow(SettingsWindow):
         self.ui.setupUi(self)
 
         # Register bindings
-        settings = project.settings
+        settings = project.settings.config
         self.bindings = [
             AttrBinding(project, 'name', self.ui.projectTitleEdit),
             AttrBinding(project, 'description', self.ui.descriptionEdit),
             AttrBinding(project, 'starttime', self.ui.projectStartEdit),
             AttrBinding(project, 'endtime', self.ui.projectEndEdit),
             AttrBinding(project, 'proj_string', self.ui.proj4Edit),
-            AttrBinding(project, 'referencepoint_x', self.ui.refXEdit),
-            AttrBinding(project, 'referencepoint_y', self.ui.refYEdit),
             DictBinding(settings, 'fdsnws_enable', self.ui.enableFdsnCheckBox),
             DictBinding(settings, 'fdsnws_url', self.ui.fdsnUrlEdit),
             DictBinding(settings, 'hydws_url', self.ui.hydwsUrlEdit),
@@ -269,7 +267,6 @@ class ProjectSettingsWindow(SettingsWindow):
 
     @pyqtSlot(name='on_resetToDefaultButton_clicked')
     def action_load_defaults(self):
-        self.project.settings.register_default_settings()
         self.refresh_ui()
 
     @pyqtSlot(name='on_saveButton_clicked')
@@ -278,7 +275,6 @@ class ProjectSettingsWindow(SettingsWindow):
             self.project.starttime = self.project.starttime.toPyDateTime()
         if isinstance(self.project.endtime, QDateTime):
             self.project.endtime = self.project.endtime.toPyDateTime()
-        self.project.settings.commit()
         if self.save_callback:
             self.save_callback(self.project)
         self.close()

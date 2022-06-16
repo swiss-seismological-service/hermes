@@ -29,8 +29,7 @@ from prefect import task, Task
 import prefect
 from prefect.engine.signals import LOOP, FAIL
 from prefect.triggers import any_successful
-from ramsis.datamodel.status import EStatus
-from ramsis.datamodel.forecast import EStage
+from ramsis.datamodel import EStatus, EStage, EInput
 
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
@@ -73,15 +72,21 @@ class UpdateFdsn(Task):
     def run(self, forecast, dttime):
 
         project = forecast.project
-        fdsnws_enabled = project.settings['fdsnws_enable']
-        fdsnws_url = project.settings['fdsnws_url']
+        catalog_used = getattr(
+            EInput, project.settings.config['seismic_catalog']) in \
+            [EInput.REQUIRED, EInput.OPTIONAL]
+        fdsnws_url = project.settings.config['fdsnws_url']
 
-        if fdsnws_enabled and fdsnws_url:
+        if catalog_used and fdsnws_url:
             cat = self.fetch_fdsn(fdsnws_url, project, forecast)
             assert(hasattr(cat, 'events'))
             cat.forecast_id = forecast.id
             cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = [cat]
+        else:
+            assert forecast.seismiccatalog and \
+                len(forecast.seismiccatalog) > 0, \
+                "No well exists on forecast"
         return forecast
 
 
@@ -109,15 +114,20 @@ class UpdateHyd(Task):
 
     def run(self, forecast, dttime):
         project = forecast.project
-        hydws_enabled = project.settings['hydws_enable']
-        hydws_url = project.settings['hydws_url']
+        well_used = getattr(
+            EInput, project.settings.config['seismic_catalog']) in \
+            [EInput.REQUIRED, EInput.OPTIONAL]
+        hydws_url = project.settings.config['hydws_url']
 
-        if hydws_enabled and hydws_url:
+        if well_used and hydws_url:
             well = self.fetch_hyd(hydws_url, project, forecast)
             assert(hasattr(well, 'sections'))
             well.creationinfo_creationtime = dttime
             well.forecast_id = forecast.id
             forecast.well = [well]
+        else:
+            assert forecast.well and len(forecast.well) > 0, \
+                "No well exists on forecast"
         return forecast
 
 
@@ -227,8 +237,8 @@ class ForecastSerializeData(Task):
         serializer = SFMWorkerIMessageSerializer(
             ramsis_proj=project.proj_string,
             external_proj="epsg:4326",
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
+            ref_easting=0.0,
+            ref_northing=0.0,
             transform_func_name='pyproj_transform_from_local_coords')
         payload = {
             'data': {
@@ -271,8 +281,8 @@ class ScenarioSerializeData(Task):
         serializer = SFMWorkerIMessageSerializer(
             ramsis_proj=project.proj_string,
             external_proj="epsg:4326",
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
+            ref_easting=0.0,
+            ref_northing=0.0,
             transform_func_name='pyproj_transform_from_local_coords')
         payload = {
             'data': {
@@ -308,11 +318,12 @@ class SeismicityModelRunExecutor(Task):
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
+        print("model_run config", model_run.config)
         config_attributes = {
             'forecast_start': forecast.starttime.isoformat(),
             'forecast_end': forecast.endtime.isoformat(),
             'epoch_duration': stage.config['epoch_duration'],
-            'input_parameters': model_run.model.config}
+            'input_parameters': model_run.config}
         payload = {"data":
                    {"attributes":
                     {**config_attributes,
@@ -324,8 +335,8 @@ class SeismicityModelRunExecutor(Task):
                 deserializer=SFMWorkerOMessageDeserializer(
                     ramsis_proj=project.proj_string,
                     external_proj="epsg:4326",
-                    ref_easting=project.referencepoint_x,
-                    ref_northing=project.referencepoint_y,
+                    ref_easting=0.0,
+                    ref_northing=0.0,
                     transform_func_name='pyproj_transform_to_local_coords'))
         except RemoteSeismicityWorkerHandle.RemoteWorkerError:
             raise FAIL(
@@ -392,8 +403,8 @@ class SeismicityModelRunPoller(Task):
         deserializer = SFMWorkerOMessageDeserializer(
             ramsis_proj=project.proj_string,
             external_proj="epsg:4326",
-            ref_easting=project.referencepoint_x,
-            ref_northing=project.referencepoint_y,
+            ref_easting=0.0,
+            ref_northing=0.0,
             transform_func_name='pyproj_transform_to_local_coords',
             many=True)
         try:

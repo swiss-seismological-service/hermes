@@ -2,7 +2,7 @@
     "SEISMICITY_MODELS":[
         {
             "MODEL_NAME":"EM1-MLE",
-            "URL":"http://ramsis-em1:5007",
+            "URL":"http://localhost:5000",
             "CONFIG":{
                 "model_parameters":{
                     "Tau":60,
@@ -11,14 +11,6 @@
                     "tau_force":false,
                     "mode":"MLE",
                     "Nsim":100
-                },
-                "wrapper_parameters":{
-                    "well_section_publicid":"smi:ch.ethz.sed/bh/ST2/section_05_20",
-                    "reference_point":[
-                        2679505.3633428435,
-                        1151463.8221047814,
-                        1272.33103152695
-                    ]
                 }
             },
             "SFMWID":"em1",

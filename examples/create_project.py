@@ -21,8 +21,9 @@ from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 DIRPATH = dirname(abspath(__file__))
 
 
-def create_scenario(project_config, scenario_config):
-    scenario = default_scenario(store, name=scenario_config["SCENARIO_NAME"])
+def create_scenario(project_config, project_model_config, scenario_config):
+    scenario = default_scenario(store, project_model_config,
+                                name=scenario_config["SCENARIO_NAME"])
     # Seismicity Stage
     seismicity_stage = scenario[EStage.SEISMICITY]
     seismicity_stage.config = {
@@ -31,8 +32,8 @@ def create_scenario(project_config, scenario_config):
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=project_config["RAMSIS_PROJ"],
         external_proj=project_config["WGS84_PROJ"],
-        ref_easting=project_config["REFERENCE_X"],
-        ref_northing=project_config["REFERENCE_Y"],
+        ref_easting=0.0,
+        ref_northing=0.0,
         transform_func_name='pyproj_transform_to_local_coords',
         plan=True)
     with open(join(DIRPATH, scenario_config["SCENARIO_DIR"],
@@ -52,7 +53,8 @@ def create_scenario(project_config, scenario_config):
     return scenario
 
 
-def create_forecast(project_config, forecast_config):
+def create_forecast(project_config, project_model_config,
+                    forecast_config):
 
     fc = default_forecast(
         store,
@@ -62,7 +64,8 @@ def create_forecast(project_config, forecast_config):
         name=forecast_config["FORECAST_NAME"])
 
     scenarios_json = forecast_config['SCENARIOS']
-    scenarios = [create_scenario(project_config, scenario_config)
+    scenarios = [create_scenario(project_config, project_model_config,
+                                 scenario_config)
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
     return fc
@@ -75,20 +78,21 @@ def create_project(store, project_config):
         description=project_config["PROJECT_DESCRIPTION"],
         starttime=project_config["PROJECT_STARTTIME"],
         endtime=project_config["PROJECT_ENDTIME"],
-        referencepoint_x=project_config["REFERENCE_X"],
-        referencepoint_y=project_config["REFERENCE_Y"],
         proj_string=project_config["RAMSIS_PROJ"])
 
-    project.settings['hydws_enable'] = project_config['HYDWS_ENABLE']
-    project.settings['hydws_url'] = project_config['HYDWS_URL']
-    project.settings['fdsnws_enable'] = project_config['FDSNWS_ENABLE']
-    project.settings['fdsnws_url'] = project_config['FDSNWS_URL']
+    project.settings.config = dict(
+        fdsnws_url=project_config['FDSNWS_URL'],
+        hydws_url=project_config['HYDWS_URL'],
+        seismic_catalog=project_config['SEISMIC_CATALOG'],
+        well=project_config['WELL'],
+        scenario=project_config['SCENARIO'])
+
+    project.model_settings.config = project_config['MODEL_PROJECT_CONFIG']
 
     project.forecasts = [
-        create_forecast(project_config, forecast_config)
+        create_forecast(project_config, project.model_settings.config, forecast_config)
         for forecast_config in project_config["FORECASTS"]]
     store.add(project)
-    project.settings.commit()
     store.save()
 
 
