@@ -76,11 +76,11 @@ class Controller(QtCore.QObject):
     #   objects to emit change signals somehow.
     project_data_changed = QtCore.pyqtSignal(object)
 
-    def __init__(self, app, launch_mode):
+    def __init__(self, app, launch_mode, store=None):
         super(Controller, self).__init__()
         self._settings = app.app_settings
         self._launch_mode = launch_mode
-        self.store = None
+        self.store = store
         self.project = None
         self.fdsnws_previous_end_time = None
         self.hydws_previous_end_time = None

@@ -8,6 +8,8 @@ import sys
 from datetime import datetime
 import logging
 
+from RAMSIS.db import store, db_settings, app_settings
+
 from sqlalchemy.orm import joinedload, subqueryload
 from PyQt5.QtCore import (pyqtSignal, QObject, QThreadPool, QRunnable,
                           pyqtSlot)
@@ -37,6 +39,7 @@ import prefect
 from prefect import Flow, Parameter, unmapped
 from prefect.engine.executors import LocalDaskExecutor
 
+from RAMSIS.utils import SynchronousThread
 
 class WorkerSignals(QObject):
     """
@@ -281,81 +284,24 @@ class ForecastFlow(QObject):
     engine.
     """
 
-    def __init__(self, forecast, system_time, forecast_handler, core):
+    def __init__(self, forecast, system_time, forecast_handler, session):
         super().__init__()
         self.forecast_handler = forecast_handler
         self.forecast = forecast
         self.system_time = system_time
-        self.core = core
+        self.session = session
 
     def run(self):
-        with Flow("Seismicity_Execution",
-                  state_handlers=[self.forecast_handler.flow_state_handler]
-                  ) as seismicity_flow:
-            forecast = Parameter('forecast')
-            remove_data_task = DummyTask(
-                state_handlers=[self.forecast_handler.forecast_data_delete])
-            forecast_no_data = remove_data_task(forecast)
-            update_fdsn = UpdateFdsn(
-                state_handlers=[self.forecast_handler.
-                                forecast_catalog_state_handler])
-            forecast_with_catalog = update_fdsn(forecast_no_data, self.system_time)
-
-            update_hyd = UpdateHyd(
-                state_handlers=[self.forecast_handler.
-                                forecast_well_state_handler])
-            forecast = update_hyd(forecast_with_catalog, self.system_time)
-            scenarios = forecast_scenarios(
-                forecast)
-
-            # Get seismicity model runs
-            seismicity_models = ModelRuns(
-                state_handlers=[self.forecast_handler.
-                                scenario_models_state_handler])
-            seismicity_model_runs = seismicity_models.map(
-                scenarios, unmapped(EStage.SEISMICITY))
-            # Flatten list of lists of runs so mapping can take place.
-            # (prefect currently does not allow mapping at multiple levels)
-            flatten_task = FlattenTask()
-            model_runs_flattened = flatten_task(seismicity_model_runs)
-
-            forecast_serializer = ForecastSerializeData()
-            forecast_serialized_data = forecast_serializer(forecast)
-
-            scenario_serializer = ScenarioSerializeData()
-            scenario_serialized_data = scenario_serializer.map(scenarios)
-
-            model_run_executor = SeismicityModelRunExecutor(
-                state_handlers=[self.forecast_handler.model_run_state_handler])
-
-            _ = model_run_executor.map(
-                unmapped(forecast), unmapped(forecast_serialized_data),
-                unmapped(scenario_serialized_data), model_runs_flattened)
-
-            # Check which model runs are dispatched, where there may exist
-            # model runs that were sent that still haven't been collected
-            model_runs_dispatched = dispatched_model_runs(
-                forecast, EStage.SEISMICITY)
-
-            # Add dependency so that SeismicityModelRunExecutor must complete
-            # before checking for model runs with DISPATCHED status
-            seismicity_flow.add_edge(
-                seismicity_flow.get_tasks('SeismicityModelRunExecutor')[0],
-                seismicity_flow.get_tasks(
-                    'dispatched_model_runs')[0])
-
-            # Poll the remote workers for tasks that have been completed.
-            model_run_poller = SeismicityModelRunPoller(
-                state_handlers=[
-                    self.forecast_handler.poll_seismicity_state_handler])
-            model_run_poller.map(unmapped(forecast),
-                                 model_runs_dispatched)
-
+        print('inside ForecastFlow')
+        from RAMSIS.flows import seismicity_flow
         # (sarsonl) To view DAG: seismicity_flow.visualize()
         executor = LocalDaskExecutor(scheduler='threads')
-        with prefect.context(forecast_id=self.forecast.id):
-            seismicity_flow.run(parameters=dict(forecast=self.forecast,
-                                                ),
+        seismicity_flow.state_handlers=[self.forecast_handler.flow_state_handler]
+        print('session is: ',self.forecast_handler.session)
+        print(self.forecast_handler.flow_state_handler)
+        with prefect.context(forecast_id=self.forecast.id, session=self.session):
+            seismicity_flow.run(forecast=self.forecast,
+                                system_time=self.system_time,
                                 executor=executor)
 
 
@@ -452,29 +398,6 @@ class HazardFlow(QObject):
     #        # before checking for model runs with DISPATCHED status
     #        #hazard_flow.add_edge(
 
-class SynchronousThread:
-    """
-    Class for managing db tasks which should be done synchronously
-    but in a thread in threadpool. Tasks which involve loading the forecast
-    or project are required to finish before the next
-    one is started as the same object cannot be loaded by different
-    sessions in sqlalchemy.
-    """
-
-    def __init__(self):
-        self.thread_reserved = False
-        self.model_runs = 0
-        self.model_runs_count = 0
-
-    def reserve_thread(self):
-        self.thread_reserved = True
-
-    def release_thread(self):
-        self.thread_reserved = False
-
-    def is_reserved(self):
-        return self.thread_reserved
-
 
 class Engine(QObject):
     """
@@ -486,14 +409,13 @@ class Engine(QObject):
     execution_status_update = pyqtSignal(object)
     forecast_status_update = pyqtSignal(object)
 
-    def __init__(self, core):
+    def __init__(self):
         """
         :param RAMSIS.core.controller.Controller core: Reference to the core
         """
         super().__init__()
         self.threadpool = QThreadPool()
         self.busy = False
-        self.core = core
         self.session = None
 
     def run(self, t, forecast_id):
@@ -507,10 +429,8 @@ class Engine(QObject):
         :param forecast: Forecast to execute
         :type forecast: ramsis.datamodel.forecast.Forecast
         """
-        assert self.core.project
         if not self.session:
-            self.session = self.core.store.session
-        app_settings = self.core._settings
+            self.session = store.session
         if app_settings:
             try:
                 data_dir = app_settings['data_dir']
@@ -518,8 +438,9 @@ class Engine(QObject):
                 data_dir = None
 
         self.flow_runner = FlowRunner(
-            forecast_id, self.session, data_dir, self.core)
-        worker = Worker(self.flow_runner.run)
+            forecast_id, self.session, data_dir)
+        #print('creating worker')
+        #worker = Worker(self.flow_runner.run)
         self.flow_runner.forecast_handler.execution_status_update.connect(
             self.on_executor_status_changed)
         self.flow_runner.hazard_handler.execution_status_update.connect(
@@ -528,7 +449,10 @@ class Engine(QObject):
             execution_status_update.connect(
                 self.on_executor_status_changed)
 
-        self.threadpool.start(worker)
+        print("startine threadpool worker")
+        #self.threadpool.start(worker)
+        self.flow_runner.run()
+
 
     def on_executor_status_changed(self, status):
         """
@@ -540,7 +464,7 @@ class Engine(QObject):
 
 
 class FlowRunner:
-    def __init__(self, forecast_id, session, data_dir, core):
+    def __init__(self, forecast_id, session, data_dir):
         self.threadpool = QThreadPool()
         self.synchronous_thread = SynchronousThread()
         self.forecast_id = forecast_id
@@ -554,11 +478,11 @@ class FlowRunner:
             self.threadpool, self.synchronous_thread)
         self.hazard_handler = HazardHandler(
             self.threadpool, self.synchronous_thread)
+        print("###### session", self.session)
         self.forecast_handler.session = self.session
         self.hazard_handler.session = self.session
         self.hazard_preparation_handler.session = self.session
         self.stage_results = []
-        self.core = core
 
     def update_forecast_status(self, estatus):
         forecast = self.session.query(Forecast).filter(
@@ -595,7 +519,7 @@ class FlowRunner:
             forecast_flow = ForecastFlow(forecast_input,
                                          self.system_time,
                                          self.forecast_handler,
-                                         self.core)
+                                         self.session)
             forecast_flow.run()
 
             self.threadpool.waitForDone()
@@ -654,7 +578,7 @@ class FlowRunner:
             pass
         return stage_enabled
 
-    def run(self, progress_callback):
+    def run(self):#, progress_callback):
         print('run')
         self.update_forecast_status(EStatus.RUNNING)
         #datasource_flow = DataSourceFlow(forecast_starttime,
@@ -667,7 +591,7 @@ class FlowRunner:
         #self.threadpool.waitForDone()
         forecast_input = forecast_for_seismicity(self.forecast_id,
                                                  self.session)
-        assert forecast_input.status.state != EStatus.COMPLETE
+        ##assert forecast_input.status.state != EStatus.COMPLETE
 
         if self.run_stage(forecast_input, EStage.SEISMICITY):
             seismicity_stage_states = self.seismicity_flow(forecast_input)

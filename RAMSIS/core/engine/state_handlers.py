@@ -91,6 +91,13 @@ class BaseHandler(QObject):
         self.session = None
         self.threadpool = threadpool
         self.synchronous_thread = synchronous_thread
+    #@property
+    #def session(self):
+    #    if not self._session:
+    #        self._session = prefect.context.get('session')
+    #        if not self._session:
+    #            raise Exception("no session exists on the Handler")
+    #    return self._session
 
     def update_db(self):
         if self.session.dirty:
@@ -159,6 +166,11 @@ class ForecastHandler(BaseHandler):
     :param old_state: prefect.engine.state
     :param new_state: prefect.engine.state
     """
+    #@classmethod
+    #def set_session(cls, session):
+    #if not self.session:
+    #    self.session = prefect.context.get("session")
+
     def scenario_stage_status(self, scenario):
         # If all model runs are complete without error, then the
         stage = scenario[EStage.SEISMICITY]
@@ -203,6 +215,7 @@ class ForecastHandler(BaseHandler):
         self.threadpool.start(worker)
 
     def update_seismicity_statuses(self, new_state, logger, forecast_id):
+        print("in update seitmisity statuses", self.session)
         forecast = self.session.query(Forecast).filter(
             Forecast.id == forecast_id).first()
 
