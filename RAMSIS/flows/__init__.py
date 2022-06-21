@@ -1,31 +1,26 @@
 
-from prefect import Flow, Parameter, unmapped, case
+from prefect import Flow, Parameter, unmapped
 from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     ModelRuns, forecast_scenarios, UpdateFdsn, UpdateHyd,\
     dispatched_model_runs, DummyTask,\
     FlattenTask, ScenarioSerializeData, ForecastSerializeData
-from ramsis.datamodel import EStage, EStatus
+from ramsis.datamodel import EStage
 from RAMSIS.core.engine.state_handlers import ForecastHandler
 from RAMSIS.utils import SynchronousThread
 from RAMSIS.db import store
 from RAMSIS.flows.manager import StartForecastCheck, UpdateForecastStatus
 from RAMSIS.flows.state_handler import state_handler
 
-from prefect.client.client import Client
 from PyQt5.QtCore import QThreadPool
 from prefect.storage import Local
 from RAMSIS.flows.manager import manager_flow
 
-prefect_project_name = 'RAMSIS'
 
 
 forecast_handler = ForecastHandler(QThreadPool(), SynchronousThread())
 forecast_handler.session = store.session
 
-client = Client(api_key="pcs_kvEX5VagCLqpmGOpUQPa69ZKwAL6XN43qytP")
-# Will not create project if already exists
-project_id = client.create_project(prefect_project_name)
 
 
 

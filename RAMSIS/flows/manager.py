@@ -7,7 +7,8 @@ from RAMSIS.core.engine.state_handlers import ForecastHandler
 from RAMSIS.core.engine.engine import ForecastFlow, HazardFlow, \
     scenario_for_hazard, HazardPreparationFlow, forecast_for_seismicity
 
-from RAMSIS.tasks.manager import StartForecastCheck, UpdateForecastStatus
+from RAMSIS.tasks.manager import StartForecastCheck, UpdateForecastStatus,\
+    format_trigger_engine_command, trigger_engine, dummy_shell_task
 import prefect
 from RAMSIS.db import store
 from prefect import Flow, Parameter, task, case, Task
@@ -27,14 +28,15 @@ manager_task_location = join(result_location, task_result_format)
 with Flow("Manager",
           storage=Local(),
           state_handlers=[state_handler],
-          result=LocalResult(location='/home/sarsonl/repos/em1/rt-ramsis/{date:%Y-%m-%dT%H:%M:%S}/{task_name}.prefect'),
+          result=LocalResult(location='/home/sarsonl/repos/em1/rt-ramsis/{date:%Y-%m-%dT%H_%M_%S}/{task_name}.prefect'),
           ) as manager_flow:
     # Check if seismicity forecast should be run, returning
     # True if so. (if statuses are not complete)
     forecast_id = Parameter('forecast_id')
-    #system_time = Parameter('system_time')
     start_forecast_check = StartForecastCheck(result=LocalResult(location=manager_task_location))
     update_forecast_status = UpdateForecastStatus()
     with case(start_forecast_check(forecast_id), True):
         forecast = update_forecast_status(forecast_id, estatus=EStatus.RUNNING)
+        trigger_engine(command=format_trigger_engine_command(forecast_id))
+        #dummy_shell_task(command="pwd; ls; printenv")
 

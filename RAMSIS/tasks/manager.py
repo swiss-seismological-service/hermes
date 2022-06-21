@@ -1,7 +1,17 @@
-from prefect import Task
+from prefect import Task, task
 import prefect
-from RAMSIS.db import store
+from prefect.tasks.shell import ShellTask
+from RAMSIS.db import store, app_settings
 from ramsis.datamodel import Forecast, EStatus, EStage
+
+
+@task
+def format_trigger_engine_command(forecast_id):
+    return f"ramsis engine run {forecast_id}"
+
+trigger_engine = ShellTask(helper_script=app_settings['env/load_environment_cmd'], stream_output=True, log_stderr=True, return_all=True)
+
+dummy_shell_task = ShellTask(helper_script=app_settings['env/load_environment_cmd'], return_all=True)
 
 class ForecastTask(Task):
     def run_task(self, forecast, session, **kwargs):

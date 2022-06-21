@@ -1,4 +1,5 @@
 import os
+from os.path import join, abspath, dirname
 
 import collections
 import operator
@@ -62,9 +63,10 @@ class AppSettings:
 
 
 # Load application settings
-settings_file = os.path.abspath('../config/ramsis_config_public.yml')
-current_path = os.path.abspath(os.getcwd())
-if os.path.islink(os.path.join(current_path, settings_file)):
+dir_path = dirname(abspath(__file__))
+settings_file = os.path.join(dir_path, '../config/ramsis_config_public.yml')
+print("settings_file", settings_file)
+if os.path.islink(settings_file):
     settings_file = os.readlink(settings_file)
 app_settings = AppSettings(settings_file)
 db_settings = app_settings['database']

@@ -2,18 +2,27 @@
 """
 Forecast executing related engine facilities.
 """
+import json
+import prefect
+import os
 import time
 import traceback
 import sys
 from datetime import datetime
 import logging
-
+from prefect.utilities.context import Context
 from RAMSIS.db import store, db_settings, app_settings
 
 from sqlalchemy.orm import joinedload, subqueryload
 from PyQt5.QtCore import (pyqtSignal, QObject, QThreadPool, QRunnable,
                           pyqtSlot)
-
+from prefect.engine.cloud import CloudFlowRunner, CloudTaskRunner
+from prefect.configuration import Config
+from prefect import config
+from prefect.run_configs.local import LocalRun
+from prefect.engine.flow_runner import FlowRunner as _FlowRunner
+from prefect.engine.task_runner import TaskRunner
+from prefect.engine.executors import LocalExecutor
 from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     ModelRuns, forecast_scenarios, UpdateFdsn, UpdateHyd,\
@@ -40,6 +49,9 @@ from prefect import Flow, Parameter, unmapped
 from prefect.engine.executors import LocalDaskExecutor
 
 from RAMSIS.utils import SynchronousThread
+
+#CloudFlowRunner = _FlowRunner
+#CloudTaskRunner = TaskRunner
 
 class WorkerSignals(QObject):
     """
@@ -290,6 +302,7 @@ class ForecastFlow(QObject):
         self.forecast = forecast
         self.system_time = system_time
         self.session = session
+        self.state = None
 
     def run(self):
         print('inside ForecastFlow')
@@ -297,12 +310,49 @@ class ForecastFlow(QObject):
         # (sarsonl) To view DAG: seismicity_flow.visualize()
         executor = LocalDaskExecutor(scheduler='threads')
         seismicity_flow.state_handlers=[self.forecast_handler.flow_state_handler]
-        print('session is: ',self.forecast_handler.session)
-        print(self.forecast_handler.flow_state_handler)
+        print(prefect.context.to_dict())
+        #print('session is: ',self.forecast_handler.session)
+        #print(self.forecast_handler.flow_state_handler)
+        #print(os.environ)
+        #print("seismicity flow dir", seismicity_flow.executor, )
+        #print("executor dir", dir(executor))
+
+        #new_context = Context()
+        #print(new_context.config.engine.executor.default_class)
+        #new_context.config.engine.executor.default_class = LocalExecutor
+        #print(new_context.config.engine.executor.dask.cluster_class)
+        #new_context.config.engine.flow_runner.default_class = _FlowRunner
+        #new_context.config.engine.task_runner.default_class = TaskRunner
+        #new_context.config.cloud.api_key = ''
+        #new_context.config.cloud.tenant_id = ''
+
+        #print("new_context", new_context.to_dict())
+        #prefect.context = new_context
+        #prefect.context.config = prefect.configuration.load_configuration('/home/sarsonl/.prefect/config.toml')
+        #seismicity_flow.run_config = LocalRun()
+        print("prefect config before changes", config)
         with prefect.context(forecast_id=self.forecast.id, session=self.session):
-            seismicity_flow.run(forecast=self.forecast,
+            print(seismicity_flow.run_config)
+            config.engine.executor.default_class = LocalExecutor
+            config.engine.flow_runner.default_class = _FlowRunner
+            config.engine.task_runner.default_class = TaskRunner
+            print("prefect config after chagnes", config)
+            #prefect.config.engine.executor.default_class = LocalExecutor
+            #prefect.config.engine.flow_runner.default_class = _FlowRunner
+
+            #exit()
+            #seismicity_flow_id = flow.register(project_name="RAMSIS")
+            #logging.info(f"flow: {seismicity_flow} has been registered with flow_id: {seismicity_flow_id}")
+            #client.create_flow_run(seismicity_flow_id, labels=["agentless-run-123"],
+            json.dumps(seismicity_flow.environment)
+            self.state = seismicity_flow.run(forecast=self.forecast,
                                 system_time=self.system_time,
-                                executor=executor)
+                                executor=executor,
+                                #labels=['agentless-run-123'],
+                                runner_cls=_FlowRunner)
+            print(self.state)
+            #self.state = client.create_flow_run(
+            #        )
 
 
 class HazardPreparationFlow(QObject):
@@ -417,15 +467,25 @@ class Engine(QObject):
         self.threadpool = QThreadPool()
         self.busy = False
         self.session = None
+        print("##########################")
+        #os.environ["PREFECT__ENGINE__TASK_RUNNER__DEFAULT_CLASS"] = "prefect.engine.task_runner.TaskRunner"
+        #os.environ["PREFECT__ENGINE__FLOW_RUNNER__DEFAULT_CLASS"] = "prefect.engine.flow_runner.FlowRunner"
+        #os.environ["PREFECT__BACKEND"] = ""
 
-    def run(self, t, forecast_id):
+        #os.environ["PREFECT__CLOUD__SEND_FLOW_RUN_LOGS"] = "false"
+        #os.environ["PREFECT__CLOUD__AGENT__LABELS"] = ""
+        #os.environ["PREFECT__CONTEXT__FLOW_RUN_ID"] = ""
+        #os.environ["PREFECT__CLOUD__AUTH_TOKEN"] = ""
+        #os.environ["PREFECT__CLOUD__API"]=""
+        #os.environ["PREFECT__CLOUD__TENANT_ID"] = ""
+
+    def run(self, forecast_id):
         """
         Runs the forecast with a prefect flow.
 
         The :class:`~RAMSIS.core.taskmanager.ForecastTask` invokes this
         whenever a new forecast is due.
 
-        :param datetime t: Time of invocation
         :param forecast: Forecast to execute
         :type forecast: ramsis.datamodel.forecast.Forecast
         """
@@ -439,8 +499,6 @@ class Engine(QObject):
 
         self.flow_runner = FlowRunner(
             forecast_id, self.session, data_dir)
-        #print('creating worker')
-        #worker = Worker(self.flow_runner.run)
         self.flow_runner.forecast_handler.execution_status_update.connect(
             self.on_executor_status_changed)
         self.flow_runner.hazard_handler.execution_status_update.connect(
@@ -449,8 +507,6 @@ class Engine(QObject):
             execution_status_update.connect(
                 self.on_executor_status_changed)
 
-        print("startine threadpool worker")
-        #self.threadpool.start(worker)
         self.flow_runner.run()
 
 
@@ -478,7 +534,6 @@ class FlowRunner:
             self.threadpool, self.synchronous_thread)
         self.hazard_handler = HazardHandler(
             self.threadpool, self.synchronous_thread)
-        print("###### session", self.session)
         self.forecast_handler.session = self.session
         self.hazard_handler.session = self.session
         self.hazard_preparation_handler.session = self.session
@@ -511,7 +566,6 @@ class FlowRunner:
         return stage_states
 
     def seismicity_flow(self, forecast_input):
-        print("seismicity flow")
         seismicity_stage_states = self.stage_states(EStage.SEISMICITY)
         if any(state != EStatus.COMPLETE for state in
                  seismicity_stage_states):
@@ -579,23 +633,16 @@ class FlowRunner:
         return stage_enabled
 
     def run(self):#, progress_callback):
-        print('run')
         self.update_forecast_status(EStatus.RUNNING)
-        #datasource_flow = DataSourceFlow(forecast_starttime,
-        #                                 self.core,
-        #                                 self.forecast_handler)
-        #print('before datasource run')
-        #datasource_flow.run()
-        #print('after datasource run')
-
-        #self.threadpool.waitForDone()
         forecast_input = forecast_for_seismicity(self.forecast_id,
                                                  self.session)
-        ##assert forecast_input.status.state != EStatus.COMPLETE
+        self.logger.info(f"Forecast status is {forecast_input.status.state}") 
+        assert forecast_input.status.state != EStatus.COMPLETE
 
         if self.run_stage(forecast_input, EStage.SEISMICITY):
             seismicity_stage_states = self.seismicity_flow(forecast_input)
             self.stage_results.extend(seismicity_stage_states)
+        self.logger.info(f"The stage states are: {self.stage_results}")
 
         # Run hazard stage per scenario
         for scenario in forecast_input.scenarios:

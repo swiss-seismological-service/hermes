@@ -215,7 +215,7 @@ class ForecastHandler(BaseHandler):
         self.threadpool.start(worker)
 
     def update_seismicity_statuses(self, new_state, logger, forecast_id):
-        print("in update seitmisity statuses", self.session)
+        print("in update seismicity statuses", self.session)
         forecast = self.session.query(Forecast).filter(
             Forecast.id == forecast_id).first()
 
@@ -319,6 +319,9 @@ class ForecastHandler(BaseHandler):
                 worker = Worker(self.finished_model_run, new_state, logger,
                                 synchronous_thread=self.synchronous_thread)
                 self.threadpool.start(worker)
+                updated_model_run = self.session.query(SeismicityModelRun).\
+                    filter(SeismicityModelRun.id == model_run.id).first()
+                logger.info(f"In poll handler: is there a result attached? {updated_model_run.result}")
 
             elif self.state_evaluator(new_state, [self.error_result]):
                 model_run = new_state.result
@@ -343,9 +346,17 @@ class ForecastHandler(BaseHandler):
         model_run, model_result = new_state.result
         update_model_run = self.session.query(SeismicityModelRun).\
             filter(SeismicityModelRun.id == model_run.id).first()
-        update_model_run.result = model_result
-        self.session.add(model_result)
-        self.update_db()
+        logger.info(f"model run found in finished_model_run is: {update_model_run}"
+                f" and model result is: {model_result}")
+        try:
+            update_model_run.result = model_result
+            self.session.add(model_result)
+            self.update_db()
+            updated_model_run = self.session.query(SeismicityModelRun).\
+            filter(SeismicityModelRun.id == model_run.id).first()
+            logger.info(f"is there a result attached? {updated_model_run.result}")
+        except Exception as err:
+            logger.info(f"error found in finished_model_run state handler, {err}")
 
     def add_catalog(self, new_state, logger):
         forecast = new_state.result

@@ -38,8 +38,8 @@ _install_requires = [
     "lxml>=3.3.3",
     "matplotlib",
     "marshmallow",
-    "numpy<=1.21",
-    "obspy==1.2.2",
+    "numpy>=1.22.3",
+    "obspy>=1.3.0",
     "PyOpenGL>=3.1.1a1",
     "PyQt5 >=5.12, <5.13",
     "pymap3d",
@@ -119,8 +119,7 @@ setup(
     # TODO(damb): test_suite=unittest.TestCase
     # TODO(damb): ramsis does not necessarily depend on doc extras flag
     entry_points={
-        'console_scripts': ['ramsis = RAMSIS.main:main',
-                            'ramsis-sfm-client = RAMSIS.app.client:main', ]}
+        'console_scripts': ['ramsis = RAMSIS.cli:main', ]}
 )
 
 # ----- END OF setup.py -----
