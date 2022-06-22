@@ -319,9 +319,6 @@ class ForecastHandler(BaseHandler):
                 worker = Worker(self.finished_model_run, new_state, logger,
                                 synchronous_thread=self.synchronous_thread)
                 self.threadpool.start(worker)
-                updated_model_run = self.session.query(SeismicityModelRun).\
-                    filter(SeismicityModelRun.id == model_run.id).first()
-                logger.info(f"In poll handler: is there a result attached? {updated_model_run.result}")
 
             elif self.state_evaluator(new_state, [self.error_result]):
                 model_run = new_state.result
@@ -350,11 +347,15 @@ class ForecastHandler(BaseHandler):
                 f" and model result is: {model_result}")
         try:
             update_model_run.result = model_result
-            self.session.add(model_result)
+            print(f"updating model result:{update_model_run.result},model run id:  {update_model_run.id}")
+            self.session.add(update_model_run.result)
+            self.session.add(update_model_run)
+            print("expecting session to be dirty: ", self.session.dirty)
             self.update_db()
+            print(f"after update of model run {update_model_run.id}")
             updated_model_run = self.session.query(SeismicityModelRun).\
             filter(SeismicityModelRun.id == model_run.id).first()
-            logger.info(f"is there a result attached? {updated_model_run.result}")
+            logger.info(f"is there a result attached? {update_model_run.id}, {updated_model_run.result}")
         except Exception as err:
             logger.info(f"error found in finished_model_run state handler, {err}")
 

@@ -28,7 +28,7 @@ manager_task_location = join(result_location, task_result_format)
 with Flow("Manager",
           storage=Local(),
           state_handlers=[state_handler],
-          result=LocalResult(location='/home/sarsonl/repos/em1/rt-ramsis/{date:%Y-%m-%dT%H_%M_%S}/{task_name}.prefect'),
+          result=LocalResult(),
           ) as manager_flow:
     # Check if seismicity forecast should be run, returning
     # True if so. (if statuses are not complete)

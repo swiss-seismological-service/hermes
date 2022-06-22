@@ -1,7 +1,7 @@
 import typer
 from datetime import timedelta
 from typing import List
-from ramsis.datamodel import Forecast, EStatus
+from ramsis.datamodel import Forecast, EStatus, EStage
 from RAMSIS.db import store
 from RAMSIS.flows.register import \
     get_client
@@ -12,16 +12,30 @@ app = typer.Typer()
 
 
 @app.command()
-def run(forecast_id: int):
+def run(forecast_id: int,
+        force: bool = typer.Option(False, help="Force the forecast to run again, even if completed.")):
     session = store.session
     forecast = session.query(Forecast).filter(Forecast.id == forecast_id).one_or_none()
     if not forecast:
         typer.echo("The forecast id does not exist")
         raise typer.Exit()
+    else:
+        typer.echo(f"forecast found: {forecast}")
+    if force:
+        forecast.status.state = EStatus.PENDING
+        for scenario in forecast.scenarios:
+            scenario.status.state = EStatus.PENDING
+            stage = scenario[EStage.SEISMICITY]
+            stage.status.state = EStatus.PENDING
+            for run in stage.runs:
+                run.status.state = EStatus.PENDING
+    session.commit()
 
     if forecast.status.state != EStatus.COMPLETE:
         client = get_client()
         schedule_forecast(forecast, client)
+    else:
+        typer.echo("Forecast is already complete.")
 
 
 
@@ -48,6 +62,15 @@ def clone(forecast_id: int,
         if cloned.starttime >= cloned.endtime:
             typer.echo("Some forecast startimes exceed the endtime, so they will not be created.")
             break
+        cloned.project_id = forecast.project_id
+        cloned.status.state = EStatus.PENDING
+        for scenario in cloned.scenarios:
+            scenario.status.state = EStatus.PENDING
+            stage = scenario[EStage.SEISMICITY]
+            stage.status.state = EStatus.PENDING
+            for run in stage.runs:
+                run.status.state = EStatus.PENDING
+
         else:
             session.add(cloned)
             new_forecasts.append(cloned)

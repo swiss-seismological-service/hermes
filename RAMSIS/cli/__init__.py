@@ -37,14 +37,19 @@ def run(project_id: int = typer.Option(..., help="Project id to search for forec
         typer.echo("The project id does not exist")
         raise typer.Exit()
 
+    forecasts_test = session.query(Forecast).all()
+    print(forecasts_test, [f.project_id for f in forecasts_test])
     # get list of forecasts for scheduling
     forecasts = session.query(Forecast).filter(
             Forecast.project_id==project_id).all()
+    print("forecasts", forecasts)
     if not forecasts:
         typer.echo("No forecasts exist that are in a non-complete state.")
     client = get_client()
     for forecast in forecasts:
+        print(forecast.id)
         if forecast.status.state != EStatus.COMPLETE:
+            print("forecast is not complete, scheduling forecast")
             schedule_forecast(forecast, client, dry_run=dry_run)
 
 
