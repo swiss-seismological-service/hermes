@@ -25,7 +25,6 @@ class HYDWSDataSource(QtCore.QThread):
     """
     DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
-    data_received = QtCore.pyqtSignal(object)
 
     def __init__(self, url, project, timeout=None):
         super().__init__()
@@ -81,8 +80,6 @@ class HYDWSDataSource(QtCore.QThread):
 
                 self.logger.info(msg)
 
-        # self.data_received.emit(bh)
-        print("returning borehole at end of task in datasources", bh)
         return bh
 
 
@@ -92,8 +89,6 @@ class FDSNWSDataSource(QtCore.QThread):
     """
 
     DESERIALZER = QuakeMLObservationCatalogDeserializer
-
-    data_received = QtCore.pyqtSignal(object)
 
     def __init__(self, url, project, timeout=None):
         super().__init__()

@@ -9,7 +9,7 @@ from RAMSIS.core.engine.engine import Engine
 from RAMSIS.flows.register import register_project, register_flows, \
     get_client, prefect_project_name
 from prefect.tasks.prefect import create_flow_run, wait_for_flow_run, get_task_run_result
-from RAMSIS.cli.utils import schedule_forecast
+from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id
 
 ramsis_app = typer.Typer()
 # engine to be removed after migrated to full use of prefect
@@ -46,11 +46,12 @@ def run(project_id: int = typer.Option(..., help="Project id to search for forec
     if not forecasts:
         typer.echo("No forecasts exist that are in a non-complete state.")
     client = get_client()
+    idempotency_id = get_idempotency_id()
     for forecast in forecasts:
-        print(forecast.id)
         if forecast.status.state != EStatus.COMPLETE:
-            print("forecast is not complete, scheduling forecast")
-            schedule_forecast(forecast, client, dry_run=dry_run)
+            typer.echo(
+                f"Forecast: {forecast.id} is being scheduled.")
+            schedule_forecast(forecast, client,idempotency_id=idempotency_id, dry_run=dry_run)
 
 
 def main():

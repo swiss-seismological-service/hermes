@@ -2,15 +2,12 @@
 """
 Forecast executing related engine facilities.
 """
-import json
 import prefect
-import os
 import time
 import traceback
 import sys
 from datetime import datetime
 import logging
-from prefect.utilities.context import Context
 from RAMSIS.db import store, db_settings, app_settings
 
 from sqlalchemy.orm import joinedload, subqueryload
@@ -44,7 +41,6 @@ from ramsis.datamodel.status import EStatus
 from ramsis.datamodel.hazard import HazardModelRun, HazardMap, HazardCurve,\
     HazardPointValue
 
-import prefect
 from prefect import Flow, Parameter, unmapped
 from prefect.engine.executors import LocalDaskExecutor
 

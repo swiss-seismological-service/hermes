@@ -90,6 +90,8 @@ with Flow("SeismicityForecast",
     model_run_poller.map(unmapped(forecast),
                          model_runs_dispatched)
 
+# Only register once the flow has been converted to something that can be serializable. - next step.
+# recreated internally every time it runs at the moment, not stored on the cloud.
 #seismicity_flow_id = client.register(seismicity_flow,
 #                                     project_name=prefect_project_name)
 
