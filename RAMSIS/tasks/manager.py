@@ -21,6 +21,9 @@ class ForecastTask(Task):
         session = store.session
         forecast = session.query(Forecast).filter(
             Forecast.id==forecast_id).one_or_none()
+        if not forecast:
+            print("No forecast found", forecast_id)
+            raise Exception(f"No forecast found {forecast_id}")
         retval = self.run_task(forecast, session, **kwargs)
         session.remove()
         return retval

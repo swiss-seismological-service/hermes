@@ -1,15 +1,13 @@
 import os
-from os.path import join, abspath, dirname
-
+from os.path import abspath, dirname
 import collections
 import operator
 import logging
 import yaml
-
 from functools import reduce
-from PyQt5.QtCore import QStandardPaths
 
 from RAMSIS.core.store import Store
+
 
 class AppSettings:
     """
@@ -73,4 +71,3 @@ if all(v for v, k in db_settings.items()):
         f'{db_settings["password"]}@{address}/{db_settings["name"]}'
 
 store = Store(db_url)
-

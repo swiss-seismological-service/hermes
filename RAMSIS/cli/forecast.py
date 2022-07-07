@@ -1,11 +1,16 @@
 import typer
+import json
 from datetime import timedelta
-from ramsis.datamodel import Forecast, EStatus
+from sqlalchemy import select
+from ramsis.datamodel import Forecast, Project, EStatus
 from RAMSIS.db import store
 from RAMSIS.flows.register import \
     get_client
 from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
     reset_forecast
+from pathlib import Path
+from RAMSIS.cli.utils import create_forecast, create_flow_run_name, \
+    matched_flow_run, get_flow_run_label, restart_flow_run
 
 
 app = typer.Typer()
@@ -24,14 +29,29 @@ def run(forecast_id: int,
         raise typer.Exit()
     else:
         typer.echo(f"forecast found: {forecast}")
+    idempotency_id = get_idempotency_id()
+    flow_run_name = create_flow_run_name(idempotency_id, forecast.id)
+    label = get_flow_run_label()
+    existing_flow_run = matched_flow_run(flow_run_name, label)
     if force:
+        typer.echo("Resetting RAMSIS statuses")
         forecast = reset_forecast(forecast)
-    session.commit()
+        session.commit()
+        if existing_flow_run:
+            typer.echo("Restarting flow run")
+            restart_flow_run(existing_flow_run['id'])
+            typer.Exit()
+    else:
+        if existing_flow_run:
+            typer.echo("A flow run exists with the same idempotency key  and"
+                       "with the following information: {existing_flow_run}."
+                       "To restart this, please use the --force option which"
+                       "will reschedule tasks. Results will be overwritten.")
+            typer.Exit()
 
     if forecast.status.state != EStatus.COMPLETE:
         client = get_client()
-        idempotency_id = get_idempotency_id()
-        schedule_forecast(forecast, client, idempotency_id=idempotency_id)
+        schedule_forecast(forecast, client, flow_run_name, label)
     else:
         typer.echo("Forecast is already complete.")
 
@@ -98,3 +118,43 @@ def delete(forecast_id: int):
         Forecast.id == forecast_id).delete()
     session.commit()
     typer.echo("Finished deleting forecast")
+
+
+@app.command()
+def create(
+        project_id: int = typer.Option(...),
+        config: Path = typer.Option(
+        ...,
+        exists=True,
+        readable=True),
+        inj_plan_directory: Path = typer.Option(
+        ...,
+        exists=True,
+        readable=True,
+        help="Path to directory containing the "
+        "injection plans. The injection plan file name is "
+        "contained within the project config")):
+
+    session = store.session
+    project = session.execute(
+        select(Project).filter_by(id=project_id)).scalar_one_or_none()
+    if not project:
+        typer.echo(f"Project id {project_id} does not exist")
+        raise typer.Exit()
+
+    with open(config, "r") as forecast_json:
+        forecast_config_list = json.load(forecast_json)
+    new_forecasts = []
+    for forecast_config in forecast_config_list["FORECASTS"]:
+        forecast = create_forecast(
+            project, forecast_config, inj_plan_directory)
+        new_forecasts.append(forecast)
+        project.forecasts.append(forecast)
+    store.save()
+
+    for forecast in new_forecasts:
+        typer.echo(f"created forecast {forecast.name} "
+                   f"with id: {forecast.id} under project "
+                   f"{forecast.project.id}")
+
+    store.close()

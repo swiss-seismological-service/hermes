@@ -4,19 +4,13 @@ from time import time, sleep
 from prefect.engine.result import NoResultType
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
 
-from ramsis.datamodel import InjectionWell, SeismicObservationCatalog
-from ramsis.datamodel.status import EStatus
-from ramsis.datamodel.seismicity import SeismicityModelRun
-from ramsis.datamodel.hazard import HazardModelRun, GeoPoint,\
+from ramsis.datamodel import InjectionWell, SeismicObservationCatalog,\
+    EStatus, SeismicityModelRun, HazardModelRun, GeoPoint,\
     HazardPointValue, HazardCurve, HazardMap
 from ramsis.datamodel.forecast import EStage, Forecast, ForecastScenario
 import logging
 
 logger = logging.getLogger('status_handler')
-
-# Time in minutes from the datasource creation time
-# where the datasource will not be updated again.
-DATASOURCE_TIMELIMIT = 1
 
 
 class Worker(QRunnable):
@@ -91,13 +85,6 @@ class BaseHandler(QObject):
         self.session = None
         self.threadpool = threadpool
         self.synchronous_thread = synchronous_thread
-    #@property
-    #def session(self):
-    #    if not self._session:
-    #        self._session = prefect.context.get('session')
-    #        if not self._session:
-    #            raise Exception("no session exists on the Handler")
-    #    return self._session
 
     def update_db(self):
         if self.session.dirty:
@@ -166,10 +153,6 @@ class ForecastHandler(BaseHandler):
     :param old_state: prefect.engine.state
     :param new_state: prefect.engine.state
     """
-    #@classmethod
-    #def set_session(cls, session):
-    #if not self.session:
-    #    self.session = prefect.context.get("session")
 
     def scenario_stage_status(self, scenario):
         # If all model runs are complete without error, then the
@@ -215,7 +198,6 @@ class ForecastHandler(BaseHandler):
         self.threadpool.start(worker)
 
     def update_seismicity_statuses(self, new_state, logger, forecast_id):
-        print("in update seismicity statuses", self.session)
         forecast = self.session.query(Forecast).filter(
             Forecast.id == forecast_id).first()
 
@@ -343,21 +325,16 @@ class ForecastHandler(BaseHandler):
         model_run, model_result = new_state.result
         update_model_run = self.session.query(SeismicityModelRun).\
             filter(SeismicityModelRun.id == model_run.id).first()
-        logger.info(f"model run found in finished_model_run is: {update_model_run}"
-                f" and model result is: {model_result}")
+        logger.info(
+            f"model run found in finished_model_run is: {update_model_run}"
+            f" and model result is: {model_result}")
         try:
             update_model_run.result = model_result
-            print(f"updating model result:{update_model_run.result},model run id:  {update_model_run.id}")
             self.session.add(update_model_run.result)
-            self.session.add(update_model_run)
-            print("expecting session to be dirty: ", self.session.dirty)
             self.update_db()
-            print(f"after update of model run {update_model_run.id}")
-            updated_model_run = self.session.query(SeismicityModelRun).\
-            filter(SeismicityModelRun.id == model_run.id).first()
-            logger.info(f"is there a result attached? {update_model_run.id}, {updated_model_run.result}")
         except Exception as err:
-            logger.info(f"error found in finished_model_run state handler, {err}")
+            logger.info("error found in finished_model_run state handler, "
+                        f"{err}")
 
     def add_catalog(self, new_state, logger):
         forecast = new_state.result
@@ -383,14 +360,12 @@ class ForecastHandler(BaseHandler):
         return new_state
 
     def delete_data(self, new_state, logger, **kwargs):
-        print("starting to deleting data")
         forecast = new_state.result
         self.session.query(InjectionWell).filter(
             InjectionWell.forecast_id == forecast.id).delete()
         self.session.query(SeismicObservationCatalog).filter(
             SeismicObservationCatalog.forecast_id == forecast.id).delete()
         self.update_db()
-        print("have finished deleting data")
 
     def forecast_data_delete(self, obj, old_state, new_state):
         logger = prefect.context.get("logger")

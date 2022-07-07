@@ -77,6 +77,7 @@ class EStatus(enum.Enum):
 Message = collections.namedtuple(
     'StatusMessage', ['status', 'status_code', 'data', 'info'])
 
+
 class SynchronousThread:
     """
     Class for managing db tasks which should be done synchronously

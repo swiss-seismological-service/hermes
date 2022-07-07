@@ -22,3 +22,9 @@ def register_project(project_name=prefect_project_name):
     # Will not create project if already exists
     project_id = client.create_project(project_name)
     logging.info(f"project {project_name} has been registered with project_id: {project_id}")
+
+# When we no longer want to run a Local agent with streamed
+# logs, it would be good to run an 
+# from prefect.agent.docker import DockerAgent
+# DockerAgent(labels=["dev", "staging"]).start()
+

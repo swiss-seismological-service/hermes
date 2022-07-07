@@ -9,21 +9,13 @@ from ramsis.datamodel import EStage
 from RAMSIS.core.engine.state_handlers import ForecastHandler
 from RAMSIS.utils import SynchronousThread
 from RAMSIS.db import store
-from RAMSIS.flows.manager import StartForecastCheck, UpdateForecastStatus
-from RAMSIS.flows.state_handler import state_handler
 
 from PyQt5.QtCore import QThreadPool
 from prefect.storage import Local
-from RAMSIS.flows.manager import manager_flow
-
 
 
 forecast_handler = ForecastHandler(QThreadPool(), SynchronousThread())
 forecast_handler.session = store.session
-
-
-
-
 
 
 # Seismicity Forecast Flow
@@ -89,11 +81,3 @@ with Flow("SeismicityForecast",
             forecast_handler.poll_seismicity_state_handler])
     model_run_poller.map(unmapped(forecast),
                          model_runs_dispatched)
-
-# Only register once the flow has been converted to something that can be serializable. - next step.
-# recreated internally every time it runs at the moment, not stored on the cloud.
-#seismicity_flow_id = client.register(seismicity_flow,
-#                                     project_name=prefect_project_name)
-
-
-

@@ -76,7 +76,6 @@ class Store:
         :returns: True if successful
         :rtype: bool
         """
-        logger.info('Initializing DB')
         try:
             ORMBase.metadata.create_all(self.engine, checkfirst=True)
         except SQLAlchemyError as e:
@@ -211,7 +210,9 @@ class Store:
             return True
         return False
 
-
+#TODO look at removal, I think this was useful for
+# the GUI, but believe everything can be done with scoped
+# session.
 class EditingContext:
     """
     A temporary context for editing data model objects
