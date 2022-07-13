@@ -22,8 +22,8 @@ def run(forecast_id: int,
             False, help="Force the forecast to run again, "
                         "even if completed.")):
     session = store.session
-    forecast = session.query(Forecast).filter(
-        Forecast.id == forecast_id).one_or_none()
+    forecast = session.execute(
+        select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
     if not forecast:
         typer.echo("The forecast id does not exist")
         raise typer.Exit()
@@ -36,10 +36,11 @@ def run(forecast_id: int,
     if force:
         typer.echo("Resetting RAMSIS statuses")
         forecast = reset_forecast(forecast)
-        session.commit()
+        store.save()
         if existing_flow_run:
             typer.echo("Restarting flow run")
             restart_flow_run(existing_flow_run['id'])
+            store.close()
             typer.Exit()
     else:
         if existing_flow_run:
@@ -47,6 +48,7 @@ def run(forecast_id: int,
                        "with the following information: {existing_flow_run}."
                        "To restart this, please use the --force option which"
                        "will reschedule tasks. Results will be overwritten.")
+            store.close()
             typer.Exit()
 
     if forecast.status.state != EStatus.COMPLETE:
@@ -65,8 +67,8 @@ def clone(forecast_id: int,
           ):
 
     session = store.session
-    forecast = session.query(Forecast).filter(
-        Forecast.id == forecast_id).one_or_none()
+    forecast = session.execute(
+        select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
     if not forecast:
         typer.echo("The forecast id does not exist")
         raise typer.Exit()
@@ -87,25 +89,26 @@ def clone(forecast_id: int,
 
         cloned.project_id = forecast.project_id
         cloned = reset_forecast(cloned)
-        session.add(cloned)
+        store.add(cloned)
         new_forecasts.append(cloned)
 
-    session.commit()
+    store.save()
     for new_forecast in new_forecasts:
         new_forecast.name = f"Forecast {new_forecast.id}"
-    session.commit()
+    store.save()
     for forecast in new_forecasts:
         typer.echo(f"New forecast initialized with id: {forecast.id} "
                    f"and starttime: {forecast.starttime}")
     typer.echo(f"{len(new_forecasts)} Forecasts added successfully.")
+    store.close()
 
 
 @app.command()
 def delete(forecast_id: int):
     session = store.session
-    forecast_queried = session.query(Forecast).filter(
-        Forecast.id == forecast_id).one_or_none()
-    if not forecast_queried:
+    forecast = session.execute(
+        select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
+    if not forecast:
         typer.echo("The forecast does not exist")
         raise typer.Exit()
     delete = typer.confirm("Are you sure you want to delete the  "
@@ -114,10 +117,10 @@ def delete(forecast_id: int):
         typer.echo("Not deleting")
         raise typer.Abort()
 
-    session.query(Forecast).filter(
-        Forecast.id == forecast_id).delete()
-    session.commit()
+    store.delete(forecast)
+    store.save()
     typer.echo("Finished deleting forecast")
+    store.close()
 
 
 @app.command()

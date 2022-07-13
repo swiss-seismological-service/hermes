@@ -75,3 +75,23 @@ def update(
                f"with id: {project.id}")
 
     store.close()
+
+
+@app.command()
+def delete(project_id: int):
+    session = store.session
+    project = session.execute(
+        select(Project).filter_by(id=project_id)).scalar_one_or_none()
+    if not project:
+        typer.echo("The project does not exist")
+        raise typer.Exit()
+    delete = typer.confirm("Are you sure you want to delete the  "
+                           f"project with id: {project_id}")
+    if not delete:
+        typer.echo("Not deleting")
+        raise typer.Abort()
+
+    store.delete(project)
+    store.save()
+    typer.echo("Finished deleting project")
+    store.close()

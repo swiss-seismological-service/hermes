@@ -3,12 +3,9 @@
 Various utility functions
 """
 
-import abc
 import collections
 import enum
 import functools
-
-from PyQt5.QtCore import QTimer, QObject
 
 from ramsis.utils.error import Error
 
@@ -40,21 +37,6 @@ def rgetattr(obj, attr, *args):
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
     return functools.reduce(_getattr, [obj] + attr.split('.'))
-
-
-def call_later(method, *args, **kwargs):
-    """
-    Invokes a method after finishing the current Qt run loop
-
-    :param callable method: Method to invoke
-    :param args: Positional args to pass to method
-    :param kwargs: Keyword args to pass to method
-    """
-    QTimer.singleShot(0, functools.partial(method, *args, **kwargs))
-
-
-class QtABCMeta(type(QObject), abc.ABCMeta):
-    pass
 
 
 class RamsisError(Error):
