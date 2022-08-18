@@ -47,7 +47,6 @@ def configure(
     else:
         typer.echo(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
-
     session = store.session
     with open(model_config, "r") as model_read:
         config = json.load(model_read)

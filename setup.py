@@ -23,33 +23,25 @@ if sys.version_info[:2] < (3, 6):
 
 _authors = [
     'Lukas Heiniger',
-    'Walsh Alexander',
+    'Laura Sarson',
     'Daniel Armbruster']
 _authors_email = [
     'lukas.heiniger@sed.ethz.ch',
-    'daniel.armbruster@sed.ethz.ch']
+    'laura.sarson@sed.ethz.ch']
 
 _install_requires = [
-    # XXX(damb): astropy dependency added due to AttributeError
-    # AttributeError: module 'scipy.special' has no attribute 'loggamma'
-    # while installing pymap3d
-    "astropy>=2.0.3",
-    "GDAL",
     "lxml>=3.3.3",
-    "matplotlib",
     "marshmallow",
     "numpy>=1.22.3",
     "obspy>=1.3.0",
     "PyOpenGL>=3.1.1a1",
     "PyQt5 >=5.12, <5.13",
-    "pymap3d",
-    "pyqtgraph==0.10.0",
     "python-dateutil>=2.8.0",
     "PyYAML>=5.1.1",
     "ramsis.datamodel==0.4",
     "requests>=2.18.4",
     "transitions==0.6.9",
-    "prefect",
+    "prefect==0.15.10",
     "pyproj>=3.2.1",
     "psycopg2==2.8.3",
     "jinja2",
@@ -62,8 +54,6 @@ _extras_require = {'doc': [
     "sphinx-rtd-theme==0.1.9", ]}
 
 _dependency_links = [(
-    "git+https://gitlab.seismo.ethz.ch/indu/pyqtgraph.git"
-    "@d58e7580762767b9ed49421f62ba674e01ca380c#egg=pyqtgraph-0.10.0"), (
     "git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git"
     "#egg=ramsis.datamodel-0.1"), ]
 
@@ -81,7 +71,7 @@ _data_files = [
 setup(
     name='RAMSIS',
     # TODO(damb): Provide version string globally
-    version='0.1',
+    version='1.0',
     author=' (SED, ETHZ),'.join(_authors),
     author_email=', '.join(_authors_email),
     description=('Real Time Risk Assessment and Mitigation for Induced'
