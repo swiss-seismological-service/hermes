@@ -3,12 +3,9 @@
 Various utility functions
 """
 
-import abc
 import collections
 import enum
 import functools
-
-from PyQt5.QtCore import QTimer, QObject
 
 from ramsis.utils.error import Error
 
@@ -42,21 +39,6 @@ def rgetattr(obj, attr, *args):
     return functools.reduce(_getattr, [obj] + attr.split('.'))
 
 
-def call_later(method, *args, **kwargs):
-    """
-    Invokes a method after finishing the current Qt run loop
-
-    :param callable method: Method to invoke
-    :param args: Positional args to pass to method
-    :param kwargs: Keyword args to pass to method
-    """
-    QTimer.singleShot(0, functools.partial(method, *args, **kwargs))
-
-
-class QtABCMeta(type(QObject), abc.ABCMeta):
-    pass
-
-
 class RamsisError(Error):
     """Base RAMSIS exception ({})."""
 
@@ -76,3 +58,27 @@ class EStatus(enum.Enum):
 
 Message = collections.namedtuple(
     'StatusMessage', ['status', 'status_code', 'data', 'info'])
+
+
+class SynchronousThread:
+    """
+    Class for managing db tasks which should be done synchronously
+    but in a thread in threadpool. Tasks which involve loading the forecast
+    or project are required to finish before the next
+    one is started as the same object cannot be loaded by different
+    sessions in sqlalchemy.
+    """
+
+    def __init__(self):
+        self.thread_reserved = False
+        self.model_runs = 0
+        self.model_runs_count = 0
+
+    def reserve_thread(self):
+        self.thread_reserved = True
+
+    def release_thread(self):
+        self.thread_reserved = False
+
+    def is_reserved(self):
+        return self.thread_reserved

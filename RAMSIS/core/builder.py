@@ -6,12 +6,9 @@ Object creation and building facilities.
 import datetime
 import functools
 
-from ramsis.datamodel.forecast import (
-    Forecast, ForecastScenario, ForecastStage, EStage)
-from ramsis.datamodel.model import EModel
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.seismicity import SeismicityModelRun
-from ramsis.datamodel.status import Status
+from ramsis.datamodel import (
+    Forecast, ForecastScenario, ForecastStage, EStage,
+    EModel, Project, SeismicityModelRun, Status)
 
 
 # NOTE(damb): The approach chosen is similar to matplotlib's pyplot builder

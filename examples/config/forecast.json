@@ -1,0 +1,31 @@
+{
+    "FORECASTS": [
+        {
+	    "FORECAST_NAME": "Forecast in future",
+            "FORECAST_STARTTIME": "2022-11-25T04:00:00",
+            "FORECAST_ENDTIME": "2022-11-25T22:50:00",
+            "SCENARIOS": [
+                {
+    		    "RUN_MODELS": "ALL", 
+		    "SCENARIO_NAME": "Scenario ###",
+		    "EPOCH_DURATION": 1800,
+                    "SCENARIO_JSON": "scenario_st2_section_5_20.json",
+                    "RESERVOIR": {
+                        "x": [
+                            2679355.36334284,
+                            2679655.36334284
+                        ],
+                        "y": [
+                            1151313.82210478,
+                            1151613.82210478
+                        ],
+                        "z": [
+                            1122.33103153,
+                            1422.33103153
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

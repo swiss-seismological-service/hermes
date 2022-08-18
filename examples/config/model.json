@@ -2,7 +2,7 @@
     "SEISMICITY_MODELS":[
         {
             "MODEL_NAME":"EM1-MLE",
-            "URL":"http://localhost:5000",
+            "URL":"http://ramsis-em1.ethz.ch:5007",
             "CONFIG":{
                 "model_parameters":{
                     "Tau":60,
