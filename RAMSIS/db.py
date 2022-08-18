@@ -1,10 +1,12 @@
 import os
 from os.path import abspath, dirname
+from os import getenv
 import collections
 import operator
 import logging
 import yaml
 from functools import reduce
+from dotenv import dotenv_values
 
 from RAMSIS.core.store import Store
 
@@ -60,14 +62,19 @@ class AppSettings:
 
 # Load application settings
 dir_path = dirname(abspath(__file__))
-settings_file = os.path.join(dir_path, '../config/ramsis_config_public.yml')
+root_dir = dirname(dir_path)
+settings_file = os.path.join(dir_path, '..', 'config', 'ramsis_config_public.yml')
 if os.path.islink(settings_file):
     settings_file = os.readlink(settings_file)
 app_settings = AppSettings(settings_file)
-db_settings = app_settings['database']
-if all(v for v, k in db_settings.items()):
-    protocol, address = db_settings['url'].split('://')
-    db_url = f'{protocol}://{db_settings["user"]}:' \
-        f'{db_settings["password"]}@{address}/{db_settings["name"]}'
+
+testing_mode = bool(getenv("RAMSIS_TESTING_MODE", False)) is True
+env_file = ".env.test" if testing_mode else ".env"
+env_file_path = os.path.join(root_dir, env_file)
+env = dotenv_values(env_file_path)
+
+
+db_url = f'postgresql://{env["POSTGRES_USER"]}:{env["POSTGRES_PASSWORD"]}' \
+        f'@{env["POSTGRES_SERVER"]}:{env["POSTGRES_PORT"]}/{env["POSTGRES_DB"]}'
 
 store = Store(db_url)
