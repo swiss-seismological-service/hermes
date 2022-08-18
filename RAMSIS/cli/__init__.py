@@ -1,6 +1,7 @@
 import typer
 from RAMSIS.cli import project, model, engine, forecast as _forecast
 import logging
+from sqlalchemy import select
 from ramsis.datamodel import Forecast, Project, EStatus
 from RAMSIS.flows.manager import manager_flow, manager_flow_name
 from RAMSIS.db import store
@@ -33,18 +34,19 @@ def run(project_id: int = typer.Option(
         ):
     typer.echo(f"Scheduling forecasts for project id {project_id}.")
     session = store.session
-    # Check project_id exists
-    project_exists = session.query(Project).filter(Project.id == project_id).\
-        one_or_none()
-    if not project_exists:
+
+    project = session.execute(
+        select(Project).filter_by(id=project_id)).scalar_one_or_none()
+    if not project:
         typer.echo("The project id does not exist")
         raise typer.Exit()
 
-    forecasts = session.query(Forecast).filter(
-        Forecast.project_id == project_id).all()
-    print("forecasts", forecasts)
+    forecasts = session.execute(
+        select(Forecast).filter_by(project_id=project_id)).scalar().all()
     if not forecasts:
         typer.echo("No forecasts exist that are in a non-complete state.")
+    else:
+        typer.echo(f"{len(forecasts)} found to schedule")
     client = get_client()
     idempotency_id = get_idempotency_id()
     for forecast in forecasts:
@@ -76,5 +78,8 @@ def stop():
 def main():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('RAMSIS')
+    # Prefect is logging things twice because of the global setting
+    # of logging level - this was supposed to be the work around but
+    # not working.
     prefect_logger = logger
     ramsis_app()
