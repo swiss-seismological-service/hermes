@@ -30,7 +30,7 @@ def manager_flow_factory(flow_name):
             result=LocalResult(location=manager_task_location))
         update_forecast_status = UpdateForecastStatus()
         with case(start_forecast_check(forecast_id), True):
-            forecast = update_forecast_status(
+            forecast = update_forecast_status( # noqa
                 forecast_id, estatus=EStatus.RUNNING)
             trigger_engine(command=format_trigger_engine_command(forecast_id))
     return manager_flow

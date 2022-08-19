@@ -63,7 +63,8 @@ class AppSettings:
 # Load application settings
 dir_path = dirname(abspath(__file__))
 root_dir = dirname(dir_path)
-settings_file = os.path.join(dir_path, '..', 'config', 'ramsis_config_public.yml')
+settings_file = os.path.join(dir_path, '..', 'config',
+                             'ramsis_config_public.yml')
 if os.path.islink(settings_file):
     settings_file = os.readlink(settings_file)
 app_settings = AppSettings(settings_file)
@@ -75,6 +76,7 @@ env = dotenv_values(env_file_path)
 
 
 db_url = f'postgresql://{env["POSTGRES_USER"]}:{env["POSTGRES_PASSWORD"]}' \
-        f'@{env["POSTGRES_SERVER"]}:{env["POSTGRES_PORT"]}/{env["POSTGRES_DB"]}'
+         f'@{env["POSTGRES_SERVER"]}:{env["POSTGRES_PORT"]}/' \
+         f'{env["POSTGRES_DB"]}'
 
 store = Store(db_url)

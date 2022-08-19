@@ -11,7 +11,6 @@ from sqlalchemy.orm import subqueryload
 from PyQt5.QtCore import QObject, QThreadPool
 
 from prefect import config
-from prefect.utilities.logging import prefect_logger
 from prefect.engine.flow_runner import FlowRunner as _FlowRunner
 from prefect.engine.task_runner import TaskRunner
 from prefect.engine.executors import LocalExecutor
@@ -299,7 +298,6 @@ class FlowRunner:
         self.data_dir = data_dir
         self.system_time = datetime.utcnow()
         self.logger = logging.getLogger()
-        prefect_logger = self.logger
         self.logger.propagate = False
         self.forecast_handler = ForecastHandler(
             self.threadpool, self.synchronous_thread)

@@ -25,7 +25,6 @@ class HYDWSDataSource(QtCore.QThread):
     """
     DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
-
     def __init__(self, url, project, timeout=None):
         super().__init__()
         self.url = url

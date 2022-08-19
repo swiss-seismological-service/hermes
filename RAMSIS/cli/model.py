@@ -65,7 +65,7 @@ def configure(
     store.close()
 
 
-#@app.command()
-#def disable(model_: Path = typer.Option(
-#also enable - should create and remove model runs that are
-# associated with the model.
+# @app.command()
+# def disable(model_: Path = typer.Option(
+# also enable - should create and remove model runs that are
+#  associated with the model.
