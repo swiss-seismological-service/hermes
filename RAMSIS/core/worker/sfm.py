@@ -15,7 +15,15 @@ import requests
 from marshmallow import Schema, fields, validate
 
 from RAMSIS.core.worker import WorkerHandleBase
+import json
 
+from json import JSONEncoder
+from uuid import UUID
+JSONEncoder_olddefault = JSONEncoder.default
+def JSONEncoder_newdefault(self, o):
+    if isinstance(o, UUID): return str(o)
+    return JSONEncoder_olddefault(self, o)
+JSONEncoder.default = JSONEncoder_newdefault
 
 KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'
@@ -141,6 +149,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                         else:
                             retval.append({KEY_DATA: r[KEY_DATA]})
 
+                #with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/model_requests/model_response_induced_1.json', 'w') as f:
+                #    f.write(json.dumps(retval))
                 return retval
 
             if not isinstance(resp, list):
@@ -264,6 +274,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Requesting tasks results (model={!r}) (bulk mode).'.format(
                     self.model))
+            print("before request.get in sfm, ", type(requests.get), self.url)
             req = functools.partial(
                 requests.get, self.url, timeout=self._timeout)
 
@@ -286,6 +297,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Requesting result (model={!r}, url={!r}, task_id={!r}).'.
                 format(self.model, url, t))
 
+            print("######### in sfm, ", type(requests.get), url)
             req = functools.partial(
                 requests.get, url, timeout=self._timeout)
 
@@ -313,6 +325,9 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         # implemented returning the current well with an hydraulics catalog
         # snapshot.
 
+        print("compute!")
+        self.logger.error(
+            'Computing!!!!')
         deserializer = kwargs.get('deserializer')
 
         self.logger.debug(
@@ -327,8 +342,13 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         response = self._handle_exceptions(req)
 
         try:
+            print("loading result: ", response, type(response))
             result = response.json()
+            print(result)
+            #with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/model_requests/model_response_to_post_induced_1.json', 'w') as f:
+            #    f.write(json.dumps(result))
             if deserializer:
+                print("in sfm", type(result), result)
                 result = deserializer._loado(result)
         except (ValueError, marshmallow.exceptions.ValidationError) as err:
             raise self.DecodingError(err)

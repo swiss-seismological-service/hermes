@@ -40,7 +40,6 @@ log = logging.getLogger(__name__)
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
-
 class DummyTask(Task):
     """Dummy task to allow action to be taken
     on forecast with state handler.
@@ -86,7 +85,7 @@ class UpdateFdsn(Task):
         else:
             assert forecast.seismiccatalog and \
                 len(forecast.seismiccatalog) > 0, \
-                "No well exists on forecast"
+                "No catalog exists on forecast"
         return forecast
 
 
@@ -318,7 +317,6 @@ class SeismicityModelRunExecutor(Task):
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
-        print("model_run config", model_run.config)
         config_attributes = {
             'forecast_start': forecast.starttime.isoformat(),
             'forecast_end': forecast.endtime.isoformat(),
@@ -330,8 +328,11 @@ class SeismicityModelRunExecutor(Task):
                      **forecast_data["data"]["attributes"],
                      **scenario_data["data"]["attributes"]}}}
         try:
+            json_payload = json.dumps(payload)
+            with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/model_requests/model_request_induced_1.json', 'w') as f:
+                f.write(json_payload)
             resp = _worker_handle.compute(
-                json.dumps(payload),
+                json_payload,
                 deserializer=SFMWorkerOMessageDeserializer(
                     ramsis_proj=project.proj_string,
                     external_proj="epsg:4326",
@@ -431,6 +432,7 @@ class SeismicityModelRunPoller(Task):
                 f'runid={model_run.runid}): {resp}')
             if status == self.TASK_COMPLETE:
                 try:
+                    
                     result = resp['data']['attributes']['forecast']
                 except KeyError:
                     raise FAIL("Remote Seismicity Worker has not returned "

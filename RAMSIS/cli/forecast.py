@@ -3,7 +3,7 @@ import json
 from datetime import timedelta
 from sqlalchemy import select
 from ramsis.datamodel import Forecast, Project, EStatus
-from RAMSIS.db import store
+from RAMSIS.db import store, env
 from RAMSIS.flows.register import \
     get_client
 from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
@@ -20,7 +20,13 @@ app = typer.Typer()
 def run(forecast_id: int,
         force: bool = typer.Option(
             False, help="Force the forecast to run again, "
-                        "even if completed.")):
+                        "even if completed."),
+        label: str = typer.Option(
+            ..., help="label to associate with an agent"),
+        idempotency_id: str = typer.Option(
+            ..., help="idempotency id that identifies a forecast"
+            "run so the same run is only run once.")):
+    print("label", get_flow_run_label())
     session = store.session
     forecast = session.execute(
         select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
@@ -29,16 +35,25 @@ def run(forecast_id: int,
         raise typer.Exit()
     else:
         typer.echo(f"forecast found: {forecast}")
-    idempotency_id = get_idempotency_id()
+    if not idempotency_id:
+        # get default idempotency id if not provided
+        idempotency_id = get_idempotency_id()
     flow_run_name = create_flow_run_name(idempotency_id, forecast.id)
-    label = get_flow_run_label()
+    if not label:
+        # get default label id if not provided
+        label = get_flow_run_label()
+    print("flow run name: ", flow_run_name, label, idempotency_id)
     existing_flow_run = matched_flow_run(flow_run_name, label)
+    print("existing flow run?", existing_flow_run)
+    print("force", force)
     if force:
+        print("resetting ramsis statuses")
         typer.echo("Resetting RAMSIS statuses")
         forecast = reset_forecast(forecast)
         store.save()
         if existing_flow_run:
             typer.echo("Restarting flow run")
+            print("type of function", type(restart_flow_run))
             restart_flow_run(existing_flow_run['id'])
             store.close()
             typer.Exit()
@@ -131,13 +146,15 @@ def create(
         exists=True,
         readable=True),
         inj_plan_directory: Path = typer.Option(
-        ...,
+        None,
         exists=True,
         readable=True,
         help="Path to directory containing the "
         "injection plans. The injection plan file name is "
         "contained within the project config")):
 
+    print("in cli forecast, env:", env)
+    typer.echo(f" echo in cli forecast, env:{env}")
     session = store.session
     project = session.execute(
         select(Project).filter_by(id=project_id)).scalar_one_or_none()

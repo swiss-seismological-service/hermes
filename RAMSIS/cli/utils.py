@@ -225,16 +225,17 @@ def create_scenario(project, scenario_config, inj_plan_directory):
         'epoch_duration': scenario_config["EPOCH_DURATION"]}
     scenario.reservoirgeom = scenario_config["RESERVOIR"]
 
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        ramsis_proj=project.proj_string,
-        external_proj=WGS84_PROJ,
-        ref_easting=0.0,
-        ref_northing=0.0,
-        transform_func_name='pyproj_transform_to_local_coords',
-        plan=True)
-    with open(join(inj_plan_directory,
-              scenario_config["SCENARIO_JSON"]), 'rb') as ifd:
-        scenario.well = deserializer.load(ifd)
+    if inj_plan_directory:
+        deserializer = HYDWSBoreholeHydraulicsDeserializer(
+            ramsis_proj=project.proj_string,
+            external_proj=WGS84_PROJ,
+            ref_easting=0.0,
+            ref_northing=0.0,
+            transform_func_name='pyproj_transform_to_local_coords',
+            plan=True)
+        with open(join(inj_plan_directory,
+                  scenario_config["SCENARIO_JSON"]), 'rb') as ifd:
+            scenario.well = deserializer.load(ifd)
     # Which models are run for which scenario is defined by RUN_MODELS.
     # This can either be "ALL" or
     # a string containing the model name. "MLE, BAYES"

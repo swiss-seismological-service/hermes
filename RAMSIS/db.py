@@ -70,6 +70,7 @@ if os.path.islink(settings_file):
 app_settings = AppSettings(settings_file)
 
 testing_mode = bool(getenv("RAMSIS_TESTING_MODE", False)) is True
+print("testing mode: ", testing_mode, getenv("RAMSIS_TESTING_MODE"))
 env_file = ".env.test" if testing_mode else ".env"
 env_file_path = os.path.join(root_dir, env_file)
 env = dotenv_values(env_file_path)

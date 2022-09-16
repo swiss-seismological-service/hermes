@@ -338,6 +338,7 @@ class ForecastHandler(BaseHandler):
 
     def add_catalog(self, new_state, logger):
         forecast = new_state.result
+        print("forecast2", forecast, forecast.starttime, forecast.endtime)
         self.session.add_all(forecast.seismiccatalog)
         self.update_db()
         logger.info(f"Forecast id={forecast.id} has "

@@ -10,20 +10,25 @@ TEMP_ENV_VARS = {testing_environment_variable: 'true'}
 
 @pytest.fixture(scope="session", autouse=True)
 def tests_setup_and_teardown():
-    print("tests setup")
+
     # Will be executed before the first test
     old_environ = dict(environ)
     environ.update(TEMP_ENV_VARS)
 
-    from RAMSIS.db import env  # Postgres credentials now found in environment
-    port = env["POSTGRES_PORT"]
-    host = env["POSTGRES_SERVER"]
-    user = env["POSTGRES_USER"]
-    password = env["POSTGRES_PASSWORD"]
-    dbname = env["POSTGRES_DB"]
-    default_user = env["DEFAULT_USER"]
-    default_password = env["DEFAULT_PASSWORD"]
-    default_dbname = env["DEFAULT_DB"]
+    from RAMSIS.db import env, env_file
+    # Postgres credentials now found in environment
+    try:
+        port = env["POSTGRES_PORT"]
+        host = env["POSTGRES_SERVER"]
+        user = env["POSTGRES_USER"]
+        password = env["POSTGRES_PASSWORD"]
+        dbname = env["POSTGRES_DB"]
+        default_user = env["DEFAULT_USER"]
+        default_password = env["DEFAULT_PASSWORD"]
+        default_dbname = env["DEFAULT_DB"]
+    except KeyError as err:
+        print(f"Key does not exist in {env_file}, env: {env}, err: {err}")
+        raise
 
     conn0 = psycopg2.connect(
         port=port, user=default_user,
@@ -43,6 +48,10 @@ def tests_setup_and_teardown():
         f"'{dbname}' AND pid <> pg_backend_pid()")
     cursor0.close()
     conn0.close()
+    from RAMSIS.flows.register import get_client
+    client = get_client()
+    _ = client.register_agent('local', name='client_testing_agent',
+                              labels=['client_testing_agent'])
 
     yield
     # Activate following section if there are leftover running connections
