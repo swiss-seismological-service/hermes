@@ -433,7 +433,7 @@ class FlowRunner:
             except KeyError:
                 pass
 
-        if all(status == EStatus.COMPLETE for status in self.stage_results):
+        if all(status.state == EStatus.COMPLETE for status in self.stage_results):
             self.update_forecast_status(EStatus.COMPLETE)
         else:
             self.update_forecast_status(EStatus.ERROR)
