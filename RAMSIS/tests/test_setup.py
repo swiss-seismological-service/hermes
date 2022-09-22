@@ -14,6 +14,8 @@ from ramsis.datamodel import SeismicityModel, Project, Forecast
 runner = CliRunner()
 dirpath = dirname(abspath(__file__))
 config_path = join(dirpath, 'config')
+inj_plan_path = join(
+    config_path, 'injection_plan_150L_20220623.json')
 disabled_model_config_path = join(
     config_path, 'model_bedretto_22062022_disabled.json')
 enabled_model_config_path = join(
@@ -76,8 +78,8 @@ def create_forecast():
     print('env in test', env)
     result = runner.invoke(app, ["forecast", "create",
                                  "--project-id", "1",
-                                 "--inj-plan-directory",
-                                 config_path,
+                                 "--inj-plan-data",
+                                 inj_plan_path,
                                  "--config",
                                  forecast_config_path])
     print("result: ", result.stdout)

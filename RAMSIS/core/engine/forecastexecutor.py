@@ -440,6 +440,7 @@ class SeismicityModelRunPoller(Task):
             if status == self.TASK_COMPLETE:
                 try:
                     result = resp['data']['attributes']['forecast']
+                    print("result in fe:", result)
                 except KeyError:
                     raise FAIL("Remote Seismicity Worker has not returned "
                                f"a forecast (runid={model_run.runid}: {resp})",
