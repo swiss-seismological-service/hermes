@@ -87,8 +87,16 @@ def clone(forecast_id: int,
 
     typer.echo(f"Forecasts being cloned from id: {forecast_id} "
                f"which has starttime: {forecast.starttime}")
+    project_settings = forecast.project.config.settings
+    # If some input data is attached to the forecast rather
+    # than being received from a webservice, this must also
+    # be cloned. with_results=True only copies input data over.
+    if not project_settings['hydws_url'] or not project_settings['fdsnws_url']:
+        with_results = True
+    else:
+        with_results = False
     for i in range(1, clone_number + 1):
-        cloned = forecast.clone(with_results=False)
+        cloned = forecast.clone(with_results=with_results)
         cloned.starttime = (
             forecast.starttime + timedelta(
                 seconds=interval * i))
@@ -184,14 +192,16 @@ def create(
                 "--catalog-data may not be added if a FDSNWS_URL"
                 " is configured in the project config.")
             raise typer.Exit()
-        elif project.settings.config['seismic_catalog'] == EInput.NOT_ALLOWED.name:
+        elif project.settings.config['seismic_catalog'] == \
+                EInput.NOT_ALLOWED.name:
             typer.echo(
                 "--catalog-data may not be added if SEISMIC_CATALOG "
                 "is configured"
                 " to be NOT ALLOWED in the project config.")
             raise typer.Exit()
     else:
-        if project.settings.config['seismic_catalog'] == EInput.REQUIRED.name and \
+        if project.settings.config['seismic_catalog'] == \
+                EInput.REQUIRED.name and \
                 not project.settings.config['fdsnws_url']:
             typer.echo(
                 "--catalog-data must be added if SEISMIC_CATALOG "
