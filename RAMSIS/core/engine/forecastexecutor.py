@@ -40,6 +40,7 @@ log = logging.getLogger(__name__)
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
+
 class DummyTask(Task):
     """Dummy task to allow action to be taken
     on forecast with state handler.
@@ -70,6 +71,7 @@ class UpdateFdsn(Task):
 
     def run(self, forecast, dttime):
 
+        logger = prefect.context.get('logger')
         project = forecast.project
         catalog_used = getattr(
             EInput, project.settings.config['seismic_catalog']) in \
@@ -82,6 +84,8 @@ class UpdateFdsn(Task):
             cat.forecast_id = forecast.id
             cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = [cat]
+        elif catalog_used and forecast.seismiccatalog:
+            logger.info("Forecast already has seismic catalog attached.")
         else:
             assert forecast.seismiccatalog and \
                 len(forecast.seismiccatalog) > 0, \
@@ -112,9 +116,10 @@ class UpdateHyd(Task):
         return well
 
     def run(self, forecast, dttime):
+        logger = prefect.context.get('logger')
         project = forecast.project
         well_used = getattr(
-            EInput, project.settings.config['seismic_catalog']) in \
+            EInput, project.settings.config['well']) in \
             [EInput.REQUIRED, EInput.OPTIONAL]
         hydws_url = project.settings.config['hydws_url']
 
@@ -124,6 +129,8 @@ class UpdateHyd(Task):
             well.creationinfo_creationtime = dttime
             well.forecast_id = forecast.id
             forecast.well = [well]
+        elif well_used and forecast.well:
+            logger.info("Forecast already has well attached.")
         else:
             assert forecast.well and len(forecast.well) > 0, \
                 "No well exists on forecast"
@@ -432,7 +439,6 @@ class SeismicityModelRunPoller(Task):
                 f'runid={model_run.runid}): {resp}')
             if status == self.TASK_COMPLETE:
                 try:
-                    
                     result = resp['data']['attributes']['forecast']
                 except KeyError:
                     raise FAIL("Remote Seismicity Worker has not returned "

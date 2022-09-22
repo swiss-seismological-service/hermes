@@ -1,4 +1,3 @@
-from os.path import join
 import typer
 from ramsis.datamodel import EStage, EStatus
 from RAMSIS.db import store
@@ -216,7 +215,19 @@ def configure_logging(verbosity):
     logging.getLogger('transitions').setLevel(logging.WARNING)
 
 
-def create_scenario(project, scenario_config, inj_plan_directory):
+def deserialize_data(data, ramsis_proj, plan):
+    deserializer = HYDWSBoreholeHydraulicsDeserializer(
+        ramsis_proj=ramsis_proj,
+        external_proj=WGS84_PROJ,
+        ref_easting=0.0,
+        ref_northing=0.0,
+        transform_func_name='pyproj_transform_to_local_coords',
+        plan=plan)
+    ret_data = deserializer.load(data)
+    return ret_data
+
+
+def create_scenario(project, scenario_config, inj_plan_data):
     scenario = default_scenario(store, project.model_settings.config,
                                 name=scenario_config["SCENARIO_NAME"])
     # Seismicity Stage
@@ -225,17 +236,9 @@ def create_scenario(project, scenario_config, inj_plan_directory):
         'epoch_duration': scenario_config["EPOCH_DURATION"]}
     scenario.reservoirgeom = scenario_config["RESERVOIR"]
 
-    if inj_plan_directory:
-        deserializer = HYDWSBoreholeHydraulicsDeserializer(
-            ramsis_proj=project.proj_string,
-            external_proj=WGS84_PROJ,
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords',
-            plan=True)
-        with open(join(inj_plan_directory,
-                  scenario_config["SCENARIO_JSON"]), 'rb') as ifd:
-            scenario.well = deserializer.load(ifd)
+    if inj_plan_data:
+        scenario.well = deserialize_data(inj_plan_data, project.proj_string,
+                                         True)
     # Which models are run for which scenario is defined by RUN_MODELS.
     # This can either be "ALL" or
     # a string containing the model name. "MLE, BAYES"
@@ -255,7 +258,9 @@ def create_scenario(project, scenario_config, inj_plan_directory):
 
 def create_forecast(project,
                     forecast_config,
-                    inj_plan_directory):
+                    inj_plan_data,
+                    hyd_data,
+                    catalog_data):
 
     fc = default_forecast(
         store,
@@ -266,9 +271,16 @@ def create_forecast(project,
 
     scenarios_json = forecast_config['SCENARIOS']
     scenarios = [create_scenario(project,
-                                 scenario_config, inj_plan_directory)
+                                 scenario_config, inj_plan_data)
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
+    if hyd_data:
+        fc.well = deserialize_data(hyd_data, project.proj_string, False)
+    typer.echo(f"catalog_data, {catalog_data}")
+    if catalog_data:
+        fc.seismiccatalog = deserialize_data(hyd_data, project.proj_string,
+                                             False)
+        typer.echo(fc.seismiccatalog)
     return fc
 
 

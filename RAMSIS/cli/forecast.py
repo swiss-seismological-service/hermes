@@ -2,8 +2,8 @@ import typer
 import json
 from datetime import timedelta
 from sqlalchemy import select
-from ramsis.datamodel import Forecast, Project, EStatus
-from RAMSIS.db import store, env
+from ramsis.datamodel import Forecast, Project, EStatus, EInput
+from RAMSIS.db import store
 from RAMSIS.flows.register import \
     get_client
 from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
@@ -26,7 +26,6 @@ def run(forecast_id: int,
         idempotency_id: str = typer.Option(
             ..., help="idempotency id that identifies a forecast"
             "run so the same run is only run once.")):
-    print("label", get_flow_run_label())
     session = store.session
     forecast = session.execute(
         select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
@@ -42,18 +41,14 @@ def run(forecast_id: int,
     if not label:
         # get default label id if not provided
         label = get_flow_run_label()
-    print("flow run name: ", flow_run_name, label, idempotency_id)
     existing_flow_run = matched_flow_run(flow_run_name, label)
-    print("existing flow run?", existing_flow_run)
-    print("force", force)
+
     if force:
-        print("resetting ramsis statuses")
         typer.echo("Resetting RAMSIS statuses")
         forecast = reset_forecast(forecast)
         store.save()
         if existing_flow_run:
             typer.echo("Restarting flow run")
-            print("type of function", type(restart_flow_run))
             restart_flow_run(existing_flow_run['id'])
             store.close()
             typer.Exit()
@@ -145,29 +140,87 @@ def create(
         ...,
         exists=True,
         readable=True),
-        inj_plan_directory: Path = typer.Option(
-        None,
-        exists=True,
-        readable=True,
-        help="Path to directory containing the "
-        "injection plans. The injection plan file name is "
-        "contained within the project config")):
+        inj_plan_data: typer.FileBinaryRead = typer.Option(
+        None, help="Path of file containing the "
+        "injection plans. Required if the forecast is for induced seismicity"),
+        hyd_data: typer.FileBinaryRead = typer.Option(
+        None, help="Path of file containing the "
+        "hydraulics for forecasts without using hydws, e.g. for replays."),
+        catalog_data: typer.FileBinaryRead = typer.Option(
+        None, help="Path of file containing the "
+        "catalog for forecasts without using fdsnws, e.g. for replays.")):
 
-    print("in cli forecast, env:", env)
-    typer.echo(f" echo in cli forecast, env:{env}")
     session = store.session
     project = session.execute(
         select(Project).filter_by(id=project_id)).scalar_one_or_none()
+
+    # Validataions
     if not project:
         typer.echo(f"Project id {project_id} does not exist")
         raise typer.Exit()
+    if hyd_data:
+        if project.settings.config['hydws_url']:
+            typer.echo(
+                "--hyd-data may not be added if a HYDWS_URL"
+                " is configured in the project config.")
+            raise typer.Exit()
+        elif project.settings.config['well'] == EInput.NOT_ALLOWED.name:
+            typer.echo(
+                "--hyd-data may not be added if WELL is configured"
+                " to be NOT ALLOWED in the project config.")
+            raise typer.Exit()
+    else:
+        if project.settings.config['well'] == EInput.REQUIRED.name and \
+                not project.settings.config['hydws_url']:
+            typer.echo(
+                "--hyd-data must be added if WELL "
+                "is configured"
+                " to be REQUIRED in the project config.")
+            raise typer.Exit()
+
+    if catalog_data:
+        if project.settings.config['fdsnws_url']:
+            typer.echo(
+                "--catalog-data may not be added if a FDSNWS_URL"
+                " is configured in the project config.")
+            raise typer.Exit()
+        elif project.settings.config['seismic_catalog'] == EInput.NOT_ALLOWED.name:
+            typer.echo(
+                "--catalog-data may not be added if SEISMIC_CATALOG "
+                "is configured"
+                " to be NOT ALLOWED in the project config.")
+            raise typer.Exit()
+    else:
+        if project.settings.config['seismic_catalog'] == EInput.REQUIRED.name and \
+                not project.settings.config['fdsnws_url']:
+            typer.echo(
+                "--catalog-data must be added if SEISMIC_CATALOG "
+                "is configured"
+                " to be REQUIRED in the project config.")
+            raise typer.Exit()
+
+    if inj_plan_data:
+        if project.settings.config['scenario'] == EInput.NOT_ALLOWED.name:
+            typer.echo(
+                "--inj-plan-data may not be added if SCENARIO "
+                "is configured"
+                " to be NOT ALLOWED in the project config.")
+            raise typer.Exit()
+    else:
+        if project.settings.config['scenario'] == EInput.REQUIRED.name:
+            typer.echo(
+                "--inj-plan-data must be added if SCENARIO "
+                "is configured"
+                " to be REQUIRED in the project config.")
+            raise typer.Exit()
 
     with open(config, "r") as forecast_json:
         forecast_config_list = json.load(forecast_json)
     new_forecasts = []
     for forecast_config in forecast_config_list["FORECASTS"]:
         forecast = create_forecast(
-            project, forecast_config, inj_plan_directory)
+            project, forecast_config, inj_plan_data,
+            hyd_data, catalog_data)
         new_forecasts.append(forecast)
         project.forecasts.append(forecast)
     store.save()
