@@ -336,8 +336,6 @@ class SeismicityModelRunExecutor(Task):
                      **scenario_data["data"]["attributes"]}}}
         try:
             json_payload = json.dumps(payload)
-            with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/model_requests/model_request_induced_1.json', 'w') as f:
-                f.write(json_payload)
             resp = _worker_handle.compute(
                 json_payload,
                 deserializer=SFMWorkerOMessageDeserializer(

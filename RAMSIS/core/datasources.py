@@ -4,7 +4,6 @@ Data fetching facilities.
 """
 
 import logging
-import json
 
 import requests
 
@@ -63,12 +62,6 @@ class HYDWSDataSource(QtCore.QThread):
             with binary_request(
                 requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
-                #with open("/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/datasources/2022-06-22_hydws.json", "w") as open_f:
-                #    print(type(ifd))
-                #    hyd_str = ifd.getvalue().decode('UTF-8')
-                #    print("hyd_str", type(hyd_str))
-                #    json_data = json.loads(hyd_str)
-                #    json.dump(json_data, open_f)
                 bh = self._deserializer.load(ifd)
 
         except NoContent:
@@ -146,8 +139,4 @@ class FDSNWSDataSource(QtCore.QThread):
             self.logger.info(
                 f"Received catalog with {len(cat)} events.")
 
-        #print("type cat: ", type(cat))
-        #with open("/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/datasources/2022-06-22_fdsn_catalog.xml", "w") as open_f:
-        #    text_cat = ifd.getvalue().decode('UTF-8')
-        #    open_f.write(text_cat)
         return cat

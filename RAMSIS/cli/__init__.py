@@ -9,7 +9,6 @@ from RAMSIS.flows.register import register_project, register_flows, \
     get_client
 from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
     cancel_flow_run, scheduled_flow_runs
-from prefect.utilities.logging import prefect_logger
 
 ramsis_app = typer.Typer()
 # engine to be removed after migrated to full use of prefect
@@ -77,9 +76,4 @@ def stop():
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger('RAMSIS')
-    # Prefect is logging things twice because of the global setting
-    # of logging level - this was supposed to be the work around but
-    # not working.
-    prefect_logger = logger
     ramsis_app()
