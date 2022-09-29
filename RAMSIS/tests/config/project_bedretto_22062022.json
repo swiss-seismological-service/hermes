@@ -1,12 +1,12 @@
 {
     "PROJECTS": [
         {
-            "PROJECT_NAME": "Bedretto June 22",
+            "PROJECT_NAME": "Bedretto June 23",
             "PROJECT_DESCRIPTION": "Default project",
-            "PROJECT_STARTTIME": "2022-06-22T05:00:00",
+            "PROJECT_STARTTIME": "2022-06-23T05:00:00",
             "PROJECT_ENDTIME": "2022-06-23T23:00:00",
             "HYDWS_URL": "http://bedretto-hydws.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMQ==?level=hydraulic",
-            "FDSNWS_URL": "http://bedretto-dev.ethz.ch:8080/fdsnws/event/1/query?minmagnitude=-7",
+            "FDSNWS_URL": "http://scforge.ethz.ch:8080/fdsnws/event/1/query?minmagnitude=-7",
             "RAMSIS_PROJ": "epsg:2056",
 	    "SEISMIC_CATALOG": "REQUIRED",
 	    "WELL": "REQUIRED",
@@ -21,24 +21,7 @@
 			2679633.7937913937, 1151559.661100654, 1396.8895640139017
                         ]
 		    }
-		},
-            "FORECASTS": [
-                {
-		    "FORECAST_NAME": "Forecast bedretto",
-                    "FORECAST_STARTTIME": "2022-06-22T06:00:00",
-                    "FORECAST_ENDTIME": "2022-06-22T20:00:00",
-                    "SCENARIOS": [
-                        {
-			    "SCENARIO_NAME": "Scenario",
-			    "EPOCH_DURATION": 1800,
-			    "SCENARIO_DIR": "hyd",
-                            "SCENARIO_JSON": "sect8_plan150_L_min.json",
-                            "RESERVOIR":
-				    {"x": [2679483.7937913937, 2679783.7937913937], "y": [1151409.661100654, 1151709.661100654], "z": [1246.8895640139017, 1546.8895640139017]}
-                        }
-                    ]
-                }
-            ]
+		}
         }
     ]
 }

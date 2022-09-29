@@ -71,6 +71,7 @@ class UpdateFdsn(Task):
 
     def run(self, forecast, dttime):
 
+        logger = prefect.context.get('logger')
         project = forecast.project
         catalog_used = getattr(
             EInput, project.settings.config['seismic_catalog']) in \
@@ -83,10 +84,12 @@ class UpdateFdsn(Task):
             cat.forecast_id = forecast.id
             cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = [cat]
+        elif catalog_used and forecast.seismiccatalog:
+            logger.info("Forecast already has seismic catalog attached.")
         else:
             assert forecast.seismiccatalog and \
                 len(forecast.seismiccatalog) > 0, \
-                "No well exists on forecast"
+                "No catalog exists on forecast"
         return forecast
 
 
@@ -113,9 +116,10 @@ class UpdateHyd(Task):
         return well
 
     def run(self, forecast, dttime):
+        logger = prefect.context.get('logger')
         project = forecast.project
         well_used = getattr(
-            EInput, project.settings.config['seismic_catalog']) in \
+            EInput, project.settings.config['well']) in \
             [EInput.REQUIRED, EInput.OPTIONAL]
         hydws_url = project.settings.config['hydws_url']
 
@@ -125,6 +129,8 @@ class UpdateHyd(Task):
             well.creationinfo_creationtime = dttime
             well.forecast_id = forecast.id
             forecast.well = [well]
+        elif well_used and forecast.well:
+            logger.info("Forecast already has well attached.")
         else:
             assert forecast.well and len(forecast.well) > 0, \
                 "No well exists on forecast"
@@ -318,7 +324,6 @@ class SeismicityModelRunExecutor(Task):
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
-        print("model_run config", model_run.config)
         config_attributes = {
             'forecast_start': forecast.starttime.isoformat(),
             'forecast_end': forecast.endtime.isoformat(),
@@ -330,8 +335,9 @@ class SeismicityModelRunExecutor(Task):
                      **forecast_data["data"]["attributes"],
                      **scenario_data["data"]["attributes"]}}}
         try:
+            json_payload = json.dumps(payload)
             resp = _worker_handle.compute(
-                json.dumps(payload),
+                json_payload,
                 deserializer=SFMWorkerOMessageDeserializer(
                     ramsis_proj=project.proj_string,
                     external_proj="epsg:4326",
@@ -432,6 +438,7 @@ class SeismicityModelRunPoller(Task):
             if status == self.TASK_COMPLETE:
                 try:
                     result = resp['data']['attributes']['forecast']
+                    print("result in fe:", result)
                 except KeyError:
                     raise FAIL("Remote Seismicity Worker has not returned "
                                f"a forecast (runid={model_run.runid}: {resp})",

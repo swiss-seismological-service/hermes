@@ -179,7 +179,6 @@ class ForecastFlow(QObject):
                 system_time=self.system_time,
                 executor=executor,
                 runner_cls=_FlowRunner)
-            print("state output from flow", self.state, type(self.state))
 
 
 class HazardPreparationFlow(QObject):
@@ -433,7 +432,8 @@ class FlowRunner:
             except KeyError:
                 pass
 
-        if all(status.state == EStatus.COMPLETE for status in self.stage_results):
+        if all(status.state == EStatus.COMPLETE for status in
+               self.stage_results):
             self.update_forecast_status(EStatus.COMPLETE)
         else:
             self.update_forecast_status(EStatus.ERROR)

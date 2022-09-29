@@ -405,7 +405,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     def validate_ctor_args(base_url, model_id):
         url = urlparse(base_url)
         if url.path or url.params or url.query or url.fragment:
-            print("Invalid url")
             raise ValueError(f"Invalid URL: {url}.")
 
         if not model_id:
