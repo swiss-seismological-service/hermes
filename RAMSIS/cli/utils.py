@@ -2,6 +2,7 @@ import typer
 from ramsis.datamodel import EStage, EStatus
 from RAMSIS.db import store
 import logging
+import io
 
 from prefect.tasks.prefect import create_flow_run
 from datetime import datetime
@@ -10,6 +11,7 @@ from RAMSIS.db import app_settings
 from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 from prefect.engine.state import Cancelled, Scheduled
 from prefect.utilities.graphql import EnumValue, with_args
 from typing import List, Dict
@@ -215,7 +217,7 @@ def configure_logging(verbosity):
     logging.getLogger('transitions').setLevel(logging.WARNING)
 
 
-def deserialize_data(data, ramsis_proj, plan):
+def deserialize_hydws_data(data, ramsis_proj, plan):
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
         ramsis_proj=ramsis_proj,
         external_proj=WGS84_PROJ,
@@ -223,6 +225,17 @@ def deserialize_data(data, ramsis_proj, plan):
         ref_northing=0.0,
         transform_func_name='pyproj_transform_to_local_coords',
         plan=plan)
+    ret_data = deserializer.load(data)
+    return ret_data
+
+
+def deserialize_qml_data(data, ramsis_proj):
+    deserializer = QuakeMLObservationCatalogDeserializer(
+        ramsis_proj=ramsis_proj,
+        external_proj=WGS84_PROJ,
+        ref_easting=0.0,
+        ref_northing=0.0,
+        transform_func_name='pyproj_transform_to_local_coords')
     ret_data = deserializer.load(data)
     return ret_data
 
@@ -237,8 +250,8 @@ def create_scenario(project, scenario_config, inj_plan_data):
     scenario.reservoirgeom = scenario_config["RESERVOIR"]
 
     if inj_plan_data:
-        scenario.well = deserialize_data(inj_plan_data, project.proj_string,
-                                         True)
+        scenario.well = deserialize_hydws_data(
+            inj_plan_data, project.proj_string, True)
     # Which models are run for which scenario is defined by RUN_MODELS.
     # This can either be "ALL" or
     # a string containing the model name. "MLE, BAYES"
@@ -268,6 +281,7 @@ def create_forecast(project,
         endtime=forecast_config["FORECAST_ENDTIME"],
         num_scenarios=0,
         name=forecast_config["FORECAST_NAME"])
+    store.add(fc)
 
     scenarios_json = forecast_config['SCENARIOS']
     scenarios = [create_scenario(project,
@@ -275,11 +289,13 @@ def create_forecast(project,
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
     if hyd_data:
-        fc.well = deserialize_data(hyd_data, project.proj_string, False)
+        fc.well = [deserialize_hydws_data(hyd_data, project.proj_string, False)]
     typer.echo(f"catalog_data, {catalog_data}")
     if catalog_data:
-        fc.seismiccatalog = deserialize_data(hyd_data, project.proj_string,
-                                             False)
+        cats = [deserialize_qml_data(catalog_data, project.proj_string)]
+        for cat in cats:
+            store.add(cat)
+            cat.forecast_id = fc.id
         typer.echo(fc.seismiccatalog)
     return fc
 
