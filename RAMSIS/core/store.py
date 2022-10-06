@@ -64,7 +64,7 @@ class Store:
         # TODO LH: reconsider the use of expire_on_commit=False
         self.make_session = scoped_session(sessionmaker(
             bind=self.engine, expire_on_commit=False,
-            autocommit=False, autoflush=True))
+            autocommit=False, autoflush=False))
         self.session = self.make_session
 
     def init_db(self):

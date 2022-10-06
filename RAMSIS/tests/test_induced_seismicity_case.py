@@ -122,7 +122,7 @@ class TestInducedCase:
         assert result.exit_code == 0
 
     @pytest.mark.run(after='test_run_bedretto_forecast')
-    def test_run_engine_flow(self, mocker):
+    def test_run_bedretto_engine_flow(self, mocker):
         mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
         mock_get.side_effect = mocked_datasources_get
         mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')

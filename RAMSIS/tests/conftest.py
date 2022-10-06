@@ -31,6 +31,7 @@ def connection(env):
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database(connection, env):
+    print("before setup yield")
     try:
         user = env["POSTGRES_USER"]
         password = env["POSTGRES_PASSWORD"]
@@ -39,16 +40,16 @@ def setup_database(connection, env):
         print(f"Key does not exist env: {env}, err: {err}")
         raise
     cursor = connection.cursor()
+    cursor.execute(
+        "select pg_terminate_backend(pg_stat_activity.pid)"
+        " from pg_stat_activity where pg_stat_activity.datname="
+        f"'{dbname}' AND pid <> pg_backend_pid()")
     cursor.execute(f"DROP DATABASE IF EXISTS {dbname}")
     cursor.execute(f"DROP USER IF EXISTS {user}")
     cursor.execute(f"CREATE USER {user} with password "
                    f"'{password}' SUPERUSER")
     cursor.execute(f"CREATE DATABASE {dbname} with owner "
                    f"{user}")
-    cursor.execute(
-        "select pg_terminate_backend(pg_stat_activity.pid)"
-        " from pg_stat_activity where pg_stat_activity.datname="
-        f"'{dbname}' AND pid <> pg_backend_pid()")
     cursor.close()
     from RAMSIS.flows.register import get_client
     client = get_client()

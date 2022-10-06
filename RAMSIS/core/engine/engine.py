@@ -438,3 +438,5 @@ class FlowRunner:
         else:
             self.update_forecast_status(EStatus.ERROR)
             raise Exception("One or more stages have failed.")
+        self.session.rollback()
+        self.session.close()
