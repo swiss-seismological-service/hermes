@@ -8,68 +8,51 @@ testing_environment_variable = "RAMSIS_TESTING_MODE"
 TEMP_ENV_VARS = {testing_environment_variable: 'true'}
 
 
-@pytest.fixture(scope="session", autouse=True)
-def tests_setup_and_teardown():
-
-    # Will be executed before the first test
+@pytest.fixture(scope='session')
+def env():
     old_environ = dict(environ)
     environ.update(TEMP_ENV_VARS)
+    from RAMSIS.db import env as environment
+    yield environment
+    environ.clear()
+    environ.update(old_environ)
 
-    from RAMSIS.db import env, env_file
-    # Postgres credentials now found in environment
+
+@pytest.fixture(scope='session')
+def connection(env):
+    connection = psycopg2.connect(
+        port=env["POSTGRES_PORT"], user=env["DEFAULT_USER"],
+        host=env["POSTGRES_SERVER"], password=env["DEFAULT_PASSWORD"],
+        dbname=env["DEFAULT_DB"])
+    connection.autocommit = True
+    yield connection
+    connection.close()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_database(connection, env):
     try:
-        port = env["POSTGRES_PORT"]
-        host = env["POSTGRES_SERVER"]
         user = env["POSTGRES_USER"]
         password = env["POSTGRES_PASSWORD"]
         dbname = env["POSTGRES_DB"]
-        default_user = env["DEFAULT_USER"]
-        default_password = env["DEFAULT_PASSWORD"]
-        default_dbname = env["DEFAULT_DB"]
     except KeyError as err:
-        print(f"Key does not exist in {env_file}, env: {env}, err: {err}")
+        print(f"Key does not exist env: {env}, err: {err}")
         raise
-
-    conn0 = psycopg2.connect(
-        port=port, user=default_user,
-        host=host, password=default_password,
-        dbname=default_dbname)
-    conn0.autocommit = True
-    cursor0 = conn0.cursor()
-    cursor0.execute(f"DROP DATABASE IF EXISTS {dbname}")
-    cursor0.execute(f"DROP USER IF EXISTS {user}")
-    cursor0.execute(f"CREATE USER {user} with password "
-                    f"'{password}' SUPERUSER")
-    cursor0.execute(f"CREATE DATABASE {dbname} with owner "
-                    f"{user}")
-    cursor0.execute(
+    cursor = connection.cursor()
+    cursor.execute(f"DROP DATABASE IF EXISTS {dbname}")
+    cursor.execute(f"DROP USER IF EXISTS {user}")
+    cursor.execute(f"CREATE USER {user} with password "
+                   f"'{password}' SUPERUSER")
+    cursor.execute(f"CREATE DATABASE {dbname} with owner "
+                   f"{user}")
+    cursor.execute(
         "select pg_terminate_backend(pg_stat_activity.pid)"
         " from pg_stat_activity where pg_stat_activity.datname="
         f"'{dbname}' AND pid <> pg_backend_pid()")
-    cursor0.close()
-    conn0.close()
+    cursor.close()
     from RAMSIS.flows.register import get_client
     client = get_client()
     _ = client.register_agent('local', name='client_testing_agent',
                               labels=['client_testing_agent'])
 
     yield
-    # Activate following section if there are leftover running connections
-    # after tests have completed. Causes warning to be issues.
-    # conn = psycopg2.connect(
-    #     port=port, user=default_user,
-    #     host=host, password=default_password,
-    #     dbname=default_dbname)
-    # conn.autocommit = True
-    # cursor = conn.cursor()
-    # cursor.execute(
-    #     "select pg_terminate_backend(pg_stat_activity.pid)"
-    #     " from pg_stat_activity where pg_stat_activity.datname="
-    #     f"'{dbname}' AND pid <> pg_backend_pid()")
-    # cursor.close()
-    # conn.close()
-
-    # Will be executed after the last test
-    # old environment will be resumed.
-    environ.clear()
-    environ.update(old_environ)
