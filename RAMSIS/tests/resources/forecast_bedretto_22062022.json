@@ -1,0 +1,20 @@
+{
+    "FORECASTS": [
+        {
+            "FORECAST_NAME": "Forecast bedretto",
+            "FORECAST_STARTTIME": "2022-06-23T08:00:00",
+            "FORECAST_ENDTIME": "2022-06-23T09:00:00",
+            "SCENARIOS": [
+                {
+    		    "RUN_MODELS": "ALL", 
+		    "SCENARIO_NAME": "Scenario ###",
+		    "EPOCH_DURATION": 1800,
+        	    "SCENARIO_DIR": "hyd",
+                    "SCENARIO_JSON": "injection_plan_150L_20220623.json",
+                    "RESERVOIR":
+        		    {"x": [2679483.7937913937, 2679783.7937913937], "y": [1151409.661100654, 1151709.661100654], "z": [1246.8895640139017, 1546.8895640139017]}
+                }
+            ]
+        }
+    ]
+}

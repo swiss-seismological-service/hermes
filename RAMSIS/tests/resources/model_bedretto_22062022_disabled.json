@@ -1,0 +1,26 @@
+{
+    "SEISMICITY_MODELS":[
+        {
+            "MODEL_NAME":"EM1-MLE",
+            "URL":"http://ramsis-em1.ethz.ch:5007",
+            "CONFIG":{
+                "model_parameters":{
+                    "Tau":60,
+                    "dM":0.05,
+                    "Mc":null,
+                    "tau_force":false,
+                    "mode":"MLE",
+                    "Nsim":100
+                },
+                "wrapper_parameters":{
+                    "well_section_publicid":"smi:ch.ethz.sed/bh/ST1/section_13",
+                    "reference_point":[
+			2679643.560254707, 1151568.9821506666, 1411.25882375525
+                    ]
+                }
+            },
+            "SFMWID":"em1",
+            "ENABLED":false
+        }
+    ]
+}

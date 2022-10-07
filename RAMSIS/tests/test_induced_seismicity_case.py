@@ -83,35 +83,29 @@ def mocked_datasources_get(*args, **kwargs):
 
 
 class TestInducedCase:
-    def test_ramsis_bedretto_setup(self):
+    def test_ramsis_bedretto_setup(self, session):
         check_updated_model(enabled_bedretto_model_config_path,
                             disabled_bedretto_model_config_path)
         create_project(bedretto_project_config_path)
 
-        from RAMSIS.db import store
-
-        session = store.session
         projects = session.execute(
             select(Project)).scalars().all()
         assert len(projects) == 1
 
         create_forecast(bedretto_forecast_config_path, "1",
                         inj_plan=inj_plan_path)
-        session = store.session
         forecasts = session.execute(
             select(Forecast)).scalars().all()
         assert len(forecasts) == 1
 
     @pytest.mark.run(after='test_ramsis_bedretto_setup')
-    def test_run_bedretto_forecast(self, mocker):
+    def test_run_bedretto_forecast(self, mocker, session):
         _ = mocker.patch('RAMSIS.cli.forecast.restart_flow_run')
         label = "client_testing_agent"
         idempotency_id = "test_idempotency_id_"
 
-        from RAMSIS.db import store
         from RAMSIS.cli import ramsis_app as app
 
-        session = store.session
         forecast = check_one_forecast_in_db(session)
         logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
         result = runner.invoke(app, ["forecast", "run",
@@ -122,17 +116,15 @@ class TestInducedCase:
         assert result.exit_code == 0
 
     @pytest.mark.run(after='test_run_bedretto_forecast')
-    def test_run_bedretto_engine_flow(self, mocker):
+    def test_run_bedretto_engine_flow(self, mocker, session):
         mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
         mock_get.side_effect = mocked_datasources_get
         mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
         mock_post.side_effect = mocked_requests_post
         forecast_id = "1"
 
-        from RAMSIS.db import store
         from RAMSIS.cli import ramsis_app as app
 
-        session = store.session
         forecast = check_one_forecast_in_db(session)
         result = runner.invoke(app, ["engine", "run",
                                      forecast_id])

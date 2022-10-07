@@ -2,7 +2,6 @@ import typer
 from ramsis.datamodel import EStage, EStatus
 from RAMSIS.db import store
 import logging
-import io
 
 from prefect.tasks.prefect import create_flow_run
 from datetime import datetime
@@ -289,14 +288,16 @@ def create_forecast(project,
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
     if hyd_data:
-        fc.well = [deserialize_hydws_data(hyd_data, project.proj_string, False)]
+        well = deserialize_hydws_data(hyd_data, project.proj_string, False)
+        fc.well = [well]
+        store.add(well)
     typer.echo(f"catalog_data, {catalog_data}")
     if catalog_data:
-        cats = [deserialize_qml_data(catalog_data, project.proj_string)]
-        for cat in cats:
-            store.add(cat)
-            cat.forecast_id = fc.id
-        typer.echo(fc.seismiccatalog)
+        cat = deserialize_qml_data(
+            catalog_data, project.proj_string)
+        fc.seismiccatalog = [cat]
+        store.add(cat)
+    store.save()
     return fc
 
 
