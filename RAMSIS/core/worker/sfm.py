@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import marshmallow
 import requests
+import prefect
 
 from marshmallow import Schema, fields, validate
 
@@ -113,6 +114,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 configured to deserialize *many* values.
             :type deserializer: :py:class:`ramsis.io.DeserializerBase` or None
             """
+
             def _json(resp):
                 """
                 Return a JSON encoded query result.
@@ -215,6 +217,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :type timeout: float or tlple
         """
         super().__init__(**kwargs)
+        self.logger = prefect.context.get('logger')
 
         base_url, model_id = self.validate_ctor_args(
             base_url, model_id=kwargs.get('model_id', self.MODEL_ID))

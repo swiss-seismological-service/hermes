@@ -291,12 +291,12 @@ def create_forecast(project,
         well = deserialize_hydws_data(hyd_data, project.proj_string, False)
         fc.well = [well]
         store.add(well)
-    typer.echo(f"catalog_data, {catalog_data}")
     if catalog_data:
         cat = deserialize_qml_data(
             catalog_data, project.proj_string)
         fc.seismiccatalog = [cat]
         store.add(cat)
+    typer.echo(f"catalog_data, {catalog_data}")
     store.save()
     return fc
 

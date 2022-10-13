@@ -80,7 +80,6 @@ class UpdateFdsn(Task):
 
         if catalog_used and fdsnws_url:
             cat = self.fetch_fdsn(fdsnws_url, project, forecast)
-            assert(hasattr(cat, 'events'))
             cat.forecast_id = forecast.id
             cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = [cat]

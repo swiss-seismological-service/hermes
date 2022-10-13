@@ -68,7 +68,6 @@ def create_forecast(forecast_config, project_id, inj_plan=None,
         options.extend([
             "--catalog-data",
             catalog_data])
-    print(options)
     result = runner.invoke(app, options)
     assert result.exit_code == 0
 

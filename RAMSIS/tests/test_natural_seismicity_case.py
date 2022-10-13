@@ -79,13 +79,13 @@ class TestNaturalCase:
     def test_ramsis_etas_setup(self, session):
         update_model(etas_model_config_path)
         create_project(etas_project_config_path)
-        projects = session.execute(
-            select(Project)).scalars().all()
-        assert len(projects) == 1
         create_forecast(etas_forecast_config_path, "1",
                         catalog_data=etas_catalog_data_path)
         forecasts = session.execute(
             select(Forecast)).scalars().all()
+        projects = session.execute(
+            select(Project)).scalars().all()
+        assert len(projects) == 1
         assert len(forecasts) == 1
         assert len(forecasts[0].well) == 0
         assert len(forecasts[0].seismiccatalog) == 1
@@ -109,8 +109,8 @@ class TestNaturalCase:
     def test_etas_run_engine_flow(self, mocker, session):
         mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
         mock_get.side_effect = mocked_datasources_get
-        #mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        #mock_post.side_effect = mocked_requests_post
+        mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+        mock_post.side_effect = mocked_requests_post
         forecast_id = "1"
         from RAMSIS.cli import ramsis_app as app
         forecast = check_one_forecast_in_db(session)
