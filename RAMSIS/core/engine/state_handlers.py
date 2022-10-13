@@ -87,7 +87,7 @@ class BaseHandler(QObject):
         self.synchronous_thread = synchronous_thread
 
     def update_db(self):
-        if self.session.dirty:
+        if self.session.dirty or self.session.new or self.session.deleted or self.session.is_modified:
             self.session.commit()
         self.session.remove()
 

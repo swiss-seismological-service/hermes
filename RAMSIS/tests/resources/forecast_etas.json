@@ -1,0 +1,21 @@
+{
+    "FORECASTS": [
+        {
+            "FORECAST_NAME": "Forecast etas",
+            "FORECAST_STARTTIME": "2021-01-01T00:00:00",
+            "FORECAST_ENDTIME": "2021-01-31T00:00:00",
+            "SCENARIOS": [
+                {
+    		    "RUN_MODELS": "ETAS", 
+		    "SCENARIO_NAME": "Scenario ###",
+		    "EPOCH_DURATION": null,
+                    "RESERVOIR":
+		    {"x": [45.7, 47.9, 47.9, 45.7, 45.7],
+                     "y": [5.85, 5.85, 10.6, 10.6, 5.85],
+                     "z": [0, 0, 0, 0, 0]}
+
+                }
+            ]
+        }
+    ]
+}

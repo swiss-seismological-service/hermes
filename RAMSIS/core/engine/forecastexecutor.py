@@ -80,7 +80,6 @@ class UpdateFdsn(Task):
 
         if catalog_used and fdsnws_url:
             cat = self.fetch_fdsn(fdsnws_url, project, forecast)
-            assert(hasattr(cat, 'events'))
             cat.forecast_id = forecast.id
             cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = [cat]
@@ -118,22 +117,25 @@ class UpdateHyd(Task):
     def run(self, forecast, dttime):
         logger = prefect.context.get('logger')
         project = forecast.project
-        well_used = getattr(
-            EInput, project.settings.config['well']) in \
-            [EInput.REQUIRED, EInput.OPTIONAL]
+        well_requirement = getattr(
+            EInput, project.settings.config['well'])
         hydws_url = project.settings.config['hydws_url']
 
-        if well_used and hydws_url:
+        if hydws_url and well_requirement in [EInput.REQUIRED, EInput.OPTIONAL]:
+            logger.info("Well will be fetched for forecast.")
             well = self.fetch_hyd(hydws_url, project, forecast)
             assert(hasattr(well, 'sections'))
             well.creationinfo_creationtime = dttime
             well.forecast_id = forecast.id
             forecast.well = [well]
-        elif well_used and forecast.well:
+        elif forecast.well and well_requirement in [EInput.REQUIRED,
+                                                    EInput.OPTIONAL]:
             logger.info("Forecast already has well attached.")
-        else:
-            assert forecast.well and len(forecast.well) > 0, \
-                "No well exists on forecast"
+        elif not forecast.well:
+            if well_requirement == EInput.OPTIONAL:
+                logger.info("No observed well will be attached to the forecast")
+            elif well_requirement == EInput.NOT_ALLOWED:
+                logger.info("No well allowed for forecast.")
         return forecast
 
 
@@ -208,8 +210,8 @@ class ModelRuns(Task):
             pass
         else:
             if stage_enabled:
-                model_runs = [r for r in stage.runs if r.enabled and
-                              r.status.state not in self.STATUS_POSTED]
+                model_runs = [r for r in stage.runs if r.enabled
+                              and r.status.state not in self.STATUS_POSTED]
         return model_runs
 
 
@@ -237,8 +239,14 @@ class ForecastSerializeData(Task):
         # due to concurrency, the same object gets transformed
         # multiple times.
         project = forecast.project
-        well = forecast.well[0]
-        seismiccatalog = forecast.seismiccatalog[0]
+        if forecast.well:
+            well = forecast.well[0]
+        else:
+            well = None
+        if forecast.seismiccatalog:
+            seismiccatalog = forecast.seismiccatalog[0]
+        else:
+            seismiccatalog = None
 
         serializer = SFMWorkerIMessageSerializer(
             ramsis_proj=project.proj_string,
@@ -375,8 +383,8 @@ def dispatched_model_runs(forecast, estage):
         # If not all the runs have been set to DISPATCHED, they are still
         # in a RUNNING state, which is changed by the state handler. However
         # this may not happen quickly enough to update here.
-        model_runs.extend([run for run in runs if run.runid and
-                           run.status.state == EStatus.DISPATCHED])
+        model_runs.extend([run for run in runs if run.runid
+                           and run.status.state == EStatus.DISPATCHED])
 
     logger.info(f'Returning model runs from dispatched task, {model_runs}')
     return model_runs

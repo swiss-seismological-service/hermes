@@ -46,7 +46,9 @@ _install_requires = [
     "psycopg2==2.8.3",
     "jinja2",
     "xmltodict",
-    "sqlalchemy>=1.4"]
+    "sqlalchemy>=1.4",
+    "pytest-mock",
+    "pytest-order"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

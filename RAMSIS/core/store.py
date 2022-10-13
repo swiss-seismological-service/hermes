@@ -19,10 +19,7 @@ from sqlalchemy.orm import sessionmaker, with_polymorphic, scoped_session
 
 import ramsis.datamodel
 from ramsis.datamodel.base import ORMBase
-from ramsis.datamodel.project import Project
-from ramsis.datamodel.model import EModel, Model
-from ramsis.datamodel.seismicity import SeismicityModel
-from ramsis.datamodel.hazard import HazardModel
+from ramsis.datamodel import Project, EModel, Model, SeismicityModel, HazardModel
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +28,7 @@ logger = logging.getLogger(__name__)
 # metadata
 pkg = ramsis.datamodel
 modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
+modules = [m for m in modules if 'tests' not in m[1]]
 for finder, module_name, _ in modules:
     if module_name not in sys.modules:
         finder.find_module(module_name).load_module(module_name)
@@ -64,7 +62,7 @@ class Store:
         # TODO LH: reconsider the use of expire_on_commit=False
         self.make_session = scoped_session(sessionmaker(
             bind=self.engine, expire_on_commit=False,
-            autocommit=False, autoflush=True))
+            autocommit=False, autoflush=False))
         self.session = self.make_session
 
     def init_db(self):

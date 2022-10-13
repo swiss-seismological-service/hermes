@@ -9,7 +9,7 @@
 
 # Other
 images_rc.py
-ramsis_config_public.yml
+config/ramsis_config_public.yml
 
 ## Development Tools
 
