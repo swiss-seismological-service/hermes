@@ -1,14 +1,15 @@
 import typer
+from sqlalchemy import select
 from RAMSIS.cli import project, model, engine, forecast as _forecast
 import logging
-from sqlalchemy import select
 from ramsis.datamodel import Forecast, Project, EStatus
 from RAMSIS.flows.manager import manager_flow, manager_flow_name
 from RAMSIS.db import store
 from RAMSIS.flows.register import register_project, register_flows, \
     get_client
 from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
-    cancel_flow_run, scheduled_flow_runs
+    cancel_flow_run, scheduled_flow_runs, get_flow_run_label, \
+    create_flow_run_name
 
 ramsis_app = typer.Typer()
 # engine to be removed after migrated to full use of prefect
@@ -29,7 +30,13 @@ def register():
 def run(project_id: int = typer.Option(
         ..., help="Project id to search for forecasts when scheduling."),
         dry_run: bool = typer.Option(
-            False, help="Show what forecasts would be scheduled and when.")
+            False, help="Show what forecasts would be scheduled and when."),
+        label: str = typer.Option(
+            None, help="label to associate with an agent"),
+        idempotency_key: str = typer.Option(
+            None, help="Key that is used by the prefect cloud "
+            "to avoid rerunning forecasts that have already been"
+            " scheduled.")
         ):
     typer.echo(f"Scheduling forecasts for project id {project_id}.")
     session = store.session
@@ -41,19 +48,25 @@ def run(project_id: int = typer.Option(
         raise typer.Exit()
 
     forecasts = session.execute(
-        select(Forecast).filter_by(project_id=project_id)).scalar().all()
+        select(Forecast).filter_by(project_id=project_id)).scalars().all()
     if not forecasts:
         typer.echo("No forecasts exist that are in a non-complete state.")
     else:
         typer.echo(f"{len(forecasts)} found to schedule")
     client = get_client()
-    idempotency_id = get_idempotency_id()
+
+    if not label:
+        label = get_flow_run_label()
+    if not idempotency_key:
+        idempotency_key = get_idempotency_id()
+
     for forecast in forecasts:
         if forecast.status.state != EStatus.COMPLETE:
+            flow_run_name = create_flow_run_name(idempotency_key, forecast.id)
             typer.echo(
                 f"Forecast: {forecast.id} is being scheduled.")
-            schedule_forecast(forecast, client, idempotency_id=idempotency_id,
-                              dry_run=dry_run)
+            schedule_forecast(forecast, client, flow_run_name, label,
+                              idempotency_key, dry_run=dry_run)
 
 
 @ramsis_app.command()

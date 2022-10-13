@@ -151,7 +151,7 @@ def create_flow_run_name(idempotency_id, forecast_id):
 
 
 def schedule_forecast(forecast, client, flow_run_name, label,
-                      dry_run=False):
+                      idempotency_key, dry_run=False):
     if forecast.starttime < datetime.utcnow():
         scheduled_time = datetime.utcnow()
         typer.echo(f"Forecast {forecast.id} is due to run in the past. "
@@ -166,7 +166,7 @@ def schedule_forecast(forecast, client, flow_run_name, label,
             labels=[label],
             run_name=flow_run_name,
             scheduled_start_time=scheduled_time,
-            idempotency_key=flow_run_name,
+            idempotency_key=idempotency_key,
             parameters=parameters)
 
         typer.echo(

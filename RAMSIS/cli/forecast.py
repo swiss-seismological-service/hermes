@@ -22,9 +22,9 @@ def run(forecast_id: int,
             False, help="Force the forecast to run again, "
                         "even if completed."),
         label: str = typer.Option(
-            ..., help="label to associate with an agent"),
+            None, help="label to associate with an agent"),
         idempotency_id: str = typer.Option(
-            ..., help="idempotency id that identifies a forecast"
+            None, help="idempotency id that identifies a forecast"
             "run so the same run is only run once.")):
     session = store.session
     forecast = session.execute(
@@ -63,7 +63,8 @@ def run(forecast_id: int,
 
     if forecast.status.state != EStatus.COMPLETE:
         client = get_client()
-        schedule_forecast(forecast, client, flow_run_name, label)
+        schedule_forecast(forecast, client, flow_run_name,
+                          idempotency_id, label)
     else:
         typer.echo("Forecast is already complete.")
 
@@ -87,7 +88,7 @@ def clone(forecast_id: int,
 
     typer.echo(f"Forecasts being cloned from id: {forecast_id} "
                f"which has starttime: {forecast.starttime}")
-    project_settings = forecast.project.config.settings
+    project_settings = forecast.project.settings.config
     # If some input data is attached to the forecast rather
     # than being received from a webservice, this must also
     # be cloned. with_results=True only copies input data over.
