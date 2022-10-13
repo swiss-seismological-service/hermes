@@ -15,8 +15,8 @@ def get_client(api_key=None):
     return Client(api_key=api_key)
 
 
-def register_flows(flow, project_name=prefect_project_name):
-    flow_id = flow.register(project_name=project_name)
+def register_flows(flow, labels, project_name=prefect_project_name):
+    flow_id = flow.register(project_name=project_name, labels=labels)
     logging.info(f"flow: {flow} has been registered with flow_id: {flow_id}")
 
 

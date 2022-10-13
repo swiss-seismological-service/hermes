@@ -20,8 +20,13 @@ ramsis_app.add_typer(project.app, name="project")
 
 
 @ramsis_app.command()
-def register():
-    register_flows(manager_flow)
+def register(label: str = typer.Option(
+             None, help="label to associate with a prefect agent")):
+
+    if not label:
+        label = get_flow_run_label()
+
+    register_flows(manager_flow, [label])
     register_project()
     typer.echo("prefect has registered flows and project for ramsis.")
 
