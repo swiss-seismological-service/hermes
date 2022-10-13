@@ -43,7 +43,7 @@ def mocked_requests_post(*args, **kwargs):
     logger.debug(f"Input to mocked_requests_post: {args}")
     if args[0] == 'http://ramsis-em1.ethz.ch:5007/v1/sfm/models/etas/run':
         model_response_to_post_induced_1_path = join(
-            model_response_path, 'model_response_to_post_induced_1.json')
+            model_response_path, 'model_response_to_post_natural_1.json')
         with open(model_response_to_post_induced_1_path, "r") as f:
             model_response_to_post_induced_1_data = json.load(f)
         return MockResponse(model_response_to_post_induced_1_data, 200)
@@ -121,6 +121,7 @@ class TestNaturalCase:
                      f"{result.stdout}")
         assert result.exit_code == 0
         forecast = get_forecast(session, forecast.id)
+
         seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].runs[0].\
             result.subgeometries[0].samples
         logger.info(f"length of seismicity results: {len(seismicity_results)}")
