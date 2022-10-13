@@ -1,4 +1,3 @@
-
 from prefect import Flow, Parameter, unmapped
 from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
@@ -6,16 +5,9 @@ from RAMSIS.core.engine.forecastexecutor import \
     dispatched_model_runs, DummyTask,\
     FlattenTask, ScenarioSerializeData, ForecastSerializeData
 from ramsis.datamodel import EStage
-from RAMSIS.core.engine.state_handlers import ForecastHandler
-from RAMSIS.utils import SynchronousThread
-from RAMSIS.db import store
+from RAMSIS.core import engine
 
-from PyQt5.QtCore import QThreadPool
 from prefect.storage import Local
-
-
-forecast_handler = ForecastHandler(QThreadPool(), SynchronousThread())
-forecast_handler.session = store.session
 
 
 # Seismicity Forecast Flow
@@ -25,15 +17,15 @@ with Flow("SeismicityForecast",
     forecast = Parameter('forecast')
     system_time = Parameter('system_time')
     remove_data_task = DummyTask(
-        state_handlers=[forecast_handler.forecast_data_delete])
+        state_handlers=[engine.forecast_handler.forecast_data_delete])
     forecast_no_data = remove_data_task(forecast)
     update_fdsn = UpdateFdsn(
-        state_handlers=[forecast_handler.
+        state_handlers=[engine.forecast_handler.
                         forecast_catalog_state_handler])
     forecast_with_catalog = update_fdsn(forecast_no_data, system_time)
 
     update_hyd = UpdateHyd(
-        state_handlers=[forecast_handler.
+        state_handlers=[engine.forecast_handler.
                         forecast_well_state_handler])
     forecast = update_hyd(forecast_with_catalog, system_time)
     scenarios = forecast_scenarios(
@@ -41,7 +33,7 @@ with Flow("SeismicityForecast",
 
     # Get seismicity model runs
     seismicity_models = ModelRuns(
-        state_handlers=[forecast_handler.
+        state_handlers=[engine.forecast_handler.
                         scenario_models_state_handler])
     seismicity_model_runs = seismicity_models.map(
         scenarios, unmapped(EStage.SEISMICITY))
@@ -57,7 +49,7 @@ with Flow("SeismicityForecast",
     scenario_serialized_data = scenario_serializer.map(scenarios)
 
     model_run_executor = SeismicityModelRunExecutor(
-        state_handlers=[forecast_handler.model_run_state_handler])
+        state_handlers=[engine.forecast_handler.model_run_state_handler])
 
     _ = model_run_executor.map(
         unmapped(forecast), unmapped(forecast_serialized_data),
@@ -78,6 +70,6 @@ with Flow("SeismicityForecast",
     # Poll the remote workers for tasks that have been completed.
     model_run_poller = SeismicityModelRunPoller(
         state_handlers=[
-            forecast_handler.poll_seismicity_state_handler])
+            engine.forecast_handler.poll_seismicity_state_handler])
     model_run_poller.map(unmapped(forecast),
                          model_runs_dispatched)
