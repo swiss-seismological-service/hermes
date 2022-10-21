@@ -20,6 +20,7 @@ from RAMSIS.flows.manager import manager_flow_name
 
 # All hyd, seismic data is expected in this projection
 WGS84_PROJ = "epsg:4326"
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
 def matched_flow_run(idempotency_key: str,
@@ -239,13 +240,14 @@ def deserialize_qml_data(data, ramsis_proj):
     return ret_data
 
 
-def create_scenario(project, scenario_config, inj_plan_data):
+def create_scenario(project, scenario_config,
+                    inj_plan_data, epoch_duration):
     scenario = default_scenario(store, project.model_settings.config,
                                 name=scenario_config["SCENARIO_NAME"])
     # Seismicity Stage
     seismicity_stage = scenario[EStage.SEISMICITY]
     seismicity_stage.config = {
-        'epoch_duration': scenario_config["EPOCH_DURATION"]}
+        'epoch_duration': epoch_duration}
     scenario.reservoirgeom = scenario_config["RESERVOIR"]
 
     if inj_plan_data:
@@ -274,6 +276,17 @@ def create_forecast(project,
                     hyd_data,
                     catalog_data):
 
+    forecast_start = datetime.strptime(forecast_config['FORECAST_STARTTIME'],
+                                       DATETIME_FORMAT)
+    forecast_end = datetime.strptime(forecast_config['FORECAST_ENDTIME'],
+                                     DATETIME_FORMAT)
+    assert forecast_start < forecast_end
+    # assign default epoch duration
+    epoch_duration = (forecast_end - forecast_start).total_seconds()
+    if "EPOCH_DURATION" in forecast_config.keys():
+        if forecast_config["EPOCH_DURATION"]:
+            epoch_duration = forecast_config["EPOCH_DURATION"]
+
     fc = default_forecast(
         store,
         starttime=forecast_config["FORECAST_STARTTIME"],
@@ -284,7 +297,9 @@ def create_forecast(project,
 
     scenarios_json = forecast_config['SCENARIOS']
     scenarios = [create_scenario(project,
-                                 scenario_config, inj_plan_data)
+                                 scenario_config,
+                                 inj_plan_data,
+                                 epoch_duration)
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
     if hyd_data:
