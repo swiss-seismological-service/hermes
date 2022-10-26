@@ -117,10 +117,10 @@ class TestInducedCase:
 
     @pytest.mark.run(after='test_run_bedretto_forecast')
     def test_run_bedretto_engine_flow(self, mocker, session):
-        #mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        #mock_get.side_effect = mocked_datasources_get
-        #mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        #mock_post.side_effect = mocked_requests_post
+        mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+        mock_get.side_effect = mocked_datasources_get
+        mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+        mock_post.side_effect = mocked_requests_post
         forecast_id = "1"
 
         from RAMSIS.cli import ramsis_app as app
