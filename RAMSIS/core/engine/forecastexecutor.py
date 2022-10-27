@@ -22,20 +22,21 @@ stage is managed by a respective StageExecutor class:
 
 """
 import json
-import time
 import logging
+import time
 from datetime import datetime
-from prefect import task, Task
-import prefect
-from prefect.engine.signals import LOOP, FAIL
-from prefect.triggers import any_successful
-from ramsis.datamodel import EStatus, EStage, EInput
 
-from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
+import prefect
+from prefect import Task, task
+from prefect.engine.signals import FAIL, LOOP
+from prefect.triggers import any_successful
+from ramsis.datamodel import EInput, EStage, EStatus
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
-from RAMSIS.core.datasources import HYDWSDataSource, FDSNWSDataSource
+from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
+from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
+
 log = logging.getLogger(__name__)
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
@@ -257,8 +258,8 @@ class ForecastSerializeData(Task):
         payload = {
             'data': {
                 'attributes': {
-                    'seismic_catalog': seismiccatalog,
-                    'observed_well': well,
+                    'seismicity': seismiccatalog,
+                    'hydraulics': well,
                     'local_proj_string': project.proj_string}}}
 
         data = serializer._serialize_dict(payload)
@@ -301,8 +302,8 @@ class ScenarioSerializeData(Task):
         payload = {
             'data': {
                 'attributes': {
-                    'scenario_well': injection_plan,
-                    'reservoir_geometry': scenario.reservoirgeom}}}
+                    'injection_plan': injection_plan,
+                    'geometry': scenario.reservoirgeom}}}
 
         data = serializer._serialize_dict(payload)
         return (scenario.id, data)

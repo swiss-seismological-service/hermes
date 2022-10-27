@@ -38,7 +38,7 @@ _install_requires = [
     "PyQt5 >=5.12, <5.13",
     "python-dateutil>=2.8.0",
     "PyYAML>=5.1.1",
-    "ramsis.datamodel==0.4",
+    "ramsis.datamodel==1.0",
     "requests>=2.18.4",
     "transitions==0.6.9",
     "prefect==0.15.10",
