@@ -7,8 +7,6 @@ import logging
 
 import requests
 
-from PyQt5 import QtCore
-
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
 from ramsis.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
                                   HYDWSJSONIOError)
@@ -18,15 +16,13 @@ from ramsis.utils.clients import (binary_request,
                                   NoContent, RequestsError)
 
 
-class HYDWSDataSource(QtCore.QThread):
+class HYDWSDataSource():
     """
-    QThread fetching and deserializing data from *HYDWS*.
-    #changed from background thread to standard thread
+    Fetching and deserializing data from *HYDWS*.
     """
     DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
     def __init__(self, url, project, timeout=None):
-        super().__init__()
         self.url = url
         self._timeout = timeout
 
@@ -43,8 +39,6 @@ class HYDWSDataSource(QtCore.QThread):
 
     def fetch(self, **kwargs):
         """
-        Fetch data by means of a background-thread
-
         :param kwargs: args dict forwarded to the HYDWS
         """
         self._args = kwargs
@@ -82,15 +76,14 @@ class HYDWSDataSource(QtCore.QThread):
         return bh
 
 
-class FDSNWSDataSource(QtCore.QThread):
+class FDSNWSDataSource():
     """
-    Fetches seismic event data from a web service in the background.
+    Fetches seismic event data from a web service.
     """
 
     DESERIALZER = QuakeMLObservationCatalogDeserializer
 
     def __init__(self, url, project, timeout=None):
-        super().__init__()
         self.url = url
         self._timeout = timeout
 
@@ -106,12 +99,6 @@ class FDSNWSDataSource(QtCore.QThread):
             transform_func_name='pyproj_transform_to_local_coords')
 
     def fetch(self, **kwargs):
-        """
-        Fetch data by means of a background-thread
-        #changed from background thread to standard thread
-
-        :param kwargs: args dict forwarded to fdsnws-event
-        """
         self._args = kwargs
         if self.enabled:
             cat = self.run()

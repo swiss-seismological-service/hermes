@@ -19,7 +19,8 @@ from sqlalchemy.orm import sessionmaker, with_polymorphic, scoped_session
 
 import ramsis.datamodel
 from ramsis.datamodel.base import ORMBase
-from ramsis.datamodel import Project, EModel, Model, SeismicityModel, HazardModel
+from ramsis.datamodel import Project, EModel, Model, SeismicityModel, \
+    HazardModel
 
 logger = logging.getLogger(__name__)
 

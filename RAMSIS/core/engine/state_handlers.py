@@ -1,8 +1,8 @@
 import prefect
+import threading
 from sqlalchemy.orm import lazyload, subqueryload
 from time import time, sleep
 from prefect.engine.result import NoResultType
-from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot
 
 from ramsis.datamodel import InjectionWell, SeismicObservationCatalog,\
     EStatus, SeismicityModelRun, HazardModelRun, GeoPoint,\
@@ -13,12 +13,11 @@ import logging
 logger = logging.getLogger('status_handler')
 
 
-class Worker(QRunnable):
+class Worker:
     '''
     Worker thread
 
-    Inherits from QRunnable to handler worker thread setup,
-    signals and wrap-up.
+    Handles worker thread setup, and wrap-up.
 
     :param callback: The function callback to run on this
     worker thread. Supplied args and
@@ -29,8 +28,6 @@ class Worker(QRunnable):
     '''
 
     def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
-        # Store constructor arguments (re-used for processing)
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
@@ -38,7 +35,6 @@ class Worker(QRunnable):
         # to be released
         self.timeout = 1000
 
-    @pyqtSlot()
     def run(self):
         '''
         Initialise the runner function with passed args, kwargs.
@@ -54,15 +50,23 @@ class Worker(QRunnable):
                     break
             synchronous_thread.reserve_thread()
         try:
-            self.fn(*self.args, **self.kwargs)
+            t1 = threading.Thread(target=self.fn,
+                                  args=self.args,
+                                  kwargs=self.kwargs)
+            t1.start()
+            t1.join()
+
         except Exception as err:
             logger.error(f"Synchronous thread Exception raised: {err}")
             raise err
         if synchronous_thread is not None:
             synchronous_thread.release_thread()
 
+    def start(self):
+        self.run()
 
-class BaseHandler(QObject):
+
+class BaseHandler:
     """
     Handles status changes and results emitted from prefect
     flows. SQLalchemy model objects that are returned are
@@ -77,17 +81,15 @@ class BaseHandler(QObject):
     :param old_state: prefect.engine.state
     :param new_state: prefect.engine.state
     """
-    execution_status_update = pyqtSignal(object)
-    forecast_status_update = pyqtSignal(object)
 
-    def __init__(self, threadpool, synchronous_thread):
-        super().__init__()
+    def __init__(self, threadpoolexecutor, synchronous_thread):
         self.session = None
-        self.threadpool = threadpool
+        self.threadpoolexecutor = threadpoolexecutor
         self.synchronous_thread = synchronous_thread
 
     def update_db(self):
-        if self.session.dirty or self.session.new or self.session.deleted or self.session.is_modified:
+        if self.session.dirty or self.session.new or self.session.deleted or \
+                self.session.is_modified:
             self.session.commit()
         self.session.remove()
 
@@ -180,9 +182,6 @@ class ForecastHandler(BaseHandler):
                  for state in stage_states]):
             scenario.status.state = EStatus.RUNNING
 
-        self.execution_status_update.emit((
-            scenario.status.state, type(scenario),
-            scenario.id))
         return scenario
 
     def flow_state_handler(self, obj, old_state, new_state):
@@ -195,7 +194,7 @@ class ForecastHandler(BaseHandler):
         worker = Worker(self.update_seismicity_statuses, new_state, logger,
                         forecast_id,
                         synchronous_thread=self.synchronous_thread)
-        self.threadpool.start(worker)
+        self.threadpoolexecutor.submit(worker.run)
 
     def update_seismicity_statuses(self, new_state, logger, forecast_id):
         forecast = self.session.query(Forecast).filter(
@@ -245,7 +244,7 @@ class ForecastHandler(BaseHandler):
 
         if self.state_evaluator(new_state, [self.task_finished]):
             worker = Worker(self.dispatched_model_run, new_state, logger)
-            self.threadpool.start(worker)
+            self.threadpoolexecutor.submit(worker.run)
         return new_state
 
     def dispatched_model_run(self, new_state, logger):
@@ -273,9 +272,6 @@ class ForecastHandler(BaseHandler):
         # be refreshed from the db in the gui thread.
 
         self.update_db()
-        self.execution_status_update.emit((
-            new_state, type(model_run),
-            model_run.id))
 
     def poll_seismicity_state_handler(self, obj, old_state, new_state):
         """
@@ -300,7 +296,7 @@ class ForecastHandler(BaseHandler):
                 self.update_db()
                 worker = Worker(self.finished_model_run, new_state, logger,
                                 synchronous_thread=self.synchronous_thread)
-                self.threadpool.start(worker)
+                self.threadpoolexecutor.submit(worker.run)
 
             elif self.state_evaluator(new_state, [self.error_result]):
                 model_run = new_state.result
@@ -311,9 +307,6 @@ class ForecastHandler(BaseHandler):
                     filter(SeismicityModelRun.id == model_run.id).first()
                 update_model_run.status.state = EStatus.ERROR
                 self.update_db()
-            self.execution_status_update.emit((
-                new_state, type(model_run),
-                model_run.id))
         return new_state
 
     def finished_model_run(self, new_state, logger):
@@ -357,7 +350,7 @@ class ForecastHandler(BaseHandler):
 
             worker = Worker(self.add_catalog, new_state, logger,
                             synchronous_thread=self.synchronous_thread)
-            self.threadpool.start(worker)
+            self.threadpoolexecutor.submit(worker.run)
         return new_state
 
     def delete_data(self, new_state, logger, **kwargs):
@@ -375,7 +368,7 @@ class ForecastHandler(BaseHandler):
 
             worker = Worker(self.delete_data, new_state, logger,
                             synchronous_thread=self.synchronous_thread)
-            self.threadpool.start(worker)
+            self.threadpoolexecutor.submit(worker.run)
         return new_state
 
     def add_well(self, new_state, logger, **kwargs):
@@ -397,7 +390,7 @@ class ForecastHandler(BaseHandler):
                                             self.successful_result]):
             worker = Worker(self.add_well, new_state, logger,
                             synchronous_thread=self.synchronous_thread)
-            self.threadpool.start(worker)
+            self.threadpoolexecutor.submit(worker.run)
         return new_state
 
 
@@ -448,9 +441,6 @@ class HazardPreparationHandler(BaseHandler):
             if hazard_run.enabled and status == EStatus.PREPARED:
                 hazard_run.status.state = status
         self.update_db()
-        self.execution_status_update.emit((
-            new_state, type(stage),
-            None))
 
     def flow_state_handler(self, obj, old_state, new_state):
         """
@@ -462,7 +452,7 @@ class HazardPreparationHandler(BaseHandler):
         worker = Worker(self.update_hazard_statuses, new_state, logger,
                         scenario_id,
                         synchronous_thread=self.synchronous_thread)
-        self.threadpool.start(worker)
+        self.threadpoolexecutor.submit(worker.run)
 
     def create_hazard_models_state_handler(self, obj, old_state, new_state):
         """
@@ -479,9 +469,6 @@ class HazardPreparationHandler(BaseHandler):
                 run = runs[0]
                 stage = run.forecaststage
                 stage.status.state = EStatus.RUNNING
-                self.execution_status_update.emit((
-                    new_state, type(run),
-                    None))
         return new_state
 
     def update_hazard_models_state_handler(self, obj, old_state, new_state):
@@ -539,7 +526,7 @@ class HazardHandler(BaseHandler):
         worker = Worker(self.update_hazard_statuses, new_state, logger,
                         scenario_id,
                         synchronous_thread=self.synchronous_thread)
-        self.threadpool.start(worker)
+        self.threadpoolexecutor.submit(worker.run)
 
     def scenario_stage_status(self, scenario, new_state):
         # If all model runs are complete without error, then the
@@ -565,9 +552,6 @@ class HazardHandler(BaseHandler):
         else:
             scenario.status.state = EStatus.ERROR
 
-        self.execution_status_update.emit((
-            new_state, type(stage),
-            stage.id))
         return scenario
 
     def model_run_state_handler(self, obj, old_state, new_state):
@@ -589,9 +573,6 @@ class HazardHandler(BaseHandler):
                     f"Hazard model run with runid={model_run.runid}"
                     "has been dispatched to the remote worker.")
                 update_model_run.status.state = model_run.status.state
-                self.execution_status_update.emit((
-                    new_state, type(model_run),
-                    model_run.id))
             elif self.state_evaluator(new_state, [self.error_result]):
                 logger.warning(
                     f"Hazard model run has failed: {new_state.result}. "
@@ -599,12 +580,7 @@ class HazardHandler(BaseHandler):
                 update_model_run = self.session.query(HazardModelRun).\
                     filter(HazardModelRun.id == model_run.id).first()
                 update_model_run.status.state = EStatus.ERROR
-                self.execution_status_update.emit((
-                    new_state, type(model_run),
-                    model_run.id))
 
-                # The sent status is not used, as the whole scenario must
-                # be refreshed from the db in the gui thread.
             self.update_db()
         return new_state
 
@@ -721,7 +697,4 @@ class HazardHandler(BaseHandler):
                 filter(HazardModelRun.id == model_run.id).first()
             update_model_run.status.state = EStatus.ERROR
             self.update_db()
-        self.execution_status_update.emit((
-            new_state, type(model_run),
-            model_run.id))
         self.synchronous_thread.model_runs_count += 1

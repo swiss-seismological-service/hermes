@@ -8,7 +8,6 @@ import logging
 from sqlalchemy.orm import subqueryload
 # Still using Qt threading, this will not be used with the transition
 # to managing tasks with prefect.
-from PyQt5.QtCore import QObject, QThreadPool
 
 from prefect import config
 from prefect.engine.flow_runner import FlowRunner as _FlowRunner
@@ -26,9 +25,8 @@ from RAMSIS.db import store, app_settings
 from RAMSIS.core.engine.hazardexecutor import CreateHazardModelRunDir, \
     CreateHazardModelRuns, OQFiles, UpdateHazardRuns, \
     OQLogicTree, OQSourceModelFiles
-from RAMSIS.core.engine.state_handlers import ForecastHandler, \
-    HazardHandler, HazardPreparationHandler
-from RAMSIS.utils import SynchronousThread
+from RAMSIS.core.engine import forecast_handler, threadpoolexecutor, \
+    synchronous_thread, hazard_preparation_handler, hazard_handler
 
 
 def forecast_for_seismicity(forecast_id, session):
@@ -148,7 +146,7 @@ def scenario_for_hazard(scenario_id, session):
     return scenario
 
 
-class ForecastFlow(QObject):
+class ForecastFlow:
     """
     Contains prefect flow logic for creating DAG.
     A flow is created for every forecast that is run by the
@@ -181,7 +179,7 @@ class ForecastFlow(QObject):
                 runner_cls=_FlowRunner)
 
 
-class HazardPreparationFlow(QObject):
+class HazardPreparationFlow:
     """
     Contains prefect flow logic for creating DAG.
     This DAG runs tasks that prepare the model runs for
@@ -237,7 +235,7 @@ class HazardPreparationFlow(QObject):
                                      executor=executor)
 
 
-class HazardFlow(QObject):
+class HazardFlow:
     """
     Contains prefect flow logic for creating DAG.
     A flow is created for every forecast that is run by the
@@ -251,7 +249,7 @@ class HazardFlow(QObject):
         self.data_dir = data_dir
 
 
-class Engine(QObject):
+class Engine:
     """
     The engine is responsible for running forecasts
     """
@@ -261,7 +259,6 @@ class Engine(QObject):
         :param RAMSIS.core.controller.Controller core: Reference to the core
         """
         super().__init__()
-        self.threadpool = QThreadPool()
         self.session = None
 
     def run(self, forecast_id):
@@ -290,23 +287,17 @@ class Engine(QObject):
 
 class FlowRunner:
     def __init__(self, forecast_id, session, data_dir):
-        self.threadpool = QThreadPool()
-        self.synchronous_thread = SynchronousThread()
+        self.threadpoolexecutor = threadpoolexecutor
+        self.synchronous_thread = synchronous_thread
         self.forecast_id = forecast_id
         self.session = session
         self.data_dir = data_dir
         self.system_time = datetime.utcnow()
         self.logger = logging.getLogger()
         self.logger.propagate = False
-        self.forecast_handler = ForecastHandler(
-            self.threadpool, self.synchronous_thread)
-        self.hazard_preparation_handler = HazardPreparationHandler(
-            self.threadpool, self.synchronous_thread)
-        self.hazard_handler = HazardHandler(
-            self.threadpool, self.synchronous_thread)
-        self.forecast_handler.session = self.session
-        self.hazard_handler.session = self.session
-        self.hazard_preparation_handler.session = self.session
+        self.forecast_handler = forecast_handler
+        self.hazard_preparation_handler = hazard_preparation_handler
+        self.hazard_handler = hazard_handler
         self.stage_results = []
 
     def update_forecast_status(self, estatus):
@@ -346,7 +337,7 @@ class FlowRunner:
                                          self.session)
             forecast_flow.run()
 
-            self.threadpool.waitForDone()
+            self.threadpoolexecutor.shutdown(wait=True)
             seismicity_stage_statuses = self.stage_statuses(EStage.SEISMICITY)
         return seismicity_stage_statuses
 
@@ -369,7 +360,7 @@ class FlowRunner:
                     scenario, self.hazard_preparation_handler,
                     self.data_dir)
                 hazard_prep_flow.run()
-                self.threadpool.waitForDone()
+                self.threadpoolexecutor.shutdown(wait=True)
                 # Will the hazard status update here?
                 if hazard_state == EStatus.ERROR:
                     self.update_forecast_status(EStatus.ERROR)
@@ -384,7 +375,7 @@ class FlowRunner:
                                      self.hazard_handler,
                                      self.data_dir)
             hazard_flow.run()
-            self.threadpool.waitForDone()
+            self.threadpoolexecutor.shutdown(wait=True)
             while (self.synchronous_thread.model_runs <
                    self.synchronous_thread.model_runs_count):
                 time.sleep(5)
