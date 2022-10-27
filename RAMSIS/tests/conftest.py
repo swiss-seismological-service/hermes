@@ -17,6 +17,7 @@ def env():
     environ.clear()
     environ.update(old_environ)
 
+
 @pytest.fixture(scope='class')
 def session():
     from RAMSIS.db import store
@@ -69,21 +70,19 @@ def setup_database(connection, env):
         " from pg_stat_activity where pg_stat_activity.datname="
         f"'{dbname}' AND pid <> pg_backend_pid()")
     cursor.close()
-    #print("after setup yield")
-    #postgres_db = env["POSTGRES_DB"]
-    ## Activate following section if there are leftover running connections
-    ## after tests have completed. Causes warning to be issues.
-    #conn = psycopg2.connect(
-    #    port=env["POSTGRES_PORT"], user=env["DEFAULT_USER"],
-    #    host=env["POSTGRES_SERVER"], password=env["DEFAULT_PASSWORD"],
-    #    dbname=env["DEFAULT_DB"])
-    #conn.autocommit = True
-    #cursor = conn.cursor()
-    #cursor.execute(
-    #    "select pg_terminate_backend(pg_stat_activity.pid)"
-    #    " from pg_stat_activity where pg_stat_activity.datname="
-    #    f"'{postgres_db}' AND pid <> pg_backend_pid()")
-    #cursor.close()
-    #conn.close()
-    #print("after after setup yield")
-    #sleep(10)
+    # # Activate following section if there are leftover running connections
+    # # after tests have completed. Causes warning to be issues.
+    # conn = psycopg2.connect(
+    #     port=env["POSTGRES_PORT"], user=env["DEFAULT_USER"],
+    #     host=env["POSTGRES_SERVER"], password=env["DEFAULT_PASSWORD"],
+    #     dbname=env["DEFAULT_DB"])
+    # conn.autocommit = True
+    # cursor = conn.cursor()
+    # cursor.execute(
+    #     "select pg_terminate_backend(pg_stat_activity.pid)"
+    #     " from pg_stat_activity where pg_stat_activity.datname="
+    #     f"'{postgres_db}' AND pid <> pg_backend_pid()")
+    # cursor.close()
+    # conn.close()
+    # print("after after setup yield")
+    # sleep(10)

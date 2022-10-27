@@ -28,10 +28,6 @@ etas_catalog_data_path = join(
 
 FDSNWS_URL = "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=-0.04"
 
-datasources_path = join(dirpath, 'datasources')
-
-catalog_name = "1992-2021_fdsn_catalog_etas_switz.xml"
-
 model_requests_path = join(dirpath, 'model_requests')
 
 model_response_path = join(dirpath, 'results')
@@ -53,7 +49,7 @@ def mocked_requests_post_etas(*args, **kwargs):
 
 def mocked_datasources_get_etas(*args, **kwargs):
     if args[0] == FDSNWS_URL:
-        with open(fdsn_catalog_path, "rb") as f:
+        with open(etas_catalog_data_path, "rb") as f:
             data = f.read()
         return MockResponse({}, 200, data)
 
@@ -63,7 +59,7 @@ def mocked_datasources_get_etas(*args, **kwargs):
             model_response_path, "model_response_natural.json")
         with open(model_request_response_path, "r") as f:
             model_response_data = json.load(f)
-        retval =  MockResponse(model_response_data, 200)
+        retval = MockResponse(model_response_data, 200)
         return retval
 
     return MockResponse(None, 404)

@@ -50,16 +50,18 @@ class Worker:
                     break
             synchronous_thread.reserve_thread()
         try:
-            print("args= ", self.args, type(self.args), "kwargs: ", self.kwargs, type(self.kwargs))
-            t1 = threading.Thread(target=self.fn, args=self.args, kwargs=self.kwargs)
+            t1 = threading.Thread(target=self.fn,
+                                  args=self.args,
+                                  kwargs=self.kwargs)
             t1.start()
             t1.join()
-            #self.fn(*self.args, **self.kwargs)
+
         except Exception as err:
             logger.error(f"Synchronous thread Exception raised: {err}")
             raise err
         if synchronous_thread is not None:
             synchronous_thread.release_thread()
+
     def start(self):
         self.run()
 
@@ -86,7 +88,8 @@ class BaseHandler:
         self.synchronous_thread = synchronous_thread
 
     def update_db(self):
-        if self.session.dirty or self.session.new or self.session.deleted or self.session.is_modified:
+        if self.session.dirty or self.session.new or self.session.deleted or \
+                self.session.is_modified:
             self.session.commit()
         self.session.remove()
 
