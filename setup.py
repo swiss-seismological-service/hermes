@@ -34,8 +34,6 @@ _install_requires = [
     "marshmallow",
     "numpy>=1.22.3",
     "obspy>=1.3.0",
-    "PyOpenGL>=3.1.1a1",
-    "PyQt5 >=5.12, <5.13",
     "python-dateutil>=2.8.0",
     "PyYAML>=5.1.1",
     "ramsis.datamodel==1.0",
@@ -61,10 +59,6 @@ _dependency_links = [(
 
 _scripts = []
 
-# TODO(damb): add doc
-# TODO LH: find a good way to handle the settings file. The app looks for
-#   it in standard config locations defined by QAppConfigLocation which
-#   are not writable by setup.py AFAIK.
 _data_files = [
     ('', ['LICENSE',
           'Makefile']),
@@ -96,7 +90,7 @@ setup(
             'General Public License v3 or later (AGPLv3+)'),
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering', ],
     platforms=['Linux', ],

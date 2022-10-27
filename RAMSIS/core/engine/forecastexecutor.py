@@ -67,7 +67,6 @@ class UpdateFdsn(Task):
         cat = seismics_data_source.fetch(
             starttime=starttime,
             endtime=endtime)
-        seismics_data_source.wait()
         return cat
 
     def run(self, forecast, dttime):
@@ -112,7 +111,6 @@ class UpdateHyd(Task):
             starttime=starttime,
             endtime=endtime,
             level='hydraulic')
-        hydraulics_data_source.wait()
         return well
 
     def run(self, forecast, dttime):
