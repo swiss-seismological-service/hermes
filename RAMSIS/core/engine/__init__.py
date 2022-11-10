@@ -5,6 +5,12 @@ from RAMSIS.core.engine.state_handlers import ForecastHandler, \
     HazardHandler, HazardPreparationHandler
 from RAMSIS.db import store
 
+forecast_context_format = "forecast_id: {forecast_id} |"
+scenario_context_format = "forecast_id: {forecast_id} scenario_id: " \
+    "{scenario_id}|"
+model_run_context_format = "forecast_id: {forecast_id} scenario_id: " \
+    "{scenario_id} model_run_id: {model_run_id}|"
+
 threadpoolexecutor = concurrent.futures.ThreadPoolExecutor(
     max_workers=3)
 synchronous_thread = SynchronousThread()

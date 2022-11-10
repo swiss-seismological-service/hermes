@@ -1,7 +1,6 @@
 import typer
 from sqlalchemy import select
 from RAMSIS.cli import project, model, engine, forecast as _forecast
-import logging
 from ramsis.datamodel import Forecast, Project, EStatus
 from RAMSIS.flows.manager import manager_flow, manager_flow_name
 from RAMSIS.db import store
@@ -93,5 +92,4 @@ def stop():
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
     ramsis_app()

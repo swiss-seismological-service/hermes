@@ -4,11 +4,11 @@ Forecast executing related engine facilities.
 """
 import time
 from datetime import datetime
-import logging
 from sqlalchemy.orm import subqueryload
 # Still using Qt threading, this will not be used with the transition
 # to managing tasks with prefect.
 
+import prefect
 from prefect import config
 from prefect.engine.flow_runner import FlowRunner as _FlowRunner
 from prefect.engine.task_runner import TaskRunner
@@ -26,7 +26,8 @@ from RAMSIS.core.engine.hazardexecutor import CreateHazardModelRunDir, \
     CreateHazardModelRuns, OQFiles, UpdateHazardRuns, \
     OQLogicTree, OQSourceModelFiles
 from RAMSIS.core.engine import forecast_handler, threadpoolexecutor, \
-    synchronous_thread, hazard_preparation_handler, hazard_handler
+    synchronous_thread, hazard_preparation_handler, hazard_handler, \
+    forecast_context_format
 
 
 def forecast_for_seismicity(forecast_id, session):
@@ -167,8 +168,12 @@ class ForecastFlow:
         executor = LocalDaskExecutor(scheduler='threads')
         seismicity_flow.state_handlers = [
             self.forecast_handler.flow_state_handler]
+        context_str = forecast_context_format.format(
+            forecast_id=self.forecast.id)
         with context(
-                forecast_id=self.forecast.id, session=self.session):
+                forecast_id=self.forecast.id,
+                forecast_context=context_str,
+                session=self.session):
             config.engine.executor.default_class = LocalExecutor
             config.engine.flow_runner.default_class = _FlowRunner
             config.engine.task_runner.default_class = TaskRunner
@@ -293,8 +298,8 @@ class FlowRunner:
         self.session = session
         self.data_dir = data_dir
         self.system_time = datetime.utcnow()
-        self.logger = logging.getLogger()
-        self.logger.propagate = False
+        self.logger = prefect.utilities.logging.get_logger()
+        self.logger.propagate = True
         self.forecast_handler = forecast_handler
         self.hazard_preparation_handler = hazard_preparation_handler
         self.hazard_handler = hazard_handler
@@ -407,7 +412,9 @@ class FlowRunner:
             # killed the process before this was complete, leading to
             # results not being stored)
             time.sleep(10)
-            self.stage_results.extend(seismicity_stage_statuses)
+            forecast = self.session.query(Forecast).filter(
+                Forecast.id == self.forecast_id).first()
+            self.logger.warning(f"forecast seismicity catalog when finished flow: {forecast.seismiccatalog}")
         self.logger.info(f"The stage states are: {self.stage_results}")
 
         for scenario in forecast_input.scenarios:
