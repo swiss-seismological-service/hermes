@@ -294,6 +294,11 @@ class ForecastHandler(BaseHandler):
                     filter(SeismicityModelRun.id == model_run.id).first()
                 update_model_run.status.state = EStatus.COMPLETE
                 self.update_db()
+                logger.info("starting worker for finished model run")
+                forecast_id = prefect.context.get("forecast_id")
+                forecast = self.session.query(Forecast).filter(
+                Forecast.id == forecast_id).first()
+                logger.warning(f"before commit in finished model run: forecast has catalog: {forecast.seismiccatalog}")
                 worker = Worker(self.finished_model_run, new_state, logger,
                                 synchronous_thread=self.synchronous_thread)
                 self.threadpoolexecutor.submit(worker.run)
@@ -318,6 +323,7 @@ class ForecastHandler(BaseHandler):
         model_run, model_result = new_state.result
         update_model_run = self.session.query(SeismicityModelRun).\
             filter(SeismicityModelRun.id == model_run.id).first()
+
         logger.info(
             f"model run found in finished_model_run is: {update_model_run}"
             f" and model result is: {model_result}")
@@ -331,11 +337,10 @@ class ForecastHandler(BaseHandler):
 
     def add_catalog(self, new_state, logger):
         forecast = new_state.result
-        print("forecast2", forecast, forecast.starttime, forecast.endtime)
         self.session.add_all(forecast.seismiccatalog)
         self.update_db()
         logger.info(f"Forecast id={forecast.id} has "
-                    f"{len(forecast.seismiccatalog)} catalogs added")
+                    f"{len(forecast.seismiccatalog)} catalogs.")
 
     def forecast_catalog_state_handler(self, obj, old_state, new_state):
         """
@@ -376,7 +381,7 @@ class ForecastHandler(BaseHandler):
         self.session.add_all(forecast.well)
         self.update_db()
         logger.info(f"Forecast id={forecast.id} has {len(forecast.well)} "
-                    "wells added")
+                    "wells")
 
     def forecast_well_state_handler(self, obj, old_state, new_state):
         """

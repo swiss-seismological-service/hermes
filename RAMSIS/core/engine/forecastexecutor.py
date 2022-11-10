@@ -36,6 +36,8 @@ from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
 
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
+from RAMSIS.core.engine import scenario_context_format, \
+    model_run_context_format
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ class UpdateFdsn(Task):
         return cat
 
     def run(self, forecast, dttime):
-
+        # Additional logging context
         logger = prefect.context.get('logger')
         project = forecast.project
         catalog_used = getattr(
@@ -79,6 +81,8 @@ class UpdateFdsn(Task):
         fdsnws_url = project.settings.config['fdsnws_url']
 
         if catalog_used and fdsnws_url:
+            logger.info("A catalog is required and a url is specified: "
+                        f"{fdsnws_url}")
             cat = self.fetch_fdsn(fdsnws_url, project, forecast)
             cat.forecast_id = forecast.id
             cat.creationinfo_creationtime = dttime
@@ -218,9 +222,9 @@ class ModelRuns(Task):
 
 class ForecastSerializeData(Task):
     """
-    :param str seismic_catalog: Snapshot of a seismic catalog in
+    :param str seismic_catalog: seismic catalog in
     `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
-    :param well: Snapshot of the injection well / borehole including
+    :param well: injection well / borehole including
         the hydraulics.
     :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
     :param scenario: The scenario to be forecasted
@@ -286,27 +290,31 @@ class ScenarioSerializeData(Task):
         payload
     """
     def run(self, scenario):
-        # Deepcopy items that are transformed, otherwise
-        # due to concurrency, the same object gets transformed
-        # multiple times.
-        forecast = scenario.forecast
-        project = forecast.project
-        injection_plan = scenario.well
+        context_str = scenario_context_format.format(
+            forecast_id=scenario.forecast.id,
+            scenario_id=scenario.id)
+        with prefect.context(forecast_context=context_str):
+            # Deepcopy items that are transformed, otherwise
+            # due to concurrency, the same object gets transformed
+            # multiple times.
+            forecast = scenario.forecast
+            project = forecast.project
+            injection_plan = scenario.well
 
-        serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj=project.proj_string,
-            external_proj="epsg:4326",
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_from_local_coords')
-        payload = {
-            'data': {
-                'attributes': {
-                    'injection_plan': injection_plan,
-                    'geometry': scenario.reservoirgeom}}}
+            serializer = SFMWorkerIMessageSerializer(
+                ramsis_proj=project.proj_string,
+                external_proj="epsg:4326",
+                ref_easting=0.0,
+                ref_northing=0.0,
+                transform_func_name='pyproj_transform_from_local_coords')
+            payload = {
+                'data': {
+                    'attributes': {
+                        'injection_plan': injection_plan,
+                        'geometry': scenario.reservoirgeom}}}
 
-        data = serializer._serialize_dict(payload)
-        return (scenario.id, data)
+            data = serializer._serialize_dict(payload)
+            return (scenario.id, data)
 
 
 class SeismicityModelRunExecutor(Task):
@@ -319,57 +327,65 @@ class SeismicityModelRunExecutor(Task):
     TASK_ACCEPTED = 202
 
     def run(self, forecast, forecast_data, scenario_data_list, model_run):
-        # Deepcopy items that are transformed, otherwise
-        # due to concurrency, the same object gets transformed
-        # multiple times.
-        stage = model_run.forecaststage
-        project = forecast.project
-        scenario_data = [data for scenario_id, data in scenario_data_list if
-                         scenario_id == model_run.forecaststage.scenario.id][0]
-        # (sarsonl) current bug when attempting to only
-        # allow one to one relationship between forecast-well
-        # and forecast-seismiccatalog. Work-around is to leave
-        # as one to many relationship and assume just one item in list.
+        context_str = model_run_context_format.format(
+            forecast_id=forecast.id,
+            scenario_id=model_run.forecaststage.scenario.id,
+            model_run_id=model_run.id)
+        with prefect.context(forecast_context=context_str):
+            # Deepcopy items that are transformed, otherwise
+            # due to concurrency, the same object gets transformed
+            # multiple times.
+            stage = model_run.forecaststage
+            project = forecast.project
+            scenario_data = [data for scenario_id, data
+                             in scenario_data_list if
+                             scenario_id ==
+                             model_run.forecaststage.scenario.id][0]
+            # (sarsonl) current bug when attempting to only
+            # allow one to one relationship between forecast-well
+            # and forecast-seismiccatalog. Work-around is to leave
+            # as one to many relationship and assume just one item in list.
 
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
-        config_attributes = {
-            'forecast_start': forecast.starttime.isoformat(),
-            'forecast_end': forecast.endtime.isoformat(),
-            'epoch_duration': stage.config['epoch_duration'],
-            'input_parameters': model_run.config}
-        payload = {"data":
-                   {"attributes":
-                    {**config_attributes,
-                     **forecast_data["data"]["attributes"],
-                     **scenario_data["data"]["attributes"]}}}
-        try:
-            json_payload = json.dumps(payload)
-            resp = _worker_handle.compute(
-                json_payload,
-                deserializer=SFMWorkerOMessageDeserializer(
-                    ramsis_proj=project.proj_string,
-                    external_proj="epsg:4326",
-                    ref_easting=0.0,
-                    ref_northing=0.0,
-                    transform_func_name='pyproj_transform_to_local_coords'))
-        except RemoteSeismicityWorkerHandle.RemoteWorkerError:
-            raise FAIL(
-                message="model run submission has failed with "
-                "error: RemoteWorkerError. Check if remote worker is"
-                " accepting requests.",
-                result=model_run)
+            _worker_handle = RemoteSeismicityWorkerHandle.from_run(
+                model_run)
+            config_attributes = {
+                'forecast_start': forecast.starttime.isoformat(),
+                'forecast_end': forecast.endtime.isoformat(),
+                'epoch_duration': stage.config['epoch_duration'],
+                'input_parameters': model_run.config}
+            payload = {"data":
+                       {"attributes":
+                        {**config_attributes,
+                         **forecast_data["data"]["attributes"],
+                         **scenario_data["data"]["attributes"]}}}
+            try:
+                json_payload = json.dumps(payload)
+                resp = _worker_handle.compute(
+                    json_payload,
+                    deserializer=SFMWorkerOMessageDeserializer(
+                        ramsis_proj=project.proj_string,
+                        external_proj="epsg:4326",
+                        ref_easting=0.0,
+                        ref_northing=0.0,
+                        transform_func_name='pyproj_transform_to_local_coords')) # noqa
+            except RemoteSeismicityWorkerHandle.RemoteWorkerError:
+                raise FAIL(
+                    message="model run submission has failed with "
+                    "error: RemoteWorkerError. Check if remote worker is"
+                    " accepting requests.",
+                    result=model_run)
 
-        status = resp['data']['attributes']['status_code']
+            status = resp['data']['attributes']['status_code']
 
-        if status != self.TASK_ACCEPTED:
-            raise FAIL(message=f"model run {resp['data']['task_id']} "
-                       f"has returned an error: {resp}", result=model_run)
+            if status != self.TASK_ACCEPTED:
+                raise FAIL(message=f"model run {resp['data']['task_id']} "
+                           f"has returned an error: {resp}", result=model_run)
 
-        model_run.runid = resp['data']['task_id']
-        # Next task requires knowledge of status, so update status inside task.
-        model_run.status.state = EStatus.DISPATCHED
-        return model_run
+            model_run.runid = resp['data']['task_id']
+            # Next task requires knowledge of status, so update status
+            # inside task.
+            model_run.status.state = EStatus.DISPATCHED
+            return model_run
 
 
 @task(trigger=any_successful)
@@ -408,64 +424,69 @@ class SeismicityModelRunPoller(Task):
         :param run: Model run to execute
         :type run: :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
         """
-        logger = prefect.context.get('logger')
-        logger.debug(f"Polling for runid={model_run.runid}")
-        project = forecast.project
+        context_str = model_run_context_format.format(
+            forecast_id=forecast.id,
+            scenario_id=model_run.forecaststage.scenario.id,
+            model_run_id=model_run.id)
+        with prefect.context(forecast_context=context_str):
+            logger = prefect.context.get('logger')
+            logger.debug(f"Polling for runid={model_run.runid}")
+            project = forecast.project
 
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
+            _worker_handle = RemoteSeismicityWorkerHandle.from_run(
+                model_run)
 
-        deserializer = SFMWorkerOMessageDeserializer(
-            ramsis_proj=project.proj_string,
-            external_proj="epsg:4326",
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords',
-            many=True)
-        try:
-            resp = _worker_handle.query(
-                task_ids=model_run.runid,
-                deserializer=deserializer).first()
-        except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
-            logger.error(str(err))
-            model_run.status.state = EStatus.ERROR
-            raise FAIL()
-        else:
-            status = resp['data']['attributes']['status_code']
-
-            if status in (self.TASK_ACCEPTED, self.TASK_PROCESSING):
-                logger.info("sleeping")
-                time.sleep(15)
-                raise LOOP(
-                    message=f"(forecast{forecast.id})(scenario.id="
-                    f"{model_run.forecaststage.scenario}) "
-                    f"(runid={model_run.runid}): Polling")
-
-            logger.info(
-                f'Received response (run={model_run!r}, '
-                f'runid={model_run.runid}): {resp}')
-            if status == self.TASK_COMPLETE:
-                try:
-                    result = resp['data']['attributes']['forecast']
-                    print("result in fe:", result)
-                except KeyError:
-                    raise FAIL("Remote Seismicity Worker has not returned "
-                               f"a forecast (runid={model_run.runid}: {resp})",
-                               result=model_run)
-                else:
-                    model_run.status.state = EStatus.COMPLETE
-                    return model_run, result
-
-            elif status in self.TASK_ERROR:
+            deserializer = SFMWorkerOMessageDeserializer(
+                ramsis_proj=project.proj_string,
+                external_proj="epsg:4326",
+                ref_easting=0.0,
+                ref_northing=0.0,
+                transform_func_name='pyproj_transform_to_local_coords',
+                many=True)
+            try:
+                resp = _worker_handle.query(
+                    task_ids=model_run.runid,
+                    deserializer=deserializer).first()
+            except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
+                logger.error(str(err))
                 model_run.status.state = EStatus.ERROR
-                raise FAIL(
-                    message="Remote Seismicity Model Worker"
-                    " has returned an unsuccessful status code."
-                    f"(runid={model_run.runid}: {resp})", result=model_run)
-
+                raise FAIL()
             else:
-                model_run.status.state = EStatus.ERROR
-                raise FAIL(
-                    message="Remote Seismicity Model Worker"
-                    " has returned an unhandled status code."
-                    f"(runid={model_run.runid}: {resp})", result=model_run)
+                status = resp['data']['attributes']['status_code']
+
+                if status in (self.TASK_ACCEPTED, self.TASK_PROCESSING):
+                    logger.info("sleeping")
+                    time.sleep(15)
+                    raise LOOP(
+                        message=f"(forecast{forecast.id})(scenario.id="
+                        f"{model_run.forecaststage.scenario}) "
+                        f"(runid={model_run.runid}): Polling")
+
+                logger.info(
+                    f'Received response (run={model_run!r}, '
+                    f'runid={model_run.runid}): {resp}')
+                if status == self.TASK_COMPLETE:
+                    try:
+                        result = resp['data']['attributes']['forecast']
+                    except KeyError:
+                        raise FAIL("Remote Seismicity Worker has not returned "
+                                   f"a forecast (runid={model_run.runid}: "
+                                   f"{resp})",
+                                   result=model_run)
+                    else:
+                        model_run.status.state = EStatus.COMPLETE
+                        return model_run, result
+
+                elif status in self.TASK_ERROR:
+                    model_run.status.state = EStatus.ERROR
+                    raise FAIL(
+                        message="Remote Seismicity Model Worker"
+                        " has returned an unsuccessful status code."
+                        f"(runid={model_run.runid}: {resp})", result=model_run)
+
+                else:
+                    model_run.status.state = EStatus.ERROR
+                    raise FAIL(
+                        message="Remote Seismicity Model Worker"
+                        " has returned an unhandled status code."
+                        f"(runid={model_run.runid}: {resp})", result=model_run)

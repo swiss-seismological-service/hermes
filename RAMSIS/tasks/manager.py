@@ -1,5 +1,4 @@
 from prefect import Task, task
-import prefect
 from prefect.tasks.shell import ShellTask
 from RAMSIS.db import store, app_settings
 from ramsis.datamodel import Forecast, EStatus, EStage
@@ -28,7 +27,6 @@ class ForecastTask(Task):
         forecast = session.query(Forecast).filter(
             Forecast.id == forecast_id).one_or_none()
         if not forecast:
-            print("No forecast found", forecast_id)
             raise Exception(f"No forecast found {forecast_id}")
         retval = self.run_task(forecast, session, **kwargs)
         session.remove()
@@ -37,8 +35,6 @@ class ForecastTask(Task):
 
 class StartForecastCheck(ForecastTask):
     def run_task(self, forecast, session):
-        self.logger.info(f"prefect.context {type(prefect.context)}")
-        print(f"prefect.context {type(prefect.context)}")
         if forecast.status.state != EStatus.COMPLETE:
             return True
         return False
