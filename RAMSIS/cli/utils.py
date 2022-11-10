@@ -2,19 +2,18 @@ import typer
 from ramsis.datamodel import EStage, EStatus
 from RAMSIS.db import store
 import logging
-
 from prefect.tasks.prefect import create_flow_run
 from datetime import datetime
+from prefect.engine.state import Cancelled, Scheduled
+from prefect.utilities.graphql import EnumValue, with_args
+from typing import List, Dict
+
 from RAMSIS.flows.register import prefect_project_name
 from RAMSIS.db import app_settings
 from RAMSIS.core.builder import (
     default_project, default_forecast, default_scenario)
 from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
-from prefect.engine.state import Cancelled, Scheduled
-from prefect.utilities.graphql import EnumValue, with_args
-from typing import List, Dict
-
 from RAMSIS.flows.register import get_client
 from RAMSIS.flows.manager import manager_flow_name
 
@@ -68,7 +67,7 @@ def matched_flow_run(idempotency_key: str,
     flow_run_list = result.data.flow_run
     if len(flow_run_list) > 1:
         raise Exception("Number of matching flow runs exceeds 1, "
-                        f"{flow_run_list}")
+                        f"{flow_run_list}, number: {len(flow_run_list)}")
     flow_run = flow_run_list[0] if flow_run_list else None
     return flow_run
 
@@ -151,7 +150,7 @@ def create_flow_run_name(idempotency_id, forecast_id):
 
 
 def schedule_forecast(forecast, client, flow_run_name, label,
-                      idempotency_key, dry_run=False):
+                      dry_run=False, idempotency_key=None):
     if forecast.starttime < datetime.utcnow():
         scheduled_time = datetime.utcnow()
         typer.echo(f"Forecast {forecast.id} is due to run in the past. "
@@ -159,15 +158,19 @@ def schedule_forecast(forecast, client, flow_run_name, label,
     else:
         scheduled_time = forecast.starttime
     parameters = dict(forecast_id=forecast.id)
+    options = dict(
+        project_name=prefect_project_name,
+        flow_name=manager_flow_name,
+        labels=[label],
+        run_name=flow_run_name,
+        scheduled_start_time=scheduled_time,
+        parameters=parameters,
+        context={'config': {'logging': {"format":
+            "%(flow_run_name)s %(message)s"}}}) # noqa
+    if idempotency_key:
+        options.update(dict(idempotency_key=idempotency_key))
     if not dry_run:
-        flow_run_id = create_flow_run.run(
-            project_name=prefect_project_name,
-            flow_name=manager_flow_name,
-            labels=[label],
-            run_name=flow_run_name,
-            scheduled_start_time=scheduled_time,
-            idempotency_key=idempotency_key,
-            parameters=parameters)
+        flow_run_id = create_flow_run.run(**options)
 
         typer.echo(
             f"Forecast {forecast.id} has been scheduled to run at "

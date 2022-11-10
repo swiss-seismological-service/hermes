@@ -105,6 +105,7 @@ class TestNaturalCase:
         forecast_id = "1"
         from RAMSIS.cli import ramsis_app as app
         forecast = check_one_forecast_in_db(session)
+        assert len(forecast.seismiccatalog) == 1
 
         result = runner.invoke(app, ["engine", "run",
                                      forecast_id])
@@ -117,3 +118,4 @@ class TestNaturalCase:
             result.subgeometries[0].catalogs
         logger.info(f"length of seismicity results: {len(seismicity_results)}")
         assert len(seismicity_results) > 0
+        assert len(forecast.seismiccatalog) == 1

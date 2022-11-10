@@ -10,7 +10,7 @@ from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
     reset_forecast
 from pathlib import Path
 from RAMSIS.cli.utils import create_forecast, create_flow_run_name, \
-    matched_flow_run, get_flow_run_label, restart_flow_run
+    matched_flow_run, get_flow_run_label
 
 
 app = typer.Typer()
@@ -24,7 +24,7 @@ def run(forecast_id: int,
         label: str = typer.Option(
             None, help="label to associate with an agent"),
         idempotency_id: str = typer.Option(
-            None, help="idempotency id that identifies a forecast"
+            "", help="idempotency id that identifies a forecast"
             "run so the same run is only run once.")):
     session = store.session
     forecast = session.execute(
@@ -32,41 +32,46 @@ def run(forecast_id: int,
     if not forecast:
         typer.echo("The forecast id does not exist")
         raise typer.Exit()
-    else:
-        typer.echo(f"forecast found: {forecast}")
-    if not idempotency_id:
-        # get default idempotency id if not provided
-        idempotency_id = get_idempotency_id()
     flow_run_name = create_flow_run_name(idempotency_id, forecast.id)
     if not label:
         # get default label id if not provided
         label = get_flow_run_label()
-    existing_flow_run = matched_flow_run(flow_run_name, label)
 
+    client = get_client()
     if force:
         typer.echo("Resetting RAMSIS statuses")
         forecast = reset_forecast(forecast)
         store.save()
-        if existing_flow_run:
-            typer.echo("Restarting flow run")
-            restart_flow_run(existing_flow_run['id'])
-            store.close()
-            typer.Exit()
+        store.close()
+        typer.echo("Creating new prefect flow run")
+        # In the case of force, create a new flow run. restarting is
+        # problematic due to a successful run considered
+        # non-restartable by prefect.
+        schedule_forecast(forecast, client, flow_run_name, label)
+        typer.Exit()
     else:
+        existing_flow_run = matched_flow_run(
+            idempotency_id, label, flow_run_name)
         if existing_flow_run:
             typer.echo("A flow run exists with the same idempotency key  and"
                        "with the following information: {existing_flow_run}."
-                       "To restart this, please use the --force option which"
-                       "will reschedule tasks. Results will be overwritten.")
+                       "To rerun this, please use the --force option which"
+                       "will reschedule the flow for this forecast. "
+                       "Results will be overwritten.")
             store.close()
             typer.Exit()
 
-    if forecast.status.state != EStatus.COMPLETE:
-        client = get_client()
-        schedule_forecast(forecast, client, flow_run_name,
-                          idempotency_id, label)
-    else:
-        typer.echo("Forecast is already complete.")
+        else:
+            if forecast.status.state != EStatus.COMPLETE:
+                if not idempotency_id:
+                    # get default idempotency id if not provided
+                    # This prevents flow runs from being run more than
+                    # once successfully
+                    idempotency_id = get_idempotency_id()
+                schedule_forecast(forecast, client, flow_run_name, label,
+                                  idempotency_key=idempotency_id)
+            else:
+                typer.echo("Forecast is already complete.")
 
 
 @app.command()
