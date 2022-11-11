@@ -3,7 +3,7 @@ from ramsis.datamodel import EStage, EStatus
 from RAMSIS.db import store
 import logging
 from prefect.tasks.prefect import create_flow_run
-from datetime import datetime
+from datetime import datetime, timedelta
 from prefect.engine.state import Cancelled, Scheduled
 from prefect.utilities.graphql import EnumValue, with_args
 from typing import List, Dict
@@ -150,11 +150,14 @@ def create_flow_run_name(idempotency_id, forecast_id):
 
 
 def schedule_forecast(forecast, client, flow_run_name, label,
-                      dry_run=False, idempotency_key=None):
+                      dry_run=False, idempotency_key=None,
+                      scheduled_wait_time=0):
     if forecast.starttime < datetime.utcnow():
-        scheduled_time = datetime.utcnow()
+        scheduled_time = datetime.utcnow() \
+            + timedelta(seconds=scheduled_wait_time)
         typer.echo(f"Forecast {forecast.id} is due to run in the past. "
-                   "Scheduled to run as soon as possible.")
+                   "Will be scheduled to run in approximately "
+                   f"{scheduled_wait_time} seconds")
     else:
         scheduled_time = forecast.starttime
     parameters = dict(forecast_id=forecast.id)
