@@ -6,7 +6,7 @@ from RAMSIS.flows.manager import manager_flow, manager_flow_name
 from RAMSIS.db import store
 from RAMSIS.flows.register import register_project, register_flows, \
     get_client
-from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
+from RAMSIS.cli.utils import schedule_forecast, \
     cancel_flow_run, scheduled_flow_runs, get_flow_run_label, \
     create_flow_run_name
 
@@ -37,8 +37,12 @@ def run(project_id: int = typer.Option(
             False, help="Show what forecasts would be scheduled and when."),
         label: str = typer.Option(
             None, help="label to associate with an agent"),
+        interval: int = typer.Option(
+            0, help="Interval to wait (seconds) between scheduled forecasts."
+            " This would help in the case where too many forecasts "
+            "run at the same time would overload the system."),
         idempotency_key: str = typer.Option(
-            None, help="Key that is used by the prefect cloud "
+            "", help="Key that is used by the prefect cloud "
             "to avoid rerunning forecasts that have already been"
             " scheduled.")
         ):
@@ -61,16 +65,17 @@ def run(project_id: int = typer.Option(
 
     if not label:
         label = get_flow_run_label()
-    if not idempotency_key:
-        idempotency_key = get_idempotency_id()
 
+    scheduled_wait_time = 0
     for forecast in forecasts:
         if forecast.status.state != EStatus.COMPLETE:
             flow_run_name = create_flow_run_name(idempotency_key, forecast.id)
             typer.echo(
                 f"Forecast: {forecast.id} is being scheduled.")
             schedule_forecast(forecast, client, flow_run_name, label,
-                              idempotency_key, dry_run=dry_run)
+                              idempotency_key=idempotency_key, dry_run=dry_run,
+                              scheduled_wait_time=scheduled_wait_time)
+            scheduled_wait_time += interval
 
 
 @ramsis_app.command()
