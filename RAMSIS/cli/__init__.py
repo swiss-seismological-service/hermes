@@ -38,7 +38,8 @@ def run(project_id: int = typer.Option(
         label: str = typer.Option(
             None, help="label to associate with an agent"),
         interval: int = typer.Option(
-            0, help="Interval to wait (seconds) between scheduled forecasts."
+            0, help="Interval to wait (seconds) between scheduled forecasts "
+            "in the case that the forecasts are in the past."
             " This would help in the case where too many forecasts "
             "run at the same time would overload the system."),
         idempotency_key: str = typer.Option(
