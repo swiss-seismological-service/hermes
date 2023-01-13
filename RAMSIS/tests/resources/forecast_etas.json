@@ -4,6 +4,8 @@
             "FORECAST_NAME": "Forecast etas",
             "FORECAST_STARTTIME": "2021-01-01T00:00:00",
             "FORECAST_ENDTIME": "2021-01-31T00:00:00",
+            "SEISMICITY_STAGE": true,
+	    "HAZARD_STAGE": false,
             "SCENARIOS": [
                 {
     		    "RUN_MODELS": "ETAS", 

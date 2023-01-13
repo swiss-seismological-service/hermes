@@ -147,6 +147,7 @@ def delete(forecast_id: int):
     store.close()
 
 
+# TODO add check to seismicity and hazard stage that configured properly.
 @app.command()
 def create(
         project_id: int = typer.Option(...),

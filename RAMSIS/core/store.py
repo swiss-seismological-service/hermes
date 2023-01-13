@@ -57,6 +57,7 @@ class Store:
         :param str db_url: Fully qualified database url (including user & pw)
 
         """
+        self.db_url = db_url
         starred_url = re.sub("(?<=:)([^@:]+)(?=@[^@]+$)", "***", db_url)
         logger.info(f'Opening DB connection at {starred_url}')
         self.engine = create_engine(db_url, echo=False)

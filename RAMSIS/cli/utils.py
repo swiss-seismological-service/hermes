@@ -247,8 +247,10 @@ def deserialize_qml_data(data, ramsis_proj):
 
 
 def create_scenario(project, scenario_config,
-                    inj_plan_data, epoch_duration):
+                    inj_plan_data, epoch_duration,
+                    seismicity_stage_enabled, hazard_stage_enabled):
     scenario = default_scenario(store, project.model_settings.config,
+                                seismicity_stage_enabled, hazard_stage_enabled,
                                 name=scenario_config["SCENARIO_NAME"])
     # Seismicity Stage
     seismicity_stage = scenario[EStage.SEISMICITY]
@@ -272,6 +274,13 @@ def create_scenario(project, scenario_config,
             run.enabled = True
         else:
             run.enabled = False
+    
+    if hazard_stage_enabled:
+        try:
+            hazard_stage = scenario[EStage.HAZARD]
+            hazard_stage.model_id = scenario_config["HAZARD_MODEL_ID"]
+        except KeyError:
+            raise KeyError('Please add a HAZARD_MODEL_ID to the scenario config')
 
     return scenario
 
@@ -305,7 +314,9 @@ def create_forecast(project,
     scenarios = [create_scenario(project,
                                  scenario_config,
                                  inj_plan_data,
-                                 epoch_duration)
+                                 epoch_duration,
+                                 forecast_config["SEISMICITY_STAGE"],
+                                 forecast_config["HAZARD_STAGE"])
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
     if hyd_data:

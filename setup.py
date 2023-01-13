@@ -45,6 +45,7 @@ _install_requires = [
     "jinja2",
     "xmltodict",
     "sqlalchemy>=1.4",
+    "typer",
     "pytest-mock",
     "pytest-order"]
 

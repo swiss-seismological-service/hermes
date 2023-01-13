@@ -3,8 +3,7 @@
 Data fetching facilities.
 """
 
-import logging
-
+import prefect
 import requests
 
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
@@ -28,7 +27,7 @@ class HYDWSDataSource():
 
         self._args = {}
         self.enabled = False
-        self.logger = logging.getLogger(__name__)
+        self.logger = prefect.context.get('logger')
 
         self._deserializer = self.DESERIALZER(
             ramsis_proj=project.proj_string,
@@ -89,7 +88,7 @@ class FDSNWSDataSource():
 
         self._args = {}
         self.enabled = False
-        self.logger = logging.getLogger(__name__)
+        self.logger = prefect.context.get('logger')
 
         self._deserializer = self.DESERIALZER(
             ramsis_proj=project.proj_string,

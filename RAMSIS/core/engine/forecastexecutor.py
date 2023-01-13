@@ -22,7 +22,6 @@ stage is managed by a respective StageExecutor class:
 
 """
 import json
-import logging
 import time
 from datetime import datetime
 
@@ -39,7 +38,6 @@ from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
 from RAMSIS.core.engine import scenario_context_format, \
     model_run_context_format
 
-log = logging.getLogger(__name__)
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
@@ -128,7 +126,7 @@ class UpdateHyd(Task):
                 EInput.REQUIRED, EInput.OPTIONAL]:
             logger.info("Well will be fetched for forecast.")
             well = self.fetch_hyd(hydws_url, project, forecast)
-            assert(hasattr(well, 'sections'))
+            assert hasattr(well, 'sections')
             well.creationinfo_creationtime = dttime
             well.forecast_id = forecast.id
             forecast.well = [well]
@@ -178,6 +176,7 @@ def seismicity_stage_complete(forecast):
 class FlattenTask(Task):
     def run(self, nested_list):
         flattened_list = [item for sublist in nested_list for item in sublist]
+        print("flattened$$$$$$$$$$$", flattened_list)
         return flattened_list
 
 

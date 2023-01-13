@@ -83,9 +83,10 @@ def mocked_datasources_get(*args, **kwargs):
 
 
 class TestInducedCase:
-    def test_ramsis_bedretto_setup(self, session):
+    def test_ramsis_bedretto_setup(self, session, mocker):
         check_updated_model(enabled_bedretto_model_config_path,
                             disabled_bedretto_model_config_path)
+        _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
         create_project(bedretto_project_config_path)
 
         projects = session.execute(
@@ -99,13 +100,13 @@ class TestInducedCase:
         assert len(forecasts) == 1
 
     @pytest.mark.run(after='test_ramsis_bedretto_setup')
-    def test_run_bedretto_forecast(self, mocker, session):
-        _ = mocker.patch('RAMSIS.cli.forecast.restart_flow_run')
+    def test_run_bedretto_forecast(self, mocker, session, monkeypatch):
         label = "client_testing_agent"
         idempotency_id = "test_idempotency_id_"
 
         from RAMSIS.cli import ramsis_app as app
-
+        from RAMSIS.db import store
+        monkeypatch.setattr(store, 'session', session)
         forecast = check_one_forecast_in_db(session)
         logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
         result = runner.invoke(app, ["forecast", "run",

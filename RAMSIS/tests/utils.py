@@ -27,6 +27,27 @@ def update_model(model_config):
     return result
 
 
+def add_seis_model(model_config, hazardsourcemodeltemplate_path):
+    from RAMSIS.cli import ramsis_app as app
+    options = ["model", "add-seismicity",
+               "--model-config",
+               model_config]
+    if hazardsourcemodeltemplate_path:
+        options.extend([
+            "--hazardsourcemodeltemplate-path",
+            hazardsourcemodeltemplate_path])
+    result = runner.invoke(app, options)
+    return result
+
+def add_haz_model(model_config, gsimlogictree_path):
+    from RAMSIS.cli import ramsis_app as app
+    result = runner.invoke(app, ["model", "add-hazard",
+                                 "--model-config",
+                                 model_config,
+                                 "--gsimlogictree-path",
+                                 gsimlogictree_path])
+    return result
+
 def check_updated_model(enabled_model_config, disabled_model_config):
     # import these after environment is set to test mode
     from RAMSIS.db import store
@@ -69,6 +90,7 @@ def create_forecast(forecast_config, project_id, inj_plan=None,
             "--catalog-data",
             catalog_data])
     result = runner.invoke(app, options)
+    print("forecast result #########", result.output)
     assert result.exit_code == 0
 
 
