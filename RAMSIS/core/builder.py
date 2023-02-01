@@ -147,7 +147,8 @@ def default_scenario(store, project_model_config, seismicity_stage_enabled,
 
 
 def default_forecast(store, starttime, endtime, num_scenarios=1,
-                     name='Forecast', seismicity_stage_enabled=True, hazard_stage_enabled=True):
+                     name='Forecast', seismicity_stage_enabled=True,
+                     hazard_stage_enabled=True):
     """
     Build a *default* forecast.
 
@@ -165,7 +166,8 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
                     enabled=True, config={},
                     status=Status(),
-                    scenarios=[default_scenario(store, seismicity_stage_enabled,
+                    scenarios=[default_scenario(store,
+                                                seismicity_stage_enabled,
                                                 hazard_stage_enabled)
                                for s in range(num_scenarios)])
 

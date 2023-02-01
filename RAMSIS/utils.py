@@ -4,10 +4,28 @@ Various utility functions
 """
 
 import collections
-import enum
 import functools
 
 from ramsis.utils.error import Error
+from ramsis.datamodel import EStage, EStatus
+
+
+def reset_forecast(forecast):
+    forecast.status.state = EStatus.PENDING
+    for scenario in forecast.scenarios:
+        stage_types = [s._type for s in scenario.stages]
+        if EStage.SEISMICITY in stage_types:
+            scenario.status.state = EStatus.PENDING
+            seis_stage = scenario[EStage.SEISMICITY]
+            seis_stage.status.state = EStatus.PENDING
+            for run in seis_stage.runs:
+                run.status.state = EStatus.PENDING
+        if EStage.HAZARD in stage_types:
+            haz_stage = scenario[EStage.HAZARD]
+            haz_stage.status.state = EStatus.PENDING
+            for run in haz_stage.runs:
+                run.status.state = EStatus.PENDING
+    return forecast
 
 
 def rsetattr(obj, attr, val):
@@ -41,19 +59,6 @@ def rgetattr(obj, attr, *args):
 
 class RamsisError(Error):
     """Base RAMSIS exception ({})."""
-
-
-class EStatus(enum.Enum):
-    INITIALIZED = enum.auto()
-    PENDING = enum.auto()
-    RUNNING = enum.auto()
-
-    OK = enum.auto()
-    # alias
-    INFO = OK
-    WARNING = enum.auto()
-    ERROR = enum.auto()
-    CRITICAL = enum.auto()
 
 
 Message = collections.namedtuple(

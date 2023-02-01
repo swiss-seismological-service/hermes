@@ -18,14 +18,15 @@ def create_sm(store, sm_model_config, hazardsourcemodeltemplate=None):
         url=sm_model_config["URL"])
 
     if hazardsourcemodeltemplate:
-        sm.hazardsourcemodeltemplate=hazardsourcemodeltemplate
+        sm.hazardsourcemodeltemplate = hazardsourcemodeltemplate
     if "HAZARD_WEIGHT" in sm_model_config.keys():
         sm.hazardweight = sm_model_config["HAZARD_WEIGHT"]
     typer.echo(f"Creating new seismicity model: {sm}")
     store.add(sm)
 
 
-def update_sm(store, existing_sm, sm_model_config, hazardsourcemodeltemplate=None):
+def update_sm(store, existing_sm, sm_model_config,
+              hazardsourcemodeltemplate=None):
     existing_sm.name = sm_model_config["MODEL_NAME"]
     existing_sm.config = sm_model_config["CONFIG"]
     existing_sm.sfmwid = sm_model_config["SFMWID"]
@@ -97,19 +98,17 @@ def configure(
     store.save()
     store.close()
 
+
 @app.command()
 def add_seismicity(
         model_config: Path = typer.Option(
         ...,
-        exists=True,
-        readable=True,
-        help="Path to model config containing Seismicity Model config"),
+        exists=True, readable=True, help=(
+            "Path to model config containing Seismicity Model config")),
         hazardsourcemodeltemplate_path: Path = typer.Option(
-        None,
-        exists=True,
-        readable=True,
-        help="Path to a source model xml template. Please see tests for examples")
-        ):
+        None, exists=True, readable=True, help=(
+            "Path to a source model xml template. Please see tests for "
+            "examples"))):
 
     success = store.init_db()
 
@@ -129,11 +128,14 @@ def add_seismicity(
             name=config["MODEL_NAME"])).\
         scalar_one_or_none()
     if not existing_sm_model:
-        create_sm(store, config, hazardsourcemodeltemplate=hazardsourcemodeltemplate)
+        create_sm(store, config,
+                  hazardsourcemodeltemplate=hazardsourcemodeltemplate)
     else:
-        update_sm(store, existing_sm_model, config, hazardsourcemodeltemplate=hazardsourcemodeltemplate)
+        update_sm(store, existing_sm_model, config,
+                  hazardsourcemodeltemplate=hazardsourcemodeltemplate)
     store.save()
     store.close()
+
 
 @app.command()
 def add_hazard(

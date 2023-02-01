@@ -1,11 +1,9 @@
-from prefect import Flow, Parameter, unmapped, flatten
+from prefect import Flow, Parameter, unmapped
 from RAMSIS.core.engine.forecastexecutor import \
     SeismicityModelRunPoller, SeismicityModelRunExecutor,\
     ModelRuns, forecast_scenarios, UpdateFdsn, UpdateHyd,\
     dispatched_model_runs,\
     FlattenTask, ScenarioSerializeData, ForecastSerializeData
-from RAMSIS.core.engine.hazardexecutor import \
-    PrepareHazardForForecast, MapScenarioRuns, ExecuteHazardRun
 
 from ramsis.datamodel import EStage
 from RAMSIS.core import engine

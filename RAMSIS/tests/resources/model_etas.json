@@ -2,7 +2,7 @@
     "SEISMICITY_MODELS":[
         {
             "MODEL_NAME":"ETAS",
-            "URL":"http://ramsis-em1.ethz.ch:5007",
+            "URL":"http://ramsis-nsfm-dev.ethz.ch:5000",
             "CONFIG":{},
             "SFMWID":"etas",
             "ENABLED":true

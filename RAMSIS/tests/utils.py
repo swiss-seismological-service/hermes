@@ -39,6 +39,7 @@ def add_seis_model(model_config, hazardsourcemodeltemplate_path):
     result = runner.invoke(app, options)
     return result
 
+
 def add_haz_model(model_config, gsimlogictree_path):
     from RAMSIS.cli import ramsis_app as app
     result = runner.invoke(app, ["model", "add-hazard",
@@ -47,6 +48,7 @@ def add_haz_model(model_config, gsimlogictree_path):
                                  "--gsimlogictree-path",
                                  gsimlogictree_path])
     return result
+
 
 def check_updated_model(enabled_model_config, disabled_model_config):
     # import these after environment is set to test mode
@@ -90,7 +92,6 @@ def create_forecast(forecast_config, project_id, inj_plan=None,
             "--catalog-data",
             catalog_data])
     result = runner.invoke(app, options)
-    print("forecast result #########", result.output)
     assert result.exit_code == 0
 
 

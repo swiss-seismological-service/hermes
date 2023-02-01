@@ -142,7 +142,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
                     return cls(_json(resp))
                 return cls(deserializer._loado(_json(resp, **ikwargs)))
             if resp_format == 'xml':
-                print("format in xml", resp)
                 resp_cls = cls(deserializer._loado(resp, **ikwargs))
                 return resp_cls
 
@@ -251,7 +250,6 @@ class OQHazardWorkerHandle(WorkerHandleBase):
             an empty list is passed all results are requested.
         :type task_ids: list or :py:class:`uuid.UUID`
         """
-        print("query")
         query_url = f'{self.PATH_QUERY_STATUS}'.format(task_id)
         url = f'{self.url}{query_url}'
         self.logger.debug(

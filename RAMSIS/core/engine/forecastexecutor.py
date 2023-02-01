@@ -176,7 +176,6 @@ def seismicity_stage_complete(forecast):
 class FlattenTask(Task):
     def run(self, nested_list):
         flattened_list = [item for sublist in nested_list for item in sublist]
-        print("flattened$$$$$$$$$$$", flattened_list)
         return flattened_list
 
 
@@ -326,6 +325,7 @@ class SeismicityModelRunExecutor(Task):
     TASK_ACCEPTED = 202
 
     def run(self, forecast, forecast_data, scenario_data_list, model_run):
+        logger = prefect.context.get('logger')
         context_str = model_run_context_format.format(
             forecast_id=forecast.id,
             scenario_id=model_run.forecaststage.scenario.id,
@@ -357,6 +357,8 @@ class SeismicityModelRunExecutor(Task):
                         {**config_attributes,
                          **forecast_data["data"]["attributes"],
                          **scenario_data["data"]["attributes"]}}}
+            logger.info("The payload to seismicity models is of length: "
+                        f"{len(payload)}")
             try:
                 json_payload = json.dumps(payload)
                 resp = _worker_handle.compute(
@@ -367,6 +369,7 @@ class SeismicityModelRunExecutor(Task):
                         ref_easting=0.0,
                         ref_northing=0.0,
                         transform_func_name='pyproj_transform_to_local_coords')) # noqa
+                logger.info(f"response of seismicity worker: {resp}")
             except RemoteSeismicityWorkerHandle.RemoteWorkerError:
                 raise FAIL(
                     message="model run submission has failed with "

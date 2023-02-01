@@ -3,11 +3,11 @@ import json
 from datetime import timedelta
 from sqlalchemy import select
 from ramsis.datamodel import Forecast, Project, EStatus, EInput
-from RAMSIS.db import store
+from RAMSIS.db import store, app_settings, db_url
 from RAMSIS.flows.register import \
     get_client
-from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id, \
-    reset_forecast
+from RAMSIS.cli.utils import schedule_forecast, get_idempotency_id
+from RAMSIS.utils import reset_forecast
 from pathlib import Path
 from RAMSIS.cli.utils import create_forecast, create_flow_run_name, \
     matched_flow_run, get_flow_run_label
@@ -47,7 +47,10 @@ def run(forecast_id: int,
         # In the case of force, create a new flow run. restarting is
         # problematic due to a successful run considered
         # non-restartable by prefect.
-        schedule_forecast(forecast, client, flow_run_name, label)
+        connection_string = db_url
+        data_dir = app_settings['data_dir']
+        schedule_forecast(forecast, client, flow_run_name, label,
+                          connection_string, data_dir)
         typer.Exit()
     else:
         existing_flow_run = matched_flow_run(

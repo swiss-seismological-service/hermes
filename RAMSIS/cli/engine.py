@@ -2,7 +2,7 @@ import typer
 from ramsis.datamodel import Forecast
 from RAMSIS.db import store
 from RAMSIS.core.engine.engine import Engine
-from RAMSIS.cli.utils import reset_forecast
+from RAMSIS.utils import reset_forecast
 
 app = typer.Typer()
 
