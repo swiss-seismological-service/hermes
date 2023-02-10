@@ -297,8 +297,10 @@ class ForecastHandler(BaseHandler):
                 logger.info("starting worker for finished model run")
                 forecast_id = prefect.context.get("forecast_id")
                 forecast = self.session.query(Forecast).filter(
-                Forecast.id == forecast_id).first()
-                logger.warning(f"before commit in finished model run: forecast has catalog: {forecast.seismiccatalog}")
+                    Forecast.id == forecast_id).first()
+                logger.warning(
+                    "before commit in finished model run: "
+                    f"forecast has catalog: {forecast.seismiccatalog}")
                 worker = Worker(self.finished_model_run, new_state, logger,
                                 synchronous_thread=self.synchronous_thread)
                 self.threadpoolexecutor.submit(worker.run)

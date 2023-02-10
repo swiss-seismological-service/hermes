@@ -5,11 +5,11 @@
             "FORECAST_STARTTIME": "2022-06-23T08:00:00",
             "FORECAST_ENDTIME": "2022-06-23T09:00:00",
             "SEISMICITY_STAGE": true,
-	    "HAZARD_STAGE": false,
+	    "HAZARD_STAGE": true,
             "SCENARIOS": [
                 {
     		    "RUN_MODELS": "ALL", 
-		    "HAZARD_MODEL_ID": 1,
+		    "HAZARD_MODEL_ID": 2,
 		    "SCENARIO_NAME": "Scenario ###",
 		    "EPOCH_DURATION": 1800,
         	    "SCENARIO_DIR": "hyd",

@@ -25,7 +25,7 @@ simulation:
   speed: 1000  # Speed up factor if max_speed is false
 
 env:
-  load_environment_cmd: "conda init bash; conda activate ramsis_prefect"
+  load_environment_cmd: ""
 
 # idempotency_id and labels should both be set to something unique when installing ramsis in a new location.
 #
@@ -37,4 +37,6 @@ idempotency_id: "local_run_"
 # The same label should be on the prefect agent and the flow run
 # As the code run will be on the same machine as that of
 # the agent.
+project: "RAMSIS"
 label: "my_local"
+data_dir: "/home/sarsonl/haz_data"

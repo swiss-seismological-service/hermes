@@ -23,6 +23,7 @@ def session():
     from RAMSIS.db import store
     yield store.session
     store.session.close()
+    store.engine.dispose()
 
 
 @pytest.fixture(scope='session')
@@ -38,7 +39,6 @@ def connection(env):
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database(connection, env):
-    print("before setup yield")
     try:
         user = env["POSTGRES_USER"]
         password = env["POSTGRES_PASSWORD"]

@@ -15,7 +15,9 @@ import sys
 from functools import wraps
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, with_polymorphic, scoped_session
+from sqlalchemy.orm import sessionmaker, with_polymorphic, scoped_session, \
+    Session
+import contextlib
 
 import ramsis.datamodel
 from ramsis.datamodel.base import ORMBase
@@ -35,6 +37,19 @@ for finder, module_name, _ in modules:
         finder.find_module(module_name).load_module(module_name)
 
 
+def connect_to_db(connection_string: str):
+    engine = create_engine(connection_string)
+    session = Session(engine)
+    return session
+
+
+@contextlib.contextmanager
+def session_handler(connection_string):
+    session = connect_to_db(connection_string)
+    yield session
+    session.close
+
+
 def with_session_validation(method):
     """
     Method decorator performing a session validation.
@@ -50,6 +65,7 @@ def with_session_validation(method):
     return wrapper
 
 
+# TODO plan to use simpler functions to get session.
 class Store:
 
     def __init__(self, db_url):
@@ -57,6 +73,7 @@ class Store:
         :param str db_url: Fully qualified database url (including user & pw)
 
         """
+        self.db_url = db_url
         starred_url = re.sub("(?<=:)([^@:]+)(?=@[^@]+$)", "***", db_url)
         logger.info(f'Opening DB connection at {starred_url}')
         self.engine = create_engine(db_url, echo=False)

@@ -4,6 +4,7 @@ from RAMSIS.core.engine.forecastexecutor import \
     ModelRuns, forecast_scenarios, UpdateFdsn, UpdateHyd,\
     dispatched_model_runs,\
     FlattenTask, ScenarioSerializeData, ForecastSerializeData
+
 from ramsis.datamodel import EStage
 from RAMSIS.core import engine
 
@@ -38,7 +39,7 @@ with Flow("SeismicityForecast",
         scenarios, unmapped(EStage.SEISMICITY))
     # Flatten list of lists of runs so mapping can take place.
     # (prefect currently does not allow mapping at multiple levels)
-    flatten_task = FlattenTask()
+    flatten_task = FlattenTask(log_stdout=True)
     model_runs_flattened = flatten_task(seismicity_model_runs)
 
     forecast_serializer = ForecastSerializeData(log_stdout=True)

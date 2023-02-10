@@ -46,7 +46,8 @@ def risk_stage(**kwargs):
     return ForecastStage.create(EStage.RISK, status=Status(), **kwargs)
 
 
-def default_scenario(store, project_model_config, name='Scenario', **kwargs):
+def default_scenario(store, project_model_config, seismicity_stage_enabled,
+                     hazard_stage_enabled, name='Scenario', **kwargs):
     """
     Build a *default* forecast scenario.
 
@@ -59,13 +60,13 @@ def default_scenario(store, project_model_config, name='Scenario', **kwargs):
     DEFAULT_SCENARIO_CONFIG = {
         'stages': [
             {'seismicity': {
-                'enabled': True,
+                'enabled': seismicity_stage_enabled,
                 'config': {}, }},
             {'seismicity_skill': {
                 'enabled': False,
                 'config': {}, }},
             {'hazard': {
-                'enabled': False,
+                'enabled': hazard_stage_enabled,
                 'config': {}, }},
             {'risk': {
                 'enabled': False,
@@ -95,7 +96,7 @@ def default_scenario(store, project_model_config, name='Scenario', **kwargs):
                                            config={**m.config,
                                                    **project_model_config},
                                            status=Status(),
-                                           weight=1.0)
+                                           weight=m.hazardweight)
                         for m in store.load_models(
                             model_type=EModel.SEISMICITY)
                         if m.enabled]
@@ -146,7 +147,8 @@ def default_scenario(store, project_model_config, name='Scenario', **kwargs):
 
 
 def default_forecast(store, starttime, endtime, num_scenarios=1,
-                     name='Forecast'):
+                     name='Forecast', seismicity_stage_enabled=True,
+                     hazard_stage_enabled=True):
     """
     Build a *default* forecast.
 
@@ -164,7 +166,9 @@ def default_forecast(store, starttime, endtime, num_scenarios=1,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
                     enabled=True, config={},
                     status=Status(),
-                    scenarios=[default_scenario(store)
+                    scenarios=[default_scenario(store,
+                                                seismicity_stage_enabled,
+                                                hazard_stage_enabled)
                                for s in range(num_scenarios)])
 
 

@@ -80,13 +80,16 @@ class TestNaturalCase:
         assert len(forecasts) == 1
         assert len(forecasts[0].well) == 0
         assert len(forecasts[0].seismiccatalog) == 1
+        assert len(forecasts[0].scenarios[0][EStage.SEISMICITY].runs) == 1
 
     @pytest.mark.run(after='test_ramsis_etas_setup')
-    def test_etas_run_forecast(self, mocker, session):
-        _ = mocker.patch('RAMSIS.cli.forecast.restart_flow_run')
+    def test_etas_run_forecast(self, mocker, session, monkeypatch):
         label = "client_testing_agent"
         idempotency_id = "test_idempotency_id_"
         from RAMSIS.cli import ramsis_app as app
+        from RAMSIS.db import store
+        monkeypatch.setattr(store, 'session', session)
+        _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
         forecast = check_one_forecast_in_db(session)
         logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
         result = runner.invoke(app, ["forecast", "run",
@@ -98,10 +101,10 @@ class TestNaturalCase:
 
     @pytest.mark.run(after='test_etas_run_forecast')
     def test_etas_run_engine_flow(self, mocker, session):
-        mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        mock_get.side_effect = mocked_datasources_get_etas
-        mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        mock_post.side_effect = mocked_requests_post_etas
+        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+        # mock_get.side_effect = mocked_datasources_get_etas
+        # mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+        # mock_post.side_effect = mocked_requests_post_etas
         forecast_id = "1"
         from RAMSIS.cli import ramsis_app as app
         forecast = check_one_forecast_in_db(session)

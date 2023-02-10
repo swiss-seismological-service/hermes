@@ -1,14 +1,20 @@
 import typer
+from datetime import datetime
 from sqlalchemy import select
 from RAMSIS.cli import project, model, engine, forecast as _forecast
 from ramsis.datamodel import Forecast, Project, EStatus
 from RAMSIS.flows.manager import manager_flow, manager_flow_name
-from RAMSIS.db import store
+from RAMSIS.flows.hazard import hazard_flow
+from RAMSIS.flows.seismicity import seismicity_flow
+from RAMSIS.db import store, app_settings, db_url
 from RAMSIS.flows.register import register_project, register_flows, \
     get_client
 from RAMSIS.cli.utils import schedule_forecast, \
     cancel_flow_run, scheduled_flow_runs, get_flow_run_label, \
     create_flow_run_name
+from RAMSIS.flows.scheduled_manager import scheduled_manager_flow_factory
+from prefect.schedules.clocks import CronClock
+from prefect.schedules.schedules import Schedule
 
 ramsis_app = typer.Typer()
 # engine to be removed after migrated to full use of prefect
@@ -25,8 +31,10 @@ def register(label: str = typer.Option(
     if not label:
         label = get_flow_run_label()
 
-    register_flows(manager_flow, [label])
     register_project()
+    register_flows(seismicity_flow, [label])
+    register_flows(hazard_flow, [label])
+    register_flows(manager_flow, [label])
     typer.echo("prefect has registered flows and project for ramsis.")
 
 
@@ -67,6 +75,9 @@ def run(project_id: int = typer.Option(
     if not label:
         label = get_flow_run_label()
 
+    connection_string = db_url
+    data_dir = app_settings['data_dir']
+
     scheduled_wait_time = 0
     for forecast in forecasts:
         if forecast.status.state != EStatus.COMPLETE:
@@ -74,6 +85,7 @@ def run(project_id: int = typer.Option(
             typer.echo(
                 f"Forecast: {forecast.id} is being scheduled.")
             schedule_forecast(forecast, client, flow_run_name, label,
+                              connection_string, data_dir,
                               idempotency_key=idempotency_key, dry_run=dry_run,
                               scheduled_wait_time=scheduled_wait_time)
             scheduled_wait_time += interval
@@ -95,6 +107,50 @@ def stop():
                         "scheduled flow runs cancelled.")
         typer.echo(f"Flow run with id: {flow_run['id']} with "
                    f"name: {flow_run['name']} has been cancelled.")
+
+
+@ramsis_app.command()
+def schedule(forecast_id: int,
+             label: str = typer.Option(
+                 None, help="label to associate with all runs from this "
+                 "cron clock. Label links flow runs with a prefect agent."),
+             cron_string: str = typer.Argument(
+                 ..., help="cron string for the forecast to be "
+                 "scheduled, e.g. '0 9 * * *' is every day at 9am."),
+             start_date: datetime = typer.Option(
+                 None, help="Optional start date for the clock"),
+             end_date: datetime = typer.Option(
+                 None, help="Optional start date for the clock")
+             ):
+    """
+    Schedule the scheduled manager flow according to a cron
+    schedule.
+    """
+    session = store.session
+    forecast = session.execute(
+        select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
+    if not forecast:
+        typer.echo("The forecast id does not exist")
+        raise typer.Exit()
+    if not label:
+        # get default label id if not provided
+        label = get_flow_run_label()
+    cron_clock = CronClock(cron_string, start_date=start_date,
+                           end_date=end_date,
+                           labels=[label])
+    schedule = Schedule(clocks=[cron_clock])
+    scheduled_manager_flow_name = f"{label}ScheduledManager"
+    scheduled_manager_flow = scheduled_manager_flow_factory(
+        scheduled_manager_flow_name, schedule, forecast_id, db_url)
+    register_flows(scheduled_manager_flow, [label])
+    # scheduled_manager_flow.visualize()
+    # scheduled_manager_flow.run(
+    #     parameters=dict(
+    #         forecast_id=forecast_id,
+    #         connection_string=db_url),
+    #     run_on_schedule=True)
+    typer.echo("The flow has been registered successfully."
+               f"The next 5 flow will happen: {schedule.next(5)}")
 
 
 def main():
