@@ -38,6 +38,8 @@ def run(forecast_id: int,
         label = get_flow_run_label()
 
     client = get_client()
+    connection_string = db_url
+    data_dir = app_settings['data_dir']
     if force:
         typer.echo("Resetting RAMSIS statuses")
         forecast = reset_forecast(forecast)
@@ -47,8 +49,6 @@ def run(forecast_id: int,
         # In the case of force, create a new flow run. restarting is
         # problematic due to a successful run considered
         # non-restartable by prefect.
-        connection_string = db_url
-        data_dir = app_settings['data_dir']
         schedule_forecast(forecast, client, flow_run_name, label,
                           connection_string, data_dir)
         typer.Exit()
@@ -72,6 +72,7 @@ def run(forecast_id: int,
                     # once successfully
                     idempotency_id = get_idempotency_id()
                 schedule_forecast(forecast, client, flow_run_name, label,
+                                  connection_string, data_dir,
                                   idempotency_key=idempotency_id)
             else:
                 typer.echo("Forecast is already complete.")

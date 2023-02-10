@@ -305,3 +305,9 @@ class FlowRunner:
         if all([s == EStatus.COMPLETE for s in self.stage_results]):
             self.update_forecast_status(EStatus.COMPLETE)
             self.logger.info("The forecast is now complete")
+        elif any([s == EStatus.ERROR for s in self.stage_results]):
+            self.update_forecast_status(EStatus.ERROR)
+            self.logger.info("The forecast cannot")
+            raise Exception("Stages did not complete successfully.")
+        else:
+            self.logger.info("There are stages that are not complete.")
