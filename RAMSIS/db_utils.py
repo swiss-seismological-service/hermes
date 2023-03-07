@@ -1,5 +1,6 @@
 
-from ramsis.datamodel import Forecast
+from ramsis.datamodel import Forecast, ForecastScenario, \
+    SeismicityModelRun
 import prefect
 from sqlalchemy import select
 
@@ -8,6 +9,18 @@ def get_forecast(forecast_id, session):
     forecast = session.query(Forecast).filter(
         Forecast.id == forecast_id).first()
     return forecast
+
+
+def get_scenario(scenario_id, session):
+    scenario = session.query(ForecastScenario).filter(
+        ForecastScenario.id == scenario_id).first()
+    return scenario
+
+
+def get_seismicity_model_run(model_run_id, session):
+    model_run = session.query(SeismicityModelRun).filter(
+        SeismicityModelRun.id == model_run_id).first()
+    return model_run
 
 
 def update_forecast_status(forecast_id, estatus, session):

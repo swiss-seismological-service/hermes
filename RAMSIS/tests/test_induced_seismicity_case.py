@@ -9,6 +9,7 @@ import logging
 from ramsis.datamodel import Forecast, Project, EStage
 from os.path import dirname, abspath, join
 
+from RAMSIS.db import session_handler, db_url
 from RAMSIS.tests.utils import check_updated_model, \
     create_project, create_forecast, \
     MockResponse, check_one_forecast_in_db, \
@@ -84,58 +85,59 @@ def mocked_datasources_get(*args, **kwargs):
 
 
 class TestInducedCase:
-    def test_ramsis_bedretto_setup(self, session, mocker):
-        check_updated_model(enabled_bedretto_model_config_path,
-                            disabled_bedretto_model_config_path)
-        create_project(bedretto_project_config_path)
+    def test_ramsis_bedretto_setup(self, mocker):
+        with session_handler(db_url) as session:
+            check_updated_model(enabled_bedretto_model_config_path,
+                                disabled_bedretto_model_config_path)
+            create_project(bedretto_project_config_path)
 
-        projects = session.execute(
-            select(Project)).scalars().all()
-        assert len(projects) == 1
+            projects = session.execute(
+                select(Project)).scalars().all()
+            assert len(projects) == 1
 
-        create_forecast(bedretto_forecast_config_path, "1",
-                        inj_plan=inj_plan_path)
-        forecasts = session.execute(
-            select(Forecast)).scalars().all()
-        assert len(forecasts) == 1
+            create_forecast(bedretto_forecast_config_path, "1",
+                            inj_plan=inj_plan_path)
+            forecasts = session.execute(
+                select(Forecast)).scalars().all()
+            assert len(forecasts) == 1
 
     @pytest.mark.run(after='test_ramsis_bedretto_setup')
-    def test_run_bedretto_forecast(self, mocker, session, monkeypatch):
-        label = "client_testing_agent"
-        idempotency_id = "test_idempotency_id_"
+    def test_run_bedretto_forecast(self, mocker):
+        with session_handler(db_url) as session:
+            label = "client_testing_agent"
+            idempotency_id = "test_idempotency_id_"
 
-        from RAMSIS.cli import ramsis_app as app
-        from RAMSIS.db import store
-        _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
-        monkeypatch.setattr(store, 'session', session)
-        forecast = check_one_forecast_in_db(session)
-        logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
-        result = runner.invoke(app, ["forecast", "run",
-                                     str(forecast.id), "--force",
-                                     "--label", label,
-                                     "--idempotency-id", idempotency_id])
-        logger.info(f"result stdout from invoking forecast: {result.stdout}")
-        assert result.exit_code == 0
+            from RAMSIS.cli import ramsis_app as app
+            _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
+            forecast = check_one_forecast_in_db(session)
+            logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
+            result = runner.invoke(app, ["forecast", "run",
+                                         str(forecast.id), "--force",
+                                         "--label", label,
+                                         "--idempotency-id", idempotency_id])
+            logger.info(f"result stdout from invoking forecast: {result.stdout}")
+            assert result.exit_code == 0
 
     @pytest.mark.run(after='test_run_bedretto_forecast')
-    def test_run_bedretto_engine_flow(self, mocker, session):
-        mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        mock_get.side_effect = mocked_datasources_get
-        mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        mock_post.side_effect = mocked_requests_post
-        forecast_id = "1"
+    def test_run_bedretto_engine_flow(self, mocker):
+        with session_handler(db_url) as session:
+            mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+            mock_get.side_effect = mocked_datasources_get
+            mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+            mock_post.side_effect = mocked_requests_post
+            forecast_id = "1"
 
-        from RAMSIS.cli import ramsis_app as app
+            from RAMSIS.cli import ramsis_app as app
 
-        forecast = check_one_forecast_in_db(session)
-        result = runner.invoke(app, ["engine", "run",
-                                     forecast_id])
-        logger.debug("result stdout from running forecast engine: "
-                     f"{result.stdout}")
-        assert result.exit_code == 0
+            forecast = check_one_forecast_in_db(session)
+            result = runner.invoke(app, ["engine", "run",
+                                         forecast_id])
+            logger.debug("result stdout from running forecast engine: "
+                         f"{result.stdout}")
+            assert result.exit_code == 0
 
-        forecast = get_forecast(session, forecast.id)
-        seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].runs[0].\
-            result.subgeometries[0].samples
-        logger.info(f"length of seismicity results: {len(seismicity_results)}")
-        assert len(seismicity_results) > 0
+            forecast = get_forecast(session, forecast.id)
+            seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].runs[0].\
+                result.subgeometries[0].samples
+            logger.info(f"length of seismicity results: {len(seismicity_results)}")
+            assert len(seismicity_results) > 0

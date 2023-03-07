@@ -3,13 +3,7 @@
 Object creation and building facilities.
 """
 
-from sqlalchemy.orm import subqueryload
-
-from ramsis.datamodel.forecast import EStage, ForecastScenario,\
-    HazardStage
-from ramsis.datamodel.hazard import HazardModelRun, HazardPointValue,\
-    HazardMap, HazardCurve
-from ramsis.datamodel.status import EStatus
+from ramsis.datamodel import EStatus, EStage
 
 # Seismicity stage: reset the statuses of any model runs with
 # a status of error, and set all stages, scenario and forecast to
@@ -46,40 +40,21 @@ def reset_seismicity_errors(
     scenario.status.state = EStatus.PENDING
     scenario.forecast.status.state = EStatus.PENDING
 
-# Hazard stage: If the model runs are in a status of pending,
-# delete the model runs and reset stage (and risk stage),
-# scenario and forecast to pending
-# If the model runs are in status of error, same
-# If model runs are in status of prepared, same
-# If model runs are completed, same
 
-
-def reset_stage(scenario_in, store, stage=EStage.HAZARD):
-    scenario = store.session.query(ForecastScenario).\
-        options(
-            # Load models from seismicity stage
-            subqueryload(ForecastScenario.stages.of_type(
-                HazardStage)).\
-            subqueryload(HazardStage.runs).\
-            subqueryload(HazardModelRun.hazardmaps).\
-            subqueryload(HazardMap.samples).\
-            subqueryload(HazardPointValue.geopoint)).\
-        options(
-            subqueryload(ForecastScenario.stages.of_type(
-                HazardStage)).\
-            subqueryload(HazardStage.runs).\
-            subqueryload(HazardModelRun.hazardcurves).\
-            subqueryload(HazardCurve.samples).\
-            subqueryload(HazardPointValue.geopoint)).\
-        filter(ForecastScenario.id == scenario_in.id).first()
+def reset_stage(scenario, session, stage=EStage.HAZARD):
+    # Hazard stage: If the model runs are in a status of pending,
+    # delete the model runs and reset stage (and risk stage),
+    # scenario and forecast to pending
+    # If the model runs are in status of error, same
+    # If model runs are in status of prepared, same
+    # If model runs are completed, same
     hazard_stage = scenario[stage]
     hazard_model_runs = hazard_stage.runs
     for run in hazard_model_runs:
-        store.delete(run)
+        session.delete(run)
     # Deleting all the runs should delete all the results too.
     hazard_stage.status.state = EStatus.PENDING
     scenario.status.state = EStatus.PENDING
     scenario.forecast.status.state = EStatus.PENDING
-    store.save()
-    store.session.remove()
-    return store.get_fresh(scenario_in)
+    session.commit()
+    return scenario

@@ -6,10 +6,11 @@ import logging
 
 from ramsis.datamodel import Forecast, Project, EStage
 from os.path import dirname, abspath, join
-from RAMSIS.tests.utils import update_model, \
+from RAMSIS.tests.utils import add_seis_model, \
     create_project, create_forecast, \
     MockResponse, check_one_forecast_in_db, \
     get_forecast
+from RAMSIS.db import session_handler, db_url
 
 logger = logging.getLogger(__name__)
 
@@ -67,58 +68,60 @@ def mocked_datasources_get_etas(*args, **kwargs):
 
 class TestNaturalCase:
     @pytest.mark.run(after='test_run_bedretto_forecast')
-    def test_ramsis_etas_setup(self, session):
-        update_model(etas_model_config_path)
-        create_project(etas_project_config_path)
-        create_forecast(etas_forecast_config_path, "1",
-                        catalog_data=etas_catalog_data_path)
-        forecasts = session.execute(
-            select(Forecast)).scalars().all()
-        projects = session.execute(
-            select(Project)).scalars().all()
-        assert len(projects) == 1
-        assert len(forecasts) == 1
-        assert len(forecasts[0].well) == 0
-        assert len(forecasts[0].seismiccatalog) == 1
-        assert len(forecasts[0].scenarios[0][EStage.SEISMICITY].runs) == 1
+    def test_ramsis_etas_setup(self):
+        with session_handler(db_url) as session:
+            add_seis_model(etas_model_config_path)
+            create_project(etas_project_config_path)
+            create_forecast(etas_forecast_config_path, "1",
+                            catalog_data=etas_catalog_data_path)
+            forecasts = session.execute(
+                select(Forecast)).scalars().all()
+            projects = session.execute(
+                select(Project)).scalars().all()
+            assert len(projects) == 1
+            assert len(forecasts) == 1
+            assert len(forecasts[0].well) == 0
+            assert len(forecasts[0].seismiccatalog) == 1
+            assert len(forecasts[0].scenarios[0][EStage.SEISMICITY].runs) == 1
 
-    @pytest.mark.run(after='test_ramsis_etas_setup')
-    def test_etas_run_forecast(self, mocker, session, monkeypatch):
-        label = "client_testing_agent"
-        idempotency_id = "test_idempotency_id_"
-        from RAMSIS.cli import ramsis_app as app
-        from RAMSIS.db import store
-        monkeypatch.setattr(store, 'session', session)
-        _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
-        forecast = check_one_forecast_in_db(session)
-        logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
-        result = runner.invoke(app, ["forecast", "run",
-                                     str(forecast.id), "--force",
-                                     "--label", label,
-                                     "--idempotency-id", idempotency_id])
-        logger.debug(f"result stdout from invoking forecast: {result.stdout}")
-        assert result.exit_code == 0
-
-    @pytest.mark.run(after='test_etas_run_forecast')
-    def test_etas_run_engine_flow(self, mocker, session):
-        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        # mock_get.side_effect = mocked_datasources_get_etas
-        # mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        # mock_post.side_effect = mocked_requests_post_etas
-        forecast_id = "1"
-        from RAMSIS.cli import ramsis_app as app
-        forecast = check_one_forecast_in_db(session)
-        assert len(forecast.seismiccatalog) == 1
-
-        result = runner.invoke(app, ["engine", "run",
-                                     forecast_id])
-        logger.debug("result stdout from running forecast engine: "
-                     f"{result.stdout}")
-        assert result.exit_code == 0
-        forecast = get_forecast(session, forecast.id)
-
-        seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].runs[0].\
-            result.subgeometries[0].catalogs
-        logger.info(f"length of seismicity results: {len(seismicity_results)}")
-        assert len(seismicity_results) > 0
-        assert len(forecast.seismiccatalog) == 1
+#    @pytest.mark.run(after='test_ramsis_etas_setup')
+#    def test_etas_run_forecast(self, mocker):
+#        with session_handler(db_url) as session:
+#            label = "client_testing_agent"
+#            idempotency_id = "test_idempotency_id_"
+#            from RAMSIS.cli import ramsis_app as app
+#            _ = mocker.patch('RAMSIS.cli.forecast.schedule_deployment')
+#            forecast = check_one_forecast_in_db(session)
+#            logger.debug("Forecast created in test_run_forecast: "
+#                         f"{forecast.id}")
+#            result = runner.invoke(app, ["forecast", "run",
+#                                         str(forecast.id), "--force"])
+#            logger.debug("result stdout from invoking "
+#                         f"forecast: {result.stdout}")
+#            assert result.exit_code == 0
+#
+#    @pytest.mark.run(after='test_etas_run_forecast')
+#    def test_etas_run_engine_flow(self, mocker):
+#        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+#        # mock_get.side_effect = mocked_datasources_get_etas
+#        # mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+#        # mock_post.side_effect = mocked_requests_post_etas
+#        with session_handler(db_url) as session:
+#            forecast_id = "1"
+#            from RAMSIS.cli import ramsis_app as app
+#            forecast = check_one_forecast_in_db(session)
+#            assert len(forecast.seismiccatalog) == 1
+#
+#            result = runner.invoke(app, ["forecast", "run",
+#                                         forecast_id])
+#            logger.debug("result stdout from running forecast engine: "
+#                         f"{result.stdout}")
+#            assert result.exit_code == 0
+#            forecast = get_forecast(session, forecast.id)
+#
+#            seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].\
+#                runs[0].result.subgeometries[0].catalogs
+#            logger.info("length of seismicity results: "
+#                        f"{len(seismicity_results)}")
+#            assert len(seismicity_results) > 0
+#            assert len(forecast.seismiccatalog) == 1

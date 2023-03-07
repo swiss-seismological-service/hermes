@@ -1,5 +1,5 @@
 import typer
-from RAMSIS.db import store
+from RAMSIS.db import db_url, session_handler, init_db
 import json
 from ramsis.datamodel import SeismicityModel, HazardModel
 from pathlib import Path
@@ -9,7 +9,7 @@ from sqlalchemy import select
 app = typer.Typer()
 
 
-def create_sm(store, sm_model_config, hazardsourcemodeltemplate=None):
+def create_sm(session, sm_model_config, hazardsourcemodeltemplate=None):
     sm = SeismicityModel(
         name=sm_model_config["MODEL_NAME"],
         config=sm_model_config["CONFIG"],
@@ -22,10 +22,10 @@ def create_sm(store, sm_model_config, hazardsourcemodeltemplate=None):
     if "HAZARD_WEIGHT" in sm_model_config.keys():
         sm.hazardweight = sm_model_config["HAZARD_WEIGHT"]
     typer.echo(f"Creating new seismicity model: {sm}")
-    store.add(sm)
+    session.add(sm)
 
 
-def update_sm(store, existing_sm, sm_model_config,
+def update_sm(session, existing_sm, sm_model_config,
               hazardsourcemodeltemplate=None):
     existing_sm.name = sm_model_config["MODEL_NAME"]
     existing_sm.config = sm_model_config["CONFIG"]
@@ -38,10 +38,10 @@ def update_sm(store, existing_sm, sm_model_config,
         existing_sm.hazardsourcemodeltemplate = hazardsourcemodeltemplate
 
     typer.echo(f"Updating existing seismicity model: {existing_sm}")
-    store.add(existing_sm)
+    session.add(existing_sm)
 
 
-def create_hm(store, model_config, gsimlogictree):
+def create_hm(session, model_config, gsimlogictree):
 
     hm = HazardModel(
         name=model_config["MODEL_NAME"],
@@ -52,10 +52,10 @@ def create_hm(store, model_config, gsimlogictree):
         gsimlogictree=gsimlogictree)
 
     typer.echo(f"Creating new hazard model: {hm}")
-    store.add(hm)
+    session.add(hm)
 
 
-def update_hm(store, existing_model, model_config, gsimlogictree):
+def update_hm(session, existing_model, model_config, gsimlogictree):
     existing_model.name = model_config["MODEL_NAME"]
     existing_model.config = model_config["CONFIG"]
     existing_model.jobconfig = model_config["JOBCONFIG"]
@@ -64,7 +64,7 @@ def update_hm(store, existing_model, model_config, gsimlogictree):
     existing_model.gsimlogictree = gsimlogictree
 
     typer.echo(f"Updating existing hazard model: {existing_model}")
-    store.add(existing_model)
+    session.add(existing_model)
 
 
 @app.command()
@@ -74,29 +74,28 @@ def configure(
         exists=True,
         readable=True)):
 
-    success = store.init_db()
+    success = init_db(db_url)
 
     if success:
         pass
     else:
         typer.echo(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
-    session = store.session
-    with open(model_config, "r") as model_read:
-        config = json.load(model_read)
-    seismicity_config = config["SEISMICITY_MODELS"]
+    with session_handler(db_url) as session:
+        with open(model_config, "r") as model_read:
+            config = json.load(model_read)
+        seismicity_config = config["SEISMICITY_MODELS"]
 
-    for sm_model_config in seismicity_config:
-        existing_sm_model = session.execute(
-            select(SeismicityModel).filter_by(
-                name=sm_model_config["MODEL_NAME"])).\
-            scalar_one_or_none()
-        if not existing_sm_model:
-            create_sm(store, sm_model_config)
-        else:
-            update_sm(store, existing_sm_model, sm_model_config)
-    store.save()
-    store.close()
+        for sm_model_config in seismicity_config:
+            existing_sm_model = session.execute(
+                select(SeismicityModel).filter_by(
+                    name=sm_model_config["MODEL_NAME"])).\
+                scalar_one_or_none()
+            if not existing_sm_model:
+                create_sm(session, sm_model_config)
+            else:
+                update_sm(session, existing_sm_model, sm_model_config)
+        session.commit()
 
 
 @app.command()
@@ -110,31 +109,30 @@ def add_seismicity(
             "Path to a source model xml template. Please see tests for "
             "examples"))):
 
-    success = store.init_db()
+    success = init_db(db_url)
 
     if success:
         pass
     else:
         typer.echo(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
-    session = store.session
-    with open(model_config, "r") as model_read:
-        config = json.load(model_read)
-    with open(hazardsourcemodeltemplate_path, "r") as sourcemodel_read:
-        hazardsourcemodeltemplate = sourcemodel_read.read()
+    with session_handler(db_url) as session:
+        with open(model_config, "r") as model_read:
+            config = json.load(model_read)
+        with open(hazardsourcemodeltemplate_path, "r") as sourcemodel_read:
+            hazardsourcemodeltemplate = sourcemodel_read.read()
 
-    existing_sm_model = session.execute(
-        select(SeismicityModel).filter_by(
-            name=config["MODEL_NAME"])).\
-        scalar_one_or_none()
-    if not existing_sm_model:
-        create_sm(store, config,
-                  hazardsourcemodeltemplate=hazardsourcemodeltemplate)
-    else:
-        update_sm(store, existing_sm_model, config,
-                  hazardsourcemodeltemplate=hazardsourcemodeltemplate)
-    store.save()
-    store.close()
+        existing_sm_model = session.execute(
+            select(SeismicityModel).filter_by(
+                name=config["MODEL_NAME"])).\
+            scalar_one_or_none()
+        if not existing_sm_model:
+            create_sm(session, config,
+                      hazardsourcemodeltemplate=hazardsourcemodeltemplate)
+        else:
+            update_sm(session, existing_sm_model, config,
+                      hazardsourcemodeltemplate=hazardsourcemodeltemplate)
+        session.commit()
 
 
 @app.command()
@@ -150,29 +148,29 @@ def add_hazard(
         readable=True,
         help="Path to gsim logic tree file for running with OpenQuake")):
 
-    success = store.init_db()
+    success = init_db(db_url)
 
     if success:
         pass
     else:
         typer.echo(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
-    session = store.session
-    with open(model_config, "r") as model_read:
-        config = json.load(model_read)
-    with open(gsimlogictree_path, "r") as gsim_read:
-        gsimlogictree = gsim_read.read()
+    with session_handler(db_url) as session:
+        with open(model_config, "r") as model_read:
+            config = json.load(model_read)
+        with open(gsimlogictree_path, "r") as gsim_read:
+            gsimlogictree = gsim_read.read()
 
-    existing_haz_model = session.execute(
-        select(HazardModel).filter_by(
-            name=config["MODEL_NAME"])).\
-        scalar_one_or_none()
-    if not existing_haz_model:
-        create_hm(store, config, gsimlogictree)
-    else:
-        update_hm(store, existing_haz_model, config, gsimlogictree)
-    store.save()
-    store.close()
+        existing_haz_model = session.execute(
+            select(HazardModel).filter_by(
+                name=config["MODEL_NAME"])).\
+            scalar_one_or_none()
+        if not existing_haz_model:
+            create_hm(session, config, gsimlogictree)
+        else:
+            update_hm(session, existing_haz_model, config, gsimlogictree)
+        session.commit()
+
 # @app.command()
 # def disable(model_: Path = typer.Option(
 # also enable - should create and remove model runs that are

@@ -18,12 +18,12 @@ def env():
     environ.update(old_environ)
 
 
-@pytest.fixture(scope='class')
-def session():
-    from RAMSIS.db import store
-    yield store.session
-    store.session.close()
-    store.engine.dispose()
+#@pytest.fixture(scope='class')
+#def session():
+#    from RAMSIS.db import session_handler
+#    yield store.session
+#    store.session.close()
+#    store.engine.dispose()
 
 
 @pytest.fixture(scope='session')
@@ -58,10 +58,7 @@ def setup_database(connection, env):
     cursor.execute(f"CREATE DATABASE {dbname} with owner "
                    f"{user}")
     cursor.close()
-    from RAMSIS.flows.register import get_client
-    client = get_client()
-    _ = client.register_agent('local', name='client_testing_agent',
-                              labels=['client_testing_agent'])
+    # Register workpool here?
 
     yield
     cursor = connection.cursor()

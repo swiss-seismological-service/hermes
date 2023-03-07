@@ -6,9 +6,6 @@
 #
 # setup.py
 #
-# REVISIONS and CHANGES
-#    2018/01/24   V1.0   Daniel Armbruster (damb)
-#
 # ============================================================================
 """
 setup.py for RAMSIS
@@ -39,7 +36,7 @@ _install_requires = [
     "ramsis.datamodel==1.0",
     "requests>=2.18.4",
     "transitions==0.6.9",
-    "prefect==0.15.10",
+    "prefect>=2.8",
     "pyproj>=3.2.1",
     "psycopg2==2.8.3",
     "jinja2",
@@ -47,7 +44,8 @@ _install_requires = [
     "sqlalchemy>=1.4",
     "typer",
     "pytest-mock",
-    "pytest-order"]
+    "pytest-order",
+    "python-dotenv"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

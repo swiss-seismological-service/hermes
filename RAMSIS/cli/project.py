@@ -3,7 +3,7 @@ import json
 from sqlalchemy import select
 from ramsis.datamodel import Project
 from pathlib import Path
-from RAMSIS.db import store
+from RAMSIS.db import db_url, session_handler, init_db
 from RAMSIS.cli.utils import create_project, update_project
 
 app = typer.Typer()
@@ -17,8 +17,7 @@ def create(
         readable=True,
         help="Path to json project config.")):
 
-    success = store.init_db()
-    session = store.session
+    success = init_db(db_url)
 
     if success:
         pass
@@ -26,25 +25,29 @@ def create(
         typer.echo(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
 
-    project_names = session.execute(select(Project.name)).scalars().all()
+    with session_handler(db_url) as session:
 
-    with open(config, "r") as project_json:
-        project_config_list = json.load(project_json)['PROJECTS']
+        with open(config, "r") as project_json:
+            project_config_list = json.load(project_json)['PROJECTS']
 
-    new_projects = []
-    for project_config in project_config_list:
-        assert project_config["PROJECT_NAME"] not in project_names, \
-            "Project name already exists {project_config['PROJECT_NAME']}"
+        new_projects = []
+        for project_config in project_config_list:
+            matching_project = session.execute(
+                select(Project.name, Project.id).where(
+                    Project.name == project_config["PROJECT_NAME"])).first()
+            if matching_project:
+                raise Exception(
+                    "Project name: "
+                    f"{matching_project.name} already exists "
+                    f"with id: {matching_project.id}")
 
-        project = create_project(project_config)
-        store.add(project)
-        new_projects.append(project)
-    store.save()
-    for project in new_projects:
-        typer.echo(f"created project {project.name} "
-                   f"with id: {project.id}")
-
-    store.close()
+            project = create_project(project_config)
+            session.add(project)
+            new_projects.append(project)
+            session.commit()
+        for project in new_projects:
+            typer.echo(f"created project {project.name} "
+                       f"with id: {project.id}")
 
 
 @app.command()
@@ -56,42 +59,39 @@ def update(
         readable=True,
         help="Path to json project config.")):
 
-    session = store.session
+    with session_handler(db_url) as session:
 
-    with open(config, "r") as project_json:
-        project_config_list = json.load(project_json)['PROJECTS']
+        with open(config, "r") as project_json:
+            project_config_list = json.load(project_json)['PROJECTS']
 
-    assert len(project_config_list) == 1
-    project_config = project_config_list[0]
-    project = session.execute(
-        select(Project).filter_by(id=project_id)).scalar_one_or_none()
-    if not project:
-        typer.echo(f"Project id {project_id} does not exist")
-        raise typer.Exit()
+        assert len(project_config_list) == 1
+        project_config = project_config_list[0]
+        project = session.execute(
+            select(Project).filter_by(id=project_id)).scalar_one_or_none()
+        if not project:
+            typer.echo(f"Project id {project_id} does not exist")
+            raise typer.Exit()
 
-    project = update_project(project, project_config)
-    store.save()
-    typer.echo(f"updated project {project.name} "
-               f"with id: {project.id}")
-
-    store.close()
+        project = update_project(project, project_config)
+        session.commit()
+        typer.echo(f"updated project {project.name} "
+                   f"with id: {project.id}")
 
 
 @app.command()
 def delete(project_id: int):
-    session = store.session
-    project = session.execute(
-        select(Project).filter_by(id=project_id)).scalar_one_or_none()
-    if not project:
-        typer.echo("The project does not exist")
-        raise typer.Exit()
-    delete = typer.confirm("Are you sure you want to delete the  "
-                           f"project with id: {project_id}")
-    if not delete:
-        typer.echo("Not deleting")
-        raise typer.Abort()
+    with session_handler(db_url) as session:
+        project = session.execute(
+            select(Project).filter_by(id=project_id)).scalar_one_or_none()
+        if not project:
+            typer.echo("The project does not exist")
+            raise typer.Exit()
+        delete = typer.confirm("Are you sure you want to delete the  "
+                               f"project with id: {project_id}")
+        if not delete:
+            typer.echo("Not deleting")
+            raise typer.Abort()
 
-    store.delete(project)
-    store.save()
-    typer.echo("Finished deleting project")
-    store.close()
+        session.delete(project)
+        session.commit()
+        typer.echo("Finished deleting project")

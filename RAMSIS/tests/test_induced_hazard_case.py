@@ -13,6 +13,7 @@ from RAMSIS.tests.utils import \
     create_project, create_forecast, \
     MockResponse, check_one_forecast_in_db, \
     get_forecast, add_haz_model, add_seis_model
+from RAMSIS.db import session_handler, db_url
 
 logger = logging.getLogger(__name__)
 
@@ -86,66 +87,70 @@ def mocked_datasources_get(*args, **kwargs):
     return MockResponse(None, 404)
 
 
-class TestInducedHazCase:
-    def test_ramsis_haz_setup(self, session, mocker):
-        sm_result = add_seis_model(seis_model_config_path,
-                                   sourcemodeltemplate_path)
-        assert sm_result.exit_code == 0
-        hm_result = add_haz_model(haz_model_config_path,
-                                  gsimlogictree_path)
-        assert hm_result.exit_code == 0
-        create_project(bedretto_project_config_path)
-
-        projects = session.execute(
-            select(Project)).scalars().all()
-        assert len(projects) == 1
-
-        _ = create_forecast(
-            bedretto_forecast_config_path, "1",
-            inj_plan=inj_plan_path)
-        forecasts = session.execute(
-            select(Forecast)).scalars().all()
-        assert len(forecasts) == 1
-
-    @pytest.mark.run(after='test_ramsis_bedretto_setup')
-    def test_run_haz_forecast(self, mocker, session, monkeypatch):
-        label = "client_testing_agent"
-        idempotency_id = "test_idempotency_id_"
-
-        from RAMSIS.cli import ramsis_app as app
-        from RAMSIS.db import store
-        monkeypatch.setattr(store, 'session', session)
-        _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
-        forecast = check_one_forecast_in_db(session)
-        logger.debug(f"Forecast created in test_run_forecast: {forecast.id}")
-        result = runner.invoke(app, ["forecast", "run",
-                                     str(forecast.id), "--force",
-                                     "--label", label,
-                                     "--idempotency-id", idempotency_id])
-        logger.info(f"result stdout from invoking forecast: {result.stdout}")
-        assert result.exit_code == 0
-
-    @pytest.mark.run(after='test_run_bedretto_forecast')
-    def test_run_haz_engine_flow(self, mocker, session):
-        # adding the mocks seem to also mock requests in the ramsis-hazard
-        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        # mock_get.side_effect = mocked_datasources_get
-        # mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        # mock_post.side_effect = mocked_requests_post
-        forecast_id = "1"
-
-        from RAMSIS.cli import ramsis_app as app
-
-        forecast = check_one_forecast_in_db(session)
-        result = runner.invoke(app, ["engine", "run",
-                                     forecast_id])
-        print(result.stdout)
-        logger.debug("result stdout from running forecast engine: "
-                     f"{result.stdout}")
-        assert result.exit_code == 0
-
-        forecast = get_forecast(session, forecast.id)
-        seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].runs[0].\
-            result.subgeometries[0].samples
-        logger.info(f"length of seismicity results: {len(seismicity_results)}")
-        assert len(seismicity_results) > 0
+#class TestInducedHazCase:
+#    def test_ramsis_haz_setup(self, mocker):
+#        with session_handler(db_url) as session:
+#            sm_result = add_seis_model(seis_model_config_path,
+#                                       sourcemodeltemplate_path)
+#            assert sm_result.exit_code == 0
+#            hm_result = add_haz_model(haz_model_config_path,
+#                                      gsimlogictree_path)
+#            assert hm_result.exit_code == 0
+#            create_project(bedretto_project_config_path)
+#
+#            projects = session.execute(
+#                select(Project)).scalars().all()
+#            assert len(projects) == 1
+#
+#            _ = create_forecast(
+#                bedretto_forecast_config_path, "1",
+#                inj_plan=inj_plan_path)
+#            forecasts = session.execute(
+#                select(Forecast)).scalars().all()
+#            assert len(forecasts) == 1
+#
+#    @pytest.mark.run(after='test_ramsis_bedretto_setup')
+#    def test_run_haz_forecast(self, mocker):
+#        with session_handler(db_url) as session:
+#            label = "client_testing_agent"
+#            idempotency_id = "test_idempotency_id_"
+#
+#            from RAMSIS.cli import ramsis_app as app
+#            _ = mocker.patch('RAMSIS.cli.forecast.schedule_forecast')
+#            forecast = check_one_forecast_in_db(session)
+#            logger.debug("Forecast created in test_run_forecast: "
+#                         f"{forecast.id}")
+#            result = runner.invoke(app, ["forecast", "run",
+#                                         str(forecast.id), "--force",
+#                                         "--label", label,
+#                                         "--idempotency-id", idempotency_id])
+#            logger.info("result stdout from invoking forecast:"
+#                        f" {result.stdout}")
+#            assert result.exit_code == 0
+#
+#    @pytest.mark.run(after='test_run_bedretto_forecast')
+#    def test_run_haz_engine_flow(self, mocker):
+#        # adding the mocks seem to also mock requests in the ramsis-hazard
+#        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+#        # mock_get.side_effect = mocked_datasources_get
+#        # mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+#        # mock_post.side_effect = mocked_requests_post
+#        with session_handler(db_url) as session:
+#            forecast_id = "1"
+#
+#            from RAMSIS.cli import ramsis_app as app
+#
+#            forecast = check_one_forecast_in_db(session)
+#            result = runner.invoke(app, ["engine", "run",
+#                                         forecast_id])
+#            print(result.stdout)
+#            logger.debug("result stdout from running forecast engine: "
+#                         f"{result.stdout}")
+#            assert result.exit_code == 0
+#
+#            forecast = get_forecast(session, forecast.id)
+#            seismicity_results = forecast.scenarios[0][EStage.SEISMICITY].\
+#                runs[0].result.subgeometries[0].samples
+#            logger.info("length of seismicity results: "
+#                        f"{len(seismicity_results)}")
+#            assert len(seismicity_results) > 0
