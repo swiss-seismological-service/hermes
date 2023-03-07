@@ -35,7 +35,7 @@ model_response_path = join(dirpath, 'results')
 
 def mocked_requests_post_etas(*args, **kwargs):
     logger.debug(f"Input to mocked_requests_post: {args}")
-    if args[0] == 'http://ramsis-em1.ethz.ch:5007/v1/sfm/models/etas/run':
+    if 'v1/sfm/models/etas/run' in args[0]:
         model_response_to_post_path = join(
             model_response_path, 'model_response_to_post_natural_1.json')
         with open(model_response_to_post_path, "r") as f:
@@ -53,8 +53,8 @@ def mocked_datasources_get_etas(*args, **kwargs):
             data = f.read()
         return MockResponse({}, 200, data)
 
-    elif args[0] == 'http://ramsis-em1.ethz.ch:5007/v1/sfm/models/etas/run/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
+    elif 'v1/sfm/models/etas/run/'\
+            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd' in args[0]:
         model_request_response_path = join(
             model_response_path, "model_response_natural.json")
         with open(model_request_response_path, "r") as f:
@@ -101,10 +101,10 @@ class TestNaturalCase:
 
     @pytest.mark.run(after='test_etas_run_forecast')
     def test_etas_run_engine_flow(self, mocker, session):
-        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        # mock_get.side_effect = mocked_datasources_get_etas
-        # mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
-        # mock_post.side_effect = mocked_requests_post_etas
+        mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+        mock_get.side_effect = mocked_datasources_get_etas
+        mock_post = mocker.patch('RAMSIS.core.worker.sfm.requests.post')
+        mock_post.side_effect = mocked_requests_post_etas
         forecast_id = "1"
         from RAMSIS.cli import ramsis_app as app
         forecast = check_one_forecast_in_db(session)
