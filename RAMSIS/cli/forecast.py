@@ -7,8 +7,7 @@ from RAMSIS.db import db_url, session_handler
 from RAMSIS.cli.utils import flow_deployment, schedule_deployment
 from RAMSIS.utils import reset_forecast
 from pathlib import Path
-from RAMSIS.cli.utils import create_forecast,  \
-    get_flow_run_label
+from RAMSIS.cli.utils import create_forecast
 from RAMSIS.flows import ramsis_flow
 
 
@@ -19,12 +18,7 @@ app = typer.Typer()
 def run(forecast_id: int,
         force: bool = typer.Option(
             False, help="Force the forecast to run again, "
-                        "even if completed."),
-        label: str = typer.Option(
-            None, help="label to associate with an agent"),
-        idempotency_id: str = typer.Option(
-            "", help="idempotency id that identifies a forecast"
-            "run so the same run is only run once.")):
+            "even if completed.")):
     flow_to_schedule = ramsis_flow
     with session_handler(db_url) as session:
         forecast = session.execute(
@@ -40,16 +34,12 @@ def run(forecast_id: int,
                 session.commit()
             else:
                 typer.Exit()
-        if not label:
-            # get default label id if not provided
-            label = get_flow_run_label()
-
-        #data_dir = app_settings['data_dir']
-        deployment = flow_deployment(
-            flow_to_schedule)
+        # data_dir = app_settings['data_dir']
+        deployment_name = f"forecast_{forecast_id}"
+        deployment = flow_deployment(flow_to_schedule, deployment_name)
         # run the deployment now through the agent.
         schedule_deployment(deployment.name, flow_to_schedule.name,
-                     forecast_id, datetime.utcnow())
+                            forecast_id, datetime.utcnow(), db_url)
 
 
 @app.command()
@@ -75,7 +65,8 @@ def clone(forecast_id: int,
         # If some input data is attached to the forecast rather
         # than being received from a webservice, this must also
         # be cloned. with_results=True only copies input data over.
-        if not project_settings['hydws_url'] or not project_settings['fdsnws_url']:
+        if not project_settings['hydws_url'] or not \
+                project_settings['fdsnws_url']:
             with_results = True
         else:
             with_results = False
