@@ -45,7 +45,8 @@ _install_requires = [
     "typer",
     "pytest-mock",
     "pytest-order",
-    "python-dotenv"]
+    "python-dotenv",
+    "docker-compose"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",
