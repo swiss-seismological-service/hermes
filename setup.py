@@ -38,7 +38,6 @@ _install_requires = [
     "transitions==0.6.9",
     "prefect>=2.8",
     "pyproj>=3.2.1",
-    "psycopg2==2.8.3",
     "jinja2",
     "xmltodict",
     "sqlalchemy>=1.4",
@@ -46,7 +45,8 @@ _install_requires = [
     "pytest-mock",
     "pytest-order",
     "python-dotenv",
-    "docker-compose"]
+    "docker-compose",
+    "psycopg2-binary",]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

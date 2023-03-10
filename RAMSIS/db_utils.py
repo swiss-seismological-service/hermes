@@ -1,7 +1,7 @@
 
 from ramsis.datamodel import Forecast, ForecastScenario, \
     SeismicityModelRun
-import prefect
+from prefect import get_run_logger
 from sqlalchemy import select
 
 
@@ -52,7 +52,7 @@ def run_stage(forecast, estage):
 
 
 def set_statuses(forecast_id, estatus, session):
-    logger = prefect.context.get('logger')
+    logger = prefect.get_run_logger()
     forecast = session.execute(
         select(Forecast).filter_by(id=forecast_id)).scalar_one()
     forecast.status.state = estatus

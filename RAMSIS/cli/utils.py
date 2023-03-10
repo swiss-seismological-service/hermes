@@ -1,13 +1,20 @@
 import typer
+from os.path import join
 from prefect.client import get_client
 from prefect.server.schemas.sorting import FlowSort
-from prefect.server.schemas.filters import FlowFilter# Name
 from ramsis.datamodel import EStage
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict
 from prefect.deployments import run_deployment
 from prefect.deployments import Deployment
+
+import asyncio
+
+from prefect.client import get_client
+from prefect.orion.schemas.states import Scheduled
+from prefect.orion.schemas.filters import FlowFilter, DeploymentFilter
+
 
 from RAMSIS.db import app_settings
 from RAMSIS.core.builder import (
@@ -32,10 +39,11 @@ async def delete_scheduled_flow_runs():
         raise Exception("There are more than one work pools configured")
     flow_runs = await client.get_scheduled_flow_runs_for_work_pool(work_pools[0].name)
     typer.echo(f"There are {len(flow_runs)} flow runs scheduled.")
-    for run in flow_runs:
-        await client.delete_flow_run(run.id)
-        typer.echo(f"Flow run with id: {run.id} with "
-                   f"name: {run.name} has been cancelled.")
+    for response in flow_runs:
+        run = response.dict()["flow_run"]
+        await client.delete_flow_run(run["id"])
+        typer.echo(f"Flow run with id: {run['id']} with "
+                   f"name: {run['name']} has been cancelled.")
     typer.echo("RAMSIS has been stopped, all currently "
                "scheduled flow runs cancelled.")
 
@@ -114,11 +122,31 @@ def schedule_deployment(
         db_url):
     parameters = dict(
         forecast_id=forecast_id,
-        date=datetime.utcnow(),
-        connection_string=db_url)
+        connection_string=db_url,
+        date=datetime.utcnow())
     deployment_id = f"{flow_name}/{deployment_name}"
     run_deployment(deployment_id, scheduled_time=scheduled_time,
                    parameters=parameters)
+
+
+async def add_new_scheduled_run(
+    flow_name: str, deployment_name: str, dt: datetime,
+        forecast_id, db_url):
+    print("the name should be: ", flow_name, deployment_name)
+    parameters = dict(
+        forecast_id=forecast_id,
+        connection_string=db_url,
+        date=dt)
+    async with get_client() as client:
+        deployments = await client.read_deployments(
+            flow_filter=FlowFilter(name={"any_": [flow_name]}),
+            deployment_filter=DeploymentFilter(name={"any_": [deployment_name]}),
+        )
+        deployment_id = deployments[0].id
+        await client.create_flow_run_from_deployment(
+            deployment_id=deployment_id, state=Scheduled(scheduled_time=dt),
+            parameters=parameters
+        )
 
 #def schedule_forecast(forecast, client, flow_run_name, label,
 #                      connection_string, data_dir,
@@ -214,19 +242,25 @@ def deserialize_qml_data(data, ramsis_proj):
 
 
 def create_scenario(session, project, scenario_config,
-                    inj_plan_data, epoch_duration,
-                    seismicity_stage_enabled, hazard_stage_enabled):
+                    epoch_duration,
+                    seismicity_stage_enabled, hazard_stage_enabled,
+                    inj_plan_directory):
     scenario = default_scenario(session, project.model_settings.config,
                                 seismicity_stage_enabled, hazard_stage_enabled,
                                 name=scenario_config["SCENARIO_NAME"])
     # Seismicity Stage
     seismicity_stage = scenario[EStage.SEISMICITY]
+    # redefine epoch duration if defined.
+    if "EPOCH_DURATION" in scenario_config.keys():
+        if scenario_config["EPOCH_DURATION"]:
+            epoch_duration = scenario_config["EPOCH_DURATION"]
     seismicity_stage.config = {
         'epoch_duration': epoch_duration}
     session.add_all(seismicity_stage.runs)
     scenario.reservoirgeom = scenario_config["RESERVOIR"]
 
-    if inj_plan_data:
+    with open(join(inj_plan_directory,
+              scenario_config["SCENARIO_JSON"]), 'rb') as inj_plan_data:
         scenario.well = deserialize_hydws_data(
             inj_plan_data, project.proj_string, True)
     # Which models are run for which scenario is defined by RUN_MODELS.
@@ -256,7 +290,7 @@ def create_scenario(session, project, scenario_config,
 def create_forecast(session,
                     project,
                     forecast_config,
-                    inj_plan_data,
+                    inj_plan_directory,
                     hyd_data,
                     catalog_data):
 
@@ -266,10 +300,7 @@ def create_forecast(session,
                                      DATETIME_FORMAT)
     assert forecast_start < forecast_end
     # assign default epoch duration
-    epoch_duration = (forecast_end - forecast_start).total_seconds()
-    if "EPOCH_DURATION" in forecast_config.keys():
-        if forecast_config["EPOCH_DURATION"]:
-            epoch_duration = forecast_config["EPOCH_DURATION"]
+    default_epoch_duration = (forecast_end - forecast_start).total_seconds()
 
     fc = default_forecast(
         session,
@@ -278,15 +309,16 @@ def create_forecast(session,
         num_scenarios=0,
         name=forecast_config["FORECAST_NAME"])
     session.add(fc)
+    fc.project = project
 
     scenarios_json = forecast_config['SCENARIOS']
     scenarios = [create_scenario(session,
                                  project,
                                  scenario_config,
-                                 inj_plan_data,
-                                 epoch_duration,
+                                 default_epoch_duration,
                                  forecast_config["SEISMICITY_STAGE"],
-                                 forecast_config["HAZARD_STAGE"])
+                                 forecast_config["HAZARD_STAGE"],
+                                 inj_plan_directory)
                  for scenario_config in scenarios_json]
     fc.scenarios = scenarios
     session.add_all(fc.scenarios)

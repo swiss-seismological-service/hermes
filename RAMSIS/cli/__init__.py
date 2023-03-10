@@ -1,14 +1,13 @@
 import typer
+import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy import select
 from RAMSIS.cli import project, model, forecast as _forecast
 from RAMSIS.db import session_handler, db_url, app_settings
 from ramsis.datamodel import Forecast, Project, EStatus
 from RAMSIS.flows import ramsis_flow
-from RAMSIS.cli.utils import schedule_deployment, flow_deployment
-#from RAMSIS.cli.utils import schedule_forecast, \
-#    cancel_flow_run, scheduled_flow_runs, get_flow_run_label, \
-#    create_flow_run_name
+from RAMSIS.cli.utils import add_new_scheduled_run, flow_deployment, \
+    delete_scheduled_flow_runs
 from RAMSIS.flows import scheduled_ramsis_flow
 from prefect.server.schemas.schedules import CronSchedule
 
@@ -18,36 +17,16 @@ ramsis_app.add_typer(model.app, name="model")
 ramsis_app.add_typer(project.app, name="project")
 
 
-#@ramsis_app.command()
-#def register(label: str = typer.Option(
-#             None, help="label to associate with a prefect agent")):
-#
-#    if not label:
-#        label = get_flow_run_label()
-#
-#    register_project()
-#    register_flows(seismicity_flow, [label])
-#    register_flows(hazard_flow, [label])
-#    register_flows(manager_flow, [label])
-#    typer.echo("prefect has registered flows and project for ramsis.")
-
-
 @ramsis_app.command()
 def run(project_id: int = typer.Option(
         ..., help="Project id to search for forecasts when scheduling."),
         dry_run: bool = typer.Option(
             False, help="Show what forecasts would be scheduled and when."),
-        label: str = typer.Option(
-            None, help="label to associate with an agent"),
         interval: int = typer.Option(
             0, help="Interval to wait (seconds) between scheduled forecasts "
             "in the case that the forecasts are in the past."
             " This would help in the case where too many forecasts "
             "run at the same time would overload the system.")
-        #idempotency_key: str = typer.Option(
-        #    "", help="Key that is used by the prefect cloud "
-        #    "to avoid rerunning forecasts that have already been"
-        #    " scheduled.")
         ):
     flow_to_schedule = ramsis_flow
     datetime_now = datetime.utcnow()
@@ -66,24 +45,23 @@ def run(project_id: int = typer.Option(
             typer.echo("No forecasts exist that are in a non-complete state.")
         else:
             typer.echo(f"{len(forecasts)} found to schedule")
-        client = get_client()
 
-        if not label:
-            label = get_flow_run_label()
-
-        connection_string = db_url
         data_dir = app_settings['data_dir']
-
+        deployment_name = datetime_now.strftime("%y-%d-%mT%H:%M:%S")
         deployment = flow_deployment(
-            flow_to_schedule)
+            flow_to_schedule, deployment_name)
 
         scheduled_wait_time = 0
         for forecast in forecasts:
             if forecast.status.state != EStatus.COMPLETE:
                 scheduled_datetime = datetime_now + timedelta(seconds=scheduled_wait_time)
                 # run the deployment now through the agent.
-                schedule_deployment(deployment.name, flow_to_schedule.name,
-                             forecast_id, scheduled_datetime)
+                asyncio.run(
+                    add_new_scheduled_run(
+                        flow_to_schedule.name, deployment_name,
+                        scheduled_datetime, forecast.id, db_url))
+                #schedule_deployment(deployment.name, flow_to_schedule.name,
+                #             forecast.id, scheduled_datetime, db_url)
                 scheduled_wait_time += interval
 
 
@@ -95,7 +73,8 @@ def stop():
 
     # Manager is the scheduling flow that then triggers
     # the ramsis engine flow which does the main work.
-    delete_scheduled_flow_runs()
+    asyncio.run(
+        delete_scheduled_flow_runs())
 
 
 

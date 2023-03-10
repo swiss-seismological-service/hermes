@@ -2,7 +2,7 @@ import typer
 import json
 from datetime import timedelta, datetime
 from sqlalchemy import select
-from ramsis.datamodel import Forecast, Project, EStatus, EInput
+from ramsis.datamodel import Forecast, Project, EStatus, EInput, EStage
 from RAMSIS.db import db_url, session_handler
 from RAMSIS.cli.utils import flow_deployment, schedule_deployment
 from RAMSIS.utils import reset_forecast
@@ -26,7 +26,12 @@ def run(forecast_id: int,
         if not forecast:
             typer.echo("The forecast id does not exist")
             raise typer.Exit()
-        elif forecast.status.state == EStatus.COMPLETE:
+        if force:
+            typer.echo("Resetting RAMSIS statuses")
+            forecast = reset_forecast(forecast)
+            session.commit()
+
+        if forecast.status.state == EStatus.COMPLETE:
             typer.echo("forecast is already complete")
             if force:
                 typer.echo("forecast will have status reset")
@@ -88,6 +93,11 @@ def clone(forecast_id: int,
         session.commit()
         for new_forecast in new_forecasts:
             new_forecast.name = f"Forecast {new_forecast.id}"
+            forecast_duration = (new_forecast.endtime - new_forecast.starttime).total_seconds()
+            for scenario in new_forecast.scenarios:
+                seismicity_stage = scenario[EStage.SEISMICITY]
+                if seismicity_stage.config["epoch_duration"] > forecast_duration:
+                    seismicity_stage.config["epoch_duration"] = forecast_duration
         session.commit()
         for forecast in new_forecasts:
             typer.echo(f"New forecast initialized with id: {forecast.id} "
@@ -122,8 +132,8 @@ def create(
         ...,
         exists=True,
         readable=True),
-        inj_plan_data: typer.FileBinaryRead = typer.Option(
-        None, help="Path of file containing the "
+        inj_plan_directory: str = typer.Option(
+        None, help="Path of directory containing the "
         "injection plans. Required if the forecast is for induced seismicity"),
         hyd_data: typer.FileBinaryRead = typer.Option(
         None, help="Path of file containing the "
@@ -183,17 +193,17 @@ def create(
                     " to be REQUIRED in the project config.")
                 raise typer.Exit()
 
-        if inj_plan_data:
+        if inj_plan_directory:
             if project.settings.config['scenario'] == EInput.NOT_ALLOWED.name:
                 typer.echo(
-                    "--inj-plan-data may not be added if SCENARIO "
+                    "--inj-plan-directory may not be added if SCENARIO "
                     "is configured"
                     " to be NOT ALLOWED in the project config.")
                 raise typer.Exit()
         else:
             if project.settings.config['scenario'] == EInput.REQUIRED.name:
                 typer.echo(
-                    "--inj-plan-data must be added if SCENARIO "
+                    "--inj-plan-directory must be added if SCENARIO "
                     "is configured"
                     " to be REQUIRED in the project config.")
                 raise typer.Exit()
@@ -203,7 +213,7 @@ def create(
         new_forecasts = []
         for forecast_config in forecast_config_list["FORECASTS"]:
             forecast = create_forecast(
-                session, project, forecast_config, inj_plan_data,
+                session, project, forecast_config, inj_plan_directory,
                 hyd_data, catalog_data)
             new_forecasts.append(forecast)
             project.forecasts.append(forecast)
