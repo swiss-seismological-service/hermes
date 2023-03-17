@@ -1,10 +1,12 @@
+from typing import List
+import asyncio
 import typer
 import json
 from datetime import timedelta, datetime
 from sqlalchemy import select
 from ramsis.datamodel import Forecast, Project, EStatus, EInput, EStage
-from RAMSIS.db import db_url, session_handler
-from RAMSIS.cli.utils import flow_deployment, schedule_deployment
+from RAMSIS.db import db_url, session_handler, app_settings
+from RAMSIS.cli.utils import flow_deployment, schedule_deployment, add_new_scheduled_run
 from RAMSIS.utils import reset_forecast
 from pathlib import Path
 from RAMSIS.cli.utils import create_forecast
@@ -39,12 +41,16 @@ def run(forecast_id: int,
                 session.commit()
             else:
                 typer.Exit()
-        # data_dir = app_settings['data_dir']
+        data_dir = app_settings['data_dir']
         deployment_name = f"forecast_{forecast_id}"
         deployment = flow_deployment(flow_to_schedule, deployment_name)
         # run the deployment now through the agent.
-        schedule_deployment(deployment.name, flow_to_schedule.name,
-                            forecast_id, datetime.utcnow(), db_url)
+        #schedule_deployment(deployment.name, flow_to_schedule.name,
+        #                    forecast_id, datetime.utcnow(), db_url, data_dir)
+        asyncio.run(
+            add_new_scheduled_run(
+                flow_to_schedule.name, deployment.name,
+                datetime.utcnow(), forecast.id, db_url, data_dir))
 
 
 @app.command()
@@ -106,22 +112,26 @@ def clone(forecast_id: int,
 
 
 @app.command()
-def delete(forecast_id: int):
+def delete(forecast_ids: List[int],
+            force: bool = typer.Option(
+                False, help="Force the deletes without asking")):
     with session_handler(db_url) as session:
-        forecast = session.execute(
-            select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
-        if not forecast:
-            typer.echo("The forecast does not exist")
-            raise typer.Exit()
-        delete = typer.confirm("Are you sure you want to delete the  "
-                               f"forecast with id: {forecast_id}")
-        if not delete:
-            typer.echo("Not deleting")
-            raise typer.Abort()
+        for forecast_id in forecast_ids:
+            forecast = session.execute(
+                select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
+            if not forecast:
+                typer.echo("The forecast does not exist")
+                raise typer.Exit()
+            if not force:
+                delete = typer.confirm("Are you sure you want to delete the  "
+                                       f"forecast with id: {forecast_id}")
+                if not delete:
+                    typer.echo("Not deleting")
+                    raise typer.Abort()
 
-        session.delete(forecast)
-        session.commit()
-        typer.echo("Finished deleting forecast")
+            session.delete(forecast)
+            session.commit()
+            typer.echo(f"Finished deleting forecast {forecast_id}")
 
 
 # TODO add check to seismicity and hazard stage that configured properly.

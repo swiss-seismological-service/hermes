@@ -6,6 +6,7 @@ from ramsis.datamodel import EStage
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict
+import typer
 from prefect.deployments import run_deployment
 from prefect.deployments import Deployment
 
@@ -119,11 +120,12 @@ def create_flow_run_name(idempotency_id, forecast_id):
 def schedule_deployment(
         deployment_name, flow_name,
         forecast_id, scheduled_time,
-        db_url):
+        db_url, data_dir):
     parameters = dict(
         forecast_id=forecast_id,
         connection_string=db_url,
-        date=datetime.utcnow())
+        date=datetime.utcnow(),
+        data_dir=data_dir)
     deployment_id = f"{flow_name}/{deployment_name}"
     run_deployment(deployment_id, scheduled_time=scheduled_time,
                    parameters=parameters)
@@ -131,12 +133,11 @@ def schedule_deployment(
 
 async def add_new_scheduled_run(
     flow_name: str, deployment_name: str, dt: datetime,
-        forecast_id, db_url):
-    print("the name should be: ", flow_name, deployment_name)
+        forecast_id, db_url, data_dir):
     parameters = dict(
         forecast_id=forecast_id,
         connection_string=db_url,
-        date=dt)
+        date=dt, data_dir=data_dir)
     async with get_client() as client:
         deployments = await client.read_deployments(
             flow_filter=FlowFilter(name={"any_": [flow_name]}),
@@ -147,6 +148,9 @@ async def add_new_scheduled_run(
             deployment_id=deployment_id, state=Scheduled(scheduled_time=dt),
             parameters=parameters
         )
+        typer.echo(f"Scheduled new forecast run: {deployment_id} with"
+                   f"parameters: {parameters}")
+        
 
 #def schedule_forecast(forecast, client, flow_run_name, label,
 #                      connection_string, data_dir,

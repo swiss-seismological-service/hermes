@@ -31,6 +31,7 @@ def run(project_id: int = typer.Option(
     flow_to_schedule = ramsis_flow
     datetime_now = datetime.utcnow()
     typer.echo(f"Scheduling forecasts for project id {project_id}.")
+    non_scheduling_statuses = [EStatus.ERROR, EStatus.COMPLETE, EStatus.RUNNING]
     with session_handler(db_url) as session:
 
         project = session.execute(
@@ -44,7 +45,9 @@ def run(project_id: int = typer.Option(
         if not forecasts:
             typer.echo("No forecasts exist that are in a non-complete state.")
         else:
-            typer.echo(f"{len(forecasts)} found to schedule")
+            forecasts_to_schedule = [f for f in forecasts if f.status.state not in
+                    non_scheduling_statuses]
+            typer.echo(f"{len(forecasts_to_schedule)} forecasts found to schedule")
 
         data_dir = app_settings['data_dir']
         deployment_name = datetime_now.strftime("%y-%d-%mT%H:%M:%S")
@@ -53,16 +56,19 @@ def run(project_id: int = typer.Option(
 
         scheduled_wait_time = 0
         for forecast in forecasts:
-            if forecast.status.state != EStatus.COMPLETE:
-                scheduled_datetime = datetime_now + timedelta(seconds=scheduled_wait_time)
+            if forecast.status.state not in non_scheduling_statuses:
+                forecast_start_time = forecast.starttime
+                if forecast_start_time <= datetime_now:
+                    forecast_start_time = datetime_now + timedelta(seconds=scheduled_wait_time)
+                    scheduled_wait_time += interval
+                typer.echo(f"running forecast {forecast.id} at time {forecast_start_time}")
                 # run the deployment now through the agent.
                 asyncio.run(
                     add_new_scheduled_run(
-                        flow_to_schedule.name, deployment_name,
-                        scheduled_datetime, forecast.id, db_url))
+                        flow_to_schedule.name, deployment.name,
+                        forecast_start_time, forecast.id, db_url, data_dir))
                 #schedule_deployment(deployment.name, flow_to_schedule.name,
                 #             forecast.id, scheduled_datetime, db_url)
-                scheduled_wait_time += interval
 
 
 @ramsis_app.command()

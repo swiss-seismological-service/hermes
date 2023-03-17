@@ -17,15 +17,6 @@ from RAMSIS.config import Settings
 
 logger = logging.getLogger(__name__)
 
-# We need to make sure all datamodel modules are imported at least once
-# for the ORMBase meta data to be complete; ensure that ORMBase has all the
-# metadata
-pkg = ramsis.datamodel
-modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
-modules = [m for m in modules if 'tests' not in m[1]]
-for finder, module_name, _ in modules:
-    if module_name not in sys.modules:
-        finder.find_module(module_name).load_module(module_name)
 
 
 def connect_to_db(connection_string: str):
@@ -38,7 +29,8 @@ def connect_to_db(connection_string: str):
 def session_handler(connection_string):
     session = connect_to_db(connection_string)
     yield session
-    session.close
+    session.rollback()
+    session.close()
 
 
 def init_db(connection_string: str) -> bool:
@@ -50,6 +42,15 @@ def init_db(connection_string: str) -> bool:
     :returns: True if successful
     :rtype: bool
     """
+    # We need to make sure all datamodel modules are imported at least once
+    # for the ORMBase meta data to be complete; ensure that ORMBase has all the
+    # metadata
+    pkg = ramsis.datamodel
+    modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
+    modules = [m for m in modules if 'tests' not in m[1]]
+    for finder, module_name, _ in modules:
+        if module_name not in sys.modules:
+            finder.find_module(module_name).load_module(module_name)
     engine = create_engine(connection_string)
     try:
         ORMBase.metadata.create_all(engine, checkfirst=True)

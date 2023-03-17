@@ -39,6 +39,8 @@ def run_seismicity_flow(forecast_id: int, connection_string: str) -> bool:
                 continue
             elif seismicity_stage.status.state != EStatus.COMPLETE:
                 logger.info("Seismicity Stage will be run.")
+                seismicity_stage.status.state = EStatus.RUNNING
+                session.commit()
                 return True
         logger.info('Seismicity stage has been skipped'
                     f' for forecast_id: {forecast_id}'
@@ -132,6 +134,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
                 session.query(SeismicObservationCatalog).filter(
                     SeismicObservationCatalog.forecast_id == forecast_id).\
                     delete()
+                session.commit()
 
             cat = fetch_fdsn(fdsnws_url, project, forecast)
             if not cat:
@@ -141,7 +144,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
                     "catalog has been returned from the FDSN web service.")
             else:
                 logger.info(f"A catalog has been returned: {cat}")
-            cat.forecast_id = forecast.id
+
             cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = [cat]
             session.add(cat)
@@ -198,11 +201,11 @@ def update_hyd(forecast_id: int, dttime: datetime,
                 logger.debug("deleting existing well on forecast")
                 session.query(InjectionWell).filter(
                     InjectionWell.forecast_id == forecast_id).delete()
+                session.commit()
             logger.info("Well will be fetched for forecast.")
             well = fetch_hyd(hydws_url, project, forecast)
             assert hasattr(well, 'sections')
             well.creationinfo_creationtime = dttime
-            # well.forecast_id = forecast.id
             forecast.well = [well]
             session.add(well)
             session.commit()
@@ -217,45 +220,6 @@ def update_hyd(forecast_id: int, dttime: datetime,
                 logger.info("No well allowed for forecast.")
 
 
-#@task
-#def seismicity_stage_complete(forecast_id: int, connection_string: str) \
-#        -> bool:
-#    """Check that all scenarios and model runs are complete."""
-#
-#    status_work_required = [
-#        EStatus.DISPATCHED,
-#        EStatus.PENDING]
-#
-#    with session_handler(connection_string) as session:
-#        forecast = get_forecast(forecast_id, session)
-#        seismicity_stage_done = True
-#        for scenario in forecast.scenarios:
-#            try:
-#                stage = scenario[EStage.SEISMICITY]
-#                stage_enabled = stage.enabled
-#            except KeyError:
-#                continue
-#            else:
-#                if stage_enabled:
-#                    for r in stage.runs:
-#                        if r.status.state in status_work_required:
-#                            seismicity_stage_done = False
-#                            continue
-#            return seismicity_stage_done
-
-#@task
-#def flatten_task(nested_list: List[List]) -> List:
-#    flattened_list = [item for sublist in nested_list for item in sublist]
-#    return flattened_list
-
-
-#@task
-#def check_stage_enabled(scenario: ForecastScenario, estage: EStage) -> bool:
-#    try:
-#        stage_enabled = scenario[estage].enabled
-#    except (KeyError, AttributeError):
-#        stage_enabled = False
-#    return stage_enabled
 
 
 @task(task_run_name="forecast_scenarios(forecast{forecast_id})")
@@ -402,13 +366,11 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         model_run_id = model_run_data["model_run_id"]
         model_run = get_seismicity_model_run(model_run_id, session)
         logger = get_run_logger()
+        model_run.status.state = EStatus.RUNNING
+        session.commit()
         stage = model_run.forecaststage
         forecast = stage.scenario.forecast
         project = forecast.project
-        # (sarsonl) current bug when attempting to only
-        # allow one to one relationship between forecast-well
-        # and forecast-seismiccatalog. Work-around is to leave
-        # as one to many relationship and assume just one item in list.
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
@@ -450,8 +412,6 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         model_run.runid = resp['data']['task_id']
         model_run.status.state = EStatus.DISPATCHED
         session.commit()
-        logger.info("returning the model_run.id")
-        logger.info(int(model_run.id))
         return int(model_run.id)
 
 
@@ -499,7 +459,7 @@ def poll_model_run(forecast_id:int, model_run_id: int,
             return Failed(message=err)
         else:
             status = resp['data']['attributes']['status_code']
-            logger.info(f"####################3 status code of model run: {status}")
+            logger.info(f"status code of model run: {status}")
 
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")
@@ -542,56 +502,3 @@ def poll_model_run(forecast_id:int, model_run_id: int,
                     "Remote Seismicity Model Worker"
                     " has returned an unhandled status code."
                     f"(runid={model_run.runid}: {resp})")
-
-
-@task(task_run_name="set_statuses(forecast{forecast_id})")
-def set_statuses(forecast_id: int, estage: EStage,
-                 connection_string: str) -> None:
-    # Set statuses at end of the stage
-    logger = get_run_logger()
-    with session_handler(connection_string) as session:
-        forecast = get_forecast(forecast_id, session)
-        for scenario in forecast.scenarios:
-            if not scenario.enabled:
-                pass
-            stage = scenario[estage]
-            if not stage.enabled:
-                pass
-            model_success = all([
-                True if model.status.state == EStatus.COMPLETE else False
-                for model in [r for r in stage.runs if r.enabled]])
-            if model_success:
-                stage.status.state = EStatus.COMPLETE
-            else:
-                stage.status.state = EStatus.ERROR
-            # All stages are considered here.
-            stage_states = [stage.status.state for stage in
-                            [s for s in scenario.stages if s.enabled]]
-            if all([state == EStatus.COMPLETE
-                    for state in stage_states]):
-                scenario.status.state = EStatus.COMPLETE
-            elif any([state == EStatus.ERROR
-                      for state in stage_states]):
-                scenario.status.state = EStatus.ERROR
-            elif any([state == EStatus.PENDING
-                     for state in stage_states]):
-                scenario.status.state = EStatus.RUNNING
-                logger.info(f"The scenario {scenario.id} has uncompleted "
-                            "stages")
-            else:
-                scenario.status.state = EStatus.ERROR
-                logger.error(f"Scenario {scenario.id} has stages which "
-                             "do not appear to be complete.")
-
-        scenario_states = [scenario.status.state for scenario in
-                           [s for s in forecast.scenarios if s.enabled]]
-        
-        if all([state == EStatus.COMPLETE
-                for state in scenario_states]):
-            forecast.status.state = EStatus.COMPLETE
-        elif any([state == EStatus.ERROR
-                  for state in scenario_states]):
-            forecast.status.state = EStatus.ERROR
-            session.commit()
-            raise Exception("Forecast has errors")
-    session.commit()
