@@ -116,4 +116,4 @@ def set_statuses(forecast_id: int, estage: EStage,
 
         else:
             forecast.status.state = EStatus.COMPLETE
-    session.commit()
+        session.commit()

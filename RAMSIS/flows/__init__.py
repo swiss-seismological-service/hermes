@@ -16,13 +16,13 @@ def ramsis_flow(forecast_id, connection_string, date, data_dir):
     initial_update_status_running = update_status(
         forecast_id, connection_string, EStatus.RUNNING)
     if run_seismicity_flow(forecast_id, connection_string, wait_for=[initial_update_status_running]):
-        seismicity_stage_flow(forecast_id, connection_string, date)
-    set_statuses(forecast_id, EStage.SEISMICITY,
-                     connection_string)
-    if run_hazard_flow(forecast_id, connection_string):
-        hazard_stage_flow(forecast_id, connection_string, data_dir)
-    set_statuses(forecast_id, EStage.HAZARD,
-                     connection_string)
+        seismicity_stage = seismicity_stage_flow(forecast_id, connection_string, date)
+        set_statuses(forecast_id, EStage.SEISMICITY,
+                     connection_string, wait_for=[seismicity_stage])
+    #if run_hazard_flow(forecast_id, connection_string):
+    #    hazard_stage_flow(forecast_id, connection_string, data_dir)
+    #set_statuses(forecast_id, EStage.HAZARD,
+    #                 connection_string)
 
 
 @flow(name="scheduled_ramsis_flow")

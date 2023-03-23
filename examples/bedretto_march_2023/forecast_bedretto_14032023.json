@@ -1,0 +1,35 @@
+{
+            "FORECASTS": [
+                {
+		    "FORECAST_NAME": "Forecast 1",
+                    "FORECAST_STARTTIME": "2023-03-14T11:20:00",
+                    "FORECAST_ENDTIME": "2023-03-16T00:00:00",
+            	    "SEISMICITY_STAGE": true,
+	    	    "HAZARD_STAGE": false,
+                    "SCENARIOS": [
+                        {
+    		    	    "RUN_MODELS": "ALL",
+		    	    "HAZARD_MODEL_ID": 1,
+			    "SCENARIO_JSON": "sect9+10_plan50_L_min.json",
+			    "SCENARIO_NAME": "Scenario section 9+10 50L/min",
+			    "EPOCH_DURATION": 1800,
+                            "RESERVOIR": 
+			{"x": [2679460.4649336375, 2679760.4649336375], "y": [1151387.4639208852, 1151687.4639208852], "z": [1211.7646790371384, 1511.7646790371384]}},
+                        {
+    		    	    "RUN_MODELS": "ALL",
+		    	    "HAZARD_MODEL_ID": 1,
+			    "SCENARIO_JSON": "sect9+10_plan35_L_min.json",
+			    "SCENARIO_NAME": "Scenario section 9+10 35L/min",
+			    "EPOCH_DURATION": 1800,
+                            "RESERVOIR": 
+			{"x": [2679460.4649336375, 2679760.4649336375], "y": [1151387.4639208852, 1151687.4639208852], "z": [1211.7646790371384, 1511.7646790371384]}},
+                        {
+    		    	    "RUN_MODELS": "ALL",
+			    "SCENARIO_JSON": "sect9+10_plan20_L_min.json",
+		    	    "HAZARD_MODEL_ID": 1,
+			    "SCENARIO_NAME": "Scenario section 9+10, 20L/min",
+			    "EPOCH_DURATION": 1800,
+                            "RESERVOIR":
+			{"x": [2679460.4649336375, 2679760.4649336375], "y": [1151387.4639208852, 1151687.4639208852], "z": [1211.7646790371384, 1511.7646790371384]}}
+                    ]
+		}]	}
