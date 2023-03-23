@@ -11,8 +11,7 @@ from urllib.parse import urlparse
 
 import marshmallow
 import requests
-import prefect
-
+from prefect import get_run_logger
 from marshmallow import Schema, fields, validate
 
 from RAMSIS.core.worker import WorkerHandleBase
@@ -20,12 +19,6 @@ from RAMSIS.core.worker import WorkerHandleBase
 
 KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'
-
-
-class MyGreatClass:
-    def fetch_json(self, url):
-        response = requests.get(url)
-        return response.json()
 
 
 class StatusCode(enum.Enum):
@@ -217,8 +210,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :type timeout: float or tlple
         """
         super().__init__(**kwargs)
-        self.logger = prefect.context.get('logger')
-
+        self.logger = get_run_logger()
         base_url, model_id = self.validate_ctor_args(
             base_url, model_id=kwargs.get('model_id', self.MODEL_ID))
 
@@ -267,6 +259,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             self.logger.debug(
                 'Requesting tasks results (model={!r}) (bulk mode).'.format(
                     self.model))
+            self.logger.info(f"URL for model: {self.url}")
             req = functools.partial(
                 requests.get, self.url, timeout=self._timeout)
 

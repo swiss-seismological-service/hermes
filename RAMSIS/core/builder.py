@@ -5,16 +5,33 @@ Object creation and building facilities.
 
 import datetime
 import functools
+from sqlalchemy.orm import with_polymorphic
 
 from ramsis.datamodel import (
     Forecast, ForecastScenario, ForecastStage, EStage,
-    EModel, Project, SeismicityModelRun, Status)
+    EModel, Project, SeismicityModelRun, Status,
+    SeismicityModel, HazardModel, Model)
 
 
 # NOTE(damb): The approach chosen is similar to matplotlib's pyplot builder
 # interface. A detailed explanation is provided at:
 # https://python-patterns.guide/gang-of-four/builder/
 # -----------------------------------------------------------------------------
+def load_models(model_type, session):
+    _map = {
+        EModel.SEISMICITY: SeismicityModel,
+        EModel.HAZARD: HazardModel, }
+
+    try:
+        entity = _map[model_type]
+    except KeyError:
+        if model_type is not None:
+            raise ValueError(f'Unknown model type {model_type!r}')
+
+        entity = with_polymorphic(Model, '*')
+
+    return session.query(entity).all()
+
 
 def seismicity_stage(**kwargs):
     """
@@ -46,17 +63,8 @@ def risk_stage(**kwargs):
     return ForecastStage.create(EStage.RISK, status=Status(), **kwargs)
 
 
-def default_scenario(store, project_model_config, seismicity_stage_enabled,
+def default_scenario(session, project_model_config, seismicity_stage_enabled,
                      hazard_stage_enabled, name='Scenario', **kwargs):
-    """
-    Build a *default* forecast scenario.
-
-    :param store: Reference to RAMSIS store
-    :type store: :py:class:`RAMSIS.core.store.Store`
-    :param name: Forecast scenario name
-    :type name: str or None
-    """
-
     DEFAULT_SCENARIO_CONFIG = {
         'stages': [
             {'seismicity': {
@@ -74,7 +82,7 @@ def default_scenario(store, project_model_config, seismicity_stage_enabled,
         ]
     }
 
-    def create_stages(store, stage_config, project_model_config):
+    def create_stages(session, stage_config, project_model_config):
         """
         Create stages from a stage configuration.
 
@@ -92,14 +100,17 @@ def default_scenario(store, project_model_config, seismicity_stage_enabled,
         else:
             enabled = seismicity_stage_config.get('enabled', True)
             if enabled:
+                print("yes enabled")
                 runs = [SeismicityModelRun(model=m, enabled=True,
                                            config={**m.config,
                                                    **project_model_config},
                                            status=Status(),
                                            weight=m.hazardweight)
-                        for m in store.load_models(
-                            model_type=EModel.SEISMICITY)
+                        for m in load_models(
+                            EModel.SEISMICITY, session)
                         if m.enabled]
+                print(load_models(
+                            EModel.SEISMICITY, session), "load models")
                 s = seismicity_stage(runs=runs, **seismicity_stage_config)
                 retval.append(s)
 
@@ -118,7 +129,7 @@ def default_scenario(store, project_model_config, seismicity_stage_enabled,
             pass
         else:
             enabled = hazard_stage_config.get('enabled', False)
-            hazard_model = store.load_models(model_type=EModel.HAZARD)
+            hazard_model = load_models(EModel.HAZARD, session)
             if enabled and hazard_model:
                 retval.append(hazard_stage(enabled=enabled))
             elif enabled and not hazard_model:
@@ -142,31 +153,18 @@ def default_scenario(store, project_model_config, seismicity_stage_enabled,
         config={},
         enabled=True,
         status=Status(),
-        stages=create_stages(store, DEFAULT_SCENARIO_CONFIG['stages'],
+        stages=create_stages(session, DEFAULT_SCENARIO_CONFIG['stages'],
                              project_model_config))
 
 
-def default_forecast(store, starttime, endtime, num_scenarios=1,
+def default_forecast(session, starttime, endtime, num_scenarios=1,
                      name='Forecast', seismicity_stage_enabled=True,
                      hazard_stage_enabled=True):
-    """
-    Build a *default* forecast.
-
-    :param store: Reference to RAMSIS store
-    :type store: :py:class:`RAMSIS.core.store.Store`
-    :param starttime: Starttime of the forecast
-    :type starttime: :py:class:`datetime.datetime`
-    :param endtime: Endtime of the forecast
-    :type endtime: :py:class:`datetime.datetime`
-    :param int num_scenarios: Number of default scenarios attached.
-    :param name: Name of the forecast
-    :type name: str or None
-    """
     return Forecast(name=name, starttime=starttime, endtime=endtime,
                     creationinfo_creationtime=datetime.datetime.utcnow(),
                     enabled=True, config={},
                     status=Status(),
-                    scenarios=[default_scenario(store,
+                    scenarios=[default_scenario(session,
                                                 seismicity_stage_enabled,
                                                 hazard_stage_enabled)
                                for s in range(num_scenarios)])

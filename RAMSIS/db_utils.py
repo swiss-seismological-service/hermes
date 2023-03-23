@@ -1,6 +1,7 @@
 
-from ramsis.datamodel import Forecast
-import prefect
+from ramsis.datamodel import Forecast, ForecastScenario, \
+    SeismicityModelRun, EStatus, HazardModelRun
+from prefect import get_run_logger
 from sqlalchemy import select
 
 
@@ -8,6 +9,24 @@ def get_forecast(forecast_id, session):
     forecast = session.query(Forecast).filter(
         Forecast.id == forecast_id).first()
     return forecast
+
+
+def get_scenario(scenario_id, session):
+    scenario = session.query(ForecastScenario).filter(
+        ForecastScenario.id == scenario_id).first()
+    return scenario
+
+
+def get_seismicity_model_run(model_run_id, session):
+    model_run = session.query(SeismicityModelRun).filter(
+        SeismicityModelRun.id == model_run_id).first()
+    return model_run
+
+
+def get_hazard_model_run(model_run_id, session):
+    model_run = session.query(HazardModelRun).filter(
+        HazardModelRun.id == model_run_id).first()
+    return model_run
 
 
 def update_forecast_status(forecast_id, estatus, session):
@@ -38,11 +57,12 @@ def run_stage(forecast, estage):
     return False
 
 
-def set_statuses(forecast_id, estatus, session):
-    logger = prefect.context.get('logger')
+def set_statuses_db(forecast_id, estatus, session):
+    logger = get_run_logger()
     forecast = session.execute(
         select(Forecast).filter_by(id=forecast_id)).scalar_one()
     forecast.status.state = estatus
     for scenario in forecast.scenarios:
-        scenario.status.state = estatus
+        if scenario.status.state != EStatus.COMPLETE:
+            scenario.status.state = estatus
     logger.info(f"forecast state: {forecast.status.state}")

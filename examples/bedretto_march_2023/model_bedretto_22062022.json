@@ -1,5 +1,5 @@
-{
-            "MODEL_NAME":"EM1-MLE",
+        {
+            "MODEL_NAME":"EM1-BAYES",
             "URL":"http://ramsis-isfm.ethz.ch:5007",
             "CONFIG":{
                 "model_parameters":{
@@ -7,7 +7,7 @@
                     "dM":0.05,
                     "Mc":null,
                     "tau_force":false,
-                    "mode":"MLE",
+                    "mode":"BayesMAP",
                     "Nsim":100
                 },
                 "wrapper_parameters":{
@@ -19,4 +19,4 @@
             },
             "SFMWID":"em1",
             "ENABLED":true
-}
+	}

@@ -5,6 +5,7 @@ Data fetching facilities.
 
 import prefect
 import requests
+from prefect import get_run_logger
 
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
 from ramsis.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
@@ -27,7 +28,7 @@ class HYDWSDataSource():
 
         self._args = {}
         self.enabled = False
-        self.logger = prefect.context.get('logger')
+        self.logger = get_run_logger()
 
         self._deserializer = self.DESERIALZER(
             ramsis_proj=project.proj_string,
@@ -88,7 +89,7 @@ class FDSNWSDataSource():
 
         self._args = {}
         self.enabled = False
-        self.logger = prefect.context.get('logger')
+        self.logger = get_run_logger()
 
         self._deserializer = self.DESERIALZER(
             ramsis_proj=project.proj_string,

@@ -27,7 +27,7 @@ def update_model(model_config):
     return result
 
 
-def add_seis_model(model_config, hazardsourcemodeltemplate_path):
+def add_seis_model(model_config, hazardsourcemodeltemplate_path=None):
     from RAMSIS.cli import ramsis_app as app
     options = ["model", "add-seismicity",
                "--model-config",

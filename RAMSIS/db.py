@@ -1,63 +1,63 @@
 import os
 from os.path import abspath, dirname
 from os import getenv
-import collections
-import operator
-import logging
-import yaml
-from functools import reduce
 from dotenv import dotenv_values
+import logging
+import ramsis.datamodel
+from ramsis.datamodel.base import ORMBase
+import pkgutil
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+import contextlib
+import sys
 
-from RAMSIS.core.store import Store
+from RAMSIS.config import Settings
 
 
-class AppSettings:
+logger = logging.getLogger(__name__)
+
+
+
+def connect_to_db(connection_string: str):
+    engine = create_engine(connection_string)
+    session = Session(engine)
+    return session
+
+
+@contextlib.contextmanager
+def session_handler(connection_string):
+    session = connect_to_db(connection_string)
+    yield session
+    session.rollback()
+    session.close()
+
+
+def init_db(connection_string: str) -> bool:
     """
-    Global application settings.
+    Initializes the db
 
-    To access settings through this class.
+    Creates the table defined in the ORM meta data.
 
+    :returns: True if successful
+    :rtype: bool
     """
-
-    def __init__(self, settings_file=None):
-        """
-        Load either the default settings or, if a file name is
-        provided, specific settings from that file.
-
-        """
-        self._settings_file = settings_file
-        self._logger = logging.getLogger(__name__)
-        if settings_file is None:
-            settings_file = 'settings.yml'
-
-        self._logger.info('Loading settings from ' + settings_file)
-        with open(settings_file, 'r') as f:
-            self.settings = yaml.full_load(f.read())
-
-    def all(self):
-        """ Return all settings as a flat dict: {'section/key': value} """
-        def flatten(d, parent_key='', sep='/'):
-            items = []
-            for k, v in d.items():
-                new_key = parent_key + sep + k if parent_key else k
-                if isinstance(v, collections.MutableMapping):
-                    items.extend(flatten(v, new_key, sep=sep).items())
-                else:
-                    items.append((new_key, v))
-            return dict(items)
-
-        return flatten(self.settings)
-
-    def __getitem__(self, key):
-        return reduce(operator.getitem, key.split('/'), self.settings)
-
-    def __setitem__(self, key, value):
-        keys = key.split('/')
-        if len(keys) > 1:
-            leaf_node = reduce(operator.getitem, keys[:-1], self.settings)
-        else:
-            leaf_node = self.settings
-        leaf_node[keys[-1]] = value
+    # We need to make sure all datamodel modules are imported at least once
+    # for the ORMBase meta data to be complete; ensure that ORMBase has all the
+    # metadata
+    pkg = ramsis.datamodel
+    modules = pkgutil.walk_packages(pkg.__path__, prefix=pkg.__name__ + '.')
+    modules = [m for m in modules if 'tests' not in m[1]]
+    for finder, module_name, _ in modules:
+        if module_name not in sys.modules:
+            finder.find_module(module_name).load_module(module_name)
+    engine = create_engine(connection_string)
+    try:
+        ORMBase.metadata.create_all(engine, checkfirst=True)
+    except SQLAlchemyError as e:
+        logger.error(f'Error while initializing DB: {e}')
+        return False
+    return True
 
 
 # Load application settings
@@ -67,7 +67,7 @@ settings_file = os.path.join(dir_path, '..', 'config',
                              'ramsis_config_public.yml')
 if os.path.islink(settings_file):
     settings_file = os.readlink(settings_file)
-app_settings = AppSettings(settings_file)
+app_settings = Settings(settings_file)
 
 testing_mode = bool(getenv("RAMSIS_TESTING_MODE", False)) is True
 project = app_settings['project']
@@ -80,5 +80,3 @@ env = dotenv_values(env_file_path)
 db_url = f'postgresql://{env["POSTGRES_USER"]}:{env["POSTGRES_PASSWORD"]}' \
          f'@{env["POSTGRES_SERVER"]}:{env["POSTGRES_PORT"]}/' \
          f'{env["POSTGRES_DB"]}'
-
-store = Store(db_url)
