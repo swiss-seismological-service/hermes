@@ -51,7 +51,7 @@ hyd_path = join(
 
 def mocked_requests_post(*args, **kwargs):
     logger.debug(f"Input to mocked_requests_post: {args}")
-    if args[0] == 'http://ramsis-em1.ethz.ch:5007/v1/sfm/models/em1/run':
+    if 'v1/sfm/models/em1/run' in args[0]:
         model_response_to_post_induced_1_path = join(
             model_response_path, 'model_response_to_post_induced_1.json')
         with open(model_response_to_post_induced_1_path, "r") as f:
@@ -73,8 +73,8 @@ def mocked_datasources_get(*args, **kwargs):
             data = f.read()
         return MockResponse({}, 200, data)
 
-    elif args[0] == 'http://ramsis-em1.ethz.ch:5007/v1/sfm/models/em1/run/'\
-            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd':
+    elif 'v1/sfm/models/em1/run/'\
+            '1bcc9e3f-d9bd-4dd2-a626-735cbef419dd' in args[0]:
         model_request_induced_1_path = join(
             model_response_path, "model_response_induced_1.json")
         with open(model_request_induced_1_path, "r") as f:
