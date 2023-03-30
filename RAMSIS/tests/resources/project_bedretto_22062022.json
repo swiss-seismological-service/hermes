@@ -7,21 +7,9 @@
             "PROJECT_ENDTIME": "2022-06-23T23:00:00",
             "HYDWS_URL": "http://bedretto-hydws.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMQ==?level=hydraulic",
             "FDSNWS_URL": "http://bedretto-dev.ethz.ch:8080/fdsnws/event/1/query?minmagnitude=-7",
-            "RAMSIS_PROJ": "epsg:2056",
 	    "SEISMIC_CATALOG": "REQUIRED",
-	    "WELL": "REQUIRED",
-	    "SCENARIO": "REQUIRED",
-            "WGS84_PROJ": "epsg:4326",
-	    "RUN_MODELS": "ALL", 
-	    "MODEL_PROJECT_CONFIG":
-	        {
-                "wrapper_parameters":{
-                    "well_section_publicid":"smi:ch.ethz.sed/bh/ST1/section_08",
-                    "reference_point":[
-			2679633.7937913937, 1151559.661100654, 1396.8895640139017
-                        ]
-		    }
-		}
+	    "INJECTION_WELL": "REQUIRED",
+	    "INJECTION_WELL_PLAN": "REQUIRED"
         }
     ]
 }

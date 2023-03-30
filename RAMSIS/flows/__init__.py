@@ -9,28 +9,49 @@ from RAMSIS.tasks.hazard import \
 from RAMSIS.tasks.utils import clone_forecast, set_statuses, \
     update_status
 from ramsis.datamodel import EStage, EStatus
+from prefect import flow, unmapped
+from RAMSIS.tasks.seismicity_forecast import \
+    update_fdsn, update_hyd, forecast_scenarios, forecast_serialize_data, \
+    scenario_serialize_data, model_run_executor, poll_model_run, \
+    update_running, flatten_model_run_list
+
+seismicity_flow_name = 'SeismiciyFlow'
 
 
 @flow(name="ramsis_flow")
-def ramsis_flow(forecast_id, connection_string, date, data_dir):
-    initial_update_status_running = update_status(
-        forecast_id, connection_string, EStatus.RUNNING)
-    if run_seismicity_flow(forecast_id, connection_string, wait_for=[initial_update_status_running]):
-        seismicity_stage = seismicity_stage_flow(forecast_id, connection_string, date)
-        set_statuses(forecast_id, EStage.SEISMICITY,
+def ramsis_flow(forecast_id, connection_string, date):
+    if run_forecast(forecast_id, connection_string):
+        status_task = update_running(forecast_id, connection_string)
+        fdsn_task = update_fdsn(forecast_id, date, connection_string)
+        hyd_task = update_hyd(forecast_id, date, connection_string)
+
+        scenario_ids = forecast_scenarios(
+            forecast_id, connection_string,
+            wait_for=[status_task, fdsn_task, hyd_task])
+        forecast_data = forecast_serialize_data(
+            forecast_id, connection_string,
+            wait_for=[status_task, fdsn_task, hyd_task])
+
+        model_runs_data = scenario_serialize_data.map(
+            scenario_ids, unmapped(connection_string),
+            wait_for=[status_task, fdsn_task, hyd_task])
+        model_run_data = flatten_model_run_list(model_runs_data)
+        model_run_ids = model_run_executor.map(unmapped(forecast_id),
+                                               unmapped(forecast_data),
+                                               model_run_data,
+                                               unmapped(connection_string))
+
+        _ = poll_model_run.map(unmapped(forecast_id), model_run_ids,
+                                        unmapped(connection_string),
+                                        wait_for=[model_run_ids])
+        set_statuses(forecast_id,
                      connection_string, wait_for=[seismicity_stage])
-    #if run_hazard_flow(forecast_id, connection_string):
-    #    hazard_stage_flow(forecast_id, connection_string, data_dir)
-    #set_statuses(forecast_id, EStage.HAZARD,
-    #                 connection_string)
 
 
 @flow(name="scheduled_ramsis_flow")
 def scheduled_ramsis_flow(
-        reference_forecast_id, connection_string,
+        forecastseries_id, connection_string,
         date):
-    forecast_id = clone_forecast(reference_forecast_id,
+    forecast_id = clone_forecast(forecastseries_id,
                                  connection_string, date)
-    if run_seismicity_flow(forecast_id, connection_string):
-        seismicity_stage_flow(forecast_id, connection_string, date,
-                              forecast_id=forecast_id, date=date)
+    run_forecast = ramsis_flow

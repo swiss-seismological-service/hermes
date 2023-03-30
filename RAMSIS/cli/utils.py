@@ -2,7 +2,6 @@ import typer
 from os.path import join
 from prefect.client import get_client
 from prefect.server.schemas.sorting import FlowSort
-from ramsis.datamodel import EStage
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict

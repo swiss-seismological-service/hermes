@@ -1,22 +1,21 @@
 {
-    "FORECASTS": [
+    "FORECASTSERIES": [
         {
-            "FORECAST_NAME": "Forecast bedretto",
-            "FORECAST_STARTTIME": "2022-06-23T08:00:00",
-            "FORECAST_ENDTIME": "2022-06-23T09:00:00",
-            "SEISMICITY_STAGE": true,
-	    "HAZARD_STAGE": false,
-            "SCENARIOS": [
-                {
-    		    "RUN_MODELS": "ALL", 
-		    "HAZARD_MODEL_ID": 1,
-		    "SCENARIO_NAME": "Scenario ###",
-		    "EPOCH_DURATION": 1800,
-        	    "SCENARIO_DIR": "hyd",
-                    "SCENARIO_JSON": "injection_plan_150L_20220623.json",
-                    "RESERVOIR":
-        		    {"x": [2679483.7937913937, 2679783.7937913937], "y": [1151409.661100654, 1151709.661100654], "z": [1246.8895640139017, 1546.8895640139017]}
-                }
+            "FORECASTSERIES_NAME": "Forecast bedretto",
+            "FORECASTSERIES_STARTTIME": "2022-06-23T08:00:00",
+            "FORECASTSERIES_ENDTIME": "2022-06-23T09:00:00",
+	    "FORECASTSERIES_INTERVAL": 1800,
+            "RUN_MODEL_TAGS": ["BEDRETTO", "INDUCED"], 
+            "INJECTION_WELL_PLAN_DIR": "hyd",
+            "INJECTION_WWELL_PLAN_FILENAME": "injection_plan_150L_20220623.json",
+            "BOUNDING_POLYGON": null,
+            "BOUNDING_BOX": 
+                    {"x_min": 2679483.7937913937,
+                     "x_max": 2679783.7937913937,
+                     "y_min": 1151409.661100654,
+                     "y_max": 1151709.661100654,
+                     "z_min": 1246.8895640139017,
+                     "z_max": 1546.8895640139017}
             ]
         }
     ]

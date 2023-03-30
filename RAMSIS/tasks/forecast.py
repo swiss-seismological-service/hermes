@@ -1,12 +1,11 @@
 import json
-import copy
 from datetime import datetime
 from typing import List
 
 from prefect import task, get_run_logger
 from prefect.tasks import exponential_backoff
 from prefect.server.schemas.states import Failed
-from ramsis.datamodel import EInput, EStage, EStatus, \
+from ramsis.datamodel import EInput, EStatus, \
     Forecast, Project, SeismicObservationCatalog, InjectionWell
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
@@ -14,75 +13,51 @@ from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
 from RAMSIS.db import session_handler
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
-from RAMSIS.db_utils import get_forecast, get_scenario, \
-    get_seismicity_model_run
+from RAMSIS.db_utils import get_forecast, get_model_run
 from RAMSIS.error import ModelNotFinished, RemoteWorkerError
 
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
 
-@task(task_run_name="run_seismicity_flow(forecast{forecast_id})")
-def run_seismicity_flow(forecast_id: int, connection_string: str) -> bool:
+@task(task_run_name="run_forecast_flow(forecast{forecast_id})")
+def run_forecast(forecast_id: int, connection_string: str) -> bool:
     """
-    If any of the scenarios have a seismicity stage that is not complete,
-    return True.
+    If forecast is not complete, return True.
     """
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         forecast = get_forecast(forecast_id, session)
-        for scenario in forecast.scenarios:
-            if not scenario.enabled:
-                continue
-            seismicity_stage = scenario[EStage.SEISMICITY]
-            if not seismicity_stage.enabled:
-                continue
-            elif seismicity_stage.status.state != EStatus.COMPLETE:
-                logger.info("Seismicity Stage will be run.")
-                seismicity_stage.status.state = EStatus.RUNNING
-                session.commit()
-                return True
-        logger.info('Seismicity stage has been skipped'
-                    f' for forecast_id: {forecast_id}'
-                    ' as no tasks are required to be done.')
+        if forecast.status.state != EStatus.COMPLETE:
+            logger.info("Forecast is not complete and will be run.")
+            return True
+        logger.info(f'Forecast {forecast_id} will not be run '
+                    ' as it is complete')
         return False
 
 
-def some_model_runs_complete(
+def any_model_runs_complete(
         forecast: Forecast) -> bool:
-    """Return True if any enabled model runs are complete"""
+    """Return True if any model runs are complete"""
     logger = get_run_logger()
-    for scenario in forecast.scenarios:
-        if not scenario.enabled:
-            continue
-        seismicity_stage = scenario[EStage.SEISMICITY]
-        if not seismicity_stage.enabled:
-            continue
-        model_run_complete = any([r.id for r in seismicity_stage.runs if
-                                  r.enabled and
-                                  r.status.state == EStatus.COMPLETE])
-        if model_run_complete:
-            logger.warning("At least one model run has a COMPLETE status "
-                           "which means that datasources will not be "
-                           "refreshed")
-            return True
+    model_run_complete = any([r.id for r in forecast.runs if
+                              r.status.state == EStatus.COMPLETE])
+    if model_run_complete:
+        logger.warning("At least one model run has a COMPLETE status "
+                       "which means that datasources will not be "
+                       "refreshed")
+        return True
     return False
 
 
 @task(task_run_name="update_running(forecast{forecast_id})")
 def update_running(forecast_id: int, connection_string: str) -> None:
     """
-    Update forecast scenarios and seismicity stage to running
-    if enabled.
+    Update forecast to running
     """
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
         forecast.status.state = EStatus.RUNNING
-        for scenario in forecast.scenarios:
-            if scenario.enabled:
-                scenario.status.state = EStatus.RUNNING
-                seismicity_stage = scenario[EStage.SEISMICITY]
-                seismicity_stage.status.state = EStatus.RUNNING
         session.commit()
 
 
@@ -113,26 +88,35 @@ def update_fdsn(forecast_id: int, dttime: datetime,
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         forecast = get_forecast(forecast_id, session)
-        project = forecast.project
-        catalog_used = getattr(
-            EInput, project.settings.config['seismic_catalog']) in \
+        forecastseries = forecast.forecastseries
+        project = forecastseries.project
+        if project.seismiccatalog:
+            logger.info("Project has catalog, this will be used for the "
+                        "forecast")
+            forecast.seismiccatalog = project.seismiccatalog
+            session.commit()
+            return
+        # Check if catalog is required and url is provided
+        catalog_used = project.seismiccatalog_required in \
             [EInput.REQUIRED, EInput.OPTIONAL]
-        fdsnws_url = project.settings.config['fdsnws_url']
-        logger.info(f"################fdsnws: {fdsnws_url}, {catalog_used}")
+        fdsnws_url = project.fdsnws_url
+        logger.debug(f"fdsnws_url: {fdsnws_url}, catalog_used: {catalog_used}")
 
         if catalog_used and fdsnws_url:
-            if some_model_runs_complete(forecast):
+            if any_model_runs_complete(forecast):
                 logger.info("Some model runs are complete, therefore "
-                             "no seismic catalog will be fetched.")
+                            "no seismic catalog will be fetched.")
                 return
             logger.info("A catalog is required and a url is specified: "
                         f"{fdsnws_url}")
             # Delete existing seismic catalog if it exsits, so that the most
             # up to date one is used
-            if forecast.seismiccatalog:
+            existing_catalog = forecast.seismiccatalog
+            if existing_catalog:
+                assert existing_catalog.project == None # noqa
                 logger.debug("deleting existing seismic catalog on forecast")
                 session.query(SeismicObservationCatalog).filter(
-                    SeismicObservationCatalog.forecast_id == forecast_id).\
+                    SeismicObservationCatalog.id == existing_catalog.id).\
                     delete()
                 session.commit()
 
@@ -146,15 +130,15 @@ def update_fdsn(forecast_id: int, dttime: datetime,
                 logger.info(f"A catalog has been returned: {cat}")
 
             cat.creationinfo_creationtime = dttime
-            forecast.seismiccatalog = [cat]
+            forecast.seismiccatalog = cat
             session.add(cat)
             session.commit()
-        elif catalog_used and forecast.seismiccatalog:
-            logger.info("Forecast already has seismic catalog attached.")
-        else:
-            assert forecast.seismiccatalog and \
-                len(forecast.seismiccatalog) > 0, \
-                "No catalog exists on forecast"
+        elif not forecast.catalog:
+            if project.seismiccatalog_required == EInput.OPTIONAL:
+                logger.info("No seismic catalog will be attached to the "
+                            "forecast")
+            elif project.seismiccatalog_required == EInput.NOT_ALLOWED:
+                logger.info("No seismic catalog allowed for forecast.")
 
 
 @task(task_run_name="update_hyd(forecast{forecast_id})")
@@ -182,99 +166,72 @@ def update_hyd(forecast_id: int, dttime: datetime,
         return well
 
     with session_handler(connection_string) as session:
-        forecast = get_forecast(forecast_id, session)
         logger = get_run_logger()
-        project = forecast.project
-        well_requirement = getattr(
-            EInput, project.settings.config['well'])
-        hydws_url = project.settings.config['hydws_url']
+        forecast = get_forecast(forecast_id, session)
+        forecastseries = forecast.forecastseries
+        project = forecastseries.project
+        hydws_url = project.hydws_url
+        if project.seismiccatalog:
+            logger.info("Project has catalog, this will be used for the "
+                        "forecast")
+            forecast.seismiccatalog = project.seismiccatalog
+            session.commit()
+            return
+        well_used = project.injectionwell_required in \
+            [EInput.REQUIRED, EInput.OPTIONAL]
+        logger.debug(f"fdsnws_url: {hydws_url}, catalog_used: {well_used}")
 
-        if hydws_url and well_requirement in [
-                EInput.REQUIRED, EInput.OPTIONAL]:
-            if some_model_runs_complete(forecast):
+        if well_used and hydws_url:
+            if any_model_runs_complete(forecast):
                 logger.info("Some model runs are complete, therefore "
-                             "no hydraulic data will be fetched.")    
+                            "no seismic catalog will be fetched.")
                 return
-            if forecast.well:
-                # Delete existing hydraulics if they exsit, so that the most
-                # up to date data is used
+            logger.info("A well is required and a url is specified: "
+                        f"{hydws_url}")
+            # Delete existing injection if it exsits, so that the most
+            # up to date one is used
+            existing_well = forecast.injectionwell
+            if existing_well:
+                assert existing_well.project == None # noqa
                 logger.debug("deleting existing well on forecast")
                 session.query(InjectionWell).filter(
-                    InjectionWell.forecast_id == forecast_id).delete()
+                    InjectionWell.id == existing_well.id).\
+                    delete()
                 session.commit()
-            logger.info("Well will be fetched for forecast.")
+
             well = fetch_hyd(hydws_url, project, forecast)
             assert hasattr(well, 'sections')
             well.creationinfo_creationtime = dttime
-            forecast.well = [well]
+            forecast.well = well
             session.add(well)
             session.commit()
-        elif forecast.well and well_requirement in [EInput.REQUIRED,
-                                                    EInput.OPTIONAL]:
-            logger.info("Forecast already has well attached.")
         elif not forecast.well:
-            if well_requirement == EInput.OPTIONAL:
+            if project.injectionwell_required == EInput.OPTIONAL:
                 logger.info("No observed well will be attached to the "
                             "forecast")
-            elif well_requirement == EInput.NOT_ALLOWED:
+            elif project.injectionwell_required == EInput.NOT_ALLOWED:
                 logger.info("No well allowed for forecast.")
 
 
-
-
-@task(task_run_name="forecast_scenarios(forecast{forecast_id})")
-def forecast_scenarios(forecast_id: int, connection_string: int) -> List[int]:
-    with session_handler(connection_string) as session:
-        forecast = get_forecast(forecast_id, session)
-        scenario_ids = [s.id for s in forecast.scenarios if s.enabled]
-    return scenario_ids
-
-
-@task(task_run_name="model_runs(scenario{scenario_id})")
+@task(task_run_name="model_runs(scenario{forecast_id})")
 def model_runs(
-        scenario_id: int,
+        forecast_id: int,
         connection_string: str) -> List[int]:
     with session_handler(connection_string) as session:
-        scenario = get_scenario(scenario_id, session)
-        seismicity_stage = scenario[EStage.SEISMICITY]
-        model_run_ids = [r.id for r in seismicity_stage.runs if r.enabled
-                         and r.status.state != EStatus.COMPLETE]
+        forecast = get_forecast(forecast_id, session)
+        model_run_ids = [r.id for r in forecast.runs if
+                         r.status.state != EStatus.COMPLETE]
     return model_run_ids
+
 
 @task(task_run_name="forecast_serialize_data(forecast{forecast_id})")
 def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
-    """
-    :param str seismic_catalog: seismic catalog in
-    `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
-    :param well: injection well / borehole including
-        the hydraulics.
-    :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
-    :param scenario: The scenario to be forecasted
-    :type scenario:
-        :py:class:`ramsis.datamodel.hydraulics.InjectionPlan`
-    :param str reservoir: Reservoir geometry in `WKT
-        <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
-        format
-    :param model_parameters: Model specific configuration parameters.
-       If :code:`None` parameters are not appended.
-    :type model_parameters: dict or None
-    :param serializer: Serializer instance used to serialize the
-        payload
-    """
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
-        project = forecast.project
-        if forecast.well:
-            well = forecast.well[0]
-        else:
-            well = None
-        if forecast.seismiccatalog:
-            seismiccatalog = forecast.seismiccatalog[0]
-        else:
-            seismiccatalog = None
+        forecastseries = forecast.forecastseries
 
         serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj=project.proj_string,
+            ramsis_proj="epsg:4326",
             external_proj="epsg:4326",
             ref_easting=0.0,
             ref_northing=0.0,
@@ -282,78 +239,19 @@ def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
         payload = {
             'data': {
                 'attributes': {
-                    'seismicity': seismiccatalog,
-                    'hydraulics': well,
-                    'local_proj_string': project.proj_string}}}
+                    'injection_plan': forecast.injection_plan,
+                    'geometry_extent': forecastseries.geometryextent,
+                    'seismic_catalog': forecast.seismiccatalog,
+                    'injection_well': forecast.well,
+                    'forecast_start': forecast.starttime.isoformat(),
+                    'forecast_end': forecast.endtime.isoformat()}}}
         data = serializer._serialize_dict(payload)
         return data
-
-@task(task_run_name="scenario_serialize_data(scenario{scenario_id})")
-def scenario_serialize_data(
-        scenario_id: int, connection_string: int) -> list:
-    """
-    :param str seismic_catalog: Snapshot of a seismic catalog in
-    `QuakeML <https://quake.ethz.ch/quakeml/QuakeML>` format
-    :param well: Snapshot of the injection well / borehole including
-        the hydraulics.
-    :type well: :py:class:`ramsis.datamodel.well.InjectionWell`
-    :param scenario: The scenario to be forecasted
-    :type scenario:
-        :py:class:`ramsis.datamodel.hydraulics.InjectionPlan`
-    :param str reservoir: Reservoir geometry in `WKT
-        <https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry>`_
-        format
-    :param model_parameters: Model specific configuration parameters.
-       If :code:`None` parameters are not appended.
-    :type model_parameters: dict or None
-    :param serializer: Serializer instance used to serialize the
-        payload
-    """
-    with session_handler(connection_string) as session:
-        scenario = get_scenario(scenario_id, session)
-        forecast = scenario.forecast
-        project = forecast.project
-        injection_plan = scenario.well
-
-        serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj=project.proj_string,
-            external_proj="epsg:4326",
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_from_local_coords')
-
-        seismicity_stage = scenario[EStage.SEISMICITY]
-        model_run_ids = [r.id for r in seismicity_stage.runs if r.enabled
-                         and r.status.state != EStatus.COMPLETE]
-
-        payload = {
-            'scenario_id': scenario_id,
-            'data': {
-                'attributes': {
-                    'injection_plan': injection_plan,
-                    'geometry': scenario.reservoirgeom}}}
-
-        data = serializer._serialize_dict(payload)
-        model_run_data_list = []
-        for model_run_id in model_run_ids:
-            model_run_payload = copy.deepcopy(payload)
-            model_run_payload['model_run_id'] = model_run_id
-            model_run_data_list.append(model_run_payload)
-        return model_run_data_list
-
-@task
-def flatten_model_run_list(model_run_list: list) -> list:
-    ret_list = []
-    for sublist in model_run_list:
-        for item in sublist:
-            ret_list.append(item)
-    return ret_list
-
 
 
 @task(task_run_name="model_run_executor(forecast{forecast_id}_model_run)")
 def model_run_executor(forecast_id: int, forecast_data: dict,
-        model_run_data: dict, connection_string: str) -> int:
+                       model_run_id: dict, connection_string: str) -> int:
     """
     Executes a single seimicity model run
 
@@ -363,27 +261,17 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
     TASK_ACCEPTED = 202
 
     with session_handler(connection_string) as session:
-        model_run_id = model_run_data["model_run_id"]
-        model_run = get_seismicity_model_run(model_run_id, session)
         logger = get_run_logger()
+        model_run = get_model_run(model_run_id, session)
         model_run.status.state = EStatus.RUNNING
         session.commit()
-        stage = model_run.forecaststage
-        forecast = stage.scenario.forecast
-        project = forecast.project
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
-        config_attributes = {
-            'forecast_start': forecast.starttime.isoformat(),
-            'forecast_end': forecast.endtime.isoformat(),
-            'epoch_duration': stage.config['epoch_duration'],
-            'input_parameters': model_run.config}
         payload = {"data":
                    {"attributes":
-                    {**config_attributes,
-                     **forecast_data["data"]["attributes"],
-                     **model_run_data["data"]["attributes"]}}}
+                    {'input_parameters': model_run.config,
+                     **forecast_data["data"]["attributes"]}}}
         logger.info("The payload to seismicity models is of length: "
                     f"{len(payload)}")
         try:
@@ -391,7 +279,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
             resp = _worker_handle.compute(
                 json_payload,
                 deserializer=SFMWorkerOMessageDeserializer(
-                    ramsis_proj=project.proj_string,
+                    ramsis_proj="epsg:4326",
                     external_proj="epsg:4326",
                     ref_easting=0.0,
                     ref_northing=0.0,
@@ -407,7 +295,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
 
         if status != TASK_ACCEPTED:
             raise RemoteWorkerError(f"model run {resp['data']['task_id']} "
-                       f"has returned an error: {resp}")
+                                    f"has returned an error: {resp}")
 
         model_run.runid = resp['data']['task_id']
         model_run.status.state = EStatus.DISPATCHED
@@ -418,8 +306,8 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
 @task(retries=1000,
       retry_delay_seconds=exponential_backoff(backoff_factor=1.5),
       retry_jitter_factor=1,
-      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})")
-def poll_model_run(forecast_id:int, model_run_id: int,
+      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})") # noqa
+def poll_model_run(forecast_id: int, model_run_id: int,
                    connection_string: int) -> None:
     """
     Executes a single seimicity model run
@@ -432,19 +320,16 @@ def poll_model_run(forecast_id:int, model_run_id: int,
     TASK_COMPLETE = 200
     TASK_ERROR = [418, 204, 405, 422, 500]
     with session_handler(connection_string) as session:
-        model_run = get_seismicity_model_run(model_run_id, session)
-        scenario = model_run.forecaststage.scenario
-        stage = scenario[EStage.SEISMICITY]
-        forecast = scenario.forecast
         logger = get_run_logger()
+        model_run = get_model_run(model_run_id, session)
+        forecast = model_run.forecast
         logger.debug(f"Polling for runid={model_run.runid}")
-        project = forecast.project
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
 
         deserializer = SFMWorkerOMessageDeserializer(
-            ramsis_proj=project.proj_string,
+            ramsis_proj="epsg:4326",
             external_proj="epsg:4326",
             ref_easting=0.0,
             ref_northing=0.0,
@@ -464,8 +349,7 @@ def poll_model_run(forecast_id:int, model_run_id: int,
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")
                 raise ModelNotFinished(
-                    f"(forecast{forecast.id})(scenario.id="
-                    f"{model_run.forecaststage.scenario}) "
+                    f"(forecast={forecast.id})"
                     f"(runid={model_run.runid}): Polling")
 
             logger.info(
@@ -475,28 +359,27 @@ def poll_model_run(forecast_id:int, model_run_id: int,
                 try:
                     result = resp['data']['attributes']['forecast']
                 except KeyError:
-                    return Failed(message=
+                    logger.error(
                         "Remote Seismicity Worker has not returned "
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
+                    model_run.status.state = EStatus.FINISHED_WITH_ERROR
+
                 else:
                     model_run.result = result
-                    # session.add(result)
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
 
             elif status in TASK_ERROR:
                 logger.info("status in error")
-                model_run.status.state = EStatus.ERROR
-                stage.status.state = EStatus.ERROR
+                model_run.status.state = EStatus.FINISHED_WITH_ERROR
                 session.commit()
                 logger.error("Remote Seismicity Model Worker"
-                    " has returned an unsuccessful status code."
-                    f"(runid={model_run.runid}: {resp})")
+                             " has returned an unsuccessful status code."
+                             f"(runid={model_run.runid}: {resp})")
 
             else:
-                model_run.status.state = EStatus.ERROR
-                stage.status.state = EStatus.ERROR
+                model_run.status.state = EStatus.FINISHED_WITH_ERROR
                 session.commit()
                 logger.error(
                     "Remote Seismicity Model Worker"
