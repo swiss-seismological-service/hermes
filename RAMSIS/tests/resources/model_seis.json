@@ -1,31 +1,27 @@
 {
-    "MODELS":
+    "model_configs":
     [{
-        "MODEL_NAME":"EM1-MLE",
-	"DESCRIPTION": "EM1 model ",
-        "URL":"http://ramsis-isfm.ethz.ch:5007",
-        "SFMWID":"em1",
-        "ENABLED":true,
-	"CONFIGS":
-	    [{
-	        "MODEL_CONFIG_NAME": "EM1-MLE_30mins_section_13",
-		"DESCRIPTION": "Standard config for EM1 MLE model with 1800 second forecast epoch. Using data from ST1 section 13",
-	        "MODEL_TAGS": ["BEDRETTO", "INDUCED"],
-                "CONFIG":{
-                    "model_parameters":{
-                        "Tau":60,
-                        "dM":0.05,
-                        "Mc":null,
-                        "tau_force":false,
-                        "mode":"MLE",
-                        "Nsim":100
-                    },
-                    "wrapper_parameters":{
-                        "well_section_publicid":"smi:ch.ethz.sed/bh/ST1/section_13",
-                        "reference_point":[
-	            	2679643.560254707, 1151568.9821506666, 1411.25882375525
-                        ],
-	        	"epoch_duration": 1800,
-	        	"geometry_resolution": null
-                    }}}]
-}]}
+        "name":"EM1-MLE",
+        "url":"http://ramsis-isfm.ethz.ch:5007",
+        "sfmwid":"em1",
+        "enabled":true,
+	"description": "Standard config for EM1 MLE model with 1800 second forecast epoch. Using data from ST1 section 13",
+	"tags": ["BEDRETTO", "INDUCED"],
+        "config":{
+            "model_parameters":{
+                "Tau":60,
+                "dM":0.05,
+                "Mc":null,
+                "tau_force":false,
+                "mode":"MLE",
+                "Nsim":100
+            },
+            "wrapper_parameters":{
+                "well_section_publicid":"smi:ch.ethz.sed/bh/ST1/section_13",
+                "reference_point":[
+	    	2679643.560254707, 1151568.9821506666, 1411.25882375525
+                ],
+		"epoch_duration": 1800,
+		"geometry_resolution": null
+            }}}]
+}

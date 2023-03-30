@@ -270,7 +270,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
             model_run)
         payload = {"data":
                    {"attributes":
-                    {'input_parameters': model_run.config,
+                    {'input_parameters': model_run.model_config.config,
                      **forecast_data["data"]["attributes"]}}}
         logger.info("The payload to seismicity models is of length: "
                     f"{len(payload)}")

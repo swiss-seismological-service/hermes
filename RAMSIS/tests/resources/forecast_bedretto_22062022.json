@@ -7,7 +7,7 @@
 	    "FORECASTSERIES_INTERVAL": 1800,
             "RUN_MODEL_TAGS": ["BEDRETTO", "INDUCED"], 
             "INJECTION_WELL_PLAN_DIR": "hyd",
-            "INJECTION_WWELL_PLAN_FILENAME": "injection_plan_150L_20220623.json",
+            "INJECTION_WELL_PLAN_FILENAME": "injection_plan_150L_20220623.json",
             "BOUNDING_POLYGON": null,
             "BOUNDING_BOX": 
                     {"x_min": 2679483.7937913937,
