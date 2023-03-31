@@ -1,44 +1,45 @@
 import typer
 from RAMSIS.db import db_url, session_handler, init_db
+from ramsis.datamodel import ModelConfig
 import json
-from ramsis.datamodel import SeismicityModel, HazardModel
+from ramsis.io.configuration import ModelConfigurationSchema
 from pathlib import Path
+
 from sqlalchemy import select
 
 
 app = typer.Typer()
 
 
-def create_sm(session, sm_model_config, hazardsourcemodeltemplate=None):
-    sm = SeismicityModel(
-        name=sm_model_config["MODEL_NAME"],
-        config=sm_model_config["CONFIG"],
-        sfmwid=sm_model_config["SFMWID"],
-        enabled=sm_model_config["ENABLED"],
-        url=sm_model_config["URL"])
-
-    if hazardsourcemodeltemplate:
-        sm.hazardsourcemodeltemplate = hazardsourcemodeltemplate
-    if "HAZARD_WEIGHT" in sm_model_config.keys():
-        sm.hazardweight = sm_model_config["HAZARD_WEIGHT"]
-    typer.echo(f"Creating new seismicity model: {sm}")
-    session.add(sm)
-
-
-def update_sm(session, existing_sm, sm_model_config,
-              hazardsourcemodeltemplate=None):
-    existing_sm.name = sm_model_config["MODEL_CONFIG_NAME"]
-    existing_sm.description = sm_model_config["MODEL_CONFIG_NAME"]
-    existing_sm.config = sm_model_config["CONFIG"]
-    existing_sm.sfmwid = sm_model_config["SFMWID"]
-    existing_sm.enabled = sm_model_config["ENABLED"]
-    existing_sm.url = sm_model_config["URL"]
-    typer.echo(f"Updating existing seismicity model: {existing_sm}")
-    session.add(existing_sm)
+@app.command()
+def delete(
+        model_name: str,
+        force: bool = typer.Option(
+            False, help="Force the deletes without asking")):
+    with session_handler(db_url) as session:
+        model_config = session.execute(
+            select(ModelConfig).filter_by(
+                name=model_name)).\
+            scalar_one_or_none()
+        if not model_config:
+            typer.echo("Model does not exist")
+            raise typer.Exit()
+        if model_config.runs:
+            typer.echo("Model config is associated with model runs, "
+                       "cannot delete. You can disable instead.")
+            raise typer.Exit()
+            if not force:
+                delete = typer.confirm("Are you sure you want to delete the  "
+                                       f"model with name: {model_name}?")
+                if not delete:
+                    typer.echo("Not deleting")
+                    raise typer.Abort()
+        session.delete(model_config)
+        session.commit()
 
 
 @app.command()
-def update:(
+def load(
         model_config: Path = typer.Option(
         ...,
         exists=True, readable=True, help=(
@@ -53,57 +54,30 @@ def update:(
         raise typer.Exit()
     with session_handler(db_url) as session:
         with open(model_config, "r") as model_read:
-            configs = json.load(model_read)
+            config_dict = json.load(model_read)
 
-        for config in configs:
-            existing_sm_model = session.execute(
+        for config in config_dict["model_configs"]:
+            new_model_config = ModelConfigurationSchema().load(config)
+
+            existing_config = session.execute(
                 select(ModelConfig).filter_by(
-                    name=config["MODEL_CONFIG_NAME"])).\
+                    name=new_model_config.name)).\
                 scalar_one_or_none()
-            if not existing_sm_model:
-                create_sm(session, config)
+            if existing_config:
+                typer.echo(f"Model config exists for {new_model_config.name}.")
+                # Check if there are already completed forecasts
+                # associated before allowing modification.
+                if existing_config.runs:
+                    typer.echo("Model runs already exist for this config"
+                               " Please upload the config with a new name.")
+                    typer.Exit(code=1)
+                typer.echo(" Will update existing config.")
+                new_model_config.id = existing_config.id
             else:
-                update_sm(session, existing_sm_model, config)
+                typer.echo("Model config is being added for "
+                           f"{new_model_config.name}")
+            updated_model_config = session.merge(new_model_config)
+
+            typer.echo("A model has been configured with the name: "
+                       f"{updated_model_config}")
         session.commit()
-
-
-@app.command()
-def add_hazard(
-        model_config: Path = typer.Option(
-        ...,
-        exists=True,
-        readable=True,
-        help="Path to model config containing Hazard Model config"),
-        gsimlogictree_path: Path = typer.Option(
-        ...,
-        exists=True,
-        readable=True,
-        help="Path to gsim logic tree file for running with OpenQuake")):
-
-    success = init_db(db_url)
-
-    if success:
-        pass
-    else:
-        typer.echo(f"Error, db could not be initialized: {success}")
-        raise typer.Exit()
-    with session_handler(db_url) as session:
-        with open(model_config, "r") as model_read:
-            config = json.load(model_read)
-        with open(gsimlogictree_path, "r") as gsim_read:
-            gsimlogictree = gsim_read.read()
-
-        existing_haz_model = session.execute(
-            select(HazardModel).filter_by(
-                name=config["MODEL_NAME"])).\
-            scalar_one_or_none()
-        if not existing_haz_model:
-            create_hm(session, config, gsimlogictree)
-        else:
-            update_hm(session, existing_haz_model, config, gsimlogictree)
-        session.commit()
-
-# @app.command()
-# def disable(model_: Path = typer.Option(
-# also enable - should create and remove model runs that are
-#  associated with the model.

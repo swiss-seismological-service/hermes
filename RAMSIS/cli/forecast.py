@@ -4,13 +4,13 @@ import typer
 import json
 from datetime import timedelta, datetime
 from sqlalchemy import select
-from ramsis.datamodel import Forecast, Project, EStatus, EInput, EStage
+from ramsis.datamodel import Forecast, Project, EStatus, EInput
 from RAMSIS.db import db_url, session_handler, app_settings
 from RAMSIS.cli.utils import flow_deployment, schedule_deployment, add_new_scheduled_run
 from RAMSIS.utils import reset_forecast
 from pathlib import Path
 from RAMSIS.cli.utils import create_forecast
-from RAMSIS.flows import ramsis_flow
+from RAMSIS.flows.forecast import ramsis_flow
 
 
 app = typer.Typer()
@@ -124,7 +124,7 @@ def delete(forecast_ids: List[int],
                 raise typer.Exit()
             if not force:
                 delete = typer.confirm("Are you sure you want to delete the  "
-                                       f"forecast with id: {forecast_id}")
+                                       f"forecast with id: {forecast_id}?")
                 if not delete:
                     typer.echo("Not deleting")
                     raise typer.Abort()

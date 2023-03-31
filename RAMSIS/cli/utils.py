@@ -17,8 +17,6 @@ from prefect.orion.schemas.filters import FlowFilter, DeploymentFilter
 
 
 from RAMSIS.db import app_settings
-from RAMSIS.core.builder import (
-    default_project, default_forecast, default_scenario)
 from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 #from RAMSIS.flows.register import get_client
