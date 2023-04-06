@@ -2,7 +2,7 @@ import typer
 import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy import select
-from RAMSIS.cli import project, model, forecast as _forecast
+from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
 from RAMSIS.db import session_handler, db_url, app_settings
 from ramsis.datamodel import Forecast, Project, EStatus
 #from RAMSIS.flows import ramsis_flow
@@ -13,8 +13,9 @@ from prefect.server.schemas.schedules import CronSchedule
 
 ramsis_app = typer.Typer()
 #ramsis_app.add_typer(_forecast.app, name="forecast")
+ramsis_app.add_typer(forecastseries.app, name="forecastseries")
 ramsis_app.add_typer(model.app, name="model")
-#ramsis_app.add_typer(project.app, name="project")
+ramsis_app.add_typer(project.app, name="project")
 
 
 #@ramsis_app.command()

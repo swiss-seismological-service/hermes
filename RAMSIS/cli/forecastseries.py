@@ -2,15 +2,15 @@ from typing import List
 import asyncio
 import typer
 import json
+from marshmallow import EXCLUDE
 from datetime import timedelta, datetime
 from sqlalchemy import select
-from ramsis.datamodel import Forecast, Project, EStatus, EInput, EStage
+from ramsis.datamodel import Forecast, Project, EStatus, Tag
+from ramsis.io.configuration import ForecastSeriesConfigurationSchema
 from RAMSIS.db import db_url, session_handler, app_settings
-from RAMSIS.cli.utils import flow_deployment, schedule_deployment, add_new_scheduled_run
-from RAMSIS.utils import reset_forecast
+from RAMSIS.cli.utils import flow_deployment, add_new_scheduled_run
 from pathlib import Path
-from RAMSIS.cli.utils import create_forecast
-from RAMSIS.flows import ramsis_flow
+from RAMSIS.flows.forecast import ramsis_flow
 
 
 app = typer.Typer()
@@ -134,102 +134,65 @@ def delete(forecast_ids: List[int],
             typer.echo(f"Finished deleting forecast {forecast_id}")
 
 
-# TODO add check to seismicity and hazard stage that configured properly.
 @app.command()
 def create(
-        project_id: int = typer.Option(...),
         config: Path = typer.Option(
         ...,
         exists=True,
         readable=True),
-        inj_plan_directory: str = typer.Option(
-        None, help="Path of directory containing the "
-        "injection plans. Required if the forecast is for induced seismicity"),
-        hyd_data: typer.FileBinaryRead = typer.Option(
-        None, help="Path of file containing the "
-        "hydraulics for forecasts without using hydws, e.g. for replays."),
-        catalog_data: typer.FileBinaryRead = typer.Option(
-        None, help="Path of file containing the "
-        "catalog for forecasts without using fdsnws, e.g. for replays.")):
+        project_id: int = typer.Option(None, help=
+            "Project id to associate the forecast series to. If not"
+            " provided, the latest project id will be used.")):
 
     with session_handler(db_url) as session:
-        project = session.execute(
-            select(Project).filter_by(id=project_id)).scalar_one_or_none()
+        if not project_id:
+            project = session.execute(
+                select(Project).order_by(Project.id.desc())).first()[0]
+        else:
 
-        # Validataions
+            project = session.execute(
+                select(Project).filter_by(id=project_id)).scalar_one_or_none()
+
         if not project:
             typer.echo(f"Project id {project_id} does not exist")
             raise typer.Exit()
-        if hyd_data:
-            if project.settings.config['hydws_url']:
-                typer.echo(
-                    "--hyd-data may not be added if a HYDWS_URL"
-                    " is configured in the project config.")
-                raise typer.Exit()
-            elif project.settings.config['well'] == EInput.NOT_ALLOWED.name:
-                typer.echo(
-                    "--hyd-data may not be added if WELL is configured"
-                    " to be NOT ALLOWED in the project config.")
-                raise typer.Exit()
-        else:
-            if project.settings.config['well'] == EInput.REQUIRED.name and \
-                    not project.settings.config['hydws_url']:
-                typer.echo(
-                    "--hyd-data must be added if WELL "
-                    "is configured"
-                    " to be REQUIRED in the project config.")
-                raise typer.Exit()
 
-        if catalog_data:
-            if project.settings.config['fdsnws_url']:
-                typer.echo(
-                    "--catalog-data may not be added if a FDSNWS_URL"
-                    " is configured in the project config.")
-                raise typer.Exit()
-            elif project.settings.config['seismic_catalog'] == \
-                    EInput.NOT_ALLOWED.name:
-                typer.echo(
-                    "--catalog-data may not be added if SEISMIC_CATALOG "
-                    "is configured"
-                    " to be NOT ALLOWED in the project config.")
-                raise typer.Exit()
-        else:
-            if project.settings.config['seismic_catalog'] == \
-                    EInput.REQUIRED.name and \
-                    not project.settings.config['fdsnws_url']:
-                typer.echo(
-                    "--catalog-data must be added if SEISMIC_CATALOG "
-                    "is configured"
-                    " to be REQUIRED in the project config.")
-                raise typer.Exit()
+        with open(config, "r") as forecastseries_json:
+            config_dict = json.load(forecastseries_json)
+        #tags = session.execute(
+        #    select(Tag)).scalars()
+        new_forecastseries = []
+        merge_items = []
+        for forecastseries_config in config_dict["forecastseries_configs"]:
+            forecastseries = ForecastSeriesConfigurationSchema(
+                    unknown=EXCLUDE, context={"session":session}).load(forecastseries_config)
+            #session.add(forecastseries)
+            #merge_items.append(forecastseries)
+            new_forecastseries.append(forecastseries)
+            print(dir(project))
+            ##project.forecastseries.append(forecastseries)
+            #for tag in forecastseries.tags:
+            #    print("before tag meerge", session.new, session.dirty, session.deleted)
+            #    print(tag.name)
+            #    #print(tag.__dict__)
+            #    session.merge(tag)
+            #    print("after tag meerge", session.new, session.dirty, session.deleted)
+            #    #merge_items.append(tag)
 
-        if inj_plan_directory:
-            if project.settings.config['scenario'] == EInput.NOT_ALLOWED.name:
-                typer.echo(
-                    "--inj-plan-directory may not be added if SCENARIO "
-                    "is configured"
-                    " to be NOT ALLOWED in the project config.")
-                raise typer.Exit()
-        else:
-            if project.settings.config['scenario'] == EInput.REQUIRED.name:
-                typer.echo(
-                    "--inj-plan-directory must be added if SCENARIO "
-                    "is configured"
-                    " to be REQUIRED in the project config.")
-                raise typer.Exit()
+            #for item in merge_items:
+            #    session.merge(item)
+            
+            #print(session.new, session.dirty, session.deleted)
+            session.add(forecastseries)
+            #print(session.new, session.dirty, session.deleted)
+            print(forecastseries.tags)
+            session.commit()
+            print(forecastseries.tags)
+            #session.merge(forecastseries)
 
-        with open(config, "r") as forecast_json:
-            forecast_config_list = json.load(forecast_json)
-        new_forecasts = []
-        for forecast_config in forecast_config_list["FORECASTS"]:
-            forecast = create_forecast(
-                session, project, forecast_config, inj_plan_directory,
-                hyd_data, catalog_data)
-            new_forecasts.append(forecast)
-            project.forecasts.append(forecast)
-        session.commit
-
-        for forecast in new_forecasts:
-            typer.echo(f"created forecast {forecast.name} "
-                       f"with id: {forecast.id} under project "
-                       f"{forecast.project.id}")
+        session.commit()
+        for forecastseries in new_forecastseries:
+            typer.echo(f"created forecastseries: {forecastseries.name} "
+                       f"with id: {forecastseries.id} under project: "
+                       f"{project.name}, with id: {project.id}"
+                       f" with tags: {forecastseries.tags}")

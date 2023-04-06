@@ -1,4 +1,5 @@
 import typer
+from marshmallow import EXCLUDE
 from RAMSIS.db import db_url, session_handler, init_db
 from ramsis.datamodel import ModelConfig
 import json
@@ -57,27 +58,34 @@ def load(
             config_dict = json.load(model_read)
 
         for config in config_dict["model_configs"]:
-            new_model_config = ModelConfigurationSchema().load(config)
-
             existing_config = session.execute(
                 select(ModelConfig).filter_by(
-                    name=new_model_config.name)).\
+                    name=config["name"])).\
                 scalar_one_or_none()
+            typer.echo(f"{existing_config.runs}")
+            runs_exist = True if existing_config.runs else False
+            print(f"existing config: {existing_config.name}")
+            new_model_config = ModelConfigurationSchema(unknown=EXCLUDE, context={"session":session}).load(config)
+
             if existing_config:
+                typer.echo(f"hello")
                 typer.echo(f"Model config exists for {new_model_config.name}.")
                 # Check if there are already completed forecasts
                 # associated before allowing modification.
-                if existing_config.runs:
+                typer.echo(f"{existing_config.runs}")
+                if runs_exist:
+                    session.rollback()
                     typer.echo("Model runs already exist for this config"
                                " Please upload the config with a new name.")
                     typer.Exit(code=1)
-                typer.echo(" Will update existing config.")
+                typer.echo(" #################################Will update existing config.")
                 new_model_config.id = existing_config.id
+                session.delete(existing_config)
             else:
                 typer.echo("Model config is being added for "
                            f"{new_model_config.name}")
-            updated_model_config = session.merge(new_model_config)
 
+            session.add(new_model_config)
             typer.echo("A model has been configured with the name: "
-                       f"{updated_model_config}")
+                    f"{new_model_config.name}, id: {new_model_config.id}")
         session.commit()

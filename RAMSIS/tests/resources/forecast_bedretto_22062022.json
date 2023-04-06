@@ -1,22 +1,22 @@
 {
-    "FORECASTSERIES": [
+    "forecastseries_configs": [
         {
-            "FORECASTSERIES_NAME": "Forecast bedretto",
-            "FORECASTSERIES_STARTTIME": "2022-06-23T08:00:00",
-            "FORECASTSERIES_ENDTIME": "2022-06-23T09:00:00",
-	    "FORECASTSERIES_INTERVAL": 1800,
-            "RUN_MODEL_TAGS": ["BEDRETTO", "INDUCED"], 
-            "INJECTION_WELL_PLAN_DIR": "hyd",
-            "INJECTION_WELL_PLAN_FILENAME": "injection_plan_150L_20220623.json",
-            "BOUNDING_POLYGON": null,
-            "BOUNDING_BOX": 
+            "name": "Forecast bedretto",
+	    "description": "Forecasting for bedretto June",
+            "starttime": "2022-06-23T08:00:00",
+            "endtime": "2022-06-23T09:00:00",
+	    "forecastinterval": 1800,
+            "tags": ["BEDRETTO", "INDUCED"], 
+            "injectionwellplan_dir": "hyd",
+            "injectionwellplan_filename": "injection_plan_150L_20220623.json",
+            "geometryextent": null,
+            "geometryboundingbox": 
                     {"x_min": 2679483.7937913937,
                      "x_max": 2679783.7937913937,
                      "y_min": 1151409.661100654,
                      "y_max": 1151709.661100654,
                      "z_min": 1246.8895640139017,
-                     "z_max": 1546.8895640139017}
-            ]
+                     "z_max": 1546.8895640139017,
+		     "srid": "EPSG:2056"}
+	}]
         }
-    ]
-}
