@@ -74,7 +74,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
         seismics_data_source = FDSNWSDataSource(
-            url, timeout=None, project=project)
+            url, timeout=None)
         seismics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
@@ -153,7 +153,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
         logger = get_run_logger()
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
-            url, timeout=None, project=project)
+            url, timeout=None)
         hydraulics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
@@ -230,26 +230,21 @@ def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
         forecast = get_forecast(forecast_id, session)
         forecastseries = forecast.forecastseries
 
-        serializer = SFMWorkerIMessageSerializer(
-            ramsis_proj="epsg:4326",
-            external_proj="epsg:4326",
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_from_local_coords')
+        serializer = SFMWorkerIMessageSerializer()
         payload = {
             'data': {
                 'attributes': {
-                    'injection_plan': forecast.injection_plan,
                     'geometry_extent': forecastseries.geometryextent,
                     'seismic_catalog': forecast.seismiccatalog,
-                    'injection_well': forecast.well,
-                    'forecast_start': forecast.starttime.isoformat(),
-                    'forecast_end': forecast.endtime.isoformat()}}}
+                    'injection_well': forecast.injectionwell,
+                    'forecast_start': forecast.starttime,
+                    'forecast_end': forecast.endtime}}}
         data = serializer._serialize_dict(payload)
         return data
 
 
-@task(task_run_name="model_run_executor(forecast{forecast_id}_model_run)")
+@task(task_run_name="model_run_executor(forecast{forecast_id}_model_run)",
+      tags=["model_run"])
 def model_run_executor(forecast_id: int, forecast_data: dict,
                        model_run_id: dict, connection_string: str) -> int:
     """
@@ -270,7 +265,8 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
             model_run)
         payload = {"data":
                    {"attributes":
-                    {'input_parameters': model_run.model_config.config,
+                    {'injection_plan': model_run.injectionplan,
+                     'input_parameters': model_run.modelconfig.config,
                      **forecast_data["data"]["attributes"]}}}
         logger.info("The payload to seismicity models is of length: "
                     f"{len(payload)}")
@@ -278,12 +274,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
             json_payload = json.dumps(payload)
             resp = _worker_handle.compute(
                 json_payload,
-                deserializer=SFMWorkerOMessageDeserializer(
-                    ramsis_proj="epsg:4326",
-                    external_proj="epsg:4326",
-                    ref_easting=0.0,
-                    ref_northing=0.0,
-                    transform_func_name='pyproj_transform_to_local_coords')) # noqa
+                deserializer=SFMWorkerOMessageDeserializer())
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             raise RemoteWorkerError(
@@ -306,6 +297,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
 @task(retries=1000,
       retry_delay_seconds=exponential_backoff(backoff_factor=1.5),
       retry_jitter_factor=1,
+      tags=["model_run"],
       task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})") # noqa
 def poll_model_run(forecast_id: int, model_run_id: int,
                    connection_string: int) -> None:
@@ -329,11 +321,6 @@ def poll_model_run(forecast_id: int, model_run_id: int,
             model_run)
 
         deserializer = SFMWorkerOMessageDeserializer(
-            ramsis_proj="epsg:4326",
-            external_proj="epsg:4326",
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords',
             many=True)
         try:
             resp = _worker_handle.query(

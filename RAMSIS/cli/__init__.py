@@ -2,7 +2,7 @@ import typer
 import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy import select
-from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
+from RAMSIS.cli import project, model, forecastseries
 from RAMSIS.db import session_handler, db_url, app_settings
 from ramsis.datamodel import Forecast, Project, EStatus
 #from RAMSIS.flows import ramsis_flow

@@ -232,7 +232,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         """
         # XXX(damb): Where to get additional configuration options from?
         # model_run.config? model.config? From somewhere else?
-        return cls(model_run.model.url, model_id=model_run.model.sfmwid)
+        return cls(model_run.modelconfig.url, model_id=model_run.modelconfig.sfmwid)
 
     @property
     def model(self):

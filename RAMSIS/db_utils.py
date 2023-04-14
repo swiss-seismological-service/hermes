@@ -22,7 +22,6 @@ def get_model_run(model_run_id, session):
         ModelRun.id == model_run_id).first()
     return model_run
 
-
 def update_forecast_status(forecast_id, estatus, session):
     forecast = get_forecast(forecast_id, session)
     forecast.status.state = estatus

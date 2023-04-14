@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from os.path import dirname, abspath
 
-from ramsis.datamodel import SeismicityModel, Forecast
+from ramsis.datamodel import ModelConfig, ForecastSeries
 
 runner = CliRunner()
 dirpath = dirname(abspath(__file__))
@@ -14,58 +14,33 @@ dirpath = dirname(abspath(__file__))
 
 def check_one_model_in_db(session):
     models = session.execute(
-        select(SeismicityModel)).scalars().all()
+        select(ModelConfig)).scalars().all()
     assert len(models) == 1
     return models[0]
 
 
-def update_model(model_config):
-    from RAMSIS.cli import ramsis_app as app
-    result = runner.invoke(app, ["model", "configure",
-                                 "--model-config",
-                                 model_config])
-    return result
 
-
-def add_seis_model(model_config, hazardsourcemodeltemplate_path=None):
+def load_model(model_config):
     from RAMSIS.cli import ramsis_app as app
-    options = ["model", "add-seismicity",
+    options = ["model", "load",
                "--model-config",
                model_config]
-    if hazardsourcemodeltemplate_path:
-        options.extend([
-            "--hazardsourcemodeltemplate-path",
-            hazardsourcemodeltemplate_path])
     result = runner.invoke(app, options)
     return result
 
 
-def add_haz_model(model_config, gsimlogictree_path):
-    from RAMSIS.cli import ramsis_app as app
-    result = runner.invoke(app, ["model", "add-hazard",
-                                 "--model-config",
-                                 model_config,
-                                 "--gsimlogictree-path",
-                                 gsimlogictree_path])
-    return result
-
-
-def check_updated_model(enabled_model_config, disabled_model_config):
-    # import these after environment is set to test mode
-    from RAMSIS.db import store
-    result = update_model(disabled_model_config)
+def check_updated_model(session, enabled_model_config, disabled_model_config):
+    result = load_model(disabled_model_config)
     assert result.exit_code == 0
 
-    session = store.session
-    disabled_model = check_one_model_in_db(session)
-    assert disabled_model.enabled is False
+    existing_model = check_one_model_in_db(session)
+    assert existing_model.enabled is False
 
     # test update of model.
-    update_model(enabled_model_config)
-    assert result.exit_code == 0
-    enabled_model = check_one_model_in_db(session)
-    assert enabled_model.enabled is True
-    store.close()
+    result2 = load_model(enabled_model_config)
+    assert result2.exit_code == 0
+    session.refresh(existing_model)
+    assert existing_model.enabled is True
 
 
 def create_project(project_config):
@@ -76,22 +51,14 @@ def create_project(project_config):
     assert result.exit_code == 0
 
 
-def create_forecast(forecast_config, project_id, inj_plan=None,
-                    catalog_data=None):
+def create_forecastseries(forecastseries_config, project_id):
     from RAMSIS.cli import ramsis_app as app
-    options = ["forecast", "create",
+    options = ["forecastseries", "create",
                "--project-id", project_id,
                "--config",
-               forecast_config]
-    if inj_plan:
-        options.extend([
-            "--inj-plan-data",
-            inj_plan])
-    if catalog_data:
-        options.extend([
-            "--catalog-data",
-            catalog_data])
+               forecastseries_config]
     result = runner.invoke(app, options)
+    print("result", result.stdout)
     assert result.exit_code == 0
 
 
@@ -111,15 +78,15 @@ class MockResponse:
         return "Some url"
 
 
-def check_one_forecast_in_db(session):
-    forecasts = session.execute(
-        select(Forecast)).scalars().all()
-    if not forecasts:
-        raise Exception("no forecast exists!")
-    return forecasts[0]
+def check_one_forecastseries_in_db(session):
+    forecastseries = session.execute(
+        select(ForecastSeries)).scalars().all()
+    if not forecastseries:
+        raise Exception("no forecastseries exists!")
+    return forecastseries[0]
 
 
-def get_forecast(session, forecast_id):
-    forecast = session.execute(
-        select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
-    return forecast
+def get_forecastseries(session, forecastseries_id):
+    forecastseries = session.execute(
+        select(ForecastSeries).filter_by(id=forecastseries_id)).scalar_one_or_none()
+    return forecastseries

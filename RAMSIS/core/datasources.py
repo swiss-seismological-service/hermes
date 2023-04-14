@@ -22,7 +22,7 @@ class HYDWSDataSource():
     """
     DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
-    def __init__(self, url, project, timeout=None):
+    def __init__(self, url, timeout=None):
         self.url = url
         self._timeout = timeout
 
@@ -30,12 +30,7 @@ class HYDWSDataSource():
         self.enabled = False
         self.logger = get_run_logger()
 
-        self._deserializer = self.DESERIALZER(
-            ramsis_proj=project.proj_string,
-            external_proj=4326,
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords')
+        self._deserializer = self.DESERIALZER()
 
     def fetch(self, **kwargs):
         """
@@ -83,7 +78,7 @@ class FDSNWSDataSource():
 
     DESERIALZER = QuakeMLObservationCatalogDeserializer
 
-    def __init__(self, url, project, timeout=None):
+    def __init__(self, url, timeout=None):
         self.url = url
         self._timeout = timeout
 
@@ -91,12 +86,7 @@ class FDSNWSDataSource():
         self.enabled = False
         self.logger = get_run_logger()
 
-        self._deserializer = self.DESERIALZER(
-            ramsis_proj=project.proj_string,
-            external_proj=4326,
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords')
+        self._deserializer = self.DESERIALZER()
 
     def fetch(self, **kwargs):
         self._args = kwargs
