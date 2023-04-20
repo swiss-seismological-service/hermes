@@ -1,15 +1,13 @@
 {
-    "PROJECTS": [
+    "project_configs": [
         {
-            "PROJECT_NAME": "ETAS TESTING",
-            "PROJECT_DESCRIPTION": "Default project",
-            "PROJECT_STARTTIME": "1992-01-01T00:00:00",
-            "PROJECT_ENDTIME": null,
-            "HYDWS_URL": null,
-            "FDSNWS_URL": null,
-	    "SEISMIC_CATALOG": "REQUIRED",
-	    "INJECTION_WELL": "NOT_ALLOWED",
-	    "INJECTION_WELL_PLAN": "NOT_ALLOWED"
+            "name": "Etas testing",
+            "description": "Default project",
+            "starttime": "1992-01-01T00:00:00",
+	    "fdsnws_url": "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=-0.04",
+	    "seismiccatalog_required": "REQUIRED",
+	    "injectionwell_required": "NOT_ALLOWED",
+	    "injectionplan_required": "NOT_ALLOWED"
         }
     ]
 }

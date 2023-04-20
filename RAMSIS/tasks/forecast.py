@@ -202,10 +202,10 @@ def update_hyd(forecast_id: int, dttime: datetime,
             well = fetch_hyd(hydws_url, project, forecast)
             assert hasattr(well, 'sections')
             well.creationinfo_creationtime = dttime
-            forecast.well = well
+            forecast.injectionwell = well
             session.add(well)
             session.commit()
-        elif not forecast.well:
+        elif not forecast.injectionwell:
             if project.injectionwell_required == EInput.OPTIONAL:
                 logger.info("No observed well will be attached to the "
                             "forecast")
@@ -260,18 +260,27 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         model_run = get_model_run(model_run_id, session)
         model_run.status.state = EStatus.RUNNING
         session.commit()
+        model_config = model_run.modelconfig
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
         payload = {"data":
                    {"attributes":
                     {'injection_plan': model_run.injectionplan,
-                     'input_parameters': model_run.modelconfig.config,
+                     'model_config':
+                        {"config": model_config.config,
+                         "name": model_config.name,
+                         "description": model_config.description,
+                         "sfm_module": model_config.sfm_module,
+                         "sfm_class": model_config.sfm_class},
                      **forecast_data["data"]["attributes"]}}}
-        logger.info("The payload to seismicity models is of length: "
-                    f"{len(payload)}")
+        print(payload['data']['attributes'].keys())
+        print(payload['data']['attributes']['model_config']['sfm_module'])
+        print(payload['data']['attributes']['model_config']['sfm_class'])
         try:
             json_payload = json.dumps(payload)
+            #with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/results/model_response_to_post_natural_1.json', 'w') as f:
+            #    f.write(json_payload)
             resp = _worker_handle.compute(
                 json_payload,
                 deserializer=SFMWorkerOMessageDeserializer())

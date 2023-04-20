@@ -44,36 +44,46 @@ def schedule(forecastseries_id: int):
             typer.echo("The forecastseries id does not exist")
             raise typer.Exit()
 
+        datetime_now = datetime.utcnow()
         forecasts = forecastseries.forecasts
         if forecasts:
             typer.echo("Forecasts exist, please reset forecastseries or "
                        "create a new one.")
             typer.Exit()
         deployment_name = f"forecastseries_{forecastseries_id}"
-        rrule_obj = rrule(
-            freq=SECONDLY, interval=forecastseries.forecastinterval,
-            dtstart=forecastseries.starttime, until=forecastseries.endtime)
-        rrule_str = str(rrule_obj)
-        rrule_schedule = RRuleSchedule(rrule=rrule_str)
-        deployment = flow_deployment(flow_to_schedule, deployment_name,
-                                     rrule_schedule)
-        # Check for runs that were scheduled in the past and
-        # will therefore not run
-        scheduled_wait_time = 0
-        interval = 60
-        datetime_now = datetime.utcnow()
-        typer.echo(list(rrule_obj))
-        for forecast_starttime in list(rrule_obj):
-            if forecast_starttime <= datetime_now:
-                scheduled_start_time = datetime_now + timedelta(
-                    seconds=scheduled_wait_time)
-                typer.echo("running async function")
-                asyncio.run(
-                    add_new_scheduled_run(
-                        flow_to_schedule.name, deployment.name,
-                        forecast_starttime, scheduled_start_time,
-                        forecastseries.id, db_url))
-                scheduled_wait_time += interval
+        if forecastseries.forecastinterval:
+            rrule_obj = rrule(
+                freq=SECONDLY, interval=forecastseries.forecastinterval,
+                dtstart=forecastseries.starttime, until=forecastseries.endtime)
+            rrule_str = str(rrule_obj)
+            rrule_schedule = RRuleSchedule(rrule=rrule_str)
+            deployment = flow_deployment(flow_to_schedule, deployment_name,
+                                         rrule_schedule)
+            # Check for runs that were scheduled in the past and
+            # will therefore not run
+            scheduled_wait_time = 0
+            interval = 60
+            typer.echo(list(rrule_obj))
+            for forecast_starttime in list(rrule_obj):
+                if forecast_starttime <= datetime_now:
+                    scheduled_start_time = datetime_now + timedelta(
+                        seconds=scheduled_wait_time)
+                    typer.echo("running async function")
+                    asyncio.run(
+                        add_new_scheduled_run(
+                            flow_to_schedule.name, deployment.name,
+                            forecast_starttime, scheduled_start_time,
+                            forecastseries.id, db_url))
+                    scheduled_wait_time += interval
+        else:
+            #scheduled_starttime = forecastseries.starttime
+            #if forecastseries.starttime <= datetime_now:
+            #    scheduled_start_time = datetime_now
+            asyncio.run(
+                add_new_scheduled_run(
+                    flow_to_schedule.name, deployment.name,
+                    forecastseries.starttime, forecastseries.starttime,
+                    forecastseries.id, db_url))
 
 
 #@app.command()
