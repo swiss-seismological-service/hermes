@@ -1,0 +1,12 @@
+{
+    "forecastseries_configs": [
+        {
+            "name": "Forecast OEF RISE",
+	    "description": "Forecasting for Switzerland",
+            "starttime": "2022-04-25T00:00:00",
+	    "forecastinterval": 86400, 
+	    "tags": ["ETAS", "RISE", "OEF"],
+	    "geometryextent": {"type":"Polygon",
+                "coordinates":[
+			[[45.7,5.85],[47.9,5.85],[47.9,10.6],[45.7,10.6],[45.7,5.85]]]}}]
+	}
