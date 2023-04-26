@@ -23,6 +23,7 @@ def create_model_runs(model_configs, injection_plan=None):
                 modelconfig=config,
                 injectionplan=injection_plan,
                 status=Status(state=EStatus.PENDING)))
+    print("appending {len(model_runs)} to forecast.runs")
     return model_runs
 
 
@@ -38,10 +39,13 @@ def new_forecast_from_series(forecastseries_id: int,
 
         # Get unique model configs to create model runs for.
         model_configs = list()
+        print("forecast series tags", forecastseries.tags)
         for tag in forecastseries.tags:
+            print("tag.modelconfigs", tag.modelconfigs)
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
         injection_plans = forecastseries.injectionplans
+        print("injection plans", injection_plans)
 
         model_run_list = list()
         if not injection_plans:
@@ -52,17 +56,21 @@ def new_forecast_from_series(forecastseries_id: int,
                     "given on the forecast series. Please modify the "
                     "forecast series before trying to run again.")
             else:
+                print("extending model runs plans by ", len(model_configs_set))
                 model_run_list.extend(create_model_runs(model_configs_set))
         else:
             for injection_plan in injection_plans:
                 model_run_list.extend(create_model_runs(
                     model_configs_set,
                     injection_plan=injection_plan))
+        if not model_run_list:
+            raise Exception("No model runs created for forecast")
         forecast = Forecast(forecastseries_id=forecastseries_id,
                             starttime=start_time,
                             endtime=forecastseries.endtime,
                             runs=model_run_list,
                             status=Status(state=EStatus.PENDING))
+        print("runs", forecast.runs)
 
         logger.info("The new forecast will have a starttime of: "
                     f"{forecast.starttime} and an endtime of: "
@@ -71,6 +79,7 @@ def new_forecast_from_series(forecastseries_id: int,
         session.add(forecast)
         session.commit()
         logger.info(f"The new forecast has an id: {forecast.id}")
+        print("runs2", forecast.runs)
         return forecast.id
 
 

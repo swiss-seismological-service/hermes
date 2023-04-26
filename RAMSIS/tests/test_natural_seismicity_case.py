@@ -7,7 +7,7 @@ import json
 import logging
 from prefect.testing.utilities import prefect_test_harness
 
-from ramsis.datamodel import ForecastSeries, Project
+from ramsis.datamodel import ForecastSeries, Project, ModelConfig
 from os.path import dirname, abspath, join
 
 from RAMSIS.tests.utils import check_updated_model, load_model, \
@@ -72,7 +72,10 @@ def mocked_datasources_get_etas(*args, **kwargs):
 class TestInducedCase:
     @pytest.mark.run(after='test_run_bedretto_forecast')
     def test_ramsis_etas_setup(self, mocker, session):
-        load_model(etas_model_config_path)
+        model_result = load_model(etas_model_config_path)
+        models = session.execute(
+            select(ModelConfig)).scalars().all()
+        assert len(models) == 1
         create_project(etas_project_config_path)
 
         projects = session.execute(
@@ -96,3 +99,4 @@ class TestInducedCase:
         logger.debug(f"Forecastseries created in test_run_forecast: {forecastseries.id}")
         with prefect_test_harness():
             result = scheduled_ramsis_flow(forecastseries.id, db_url, forecastseries.starttime)
+        assert 0 == 1

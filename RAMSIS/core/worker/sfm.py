@@ -127,7 +127,12 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 :code:`meta` are ignored.
                 """
                 retval = []
+                print("resp", resp)
+                if not resp:
+                    raise Exception("No data returned")
                 for r in resp:
+                    if not r:
+                        raise Exception("No data returned")
                     if KEY_DATA in r:
                         if isinstance(r[KEY_DATA], list):
                             for d in r[KEY_DATA]:

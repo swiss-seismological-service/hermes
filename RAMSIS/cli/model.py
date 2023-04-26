@@ -83,7 +83,9 @@ def load(
                 typer.echo("Model config is being added for "
                            f"{new_model_config.name}")
 
+            print("model tags", new_model_config.tags)
             session.add(new_model_config)
             session.commit()
+            print("2 model tags", new_model_config.tags)
             typer.echo("A model has been configured with the name: "
                     f"{new_model_config.name}, id: {new_model_config.id}")

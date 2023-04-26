@@ -2,11 +2,12 @@ import json
 from datetime import datetime
 from typing import List
 
+from marshmallow import EXCLUDE
 from prefect import task, get_run_logger
 from prefect.tasks import exponential_backoff
 from prefect.server.schemas.states import Failed
 from ramsis.datamodel import EInput, EStatus, \
-    Forecast, Project, SeismicObservationCatalog, InjectionWell
+    Forecast, Project, SeismicObservationCatalog, InjectionWell, ModelRun
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
@@ -264,26 +265,26 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
+        print("config json: ", model_config.config.json())
         payload = {"data":
                    {"attributes":
                     {'injection_plan': model_run.injectionplan,
                      'model_config':
-                        {"config": model_config.config,
+                        {"config": json.loads(model_config.config.json()),
                          "name": model_config.name,
                          "description": model_config.description,
                          "sfm_module": model_config.sfm_module,
                          "sfm_class": model_config.sfm_class},
                      **forecast_data["data"]["attributes"]}}}
         print(payload['data']['attributes'].keys())
-        print(payload['data']['attributes']['model_config']['sfm_module'])
-        print(payload['data']['attributes']['model_config']['sfm_class'])
+        print(payload['data']['attributes']['model_config']['config'])
         try:
             json_payload = json.dumps(payload)
             #with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/results/model_response_to_post_natural_1.json', 'w') as f:
             #    f.write(json_payload)
             resp = _worker_handle.compute(
                 json_payload,
-                deserializer=SFMWorkerOMessageDeserializer())
+                deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             raise RemoteWorkerError(
@@ -300,6 +301,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         model_run.runid = resp['data']['task_id']
         model_run.status.state = EStatus.DISPATCHED
         session.commit()
+        logger.info("returning model run id from model run task")
         return int(model_run.id)
 
 
