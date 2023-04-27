@@ -3,7 +3,7 @@
     [{
 	    "name": "ETAS model 100 simulations",
 	    "description": "Standard config for ETAS model for Switzerland",
-            "url":"http://ramsis-nsfm:5007",
+            "url":"http://ramsis-nsfm-dev:5007",
             "enabled":true,
 	    "tags": ["ETAS", "RISE", "OEF"],
 	    "sfm_module": "ramsis_nsfm.models.etas",
