@@ -1,4 +1,5 @@
 from prefect import task, get_run_logger
+from datetime import timedelta
 from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
 from RAMSIS.db import session_handler
@@ -45,7 +46,6 @@ def new_forecast_from_series(forecastseries_id: int,
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
         injection_plans = forecastseries.injectionplans
-        print("injection plans", injection_plans)
 
         model_run_list = list()
         if not injection_plans:
@@ -56,7 +56,6 @@ def new_forecast_from_series(forecastseries_id: int,
                     "given on the forecast series. Please modify the "
                     "forecast series before trying to run again.")
             else:
-                print("extending model runs plans by ", len(model_configs_set))
                 model_run_list.extend(create_model_runs(model_configs_set))
         else:
             for injection_plan in injection_plans:
@@ -65,12 +64,21 @@ def new_forecast_from_series(forecastseries_id: int,
                     injection_plan=injection_plan))
         if not model_run_list:
             raise Exception("No model runs created for forecast")
+        # Set forecast endtime
+        if forecastseries.endtime:
+            endtime = forecastseries.endtime
+        elif forecastseries.forecastduration:
+            endtime = start_time + timedelta(
+                seconds=forecastseries.forecastduration)
+        else:
+            raise Exception(
+                "forecast series endtime or forecastduration "
+                "not set. Please update the forecastseries configuration.")
         forecast = Forecast(forecastseries_id=forecastseries_id,
                             starttime=start_time,
-                            endtime=forecastseries.endtime,
+                            endtime=endtime,
                             runs=model_run_list,
                             status=Status(state=EStatus.PENDING))
-        print("runs", forecast.runs)
 
         logger.info("The new forecast will have a starttime of: "
                     f"{forecast.starttime} and an endtime of: "
@@ -79,7 +87,6 @@ def new_forecast_from_series(forecastseries_id: int,
         session.add(forecast)
         session.commit()
         logger.info(f"The new forecast has an id: {forecast.id}")
-        print("runs2", forecast.runs)
         return forecast.id
 
 
@@ -89,11 +96,10 @@ def set_statuses(forecast_id: int,
     logger = get_run_logger()
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
-        model_runs = [r for r in forecast.runs if r.enabled]
         models_finished = all([
             True if model.status.state in
             [EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS] else False
-            for model in model_runs])
+            for model in forecast.modelruns])
         if not models_finished:
             logger.error("The model runs have mixed statuses and appear to "
                          "be unfinished.")
@@ -104,7 +110,7 @@ def set_statuses(forecast_id: int,
 
         models_complete = all([
             True if model.status.state == EStatus.COMPLETE else False
-            for model in model_runs])
+            for model in forecast.modelruns])
         if models_complete:
             forecast.status.state = EStatus.COMPLETE
             session.commit()

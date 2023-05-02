@@ -63,7 +63,8 @@ def schedule(forecastseries_id: int):
             # will therefore not run
             scheduled_wait_time = 0
             interval = 60
-            typer.echo(list(rrule_obj))
+            typer.echo("scheduling forecasts for the following times...",
+                       list(rrule_obj))
             for forecast_starttime in list(rrule_obj):
                 if forecast_starttime <= datetime_now:
                     scheduled_start_time = datetime_now + timedelta(
@@ -76,9 +77,7 @@ def schedule(forecastseries_id: int):
                             forecastseries.id, db_url))
                     scheduled_wait_time += interval
         else:
-            #scheduled_starttime = forecastseries.starttime
-            #if forecastseries.starttime <= datetime_now:
-            #    scheduled_start_time = datetime_now
+            # run single forecast
             asyncio.run(
                 add_new_scheduled_run(
                     flow_to_schedule.name, deployment.name,

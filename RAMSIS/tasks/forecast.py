@@ -91,6 +91,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         forecast = get_forecast(forecast_id, session)
         forecastseries = forecast.forecastseries
         project = forecastseries.project
+        print("##################### project catalog", project.seismiccatalog)
         if project.seismiccatalog:
             logger.info("Project has catalog, this will be used for the "
                         "forecast")
@@ -306,7 +307,7 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
 
 
 @task(retries=1000,
-      retry_delay_seconds=exponential_backoff(backoff_factor=1.5),
+      retry_delay_seconds=exponential_backoff(backoff_factor=1.1),
       retry_jitter_factor=1,
       tags=["model_run"],
       task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})") # noqa

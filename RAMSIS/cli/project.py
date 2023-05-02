@@ -5,8 +5,24 @@ from ramsis.datamodel import Project
 from pathlib import Path
 from RAMSIS.db import db_url, session_handler, init_db
 from ramsis.io.configuration import ProjectConfigurationSchema
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
+
+
 
 app = typer.Typer()
+
+def deserialize_hydws_data(data, plan):
+    deserializer = HYDWSBoreholeHydraulicsDeserializer(
+        plan=plan)
+    ret_data = deserializer.load(data)
+    return ret_data
+
+
+def deserialize_qml_data(data):
+    deserializer = QuakeMLObservationCatalogDeserializer()
+    ret_data = deserializer.load(data)
+    return ret_data
 
 
 @app.command()
@@ -15,7 +31,10 @@ def create(
         ...,
         exists=True,
         readable=True,
-        help="Path to json project config.")):
+        help="Path to json project config."),
+        catalog_data: typer.FileBinaryRead = typer.Option(
+        None, help="Path of file containing the "
+        "catalog for forecasts without using fdsnws, e.g. for replays.")):
 
     success = init_db(db_url)
 
@@ -46,7 +65,14 @@ def create(
             project = ProjectConfigurationSchema().load(project_config)
             session.add(project)
             new_projects.append(project)
+            if catalog_data:
+                cat = deserialize_qml_data(
+                    catalog_data)
+                project.seismiccatalog = cat
+                print(project.seismiccatalog)
+                session.add(project.seismiccatalog)
             session.commit()
+
         for project in new_projects:
             typer.echo(f"created project {project.name} "
                        f"with id: {project.id}")

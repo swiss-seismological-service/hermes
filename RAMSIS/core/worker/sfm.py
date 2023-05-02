@@ -111,6 +111,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 """
                 Return a JSON encoded query result.
                 """
+                print("_json", resp)
                 if not resp:
                     return []
 
@@ -128,11 +129,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 """
                 retval = []
                 print("resp", resp)
-                if not resp:
-                    raise Exception("No data returned")
                 for r in resp:
-                    if not r:
-                        raise Exception("No data returned")
                     if KEY_DATA in r:
                         if isinstance(r[KEY_DATA], list):
                             for d in r[KEY_DATA]:
@@ -147,6 +144,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
             if deserializer is None:
                 return cls(demux_data(_json(resp)))
+            print("deserializing the data: ")
             return cls(deserializer._loado(demux_data(_json(resp))))
 
         def filter_by(self, **kwargs):
@@ -236,6 +234,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
     @property
     def url(self):
+        print(self._url_base + self._url_path)
         return self._url_base + self._url_path
 
     def query(self, task_ids=[], deserializer=None):
@@ -259,6 +258,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 requests.get, self.url, timeout=self._timeout)
 
             resp = self._handle_exceptions(req)
+            print(resp, "in query")
 
             return self.QueryResult.from_requests(
                 resp, deserializer=deserializer)
@@ -273,7 +273,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         resp = []
         for t in task_ids:
             url = '{url}/{task_id}'.format(url=self.url, task_id=t)
-            self.logger.debug(
+            self.logger.info(
                 'Requesting result (url={!r}, task_id={!r}).'.
                 format(url, t))
 

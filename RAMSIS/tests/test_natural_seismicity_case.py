@@ -76,7 +76,7 @@ class TestInducedCase:
         models = session.execute(
             select(ModelConfig)).scalars().all()
         assert len(models) == 1
-        create_project(etas_project_config_path)
+        create_project(etas_project_config_path, catalog_data=etas_catalog_data_path)
 
         projects = session.execute(
             select(Project)).scalars().all()
@@ -93,8 +93,8 @@ class TestInducedCase:
         from RAMSIS.cli import ramsis_app as app
         from RAMSIS.db import db_url
         from RAMSIS.flows.forecast import scheduled_ramsis_flow
-        mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        mock_get.side_effect = mocked_datasources_get_etas
+        #mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+        #mock_get.side_effect = mocked_datasources_get_etas
         forecastseries = check_one_forecastseries_in_db(session)
         logger.debug(f"Forecastseries created in test_run_forecast: {forecastseries.id}")
         with prefect_test_harness():

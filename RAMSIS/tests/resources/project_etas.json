@@ -4,7 +4,7 @@
             "name": "Etas testing",
             "description": "Default project",
             "starttime": "1992-01-01T00:00:00",
-	    "fdsnws_url": "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=-0.04",
+	    "fdsnws_url": "",
 	    "seismiccatalog_required": "REQUIRED",
 	    "injectionwell_required": "NOT_ALLOWED",
 	    "injectionplan_required": "NOT_ALLOWED"

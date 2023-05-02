@@ -43,11 +43,14 @@ def check_updated_model(session, enabled_model_config, disabled_model_config):
     assert existing_model.enabled is True
 
 
-def create_project(project_config):
+def create_project(project_config, catalog_data=None):
     from RAMSIS.cli import ramsis_app as app
-    result = runner.invoke(app, ["project", "create",
-                                 "--config",
-                                 project_config])
+    options = ["project", "create",
+               "--config",
+               project_config]
+    if catalog_data:
+        options.extend(["--catalog-data", catalog_data])
+    result = runner.invoke(app, options)
     assert result.exit_code == 0
 
 
