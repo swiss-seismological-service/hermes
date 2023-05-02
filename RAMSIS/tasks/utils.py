@@ -99,7 +99,7 @@ def set_statuses(forecast_id: int,
         models_finished = all([
             True if model.status.state in
             [EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS] else False
-            for model in forecast.modelruns])
+            for model in forecast.runs])
         if not models_finished:
             logger.error("The model runs have mixed statuses and appear to "
                          "be unfinished.")
@@ -110,7 +110,7 @@ def set_statuses(forecast_id: int,
 
         models_complete = all([
             True if model.status.state == EStatus.COMPLETE else False
-            for model in forecast.modelruns])
+            for model in forecast.runs])
         if models_complete:
             forecast.status.state = EStatus.COMPLETE
             session.commit()

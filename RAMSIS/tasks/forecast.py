@@ -91,7 +91,6 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         forecast = get_forecast(forecast_id, session)
         forecastseries = forecast.forecastseries
         project = forecastseries.project
-        print("##################### project catalog", project.seismiccatalog)
         if project.seismiccatalog:
             logger.info("Project has catalog, this will be used for the "
                         "forecast")
@@ -365,7 +364,9 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                     model_run.status.state = EStatus.FINISHED_WITH_ERROR
 
                 else:
+                    print("have result:", result, type(result))
                     model_run.result = result
+                    session.add_all(model_run.result)
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
 
