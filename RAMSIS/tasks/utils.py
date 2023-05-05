@@ -1,5 +1,5 @@
 from prefect import task, get_run_logger
-from datetime import timedelta
+from datetime import timedelta, datetime
 from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
 from RAMSIS.db import session_handler
@@ -31,18 +31,17 @@ def create_model_runs(model_configs, injection_plan=None):
 @task
 def new_forecast_from_series(forecastseries_id: int,
                              connection_string: str,
-                             start_time) -> int:
+                             start_time: str) -> int:
 
     logger = get_run_logger()
+    start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
     with session_handler(connection_string) as session:
         forecastseries = get_forecastseries(
             forecastseries_id, session)
 
         # Get unique model configs to create model runs for.
         model_configs = list()
-        print("forecast series tags", forecastseries.tags)
         for tag in forecastseries.tags:
-            print("tag.modelconfigs", tag.modelconfigs)
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
         injection_plans = forecastseries.injectionplans
@@ -65,11 +64,11 @@ def new_forecast_from_series(forecastseries_id: int,
         if not model_run_list:
             raise Exception("No model runs created for forecast")
         # Set forecast endtime
-        if forecastseries.endtime:
-            endtime = forecastseries.endtime
-        elif forecastseries.forecastduration:
+        if forecastseries.forecastduration:
             endtime = start_time + timedelta(
                 seconds=forecastseries.forecastduration)
+        elif forecastseries.endtime:
+            endtime = forecastseries.endtime
         else:
             raise Exception(
                 "forecast series endtime or forecastduration "

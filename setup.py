@@ -46,7 +46,7 @@ _install_requires = [
     "pytest-order",
     "python-dotenv",
     "docker-compose",
-    "psycopg2-binary",]
+    "psycopg2-binary"]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

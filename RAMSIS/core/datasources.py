@@ -54,11 +54,17 @@ class HYDWSDataSource():
                 bh = self._deserializer.load(ifd)
 
         except NoContent:
-            self.logger.info('No data received.')
+            self.logger.info(f'No data received from {self.url}')
+            raise 
         except RequestsError as err:
-            self.logger.error(f"Error while fetching data ({err}).")
+            self.logger.error(f"Error while fetching data from {self.url} ({err}).")
+            raise 
         except HYDWSJSONIOError as err:
-            self.logger.error(f"Error while deserializing data ({err}).")
+            self.logger.error(f"Error while deserializing data from {self.url} ({err}).")
+            raise 
+        except requests.exceptions.Timeout as err:
+            self.logger.error(f"The request timed out to {self.url}, ({err})")
+            raise 
         else:
             if bh.sections:
                 msg = f'Received borehole data (sections={len(bh.sections)}'
@@ -107,9 +113,17 @@ class FDSNWSDataSource():
                 cat = self._deserializer.load(ifd)
 
         except NoContent:
-            self.logger.info('No data received.')
+            self.logger.info(f'No data received from {self.url}')
+            raise 
         except RequestsError as err:
-            self.logger.error(f"Error while fetching data ({err}).")
+            self.logger.error(f"Error while fetching data from {self.url} ({err}).")
+            raise 
+        except HYDWSJSONIOError as err:
+            self.logger.error(f"Error while deserializing data from {self.url} ({err}).")
+            raise 
+        except requests.exceptions.Timeout as err:
+            self.logger.error(f"The request timed out to {self.url}, ({err})")
+            raise 
         except QuakeMLCatalogIOError as err:
             self.logger.error(f"Error while deserializing data ({err}).")
         else:

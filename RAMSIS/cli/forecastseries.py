@@ -34,7 +34,9 @@ def ls(forecastseries_id: int):
 
 
 @app.command()
-def schedule(forecastseries_id: int):
+def schedule(forecastseries_id: int,
+             overdue_interval: int = typer.Option(
+                60, help="Interval to run overdue forecasts at")):
     flow_to_schedule = scheduled_ramsis_flow
     with session_handler(db_url) as session:
         forecastseries = session.execute(
@@ -62,9 +64,7 @@ def schedule(forecastseries_id: int):
             # Check for runs that were scheduled in the past and
             # will therefore not run
             scheduled_wait_time = 0
-            interval = 60
-            typer.echo("scheduling forecasts for the following times...",
-                       list(rrule_obj))
+            typer.echo(f"scheduling forecasts for the following times...{list(rrule_obj)}")
             for forecast_starttime in list(rrule_obj):
                 if forecast_starttime <= datetime_now:
                     scheduled_start_time = datetime_now + timedelta(
@@ -75,12 +75,12 @@ def schedule(forecastseries_id: int):
                             flow_to_schedule.name, deployment.name,
                             forecast_starttime, scheduled_start_time,
                             forecastseries.id, db_url))
-                    scheduled_wait_time += interval
+                    scheduled_wait_time += overdue_interval
         else:
             # run single forecast
             asyncio.run(
                 add_new_scheduled_run(
-                    flow_to_schedule.name, deployment.name,
+                    flow_to_schedule.name, deployment_name,
                     forecastseries.starttime, forecastseries.starttime,
                     forecastseries.id, db_url))
 

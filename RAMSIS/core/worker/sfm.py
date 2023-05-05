@@ -1,4 +1,4 @@
-# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
+## Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Seismicity forecast model (SFM) worker related facilities.
 """
@@ -111,7 +111,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 """
                 Return a JSON encoded query result.
                 """
-                print("_json", resp)
                 if not resp:
                     return []
 
@@ -128,7 +127,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 :code:`meta` are ignored.
                 """
                 retval = []
-                print("resp", resp)
                 for r in resp:
                     if KEY_DATA in r:
                         if isinstance(r[KEY_DATA], list):
@@ -144,7 +142,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
             if deserializer is None:
                 return cls(demux_data(_json(resp)))
-            print("deserializing the data: ")
             return cls(deserializer._loado(demux_data(_json(resp))))
 
         def filter_by(self, **kwargs):
@@ -234,7 +231,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
     @property
     def url(self):
-        print(self._url_base + self._url_path)
         return self._url_base + self._url_path
 
     def query(self, task_ids=[], deserializer=None):
@@ -258,7 +254,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 requests.get, self.url, timeout=self._timeout)
 
             resp = self._handle_exceptions(req)
-            print(resp, "in query")
 
             return self.QueryResult.from_requests(
                 resp, deserializer=deserializer)
@@ -382,9 +377,14 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             finally:
                 raise self.HTTPError(self.url, err)
         except requests.exceptions.ConnectionError as err:
+            self.logger.error(f"The request has a connection error to {self.url}")
             raise self.ConnectionError(self.url, err)
         except requests.exceptions.RequestsError as err:
+            self.logger.error(f"The request has an error {self.url}")
             raise self.RemoteWorkerError(err)
+        except requests.exceptions.Timeout:
+            self.logger.error(f"The request timed out to {self.url}")
+            raise 
 
         return resp
 

@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from marshmallow import EXCLUDE
 from prefect import task, get_run_logger
@@ -74,8 +74,10 @@ def update_fdsn(forecast_id: int, dttime: datetime,
             SeismicObservationCatalog:
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
+        # Do we want timeout to be configurable? Does this timeout
+        # also cover contacting the webservice?
         seismics_data_source = FDSNWSDataSource(
-            url, timeout=None)
+            url, timeout=300)
         seismics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
@@ -154,7 +156,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
         logger = get_run_logger()
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
-            url, timeout=None)
+            url, timeout=300)
         hydraulics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
@@ -265,7 +267,6 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
-        print("config json: ", model_config.config.json())
         payload = {"data":
                    {"attributes":
                     {'injection_plan': model_run.injectionplan,
@@ -276,8 +277,6 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
                          "sfm_module": model_config.sfm_module,
                          "sfm_class": model_config.sfm_class},
                      **forecast_data["data"]["attributes"]}}}
-        print(payload['data']['attributes'].keys())
-        print(payload['data']['attributes']['model_config']['config'])
         try:
             json_payload = json.dumps(payload)
             #with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/results/model_response_to_post_natural_1.json', 'w') as f:
@@ -304,14 +303,51 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         logger.info("returning model run id from model run task")
         return int(model_run.id)
 
+@task(task_run_name="check_model_run_not_complete(model_run{model_run_id})") # noqa
+def check_model_run_not_complete(model_run_id: int,
+        connection_string: str) -> Optional[int]:
+    with session_handler(connection_string) as session:
+        logger = get_run_logger()
+        model_run = get_model_run(model_run_id, session)
+        if model_run.status.state == EStatus.DISPATCHED:
+            return model_run_id
+        elif model_run.status.state == EStatus.COMPLETE:
+            logger.info("The model run is complete.")
+        elif model_run.status.state == EStatus.FINISHED_WITH_ERRORS:
+            logger.info("The model run is in a state of error")
+        else:
+            logger.info("The model run is in an unknown state: "
+                        f"{model_run.status.state}")
+        return None
 
-@task(retries=1000,
-      retry_delay_seconds=exponential_backoff(backoff_factor=1.1),
-      retry_jitter_factor=1,
-      tags=["model_run"],
+
+@task(task_run_name="dispatched_model_runs(forecast_{forecast_id})") # noqa
+def dispatched_model_runs(forecast_id: int,
+        connection_string: str) -> bool:
+    with session_handler(connection_string) as session:
+        logger = get_run_logger()
+        forecast = get_forecast(forecast_id, session)
+        dispatched_runs = [r for r in forecast.runs if r.status.state == EStatus.DISPATCHED]
+
+@task(task_run_name="check_model_runs_dispatched(forecast_{forecast_id})") # noqa
+def check_model_runs_dispatched(forecast_id: int,
+        connection_string: str) -> bool:
+    with session_handler(connection_string) as session:
+        logger = get_run_logger()
+        forecast = get_forecast(forecast_id, session)
+        all_statuses = [r.status.state for r in forecast.runs]
+        if EStatus.DISPATCHED in all_statuses:
+            return True
+        return False
+
+
+#@task(retries=1000,
+#      retry_delay_seconds=exponential_backoff(backoff_factor=1.1),
+#      retry_jitter_factor=1,
+@task(tags=["model_run"],
       task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})") # noqa
 def poll_model_run(forecast_id: int, model_run_id: int,
-                   connection_string: int) -> None:
+                   connection_string: str) -> None:
     """
     Executes a single seimicity model run
 
@@ -325,6 +361,8 @@ def poll_model_run(forecast_id: int, model_run_id: int,
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         model_run = get_model_run(model_run_id, session)
+        if model_run.status.state in (EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS):
+            return
         forecast = model_run.forecast
         logger.debug(f"Polling for runid={model_run.runid}")
 
@@ -338,7 +376,7 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                 task_ids=model_run.runid,
                 deserializer=deserializer).first()
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
-            model_run.status.state = EStatus.ERROR
+            model_run.status.state = EStatus.FINISHED_WITH_ERRORS
             return Failed(message=err)
         else:
             status = resp['data']['attributes']['status_code']
@@ -346,9 +384,10 @@ def poll_model_run(forecast_id: int, model_run_id: int,
 
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")
-                raise ModelNotFinished(
-                    f"(forecast={forecast.id})"
-                    f"(runid={model_run.runid}): Polling")
+                return
+                #raise ModelNotFinished(
+                #    f"(forecast={forecast.id})"
+                #    f"(runid={model_run.runid}): Polling")
 
             logger.info(
                 f'Received response (run={model_run!r}, '
@@ -361,25 +400,24 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         "Remote Seismicity Worker has not returned "
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
-                    model_run.status.state = EStatus.FINISHED_WITH_ERROR
+                    model_run.status.state = EStatus.FINISHED_WITH_ERRORS
+                    session.commit()
 
                 else:
-                    print("have result:", result, type(result))
-                    model_run.result = result
-                    session.add_all(model_run.result)
+                    model_run.resulttimebins = result
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
 
             elif status in TASK_ERROR:
                 logger.info("status in error")
-                model_run.status.state = EStatus.FINISHED_WITH_ERROR
+                model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                 session.commit()
                 logger.error("Remote Seismicity Model Worker"
                              " has returned an unsuccessful status code."
                              f"(runid={model_run.runid}: {resp})")
 
             else:
-                model_run.status.state = EStatus.FINISHED_WITH_ERROR
+                model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                 session.commit()
                 logger.error(
                     "Remote Seismicity Model Worker"

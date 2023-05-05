@@ -1,11 +1,23 @@
 from prefect import flow, unmapped
+import time
 
 from RAMSIS.tasks.utils import new_forecast_from_series, \
     set_statuses
 from RAMSIS.tasks.forecast import \
     update_fdsn, update_hyd, forecast_serialize_data, \
     model_run_executor, poll_model_run, \
-    update_running, run_forecast, model_runs
+    update_running, run_forecast, model_runs, \
+    check_model_run_not_complete, \
+    check_model_runs_dispatched, \
+    dispatched_model_runs
+
+
+@flow(name="polling_flow")
+def polling_flow(
+    forecast_id, polling_ids, connection_string):
+    poll_task = poll_model_run.map(unmapped(forecast_id), polling_ids,
+                                         unmapped(connection_string))
+    #dispatched_ids = check_model_run_not_complete.map(polling_ids, unmapped(connection_string), wait_for=[poll_task])
 
 
 @flow(name="ramsis_flow")
@@ -27,12 +39,21 @@ def ramsis_flow(forecast_id, connection_string, date):
                                              unmapped(forecast_data),
                                              model_run_ids,
                                              unmapped(connection_string))
+        polling_ids = check_model_run_not_complete.map(running_ids,
+                connection_string,
+                wait_for=[running_ids])
+        disp = check_model_runs_dispatched(forecast_id, connection_string, wait_for=[polling_ids])
 
-        poll_task = poll_model_run.map(unmapped(forecast_id), running_ids,
-                                       unmapped(connection_string),
-                                       wait_for=[running_ids])
+        exponential_factor = 1.2
+        x = 1
+        while check_model_runs_dispatched(forecast_id, connection_string, wait_for=[polling_ids]):
+            
+            _ = polling_flow(forecast_id, polling_ids, connection_string)
+            time.sleep(x**exponential_factor)
+            x += 1
         set_statuses(forecast_id,
-                     connection_string, wait_for=[poll_task])
+                     connection_string)
+
 
 
 @flow(name="scheduled_ramsis_flow")
