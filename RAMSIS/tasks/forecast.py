@@ -77,7 +77,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         # Do we want timeout to be configurable? Does this timeout
         # also cover contacting the webservice?
         seismics_data_source = FDSNWSDataSource(
-            url, timeout=300)
+            url, timeout=700)
         seismics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
@@ -279,8 +279,6 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
                      **forecast_data["data"]["attributes"]}}}
         try:
             json_payload = json.dumps(payload)
-            #with open('/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/results/model_response_to_post_natural_1.json', 'w') as f:
-            #    f.write(json_payload)
             resp = _worker_handle.compute(
                 json_payload,
                 deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
@@ -334,16 +332,17 @@ def check_model_runs_dispatched(forecast_id: int,
         connection_string: str) -> bool:
     with session_handler(connection_string) as session:
         logger = get_run_logger()
+        logger.info(f"check model runs dispatched forecast_id: {forecast_id}")
         forecast = get_forecast(forecast_id, session)
         all_statuses = [r.status.state for r in forecast.runs]
+        logger.info(f"In checking dispatched, forecast: {forecast_id}, statuses: {all_statuses}")
         if EStatus.DISPATCHED in all_statuses:
+            logger.info(f"EStatus.DISPATCHED in all statuses")
             return True
+        logger.info(f"EStatus.DISPATCHED not in all statuses, quitting loop")
         return False
 
 
-#@task(retries=1000,
-#      retry_delay_seconds=exponential_backoff(backoff_factor=1.1),
-#      retry_jitter_factor=1,
 @task(tags=["model_run"],
       task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})") # noqa
 def poll_model_run(forecast_id: int, model_run_id: int,
@@ -378,6 +377,9 @@ def poll_model_run(forecast_id: int, model_run_id: int,
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             model_run.status.state = EStatus.FINISHED_WITH_ERRORS
             return Failed(message=err)
+        except RemoteSeismicityWorkerHandle.HTTPError as err:
+            model_run.status.state = EStatus.FINISHED_WITH_ERRORS
+            return Failed(message=err)
         else:
             status = resp['data']['attributes']['status_code']
             logger.info(f"status code of model run: {status}")
@@ -400,16 +402,24 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         "Remote Seismicity Worker has not returned "
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
+                    logger.info("setting model run to finishe with errors##########3")
+                    model_run.status.state = EStatus.FINISHED_WITH_ERRORS
+                    session.commit()
+                except Exception:
+                    logger.info(" EXCEPTION! setting model run to finishe with errors")
                     model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                     session.commit()
 
+
                 else:
                     model_run.resulttimebins = result
+                    logger.info("setting model run to complete########")
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
 
             elif status in TASK_ERROR:
                 logger.info("status in error")
+                logger.info("setting model run to finishe with errors ########")
                 model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                 session.commit()
                 logger.error("Remote Seismicity Model Worker"
@@ -417,6 +427,7 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                              f"(runid={model_run.runid}: {resp})")
 
             else:
+                logger.info("setting model run to finishe with errors###########")
                 model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                 session.commit()
                 logger.error(

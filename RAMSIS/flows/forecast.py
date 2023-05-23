@@ -15,6 +15,7 @@ from RAMSIS.tasks.forecast import \
 @flow(name="polling_flow")
 def polling_flow(
     forecast_id, polling_ids, connection_string):
+    print(f"polling ids: {polling_ids}")
     poll_task = poll_model_run.map(unmapped(forecast_id), polling_ids,
                                          unmapped(connection_string))
     #dispatched_ids = check_model_run_not_complete.map(polling_ids, unmapped(connection_string), wait_for=[poll_task])
@@ -50,6 +51,7 @@ def ramsis_flow(forecast_id, connection_string, date):
             
             _ = polling_flow(forecast_id, polling_ids, connection_string)
             time.sleep(x**exponential_factor)
+            print(f"Polling for forecast {forecast_id}, {x}")
             x += 1
         set_statuses(forecast_id,
                      connection_string)
@@ -59,8 +61,8 @@ def ramsis_flow(forecast_id, connection_string, date):
 @flow(name="scheduled_ramsis_flow")
 def scheduled_ramsis_flow(
         forecastseries_id, connection_string,
-        date):
-    forecast_id = new_forecast_from_series(
+        date=None):
+    forecast_id, date = new_forecast_from_series(
         forecastseries_id,
         connection_string, date)
     _ = ramsis_flow(forecast_id, connection_string, date)

@@ -7,7 +7,7 @@ from RAMSIS.db import session_handler, db_url, app_settings
 from ramsis.datamodel import Forecast, Project, EStatus
 #from RAMSIS.flows import ramsis_flow
 from RAMSIS.cli.utils import add_new_scheduled_run, flow_deployment, \
-    delete_scheduled_flow_runs
+    delete_scheduled_flow_runs, bulk_delete_flow_runs
 from RAMSIS.flows.forecast import scheduled_ramsis_flow
 from prefect.server.schemas.schedules import CronSchedule
 
@@ -17,6 +17,15 @@ ramsis_app.add_typer(forecastseries.app, name="forecastseries")
 ramsis_app.add_typer(model.app, name="model")
 ramsis_app.add_typer(project.app, name="project")
 
+
+@ramsis_app.command()
+def delete_pending_flow_runs():
+    asyncio.run(bulk_delete_flow_runs(state="Pending"))
+
+
+@ramsis_app.command()
+def delete_scheduled_flow_runs():
+    asyncio.run(bulk_delete_flow_runs(state="Scheduled"))
 
 #@ramsis_app.command()
 #def run(project_id: int = typer.Option(

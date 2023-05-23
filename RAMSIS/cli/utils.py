@@ -4,6 +4,8 @@ import logging
 from datetime import datetime
 from prefect.deployments import run_deployment
 from prefect.deployments import Deployment
+from prefect.orion.schemas.filters import FlowRunFilter, FlowRunFilterState, FlowRunFilterStateName
+
 
 from prefect.orion.schemas.states import Scheduled
 from prefect.orion.schemas.filters import FlowFilter, DeploymentFilter
@@ -40,12 +42,16 @@ async def delete_scheduled_flow_runs():
 
 
 # check for a deployment with the same name as <ramsis_flow_name>/forecast_<id>
-def flow_deployment(flow, deployment_name, schedule, work_queue_name="default",
+def flow_deployment(flow, deployment_name, schedule, forecastseries_id,
+                    db_url, work_queue_name="default",
                     logging_level="INFO"):
-    print("type schedule", type(schedule))
+    parameters = dict(
+        forecastseries_id=forecastseries_id,
+        connection_string=db_url)
     deployment = Deployment.build_from_flow(
         flow=flow,
         name=deployment_name,
+        parameters=parameters,
         infra_overrides={"env": {"PREFECT_LOGGING_LEVEL": logging_level}},
         work_queue_name=work_queue_name,
         schedule=schedule,
@@ -111,9 +117,7 @@ def schedule_deployment(
         db_url, data_dir):
     parameters = dict(
         forecastseries_id=forecastseries_id,
-        connection_string=db_url,
-        date=forecast_starttime,
-        data_dir=data_dir)
+        connection_string=db_url)
     deployment_id = f"{flow_name}/{deployment_name}"
     run_deployment(deployment_id, scheduled_time=forecast_starttime,
                    parameters=parameters)
@@ -223,3 +227,42 @@ def deserialize_qml_data(data, ramsis_proj):
     deserializer = QuakeMLObservationCatalogDeserializer()
     ret_data = deserializer.load(data)
     return ret_data
+
+
+
+async def list_flow_runs_with_state(state):
+    async with get_client() as client:
+        flow_runs = await client.read_flow_runs(
+            flow_run_filter=FlowRunFilter(
+                state=FlowRunFilterState(
+                    name=FlowRunFilterStateName(any_=[state])
+                )
+            )
+        )
+    return flow_runs
+
+
+async def delete_flow_runs(flow_runs):
+    async with get_client() as client:
+        for flow_run in flow_runs:
+            await client.delete_flow_run(flow_run_id=flow_run.id)
+
+
+async def bulk_delete_flow_runs(state: str = "Pending"):
+    flow_runs = await list_flow_runs_with_state(state)
+
+    if len(flow_runs) == 0:
+        print(f"There are no flow runs in state '{state}'")
+        return
+
+    print(f"There are {len(flow_runs)} flow runs with state {state}\n")
+
+    for idx, flow_run in enumerate(flow_runs):
+        print(f"[{idx + 1}] Flow '{flow_run.name}' with ID '{flow_run.id}'")
+
+    if input("\n[Y/n] Do you wish to proceed: ") == "Y":
+        print(f"Deleting {len(flow_runs)} flow runs...")
+        await delete_flow_runs(flow_runs)
+        print("Done.")
+    else:
+        print("Aborting...")

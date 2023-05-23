@@ -60,22 +60,24 @@ def schedule(forecastseries_id: int,
             rrule_str = str(rrule_obj)
             rrule_schedule = RRuleSchedule(rrule=rrule_str)
             deployment = flow_deployment(flow_to_schedule, deployment_name,
-                                         rrule_schedule)
+                                         rrule_schedule, forecastseries.id, db_url)
             # Check for runs that were scheduled in the past and
             # will therefore not run
             scheduled_wait_time = 0
-            typer.echo(f"scheduling forecasts for the following times...{list(rrule_obj)}")
-            for forecast_starttime in list(rrule_obj):
-                if forecast_starttime <= datetime_now:
-                    scheduled_start_time = datetime_now + timedelta(
-                        seconds=scheduled_wait_time)
-                    typer.echo("running async function")
-                    asyncio.run(
-                        add_new_scheduled_run(
-                            flow_to_schedule.name, deployment.name,
-                            forecast_starttime, scheduled_start_time,
-                            forecastseries.id, db_url))
-                    scheduled_wait_time += overdue_interval
+            typer.echo(f"scheduling forecasts for the following times...{list(rrule_obj)[0:10]}...")
+            overdue_rrule_obj = rrule(
+                freq=SECONDLY, interval=forecastseries.forecastinterval,
+                dtstart=forecastseries.starttime, until=datetime_now)
+            for forecast_starttime in list(overdue_rrule_obj):
+                scheduled_start_time = datetime_now + timedelta(
+                    seconds=scheduled_wait_time)
+                typer.echo(f"scheduling forecast for {forecast_starttime}")
+                asyncio.run(
+                    add_new_scheduled_run(
+                        flow_to_schedule.name, deployment.name,
+                        forecast_starttime, scheduled_start_time,
+                        forecastseries.id, db_url))
+                scheduled_wait_time += overdue_interval
         else:
             # run single forecast
             asyncio.run(

@@ -1,11 +1,11 @@
 {
     "forecastseries_configs": [
         {
-            "name": "Forecast series etas mc_2.3",
+            "name": "Forecast series etas mc_1.8",
 	    "description": "Forecasting for switzerland",
             "starttime": "2021-01-01T00:00:00",
             "forecastduration": 31536000,
-            "tags": ["RISE"], 
+            "tags": ["mc_1.8"], 
 	    "geometryextent": {"type":"Polygon","coordinates":
 		    [[[46.05211132,  5.84413185],
                       [45.99464811,  5.94225118],

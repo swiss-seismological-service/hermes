@@ -1,4 +1,4 @@
-from prefect import task, get_run_logger
+from prefect import task, get_run_logger, runtime 
 from datetime import timedelta, datetime
 from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
@@ -34,7 +34,10 @@ def new_forecast_from_series(forecastseries_id: int,
                              start_time: str) -> int:
 
     logger = get_run_logger()
-    start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
+    if not start_time:
+        start_time = runtime.flow_run.scheduled_start_time
+    elif type(start_time) == str:
+        start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
     with session_handler(connection_string) as session:
         forecastseries = get_forecastseries(
             forecastseries_id, session)
@@ -86,7 +89,7 @@ def new_forecast_from_series(forecastseries_id: int,
         session.add(forecast)
         session.commit()
         logger.info(f"The new forecast has an id: {forecast.id}")
-        return forecast.id
+        return forecast.id, start_time
 
 
 @task(task_run_name="set_statuses(forecast{forecast_id})")

@@ -1,18 +1,17 @@
 {
     "model_configs":
     [{
-	    "name": "ETAS model 100 simulations",
-	    "description": "Standard config for ETAS model for Switzerland",
-            "url":"http://ramsis-nsfm-dev:5007",
+	    "name": "ETAS model 1992 start mc=2.3 100 simulations",
+	    "description": "Standard config for ETAS model for switzerland",
+            "url":"http://ramsis-nsfm-dev.ethz.ch:5007",
             "enabled":true,
-	    "tags": ["ETAS", "RISE", "OEF"],
+	    "tags": ["ETAS", "RISE", "mc_2.3"],
 	    "sfm_module": "ramsis_nsfm.models.etas",
 	    "sfm_class": "ETASCalculation",
 	    "config":{
 	        "model_parameters": {
                 "auxiliary_start": "1992-01-01 00:00:00",
 	        "timewindow_start": "1997-01-01 00:00:00",
-	        "timewindow_end": "2023-04-25 00:00:00",
 
 	            "theta_0": {
   	        	  "log10_mu": -6.21,

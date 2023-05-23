@@ -219,7 +219,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         self._timeout = kwargs.get('timeout')
 
     @classmethod
-    def from_run(cls, model_run):
+    def from_run(cls, model_run, **kwargs):
         """
         Create a :py:class:`RemoteSeismicityWorkerHandle` from a model run.
 
@@ -227,7 +227,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :type model_run:
             :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
         """
-        return cls(model_run.modelconfig.url)
+        return cls(model_run.modelconfig.url, **kwargs)
 
     @property
     def url(self):
