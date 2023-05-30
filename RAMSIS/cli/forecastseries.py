@@ -10,13 +10,41 @@ from sqlalchemy import select
 from ramsis.datamodel import ForecastSeries, Project
 from ramsis.io.configuration import ForecastSeriesConfigurationSchema
 from RAMSIS.db import db_url, session_handler
-from RAMSIS.cli.utils import flow_deployment, add_new_scheduled_run
+from RAMSIS.cli.utils import flow_deployment, add_new_scheduled_run, \
+    get_deployment_name, set_schedule_inactive
+
 from pathlib import Path
 from RAMSIS.flows.forecast import scheduled_ramsis_flow
 
 
 app = typer.Typer()
 
+
+@app.command()
+def disable_schedule(forecastseries_id: int):
+    with session_handler(db_url) as session:
+        forecastseries = session.execute(
+            select(ForecastSeries).filter_by(id=forecastseries_id)).\
+            scalar_one_or_none()
+        if not forecastseries:
+            typer.echo("The forecastseries id does not exist")
+            raise typer.Exit()
+        asyncio.run(set_schedule_inactive(forecastseries.id))
+        # Need to add enabled to the db and update here.
+
+#@app.command()
+#def enable_schedule(forecastseries_id: int):
+#    with session_handler(db_url) as session:
+#        forecastseries = session.execute(
+#            select(ForecastSeries).filter_by(id=forecastseries_id)).\
+#            scalar_one_or_none()
+#        if not forecastseries:
+#            typer.echo("The forecastseries id does not exist")
+#            raise typer.Exit()
+#        deployment_name = get_deployment_name(forecastseries_id)
+#        deployment = read_deployment_by_name(scheduled_ramsis_flow.name, deployment_name)
+#        deployment.set_schedule_active()
+#        # Need to add enabled to the db and update here.
 
 @app.command()
 def ls(forecastseries_id: int):
@@ -52,7 +80,7 @@ def schedule(forecastseries_id: int,
             typer.echo("Forecasts exist, please reset forecastseries or "
                        "create a new one.")
             typer.Exit()
-        deployment_name = f"forecastseries_{forecastseries_id}"
+        deployment_name = get_deployment_name(forecastseries_id)
         if forecastseries.forecastinterval:
             rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
@@ -85,64 +113,6 @@ def schedule(forecastseries_id: int,
                     flow_to_schedule.name, deployment_name,
                     forecastseries.starttime, forecastseries.starttime,
                     forecastseries.id, db_url))
-
-
-#@app.command()
-#def clone(forecast_id: int,
-#          interval: int = typer.Argument(
-#              ..., help="Interval in seconds between forecasts."),
-#          clone_number: int = typer.Argument(
-#              ..., help="Number of forecast clones to create."),
-#          ):
-#
-#    with session_handler(db_url) as session:
-#        forecast = session.execute(
-#            select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
-#        if not forecast:
-#            typer.echo("The forecast id does not exist")
-#            raise typer.Exit()
-#
-#        new_forecasts = []
-#
-#        typer.echo(f"Forecasts being cloned from id: {forecast_id} "
-#                   f"which has starttime: {forecast.starttime}")
-#        project_settings = forecast.project.settings.config
-#        # If some input data is attached to the forecast rather
-#        # than being received from a webservice, this must also
-#        # be cloned. with_results=True only copies input data over.
-#        if not project_settings['hydws_url'] or not \
-#                project_settings['fdsnws_url']:
-#            with_results = True
-#        else:
-#            with_results = False
-#        for i in range(1, clone_number + 1):
-#            cloned = forecast.clone(with_results=with_results)
-#            cloned.starttime = (
-#                forecast.starttime + timedelta(
-#                    seconds=interval * i))
-#            if cloned.starttime >= cloned.endtime:
-#                typer.echo("Some forecast startimes exceed the endtime, "
-#                           "so they will not be created.")
-#                break
-#
-#            cloned.project_id = forecast.project_id
-#            cloned = reset_forecast(cloned)
-#            session.add(cloned)
-#            new_forecasts.append(cloned)
-#
-#        session.commit()
-#        for new_forecast in new_forecasts:
-#            new_forecast.name = f"Forecast {new_forecast.id}"
-#            forecast_duration = (new_forecast.endtime - new_forecast.starttime).total_seconds()
-#            for scenario in new_forecast.scenarios:
-#                seismicity_stage = scenario[EStage.SEISMICITY]
-#                if seismicity_stage.config["epoch_duration"] > forecast_duration:
-#                    seismicity_stage.config["epoch_duration"] = forecast_duration
-#        session.commit()
-#        for forecast in new_forecasts:
-#            typer.echo(f"New forecast initialized with id: {forecast.id} "
-#                       f"and starttime: {forecast.starttime}")
-#        typer.echo(f"{len(new_forecasts)} Forecasts added successfully.")
 
 
 @app.command()

@@ -416,6 +416,7 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                     logger.info("setting model run to complete########")
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
+                    logger.info("after commit for debug")
 
             elif status in TASK_ERROR:
                 logger.info("status in error")

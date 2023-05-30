@@ -1,5 +1,6 @@
 import typer
 from prefect.client import get_client
+import asyncio
 import logging
 from datetime import datetime
 from prefect.deployments import run_deployment
@@ -14,6 +15,7 @@ from prefect.orion.schemas.filters import FlowFilter, DeploymentFilter
 from RAMSIS.db import app_settings
 from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
+from RAMSIS.flows.forecast import scheduled_ramsis_flow
 
 # All hyd, seismic data is expected in this projection
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -36,9 +38,8 @@ async def delete_scheduled_flow_runs():
     typer.echo("RAMSIS has been stopped, all currently "
                "scheduled flow runs cancelled.")
 
-
-# One deployment per flow run, but then run it with different
-# forecast ids with a scheduled time.
+def get_deployment_name(forecastseries_id):
+    return f"forecastseries_{forecastseries_id}"
 
 
 # check for a deployment with the same name as <ramsis_flow_name>/forecast_<id>
@@ -230,12 +231,12 @@ def deserialize_qml_data(data, ramsis_proj):
 
 
 
-async def list_flow_runs_with_state(state):
+async def list_flow_runs_with_states(states: list):
     async with get_client() as client:
         flow_runs = await client.read_flow_runs(
             flow_run_filter=FlowRunFilter(
                 state=FlowRunFilterState(
-                    name=FlowRunFilterStateName(any_=[state])
+                    name=FlowRunFilterStateName(any_=states)
                 )
             )
         )
@@ -248,14 +249,14 @@ async def delete_flow_runs(flow_runs):
             await client.delete_flow_run(flow_run_id=flow_run.id)
 
 
-async def bulk_delete_flow_runs(state: str = "Pending"):
-    flow_runs = await list_flow_runs_with_state(state)
+async def bulk_delete_flow_runs(states: list):
+    flow_runs = await list_flow_runs_with_states(states)
 
     if len(flow_runs) == 0:
-        print(f"There are no flow runs in state '{state}'")
+        print(f"There are no flow runs in states {states}")
         return
 
-    print(f"There are {len(flow_runs)} flow runs with state {state}\n")
+    print(f"There are {len(flow_runs)} flow runs with states {states}\n")
 
     for idx, flow_run in enumerate(flow_runs):
         print(f"[{idx + 1}] Flow '{flow_run.name}' with ID '{flow_run.id}'")
@@ -266,3 +267,17 @@ async def bulk_delete_flow_runs(state: str = "Pending"):
         print("Done.")
     else:
         print("Aborting...")
+
+async def get_deployment(client, deployment_name):
+        try:
+            deployment = await client.read_deployment_by_name(f"{scheduled_ramsis_flow.name}/{deployment_name}")
+        except Exception as err:
+            print(f"Deployment {deployment_name!r} not found!, {err}")
+            raise
+        return deployment
+
+async def set_schedule_inactive(forecastseries_id):
+    async with get_client() as client:
+        deployment_name = get_deployment_name(forecastseries_id)
+        deployment = await get_deployment(client, deployment_name)
+        asyncio.run(deployment.set_schedule_inactive())
