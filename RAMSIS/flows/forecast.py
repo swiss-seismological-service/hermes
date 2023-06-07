@@ -1,5 +1,6 @@
-from prefect import flow, unmapped
+from prefect import flow, unmapped, get_run_logger
 import time
+from ramsis.datamodel import EStatus
 
 from RAMSIS.tasks.utils import new_forecast_from_series, \
     set_statuses
@@ -9,21 +10,45 @@ from RAMSIS.tasks.forecast import \
     update_running, run_forecast, model_runs, \
     check_model_run_not_complete, \
     check_model_runs_dispatched, \
-    dispatched_model_runs
+    dispatched_model_runs, \
+    forecast_status
 
 
 @flow(name="polling_flow")
 def polling_flow(
     forecast_id, polling_ids, connection_string):
-    print(f"polling ids: {polling_ids}")
+    logger = get_run_logger()
+    logger.info(f"polling ids: {polling_ids}")
     poll_task = poll_model_run.map(unmapped(forecast_id), polling_ids,
                                          unmapped(connection_string))
-    #dispatched_ids = check_model_run_not_complete.map(polling_ids, unmapped(connection_string), wait_for=[poll_task])
+    logger.info(f"after poll_task")
+
 
 
 @flow(name="ramsis_flow")
 def ramsis_flow(forecast_id, connection_string, date):
-    if run_forecast(forecast_id, connection_string):
+    logger = get_run_logger()
+    forecast_state = forecast_status(forecast_id, connection_string)
+    if forecast_state == EStatus.COMPLETE:
+        logger.info(f'Forecast {forecast_id} will not be run '
+                    ' as it is complete')
+    elif forecast_state == EStatus.RUNNING:
+        logger.info(f'Forecast {forecast_id} is in RUNNING state, '
+                    ' check if model runs can be polled.')
+
+        polling_ids = model_runs(forecast_id, connection_string)
+
+        exponential_factor = 1.2
+        x = 1
+        while check_model_runs_dispatched(forecast_id, connection_string, wait_for=[polling_ids]):
+            
+            _ = polling_flow(forecast_id, polling_ids, connection_string)
+            time.sleep(x**exponential_factor)
+            print(f"Polling for forecast {forecast_id}, {x}")
+            x += 1
+
+
+    else:
         status_task = update_running(forecast_id, connection_string)
         fdsn_task = update_fdsn(forecast_id, date, connection_string,
                                 wait_for=[status_task])
@@ -50,11 +75,13 @@ def ramsis_flow(forecast_id, connection_string, date):
         while check_model_runs_dispatched(forecast_id, connection_string, wait_for=[polling_ids]):
             
             _ = polling_flow(forecast_id, polling_ids, connection_string)
+            t = x**exponential_factor
+            logger.info(f"sleeping for {t} seconds...")
             time.sleep(x**exponential_factor)
-            print(f"Polling for forecast {forecast_id}, {x}")
+            logger.info(f"Polling for forecast {forecast_id}, {x}")
             x += 1
-        set_statuses(forecast_id,
-                     connection_string)
+    set_statuses(forecast_id,
+                 connection_string)
 
 
 

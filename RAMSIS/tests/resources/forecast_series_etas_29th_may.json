@@ -3,8 +3,8 @@
         {
             "name": "Forecast etas series 29th May",
 	    "description": "Forecasting for switzerland",
-            "starttime": "2023-05-29T00:00:00",
-            "endtime": "2021-05-31T00:00:00",
+            "starttime": "2023-05-29T05:00:00",
+            "endtime": "2023-05-31T05:00:00",
 	    "forecastinterval": 86400,
             "forecastduration": 2678400,
             "tags": ["NATURAL", "RISE"], 

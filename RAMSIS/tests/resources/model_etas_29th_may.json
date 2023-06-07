@@ -1,9 +1,9 @@
 {
     "model_configs":
     [{
-	    "name": "ETAS model 1997 start 100,000",
+	    "name": "ETAS model 1997 start 10,000",
 	    "description": "Standard config for ETAS model for switzerland",
-            "url":"http://localhost:5007",
+            "url":"http://ramsis-nsfm-dev.ethz.ch:5007",
             "enabled":true,
 	    "tags": ["ETAS", "RISE", "mc_2.3"],
 	    "sfm_module": "ramsis_nsfm.models.etas",
@@ -28,7 +28,7 @@
 	            "delta_m": 0.1,
 	            "coppersmith_multiplier": 100,
 	            "earth_radius": 6.3781e3,
-	            "n_simulations": 100000
+	            "n_simulations": 10000
 	        },
                 "wrapper_parameters":{
 	            }}}]

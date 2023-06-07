@@ -6,7 +6,7 @@ import psycopg2
 testing_environment_variable = "RAMSIS_TESTING_MODE"
 
 # in db.py the db credentials will come from the env.test file instead of .env
-TEMP_ENV_VARS = {testing_environment_variable: 'true'}
+TEMP_ENV_VARS = {testing_environment_variable: 'false'}
 
 def main():
     old_environ = dict(environ)

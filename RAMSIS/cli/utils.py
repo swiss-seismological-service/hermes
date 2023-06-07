@@ -43,6 +43,23 @@ def get_deployment_name(forecastseries_id):
 
 
 # check for a deployment with the same name as <ramsis_flow_name>/forecast_<id>
+def flow_deployment_rerun_forecast(flow, deployment_name, schedule, forecast_id,
+                    db_url, work_queue_name="default",
+                    logging_level="INFO"):
+    parameters = dict(
+        forecast_id=forecast_id,
+        connection_string=db_url)
+    deployment = Deployment.build_from_flow(
+        flow=flow,
+        name=deployment_name,
+        parameters=parameters,
+        infra_overrides={"env": {"PREFECT_LOGGING_LEVEL": logging_level}},
+        work_queue_name=work_queue_name,
+        schedule=schedule,
+        apply=True
+    )
+    return deployment
+# check for a deployment with the same name as <ramsis_flow_name>/forecast_<id>
 def flow_deployment(flow, deployment_name, schedule, forecastseries_id,
                     db_url, work_queue_name="default",
                     logging_level="INFO"):
@@ -123,6 +140,28 @@ def schedule_deployment(
     run_deployment(deployment_id, scheduled_time=forecast_starttime,
                    parameters=parameters)
 
+
+async def add_new_scheduled_run_rerun_forecast(
+    flow_name: str, deployment_name: str,
+    forecast_starttime: datetime, scheduled_starttime: datetime,
+        forecast_id, db_url):
+    parameters = dict(
+        forecast_id=forecast_id,
+        connection_string=db_url,
+        date=forecast_starttime)
+    print("parameters", parameters)
+    async with get_client() as client:
+        deployments = await client.read_deployments(
+            flow_filter=FlowFilter(name={"any_": [flow_name]}),
+            deployment_filter=DeploymentFilter(name={"any_": [deployment_name]}),
+        )
+        deployment_id = deployments[0].id
+        await client.create_flow_run_from_deployment(
+            deployment_id=deployment_id, state=Scheduled(scheduled_time=scheduled_starttime),
+            parameters=parameters
+        )
+        typer.echo(f"Scheduled new forecast run: {deployment_id} with"
+                   f"parameters: {parameters}")
 
 async def add_new_scheduled_run(
     flow_name: str, deployment_name: str,

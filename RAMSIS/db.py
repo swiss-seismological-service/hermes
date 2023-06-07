@@ -72,7 +72,7 @@ app_settings = Settings(settings_file)
 
 testing_mode = bool(getenv("RAMSIS_TESTING_MODE", False)) is True
 project = app_settings['project']
-print("testing mode: ", testing_mode, getenv("RAMSIS_TESTING_MODE"))
+print("testing mode: ", testing_mode)
 env_file = ".env.test" if testing_mode else ".env"
 env_file_path = os.path.join(root_dir, env_file)
 env = dotenv_values(env_file_path)

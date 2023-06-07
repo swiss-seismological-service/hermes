@@ -36,6 +36,15 @@ def run_forecast(forecast_id: int, connection_string: str) -> bool:
                     ' as it is complete')
         return False
 
+@task(task_run_name="run_forecast_flow(forecast{forecast_id})")
+def forecast_status(forecast_id: int, connection_string: str) -> bool:
+    """
+    If forecast is not complete, return True.
+    """
+    with session_handler(connection_string) as session:
+        logger = get_run_logger()
+        forecast = get_forecast(forecast_id, session)
+        return forecast.status.state
 
 def any_model_runs_complete(
         forecast: Forecast) -> bool:
@@ -344,7 +353,12 @@ def check_model_runs_dispatched(forecast_id: int,
 
 
 @task(tags=["model_run"],
-      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})") # noqa
+      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})",
+    retries=3,
+    retry_delay_seconds=exponential_backoff(backoff_factor=10),
+    retry_jitter_factor=1,
+    timeout_seconds=100
+      ) # noqa
 def poll_model_run(forecast_id: int, model_run_id: int,
                    connection_string: str) -> None:
     """
@@ -361,9 +375,10 @@ def poll_model_run(forecast_id: int, model_run_id: int,
         logger = get_run_logger()
         model_run = get_model_run(model_run_id, session)
         if model_run.status.state in (EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS):
+            logger.info("model run is complete or has errors, exiting")
             return
         forecast = model_run.forecast
-        logger.debug(f"Polling for runid={model_run.runid}")
+        logger.info(f"Polling for runid={model_run.runid}")
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
@@ -371,9 +386,11 @@ def poll_model_run(forecast_id: int, model_run_id: int,
         deserializer = SFMWorkerOMessageDeserializer(
             many=True)
         try:
+            logger.info("getting response from worker")
             resp = _worker_handle.query(
                 task_ids=model_run.runid,
                 deserializer=deserializer).first()
+            logger.info("after getting response from worker")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             model_run.status.state = EStatus.FINISHED_WITH_ERRORS
             return Failed(message=err)
@@ -381,8 +398,13 @@ def poll_model_run(forecast_id: int, model_run_id: int,
             model_run.status.state = EStatus.FINISHED_WITH_ERRORS
             return Failed(message=err)
         else:
+            logger.info(f"type of resp: {type(resp), len(resp)}")
             status = resp['data']['attributes']['status_code']
             logger.info(f"status code of model run: {status}")
+            status_bool = status in (TASK_ACCEPTED, TASK_PROCESSING)
+            status_bool_complete = status == TASK_COMPLETE
+            logger.info(f"status_bool: {status_bool}")
+            logger.info(f"status_bool complete: {status_bool_complete}")
 
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")

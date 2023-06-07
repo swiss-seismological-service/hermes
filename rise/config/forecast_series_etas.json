@@ -3,7 +3,7 @@
         {
             "name": "OEF Switzerland test schedule",
 	    "description": "Forecasting for switzerland",
-            "starttime": "2023-05-01T05:00:00",
+            "starttime": "2023-05-25T05:00:00",
             "forecastduration": 31536000,
 	    "forecastinterval": 86400,
             "tags": ["RISE"], 

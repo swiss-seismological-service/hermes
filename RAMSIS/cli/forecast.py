@@ -6,7 +6,7 @@ from datetime import timedelta, datetime
 from sqlalchemy import select
 from ramsis.datamodel import Forecast, Project, EStatus, EInput
 from RAMSIS.db import db_url, session_handler, app_settings
-from RAMSIS.cli.utils import flow_deployment, schedule_deployment, add_new_scheduled_run
+from RAMSIS.cli.utils import flow_deployment_rerun_forecast, schedule_deployment, add_new_scheduled_run_rerun_forecast
 from RAMSIS.utils import reset_forecast
 from pathlib import Path
 from RAMSIS.flows.forecast import ramsis_flow
@@ -42,12 +42,12 @@ def rerun(forecast_id: int,
                 typer.Exit()
         data_dir = app_settings['data_dir']
         deployment_name = f"forecast_{forecast_id}"
-        deployment = flow_deployment(flow_to_schedule, deployment_name)
+        deployment = flow_deployment_rerun_forecast(flow_to_schedule, deployment_name, None, forecast_id, db_url)
 
         asyncio.run(
-            add_new_scheduled_run(
+            add_new_scheduled_run_rerun_forecast(
                 flow_to_schedule.name, deployment_name,
-                datetime.utcnow(),
+                forecast.starttime, datetime.utcnow(),
                 forecast.id, db_url))
 
 
