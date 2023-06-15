@@ -4,9 +4,25 @@ from sqlalchemy import select
 from ramsis.datamodel import Project
 from pathlib import Path
 from RAMSIS.db import db_url, session_handler, init_db
-from RAMSIS.cli.utils import create_project, update_project
+from ramsis.io.configuration import ProjectConfigurationSchema
+from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
+from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
+
 
 app = typer.Typer()
+
+
+def deserialize_hydws_data(data, plan):
+    deserializer = HYDWSBoreholeHydraulicsDeserializer(
+        plan=plan)
+    ret_data = deserializer.load(data)
+    return ret_data
+
+
+def deserialize_qml_data(data):
+    deserializer = QuakeMLObservationCatalogDeserializer()
+    ret_data = deserializer.load(data)
+    return ret_data
 
 
 @app.command()
@@ -15,7 +31,10 @@ def create(
         ...,
         exists=True,
         readable=True,
-        help="Path to json project config.")):
+        help="Path to json project config."),
+        catalog_data: typer.FileBinaryRead = typer.Option(
+        None, help="Path of file containing the "
+        "catalog for forecasts without using fdsnws, e.g. for replays.")):
 
     success = init_db(db_url)
 
@@ -28,23 +47,30 @@ def create(
     with session_handler(db_url) as session:
 
         with open(config, "r") as project_json:
-            project_config_list = json.load(project_json)['PROJECTS']
+            project_config_dict = json.load(project_json)
+            project_config_list = project_config_dict['project_configs']
 
         new_projects = []
         for project_config in project_config_list:
             matching_project = session.execute(
                 select(Project.name, Project.id).where(
-                    Project.name == project_config["PROJECT_NAME"])).first()
+                    Project.name == project_config["name"])).first()
             if matching_project:
                 raise Exception(
                     "Project name: "
                     f"{matching_project.name} already exists "
                     f"with id: {matching_project.id}")
 
-            project = create_project(project_config)
+            project = ProjectConfigurationSchema().load(project_config)
             session.add(project)
             new_projects.append(project)
+            if catalog_data:
+                cat = deserialize_qml_data(
+                    catalog_data)
+                project.seismiccatalog = cat
+                session.add(project.seismiccatalog)
             session.commit()
+
         for project in new_projects:
             typer.echo(f"created project {project.name} "
                        f"with id: {project.id}")
@@ -62,7 +88,7 @@ def update(
     with session_handler(db_url) as session:
 
         with open(config, "r") as project_json:
-            project_config_list = json.load(project_json)['PROJECTS']
+            project_config_list = json.load(project_json)['project_configs']
 
         assert len(project_config_list) == 1
         project_config = project_config_list[0]
@@ -72,10 +98,30 @@ def update(
             typer.echo(f"Project id {project_id} does not exist")
             raise typer.Exit()
 
-        project = update_project(project, project_config)
+        updated_project = ProjectConfigurationSchema(project_config)
+        updated_project.id = project.id
+        session.merge()
         session.commit()
         typer.echo(f"updated project {project.name} "
                    f"with id: {project.id}")
+
+
+@app.command()
+def list(project_id: int = typer.Option(None,
+         help="Project id to list information for")):
+    with session_handler(db_url) as session:
+        if project_id:
+            projects = session.execute(
+                select(Project).filter_by(id=project_id)).scalars()
+            if not projects:
+                typer.echo("The project does not exist")
+                raise typer.Exit()
+        else:
+            projects = session.execute(
+                select(Project)).scalars()
+            for project in projects:
+                p_out = ProjectConfigurationSchema().dumps(project)
+                typer.echo(p_out)
 
 
 @app.command()

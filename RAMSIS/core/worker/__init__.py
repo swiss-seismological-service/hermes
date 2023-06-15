@@ -73,11 +73,6 @@ class WorkerHandleBase(abc.ABC):
         raise cls.WorkerHandleError(
             'Invalid handle identifier: {!r}'.format(handle_id))
 
-    @property
-    @abc.abstractmethod
-    def model(self):
-        pass
-
     @abc.abstractmethod
     def query(self, task_ids=[]):
         pass

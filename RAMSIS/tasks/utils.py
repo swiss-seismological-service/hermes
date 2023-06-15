@@ -1,14 +1,12 @@
-from prefect import task, get_run_logger
-from ramsis.datamodel import EStage, EStatus
-from RAMSIS.db_utils import set_statuses_db, get_forecast
-from RAMSIS.utils import reset_forecast
+from prefect import task, get_run_logger, runtime
+from datetime import timedelta, datetime
+from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
+from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
 from RAMSIS.db import session_handler
 
 forecast_context_format = "forecast_id: {forecast_id} |"
-scenario_context_format = "forecast_id: {forecast_id} scenario_id: " \
-    "{scenario_id}|"
-model_run_context_format = "forecast_id: {forecast_id} scenario_id: " \
-    "{scenario_id} model_run_id: {model_run_id}|"
+model_run_context_format = "forecast_id: {forecast_id} " \
+    "model_run_id: {model_run_id}|"
 
 
 @task
@@ -18,102 +16,107 @@ def update_status(forecast_id, connection_string, estatus):
         session.commit()
 
 
+def create_model_runs(model_configs, injection_plan=None):
+    model_runs = list()
+    for config in model_configs:
+        model_runs.append(
+            ModelRun(
+                modelconfig=config,
+                injectionplan=injection_plan,
+                status=Status(state=EStatus.PENDING)))
+    print("appending {len(model_runs)} to forecast.runs")
+    return model_runs
+
+
 @task
-def clone_forecast(reference_forecast_id: int,
-                   connection_string: str,
-                   scheduled_start_time) -> int:
+def new_forecast_from_series(forecastseries_id: int,
+                             connection_string: str,
+                             start_time: str) -> int:
 
     logger = get_run_logger()
+    if not start_time:
+        start_time = runtime.flow_run.scheduled_start_time
+    elif type(start_time) == str:
+        start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
     with session_handler(connection_string) as session:
-        reference_forecast = get_forecast(
-            reference_forecast_id, session)
-        project_settings = reference_forecast.project.settings.config
-        # If some input data is attached to the forecast rather
-        # than being received from a webservice, this must also
-        # be cloned. with_results=True only copies input data over.
-        if not project_settings['hydws_url'] or \
-                not project_settings['fdsnws_url']:
-            with_results = True
+        forecastseries = get_forecastseries(
+            forecastseries_id, session)
+
+        # Get unique model configs to create model runs for.
+        model_configs = list()
+        for tag in forecastseries.tags:
+            model_configs.extend(tag.modelconfigs)
+        model_configs_set = set(model_configs)
+        injection_plans = forecastseries.injectionplans
+
+        model_run_list = list()
+        if not injection_plans:
+            if forecastseries.project.injectionplan_required == \
+                    EInput.REQUIRED:
+                raise Exception(
+                    "Project requires injection plan but none were "
+                    "given on the forecast series. Please modify the "
+                    "forecast series before trying to run again.")
+            else:
+                model_run_list.extend(create_model_runs(model_configs_set))
         else:
-            with_results = False
-        forecast = reference_forecast.clone(with_results=with_results)
-        reference_forecast_duration = reference_forecast.endtime - \
-            reference_forecast.starttime
-        logger.info("The duration of the reference forecast is: "
-                    f"{reference_forecast_duration}")
+            for injection_plan in injection_plans:
+                model_run_list.extend(create_model_runs(
+                    model_configs_set,
+                    injection_plan=injection_plan))
+        if not model_run_list:
+            raise Exception("No model runs created for forecast")
+        # Set forecast endtime
+        if forecastseries.forecastduration:
+            endtime = start_time + timedelta(
+                seconds=forecastseries.forecastduration)
+        elif forecastseries.endtime:
+            endtime = forecastseries.endtime
+        else:
+            raise Exception(
+                "forecast series endtime or forecastduration "
+                "not set. Please update the forecastseries configuration.")
+        forecast = Forecast(forecastseries_id=forecastseries_id,
+                            starttime=start_time,
+                            endtime=endtime,
+                            runs=model_run_list,
+                            status=Status(state=EStatus.PENDING))
 
         logger.info("The new forecast will have a starttime of: "
-                    f"{scheduled_start_time}")
-        forecast.starttime = scheduled_start_time
-        forecast.endtime = scheduled_start_time + \
-            reference_forecast_duration
-        logger.info("The new forecast will have an endtime of: "
+                    f"{forecast.starttime} and an endtime of: "
                     f"{forecast.endtime}")
 
-        forecast.project_id = reference_forecast.project_id
-        # Reset statuses
-        forecast = reset_forecast(forecast)
         session.add(forecast)
         session.commit()
         logger.info(f"The new forecast has an id: {forecast.id}")
-        return forecast.id
+        return forecast.id, start_time
 
 
 @task(task_run_name="set_statuses(forecast{forecast_id})")
-def set_statuses(forecast_id: int, estage: EStage,
+def set_statuses(forecast_id: int,
                  connection_string: str) -> None:
-    # Set statuses at end of the stage
     logger = get_run_logger()
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
-        for scenario in forecast.scenarios:
-            if not scenario.enabled:
-                pass
-            try:
-                stage = scenario[estage]
-            except KeyError:
-                continue
-            if not stage.enabled:
-                pass
-            model_success = all([
-                True if model.status.state == EStatus.COMPLETE else False
-                for model in [r for r in stage.runs if r.enabled]])
-            if model_success:
-                stage.status.state = EStatus.COMPLETE
-            else:
-                stage.status.state = EStatus.ERROR
-            # All stages are considered here.
-            stage_states = [stage.status.state for stage in
-                            [s for s in scenario.stages if s.enabled]]
-            if all([state == EStatus.COMPLETE
-                    for state in stage_states]):
-                scenario.status.state = EStatus.COMPLETE
-            elif any([state == EStatus.ERROR
-                      for state in stage_states]):
-                scenario.status.state = EStatus.ERROR
-            elif any([state == EStatus.PENDING
-                     for state in stage_states]):
-                scenario.status.state = EStatus.RUNNING
-                logger.info(f"The scenario {scenario.id} has uncompleted "
-                            "stages")
-            else:
-                scenario.status.state = EStatus.ERROR
-                logger.error(f"Scenario {scenario.id} has stages which "
-                             "do not appear to be complete.")
+        models_finished = all([
+            True if model.status.state in
+            [EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS] else False
+            for model in forecast.runs])
+        if not models_finished:
+            logger.error("The model runs have mixed statuses and appear to "
+                         "be unfinished.")
+            forecast.status.state = EStatus.FINISHED_WITH_ERRORS
+            session.commit()
+            raise Exception("The model runs have mixed statuses and appear to "
+                            "be unfinished. ")
 
-        scenario_states = [scenario.status.state for scenario in
-                           [s for s in forecast.scenarios if s.enabled]]
-
-        if all([state == EStatus.ERROR
-                for state in scenario_states]):
-            forecast.status.state = EStatus.ERROR
+        models_complete = all([
+            True if model.status.state == EStatus.COMPLETE else False
+            for model in forecast.runs])
+        if models_complete:
+            forecast.status.state = EStatus.COMPLETE
+            session.commit()
+        else:
+            forecast.status.state = EStatus.FINISHED_WITH_ERRORS
             session.commit()
             raise Exception("Forecast has errors")
-        elif any([state == EStatus.ERROR
-                  for state in scenario_states]):
-            forecast.status.state = EStatus.COMPLETE
-            logger.warning("Some scenarios have failed")
-
-        else:
-            forecast.status.state = EStatus.COMPLETE
-        session.commit()

@@ -22,7 +22,7 @@ class HYDWSDataSource():
     """
     DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
-    def __init__(self, url, project, timeout=None):
+    def __init__(self, url, timeout=None):
         self.url = url
         self._timeout = timeout
 
@@ -30,12 +30,7 @@ class HYDWSDataSource():
         self.enabled = False
         self.logger = get_run_logger()
 
-        self._deserializer = self.DESERIALZER(
-            ramsis_proj=project.proj_string,
-            external_proj=4326,
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords')
+        self._deserializer = self.DESERIALZER()
 
     def fetch(self, **kwargs):
         """
@@ -59,11 +54,17 @@ class HYDWSDataSource():
                 bh = self._deserializer.load(ifd)
 
         except NoContent:
-            self.logger.info('No data received.')
+            self.logger.info(f'No data received from {self.url}')
+            raise 
         except RequestsError as err:
-            self.logger.error(f"Error while fetching data ({err}).")
+            self.logger.error(f"Error while fetching data from {self.url} ({err}).")
+            raise 
         except HYDWSJSONIOError as err:
-            self.logger.error(f"Error while deserializing data ({err}).")
+            self.logger.error(f"Error while deserializing data from {self.url} ({err}).")
+            raise 
+        except requests.exceptions.Timeout as err:
+            self.logger.error(f"The request timed out to {self.url}, ({err})")
+            raise 
         else:
             if bh.sections:
                 msg = f'Received borehole data (sections={len(bh.sections)}'
@@ -83,7 +84,7 @@ class FDSNWSDataSource():
 
     DESERIALZER = QuakeMLObservationCatalogDeserializer
 
-    def __init__(self, url, project, timeout=None):
+    def __init__(self, url, timeout=None):
         self.url = url
         self._timeout = timeout
 
@@ -91,12 +92,7 @@ class FDSNWSDataSource():
         self.enabled = False
         self.logger = get_run_logger()
 
-        self._deserializer = self.DESERIALZER(
-            ramsis_proj=project.proj_string,
-            external_proj=4326,
-            ref_easting=0.0,
-            ref_northing=0.0,
-            transform_func_name='pyproj_transform_to_local_coords')
+        self._deserializer = self.DESERIALZER()
 
     def fetch(self, **kwargs):
         self._args = kwargs
@@ -117,9 +113,17 @@ class FDSNWSDataSource():
                 cat = self._deserializer.load(ifd)
 
         except NoContent:
-            self.logger.info('No data received.')
+            self.logger.info(f'No data received from {self.url}')
+            raise 
         except RequestsError as err:
-            self.logger.error(f"Error while fetching data ({err}).")
+            self.logger.error(f"Error while fetching data from {self.url} ({err}).")
+            raise 
+        except HYDWSJSONIOError as err:
+            self.logger.error(f"Error while deserializing data from {self.url} ({err}).")
+            raise 
+        except requests.exceptions.Timeout as err:
+            self.logger.error(f"The request timed out to {self.url}, ({err})")
+            raise 
         except QuakeMLCatalogIOError as err:
             self.logger.error(f"Error while deserializing data ({err}).")
         else:

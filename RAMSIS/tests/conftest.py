@@ -1,4 +1,5 @@
 import pytest
+from os import getenv
 from os import environ
 import psycopg2
 
@@ -12,18 +13,19 @@ TEMP_ENV_VARS = {testing_environment_variable: 'true'}
 def env():
     old_environ = dict(environ)
     environ.update(TEMP_ENV_VARS)
-    from RAMSIS.db import env as environment
+    from RAMSIS.db import env as environment, env_file_path, testing_mode
     yield environment
     environ.clear()
     environ.update(old_environ)
 
 
-#@pytest.fixture(scope='class')
-#def session():
-#    from RAMSIS.db import session_handler
-#    yield store.session
-#    store.session.close()
-#    store.engine.dispose()
+@pytest.fixture(scope='class')
+def session():
+    from RAMSIS.db import connect_to_db, db_url
+    session = connect_to_db(db_url)
+    yield session
+    session.rollback()
+    session.close()
 
 
 @pytest.fixture(scope='session')

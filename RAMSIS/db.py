@@ -52,6 +52,7 @@ def init_db(connection_string: str) -> bool:
         if module_name not in sys.modules:
             finder.find_module(module_name).load_module(module_name)
     engine = create_engine(connection_string)
+    engine.execute('create extension if not exists postgis')
     try:
         ORMBase.metadata.create_all(engine, checkfirst=True)
     except SQLAlchemyError as e:
@@ -70,8 +71,9 @@ if os.path.islink(settings_file):
 app_settings = Settings(settings_file)
 
 testing_mode = bool(getenv("RAMSIS_TESTING_MODE", False)) is True
+testing_mode = os.getenv("RAMSIS_TESTING_MODE", 'False').lower() in ('true', '1', 't')
 project = app_settings['project']
-print("testing mode: ", testing_mode, getenv("RAMSIS_TESTING_MODE"))
+print("testing mode: ", testing_mode)
 env_file = ".env.test" if testing_mode else ".env"
 env_file_path = os.path.join(root_dir, env_file)
 env = dotenv_values(env_file_path)

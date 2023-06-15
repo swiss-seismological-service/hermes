@@ -1,0 +1,35 @@
+{
+    "model_configs":
+    [{
+	    "name": "ETAS model 2010-2012 calibration 10,000",
+	    "description": "Standard config for ETAS model for switzerland",
+            "url":"http://ramsis-nsfm-dev.ethz.ch:5007",
+            "enabled":true,
+	    "tags": ["ETAS", "RISE", "mc_1.8"],
+	    "sfm_module": "ramsis_nsfm.models.etas",
+	    "sfm_class": "ETASCalculation",
+	    "config":{
+	        "model_parameters": {
+                "auxiliary_start": "2010-01-01 00:00:00",
+	        "timewindow_start": "2012-01-01 00:00:00",
+
+	            "theta_0": {
+  	        	  "log10_mu": -6.21,
+  	        	  "log10_k0": -2.75,
+  	        	  "a": 1.13,
+  	        	  "log10_c": -2.85,
+  	        	  "omega": -0.13,
+  	        	  "log10_tau": 3.57,
+  	        	  "log10_d": -0.51,
+  	        	  "gamma": 0.15,
+  	        	  "rho": 0.63
+  	        	},
+	            "mc": 2.3,
+	            "delta_m": 0.1,
+	            "coppersmith_multiplier": 100,
+	            "earth_radius": 6.3781e3,
+	            "n_simulations": 10000
+	        },
+                "wrapper_parameters":{
+	            }}}]
+        }

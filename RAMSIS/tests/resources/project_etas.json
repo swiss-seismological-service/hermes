@@ -1,45 +1,13 @@
 {
-    "PROJECTS": [
+    "project_configs": [
         {
-            "PROJECT_NAME": "ETAS TESTING",
-            "PROJECT_DESCRIPTION": "Default project",
-            "PROJECT_STARTTIME": "1992-01-01T00:00:00",
-            "PROJECT_ENDTIME": "2022-01-01T00:00:00",
-            "HYDWS_URL": null,
-            "FDSNWS_URL": null,
-            "RAMSIS_PROJ": "epsg:4326",
-	    "SEISMIC_CATALOG": "REQUIRED",
-	    "WELL": "NOT_ALLOWED",
-	    "SCENARIO": "NOT_ALLOWED",
-            "WGS84_PROJ": "epsg:4326",
-	    "RUN_MODELS": "ETAS", 
-	    "MODEL_PROJECT_CONFIG":
-	        {
-		"model_parameters": {
-         	"auxiliary_start": "1992-01-01 00:00:00",
-		"timewindow_start": "1997-01-01 00:00:00",
-		"timewindow_end": "2022-01-01 00:00:00",
-
-		    "theta_0": {
-  			  "log10_mu": -6.21,
-  			  "log10_k0": -2.75,
-  			  "a": 1.13,
-  			  "log10_c": -2.85,
-  			  "omega": -0.13,
-  			  "log10_tau": 3.57,
-  			  "log10_d": -0.51,
-  			  "gamma": 0.15,
-  			  "rho": 0.63
-  			},
-		    "mc": 2.3,
-		    "delta_m": 0.1,
-		    "coppersmith_multiplier": 100,
-		    "earth_radius": 6.3781e3,
-		    "n_simulations": 100
-		},
-                "wrapper_parameters":{
-		    }
-		}
+            "name": "Etas testing 1992 start mc=1.75",
+            "description": "Default project",
+	    "starttime": "1992-01-01T00:00:00",
+	    "fdsnws_url": "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=1.75",
+	    "seismiccatalog_required": "REQUIRED",
+	    "injectionwell_required": "NOT_ALLOWED",
+	    "injectionplan_required": "NOT_ALLOWED"
         }
     ]
 }

@@ -1,4 +1,4 @@
-# Copyright 2018, ETH Zurich - Swiss Seismological Service SED
+## Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Seismicity forecast model (SFM) worker related facilities.
 """
@@ -60,8 +60,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     abstract the communication with their corresponding worker.
     """
 
-    URI_BASE = '/v1/sfm/models/'
-    URI_RUN = '/run'
+    URI_BASE = '/v1/sfm/run'
 
     MIMETYPE = 'application/json'
     LOGGER = 'ramsis.core.worker.remote_seismicity_worker_handle'
@@ -204,25 +203,23 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
     def __init__(self, base_url, **kwargs):
         """
         :param str base_url: The worker's base URL
-        :param str model_id: Model indentifier
         :param timeout: Timeout parameters past to the `requests
             <http://docs.python-requests.org/en/master/>`_ library functions
         :type timeout: float or tlple
         """
         super().__init__(**kwargs)
         self.logger = get_run_logger()
-        base_url, model_id = self.validate_ctor_args(
-            base_url, model_id=kwargs.get('model_id', self.MODEL_ID))
+        base_url = self.validate_ctor_args(
+            base_url)
 
         self._url_base = base_url
-        self._model_id = model_id
 
-        self._url_path = f"{self.URI_BASE}{self._model_id}{self.URI_RUN}"
+        self._url_path = f"{self.URI_BASE}"
 
         self._timeout = kwargs.get('timeout')
 
     @classmethod
-    def from_run(cls, model_run):
+    def from_run(cls, model_run, **kwargs):
         """
         Create a :py:class:`RemoteSeismicityWorkerHandle` from a model run.
 
@@ -230,13 +227,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :type model_run:
             :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
         """
-        # XXX(damb): Where to get additional configuration options from?
-        # model_run.config? model.config? From somewhere else?
-        return cls(model_run.model.url, model_id=model_run.model.sfmwid)
-
-    @property
-    def model(self):
-        return self._model_id
+        return cls(model_run.modelconfig.url, **kwargs)
 
     @property
     def url(self):
@@ -257,8 +248,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         """
         if not task_ids:
             self.logger.debug(
-                'Requesting tasks results (model={!r}) (bulk mode).'.format(
-                    self.model))
+                'Requesting tasks results (bulk mode).')
             self.logger.info(f"URL for model: {self.url}")
             req = functools.partial(
                 requests.get, self.url, timeout=self._timeout)
@@ -273,23 +263,23 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             task_ids = [task_ids]
 
         self.logger.debug(
-            'Requesting tasks results (model={!r}, task_ids={!r}).'.format(
-                self.model, task_ids))
+            'Requesting tasks results task_ids={!r}).'.format(
+                task_ids))
         resp = []
         for t in task_ids:
             url = '{url}/{task_id}'.format(url=self.url, task_id=t)
-            self.logger.debug(
-                'Requesting result (model={!r}, url={!r}, task_id={!r}).'.
-                format(self.model, url, t))
+            self.logger.info(
+                'Requesting result (url={!r}, task_id={!r}).'.
+                format(url, t))
 
             req = functools.partial(
-                requests.get, url, timeout=self._timeout)
+                requests.get, url, timeout=(5, 30))
 
             response = self._handle_exceptions(req)
 
             self.logger.debug(
-                'Task result (model={!r}, task_id={!r}): {!r}'.format(
-                    self.model, t, response))
+                'Task result (task_id={!r}): {!r}'.format(
+                    t, response))
             resp.append(response)
         return self.QueryResult.from_requests(
             resp, deserializer=deserializer)
@@ -312,8 +302,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         deserializer = kwargs.get('deserializer')
 
         self.logger.debug(
-            'Sending computation request (model={!r}, url={!r}).'.format(
-                self.model, self.url))
+            'Sending computation request url={!r}).'.format(
+                self.url))
 
         headers = {'Content-Type': self.MIMETYPE,
                    'Accept': 'application/json'}
@@ -330,8 +320,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             raise self.DecodingError(err)
 
         self.logger.debug(
-            'Worker response (model={!r}, url={!r}): {!r}.'.format(
-                self.model, self.url, result))
+            'Worker response (url={!r}): {!r}.'.format(
+                self.url, result))
         return result
 
     def delete(self, task_ids=[]):
@@ -347,23 +337,23 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             task_ids = [task_ids]
 
         self.logger.debug(
-            'Removing tasks (model={!r}, task_ids={!r}).'.format(
-                self.model, task_ids))
+            'Removing tasks (task_ids={!r}).'.format(
+                task_ids))
 
         resp = []
         for t in task_ids:
             url = '{url}/{task_id}'.format(url=self.url, task_id=t)
             self.logger.debug(
-                'Removing task (model={!r}, url={!r}, task_id={!r}).'.
-                format(self.model, url, t))
+                'Removing task (url={!r}, task_id={!r}).'.
+                format(url, t))
 
             req = functools.partial(requests.delete, url,
                                     timeout=self._timeout)
             response = self._handle_exceptions(req)
 
             self.logger.debug(
-                'Task removed (model={!r}, task_id={!r}): {!r}'.format(
-                    self.model, t, response))
+                'Task removed (task_id={!r}): {!r}'.format(
+                    t, response))
 
             resp.append(response)
 
@@ -387,26 +377,28 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             finally:
                 raise self.HTTPError(self.url, err)
         except requests.exceptions.ConnectionError as err:
+            self.logger.error(f"The request has a connection error to {self.url}")
             raise self.ConnectionError(self.url, err)
         except requests.exceptions.RequestsError as err:
+            self.logger.error(f"The request has an error {self.url}")
             raise self.RemoteWorkerError(err)
+        except requests.exceptions.Timeout:
+            self.logger.error(f"The request timed out to {self.url}")
+            raise 
 
         return resp
 
     def __repr__(self):
-        return '<%s (model=%r, url=%r)>' % (type(self).__name__,
-                                            self.model, self.url)
+        return '<%s (url=%r)>' % (type(self).__name__,
+                                  self.url)
 
     @staticmethod
-    def validate_ctor_args(base_url, model_id):
+    def validate_ctor_args(base_url):
         url = urlparse(base_url)
         if url.path or url.params or url.query or url.fragment:
             raise ValueError(f"Invalid URL: {url}.")
 
-        if not model_id:
-            raise ValueError("Missing: model id.")
-
-        return url.geturl(), model_id
+        return url.geturl()
 
 
 SeismicityWorkerHandle = RemoteSeismicityWorkerHandle

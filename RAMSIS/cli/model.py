@@ -1,113 +1,50 @@
 import typer
+from marshmallow import EXCLUDE
 from RAMSIS.db import db_url, session_handler, init_db
+from ramsis.datamodel import ModelConfig
 import json
-from ramsis.datamodel import SeismicityModel, HazardModel
+from ramsis.io.configuration import ModelConfigurationSchema
 from pathlib import Path
+
 from sqlalchemy import select
 
 
 app = typer.Typer()
 
 
-def create_sm(session, sm_model_config, hazardsourcemodeltemplate=None):
-    sm = SeismicityModel(
-        name=sm_model_config["MODEL_NAME"],
-        config=sm_model_config["CONFIG"],
-        sfmwid=sm_model_config["SFMWID"],
-        enabled=sm_model_config["ENABLED"],
-        url=sm_model_config["URL"])
-
-    if hazardsourcemodeltemplate:
-        sm.hazardsourcemodeltemplate = hazardsourcemodeltemplate
-    if "HAZARD_WEIGHT" in sm_model_config.keys():
-        sm.hazardweight = sm_model_config["HAZARD_WEIGHT"]
-    typer.echo(f"Creating new seismicity model: {sm}")
-    session.add(sm)
-
-
-def update_sm(session, existing_sm, sm_model_config,
-              hazardsourcemodeltemplate=None):
-    existing_sm.name = sm_model_config["MODEL_NAME"]
-    existing_sm.config = sm_model_config["CONFIG"]
-    existing_sm.sfmwid = sm_model_config["SFMWID"]
-    existing_sm.enabled = sm_model_config["ENABLED"]
-    existing_sm.url = sm_model_config["URL"]
-    if "HAZARD_WEIGHT" in sm_model_config.keys():
-        existing_sm.hazardweight = sm_model_config["HAZARD_WEIGHT"]
-    if hazardsourcemodeltemplate:
-        existing_sm.hazardsourcemodeltemplate = hazardsourcemodeltemplate
-
-    typer.echo(f"Updating existing seismicity model: {existing_sm}")
-    session.add(existing_sm)
-
-
-def create_hm(session, model_config, gsimlogictree):
-
-    hm = HazardModel(
-        name=model_config["MODEL_NAME"],
-        config=model_config["CONFIG"],
-        jobconfig=model_config["JOBCONFIG"],
-        enabled=model_config["ENABLED"],
-        url=model_config["URL"],
-        gsimlogictree=gsimlogictree)
-
-    typer.echo(f"Creating new hazard model: {hm}")
-    session.add(hm)
-
-
-def update_hm(session, existing_model, model_config, gsimlogictree):
-    existing_model.name = model_config["MODEL_NAME"]
-    existing_model.config = model_config["CONFIG"]
-    existing_model.jobconfig = model_config["JOBCONFIG"]
-    existing_model.enabled = model_config["ENABLED"]
-    existing_model.url = model_config["URL"]
-    existing_model.gsimlogictree = gsimlogictree
-
-    typer.echo(f"Updating existing hazard model: {existing_model}")
-    session.add(existing_model)
-
-
 @app.command()
-def configure(
-        model_config: Path = typer.Option(
-        ...,
-        exists=True,
-        readable=True)):
-
-    success = init_db(db_url)
-
-    if success:
-        pass
-    else:
-        typer.echo(f"Error, db could not be initialized: {success}")
-        raise typer.Exit()
+def delete(
+        model_name: str,
+        force: bool = typer.Option(
+            False, help="Force the deletes without asking")):
     with session_handler(db_url) as session:
-        with open(model_config, "r") as model_read:
-            config = json.load(model_read)
-        seismicity_config = config["SEISMICITY_MODELS"]
-
-        for sm_model_config in seismicity_config:
-            existing_sm_model = session.execute(
-                select(SeismicityModel).filter_by(
-                    name=sm_model_config["MODEL_NAME"])).\
-                scalar_one_or_none()
-            if not existing_sm_model:
-                create_sm(session, sm_model_config)
-            else:
-                update_sm(session, existing_sm_model, sm_model_config)
+        model_config = session.execute(
+            select(ModelConfig).filter_by(
+                name=model_name)).\
+            scalar_one_or_none()
+        if not model_config:
+            typer.echo("Model does not exist")
+            raise typer.Exit()
+        if model_config.runs:
+            typer.echo("Model config is associated with model runs, "
+                       "cannot delete. You can disable instead.")
+            raise typer.Exit()
+            if not force:
+                delete = typer.confirm("Are you sure you want to delete the  "
+                                       f"model with name: {model_name}?")
+                if not delete:
+                    typer.echo("Not deleting")
+                    raise typer.Abort()
+        session.delete(model_config)
         session.commit()
 
 
 @app.command()
-def add_seismicity(
+def load(
         model_config: Path = typer.Option(
         ...,
         exists=True, readable=True, help=(
-            "Path to model config containing Seismicity Model config")),
-        hazardsourcemodeltemplate_path: Path = typer.Option(
-        None, exists=True, readable=True, help=(
-            "Path to a source model xml template. Please see tests for "
-            "examples"))):
+            "Path to model config containing Seismicity Model config"))):
 
     success = init_db(db_url)
 
@@ -118,60 +55,36 @@ def add_seismicity(
         raise typer.Exit()
     with session_handler(db_url) as session:
         with open(model_config, "r") as model_read:
-            config = json.load(model_read)
-        with open(hazardsourcemodeltemplate_path, "r") as sourcemodel_read:
-            hazardsourcemodeltemplate = sourcemodel_read.read()
+            config_dict = json.load(model_read)
 
-        existing_sm_model = session.execute(
-            select(SeismicityModel).filter_by(
-                name=config["MODEL_NAME"])).\
-            scalar_one_or_none()
-        if not existing_sm_model:
-            create_sm(session, config,
-                      hazardsourcemodeltemplate=hazardsourcemodeltemplate)
-        else:
-            update_sm(session, existing_sm_model, config,
-                      hazardsourcemodeltemplate=hazardsourcemodeltemplate)
-        session.commit()
+        for config in config_dict["model_configs"]:
+            existing_config = session.execute(
+                select(ModelConfig).filter_by(
+                    name=config["name"])).\
+                scalar_one_or_none()
 
+            if existing_config:
+                typer.echo(f"Model config exists for {existing_config.name}.")
+                # Check if there are already completed forecasts
+                # associated before allowing modification.
+                runs_exist = True if existing_config.runs else False
+                if runs_exist:
+                    session.rollback()
+                    typer.echo("Model runs already exist for this config"
+                               " Please upload the config with a new name.")
+                    typer.Exit(code=1)
+                typer.echo("deleting existing config")
+                session.delete(existing_config)
+                new_model_config = ModelConfigurationSchema(
+                    unknown=EXCLUDE, context={"session": session}).load(config)
+                new_model_config.id = existing_config.id
+            else:
+                new_model_config = ModelConfigurationSchema(
+                    unknown=EXCLUDE, context={"session": session}).load(config)
+                typer.echo("Model config is being added for "
+                           f"{new_model_config.name}")
 
-@app.command()
-def add_hazard(
-        model_config: Path = typer.Option(
-        ...,
-        exists=True,
-        readable=True,
-        help="Path to model config containing Hazard Model config"),
-        gsimlogictree_path: Path = typer.Option(
-        ...,
-        exists=True,
-        readable=True,
-        help="Path to gsim logic tree file for running with OpenQuake")):
-
-    success = init_db(db_url)
-
-    if success:
-        pass
-    else:
-        typer.echo(f"Error, db could not be initialized: {success}")
-        raise typer.Exit()
-    with session_handler(db_url) as session:
-        with open(model_config, "r") as model_read:
-            config = json.load(model_read)
-        with open(gsimlogictree_path, "r") as gsim_read:
-            gsimlogictree = gsim_read.read()
-
-        existing_haz_model = session.execute(
-            select(HazardModel).filter_by(
-                name=config["MODEL_NAME"])).\
-            scalar_one_or_none()
-        if not existing_haz_model:
-            create_hm(session, config, gsimlogictree)
-        else:
-            update_hm(session, existing_haz_model, config, gsimlogictree)
-        session.commit()
-
-# @app.command()
-# def disable(model_: Path = typer.Option(
-# also enable - should create and remove model runs that are
-#  associated with the model.
+            session.add(new_model_config)
+            session.commit()
+            typer.echo("A model has been configured with the name: "
+                       f"{new_model_config.name}, id: {new_model_config.id}")
