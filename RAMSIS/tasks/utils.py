@@ -1,4 +1,4 @@
-from prefect import task, get_run_logger, runtime 
+from prefect import task, get_run_logger, runtime
 from datetime import timedelta, datetime
 from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries

@@ -73,19 +73,18 @@ def load(
                     typer.echo("Model runs already exist for this config"
                                " Please upload the config with a new name.")
                     typer.Exit(code=1)
-                print("deleting existing config")
+                typer.echo("deleting existing config")
                 session.delete(existing_config)
-                print("id: ", existing_config.id)
-                new_model_config = ModelConfigurationSchema(unknown=EXCLUDE, context={"session":session}).load(config)
+                new_model_config = ModelConfigurationSchema(
+                    unknown=EXCLUDE, context={"session": session}).load(config)
                 new_model_config.id = existing_config.id
             else:
-                new_model_config = ModelConfigurationSchema(unknown=EXCLUDE, context={"session":session}).load(config)
+                new_model_config = ModelConfigurationSchema(
+                    unknown=EXCLUDE, context={"session": session}).load(config)
                 typer.echo("Model config is being added for "
                            f"{new_model_config.name}")
 
-            print("model tags", new_model_config.tags)
             session.add(new_model_config)
             session.commit()
-            print("2 model tags", new_model_config.tags)
             typer.echo("A model has been configured with the name: "
-                    f"{new_model_config.name}, id: {new_model_config.id}")
+                       f"{new_model_config.name}, id: {new_model_config.id}")

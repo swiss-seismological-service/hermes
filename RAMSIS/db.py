@@ -71,6 +71,7 @@ if os.path.islink(settings_file):
 app_settings = Settings(settings_file)
 
 testing_mode = bool(getenv("RAMSIS_TESTING_MODE", False)) is True
+testing_mode = os.getenv("RAMSIS_TESTING_MODE", 'False').lower() in ('true', '1', 't')
 project = app_settings['project']
 print("testing mode: ", testing_mode)
 env_file = ".env.test" if testing_mode else ".env"

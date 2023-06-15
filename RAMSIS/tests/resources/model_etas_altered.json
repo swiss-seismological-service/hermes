@@ -3,7 +3,7 @@
     [{
 	    "name": "ETAS model 2010-2012 calibration..",
 	    "description": "Standard config for ETAS model for switzerland",
-            "url":"http://ramsis-nsfm-dev.ethz.ch:5007",
+            "url":"http://localhost:5007",
             "enabled":true,
 	    "tags": ["ETAS", "RISE", "mc_1.8"],
 	    "sfm_module": "ramsis_nsfm.models.etas",

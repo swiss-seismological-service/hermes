@@ -9,8 +9,8 @@ from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
 from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 
 
-
 app = typer.Typer()
+
 
 def deserialize_hydws_data(data, plan):
     deserializer = HYDWSBoreholeHydraulicsDeserializer(
@@ -48,7 +48,6 @@ def create(
 
         with open(config, "r") as project_json:
             project_config_dict = json.load(project_json)
-            print(project_config_dict)
             project_config_list = project_config_dict['project_configs']
 
         new_projects = []
@@ -69,7 +68,6 @@ def create(
                 cat = deserialize_qml_data(
                     catalog_data)
                 project.seismiccatalog = cat
-                print(project.seismiccatalog)
                 session.add(project.seismiccatalog)
             session.commit()
 

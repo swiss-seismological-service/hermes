@@ -1,14 +1,13 @@
 from typing import List
 import asyncio
 import typer
-import json
-from datetime import timedelta, datetime
+from datetime import datetime
 from sqlalchemy import select
-from ramsis.datamodel import Forecast, Project, EStatus, EInput
-from RAMSIS.db import db_url, session_handler, app_settings
-from RAMSIS.cli.utils import flow_deployment_rerun_forecast, schedule_deployment, add_new_scheduled_run_rerun_forecast
+from ramsis.datamodel import Forecast, EStatus
+from RAMSIS.db import db_url, session_handler
+from RAMSIS.cli.utils import flow_deployment_rerun_forecast, \
+    add_new_scheduled_run_rerun_forecast
 from RAMSIS.utils import reset_forecast
-from pathlib import Path
 from RAMSIS.flows.forecast import ramsis_flow
 
 
@@ -17,9 +16,9 @@ app = typer.Typer()
 
 @app.command()
 def rerun(forecast_id: int,
-        force: bool = typer.Option(
-            False, help="Force the forecast to run again, "
-            "even if completed.")):
+          force: bool = typer.Option(
+              False, help="Force the forecast to run again, "
+              "even if completed.")):
     flow_to_schedule = ramsis_flow
     with session_handler(db_url) as session:
         forecast = session.execute(
@@ -40,9 +39,9 @@ def rerun(forecast_id: int,
                 session.commit()
             else:
                 typer.Exit()
-        data_dir = app_settings['data_dir']
         deployment_name = f"forecast_{forecast_id}"
-        deployment = flow_deployment_rerun_forecast(flow_to_schedule, deployment_name, None, forecast_id, db_url)
+        _ = flow_deployment_rerun_forecast(flow_to_schedule, deployment_name,
+                                           None, forecast_id, db_url)
 
         asyncio.run(
             add_new_scheduled_run_rerun_forecast(
@@ -53,12 +52,13 @@ def rerun(forecast_id: int,
 
 @app.command()
 def delete(forecast_ids: List[int],
-            force: bool = typer.Option(
-                False, help="Force the deletes without asking")):
+           force: bool = typer.Option(
+           False, help="Force the deletes without asking")):
     with session_handler(db_url) as session:
         for forecast_id in forecast_ids:
             forecast = session.execute(
-                select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
+                select(Forecast).filter_by(id=forecast_id)).\
+                scalar_one_or_none()
             if not forecast:
                 typer.echo("The forecast does not exist")
                 raise typer.Exit()

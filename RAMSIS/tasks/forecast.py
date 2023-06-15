@@ -7,7 +7,7 @@ from prefect import task, get_run_logger
 from prefect.tasks import exponential_backoff
 from prefect.server.schemas.states import Failed
 from ramsis.datamodel import EInput, EStatus, \
-    Forecast, Project, SeismicObservationCatalog, InjectionWell, ModelRun
+    Forecast, Project, SeismicObservationCatalog, InjectionWell
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
@@ -15,26 +15,11 @@ from RAMSIS.db import session_handler
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
 from RAMSIS.db_utils import get_forecast, get_model_run
-from RAMSIS.error import ModelNotFinished, RemoteWorkerError
+from RAMSIS.error import RemoteWorkerError
 
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
-
-@task(task_run_name="run_forecast_flow(forecast{forecast_id})")
-def run_forecast(forecast_id: int, connection_string: str) -> bool:
-    """
-    If forecast is not complete, return True.
-    """
-    with session_handler(connection_string) as session:
-        logger = get_run_logger()
-        forecast = get_forecast(forecast_id, session)
-        if forecast.status.state != EStatus.COMPLETE:
-            logger.info("Forecast is not complete and will be run.")
-            return True
-        logger.info(f'Forecast {forecast_id} will not be run '
-                    ' as it is complete')
-        return False
 
 @task(task_run_name="run_forecast_flow(forecast{forecast_id})")
 def forecast_status(forecast_id: int, connection_string: str) -> bool:
@@ -42,9 +27,9 @@ def forecast_status(forecast_id: int, connection_string: str) -> bool:
     If forecast is not complete, return True.
     """
     with session_handler(connection_string) as session:
-        logger = get_run_logger()
         forecast = get_forecast(forecast_id, session)
         return forecast.status.state
+
 
 def any_model_runs_complete(
         forecast: Forecast) -> bool:
@@ -311,7 +296,8 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         return int(model_run.id)
 
 @task(task_run_name="check_model_run_not_complete(model_run{model_run_id})") # noqa
-def check_model_run_not_complete(model_run_id: int,
+def check_model_run_not_complete(
+        model_run_id: int,
         connection_string: str) -> Optional[int]:
     with session_handler(connection_string) as session:
         logger = get_run_logger()
@@ -328,36 +314,30 @@ def check_model_run_not_complete(model_run_id: int,
         return None
 
 
-@task(task_run_name="dispatched_model_runs(forecast_{forecast_id})") # noqa
-def dispatched_model_runs(forecast_id: int,
-        connection_string: str) -> bool:
-    with session_handler(connection_string) as session:
-        logger = get_run_logger()
-        forecast = get_forecast(forecast_id, session)
-        dispatched_runs = [r for r in forecast.runs if r.status.state == EStatus.DISPATCHED]
-
 @task(task_run_name="check_model_runs_dispatched(forecast_{forecast_id})") # noqa
-def check_model_runs_dispatched(forecast_id: int,
+def check_model_runs_dispatched(
+        forecast_id: int,
         connection_string: str) -> bool:
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         logger.info(f"check model runs dispatched forecast_id: {forecast_id}")
         forecast = get_forecast(forecast_id, session)
         all_statuses = [r.status.state for r in forecast.runs]
-        logger.info(f"In checking dispatched, forecast: {forecast_id}, statuses: {all_statuses}")
+        logger.info(f"In checking dispatched, forecast: {forecast_id}, "
+                    f"statuses: {all_statuses}")
         if EStatus.DISPATCHED in all_statuses:
-            logger.info(f"EStatus.DISPATCHED in all statuses")
+            logger.debug("EStatus.DISPATCHED in all statuses")
             return True
-        logger.info(f"EStatus.DISPATCHED not in all statuses, quitting loop")
+        logger.debug("EStatus.DISPATCHED not in all statuses, quitting loop")
         return False
 
 
 @task(tags=["model_run"],
-      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})",
-    retries=3,
-    retry_delay_seconds=exponential_backoff(backoff_factor=10),
-    retry_jitter_factor=1,
-    timeout_seconds=100
+      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})", # noqa
+      retries=3,
+      retry_delay_seconds=exponential_backoff(backoff_factor=10),
+      retry_jitter_factor=1,
+      timeout_seconds=100
       ) # noqa
 def poll_model_run(forecast_id: int, model_run_id: int,
                    connection_string: str) -> None:
@@ -374,10 +354,11 @@ def poll_model_run(forecast_id: int, model_run_id: int,
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         model_run = get_model_run(model_run_id, session)
-        if model_run.status.state in (EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS):
+        if model_run.status.state in (
+                EStatus.COMPLETE,
+                EStatus.FINISHED_WITH_ERRORS):
             logger.info("model run is complete or has errors, exiting")
             return
-        forecast = model_run.forecast
         logger.info(f"Polling for runid={model_run.runid}")
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
@@ -409,9 +390,6 @@ def poll_model_run(forecast_id: int, model_run_id: int,
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")
                 return
-                #raise ModelNotFinished(
-                #    f"(forecast={forecast.id})"
-                #    f"(runid={model_run.runid}): Polling")
 
             logger.info(
                 f'Received response (run={model_run!r}, '
@@ -424,25 +402,23 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         "Remote Seismicity Worker has not returned "
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
-                    logger.info("setting model run to finishe with errors##########3")
                     model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                     session.commit()
                 except Exception:
-                    logger.info(" EXCEPTION! setting model run to finishe with errors")
+                    logger.error("EXCEPTION! setting model run to finished "
+                                 "with errors")
                     model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                     session.commit()
 
-
                 else:
                     model_run.resulttimebins = result
-                    logger.info("setting model run to complete########")
+                    logger.debug("setting model run to complete.")
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
-                    logger.info("after commit for debug")
 
             elif status in TASK_ERROR:
-                logger.info("status in error")
-                logger.info("setting model run to finishe with errors ########")
+                logger.error("EXCEPTION! task error. setting model run "
+                             "to finished with errors")
                 model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                 session.commit()
                 logger.error("Remote Seismicity Model Worker"
@@ -450,7 +426,7 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                              f"(runid={model_run.runid}: {resp})")
 
             else:
-                logger.info("setting model run to finishe with errors###########")
+                logger.error(f"Unhandled status code recieved: {status}")
                 model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                 session.commit()
                 logger.error(

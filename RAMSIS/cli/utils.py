@@ -1,15 +1,18 @@
 import typer
+from typing import List, Dict
 from prefect.client import get_client
-import asyncio
 import logging
 from datetime import datetime
 from prefect.deployments import run_deployment
+from prefect.server.api.deployments import set_schedule_inactive \
+    as deployment_set_schedule_inactive
 from prefect.deployments import Deployment
-from prefect.orion.schemas.filters import FlowRunFilter, FlowRunFilterState, FlowRunFilterStateName
+from prefect.server.schemas.filters import FlowRunFilter, FlowRunFilterState, \
+    FlowRunFilterStateName
 
 
-from prefect.orion.schemas.states import Scheduled
-from prefect.orion.schemas.filters import FlowFilter, DeploymentFilter
+from prefect.server.schemas.states import Scheduled
+from prefect.server.schemas.filters import FlowFilter, DeploymentFilter
 
 
 from RAMSIS.db import app_settings
@@ -21,31 +24,15 @@ from RAMSIS.flows.forecast import scheduled_ramsis_flow
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
-async def delete_scheduled_flow_runs():
-    client = get_client()
-    work_pools = await client.read_work_pools()
-    if not work_pools:
-        raise Exception("There are no work pools configured")
-    if len(work_pools) > 1:
-        raise Exception("There are more than one work pools configured")
-    flow_runs = await client.get_scheduled_flow_runs_for_work_pool(work_pools[0].name)
-    typer.echo(f"There are {len(flow_runs)} flow runs scheduled.")
-    for response in flow_runs:
-        run = response.dict()["flow_run"]
-        await client.delete_flow_run(run["id"])
-        typer.echo(f"Flow run with id: {run['id']} with "
-                   f"name: {run['name']} has been cancelled.")
-    typer.echo("RAMSIS has been stopped, all currently "
-               "scheduled flow runs cancelled.")
-
 def get_deployment_name(forecastseries_id):
     return f"forecastseries_{forecastseries_id}"
 
 
 # check for a deployment with the same name as <ramsis_flow_name>/forecast_<id>
-def flow_deployment_rerun_forecast(flow, deployment_name, schedule, forecast_id,
-                    db_url, work_queue_name="default",
-                    logging_level="INFO"):
+def flow_deployment_rerun_forecast(flow, deployment_name,
+                                   schedule, forecast_id,
+                                   db_url, work_queue_name="default",
+                                   logging_level="INFO"):
     parameters = dict(
         forecast_id=forecast_id,
         connection_string=db_url)
@@ -59,6 +46,8 @@ def flow_deployment_rerun_forecast(flow, deployment_name, schedule, forecast_id,
         apply=True
     )
     return deployment
+
+
 # check for a deployment with the same name as <ramsis_flow_name>/forecast_<id>
 def flow_deployment(flow, deployment_name, schedule, forecastseries_id,
                     db_url, work_queue_name="default",
@@ -77,29 +66,22 @@ def flow_deployment(flow, deployment_name, schedule, forecastseries_id,
     )
     return deployment
 
+
 # Don't know if we require this function
-#async def scheduled_flow_runs() -> List[Dict]:
-#    """
-#    Get list of information about all currently scheduled flow runs
-#    """
-#    client = get_client()
-#    work_pools = await client.read_work_pools()
-#    print(work_pools)
-#    if not work_pools:
-#        raise Exception("There are no work pools configured")
-#    if len(work_pools) > 1:
-#        raise Exception("There are more than one work pools configured")
-#    flow_runs = await client.get_scheduled_flow_runs_for_work_pool(
-#        work_pools[0].name)
-#    return flow_runs
-
-
-#def cancel_flow_run(flow_run_id: str, msg: str = ""):
-#    """Alter state of flow run from flow run id to Cancelled"""
-#    client = get_client()
-#    _ = client.set_flow_run_state(
-#        flow_run_id,
-#        Cancelled(msg))
+async def scheduled_flow_runs() -> List[Dict]:
+    """
+    Get list of information about all currently scheduled flow runs
+    """
+    client = get_client()
+    work_pools = await client.read_work_pools()
+    print(work_pools)
+    if not work_pools:
+        raise Exception("There are no work pools configured")
+    if len(work_pools) > 1:
+        raise Exception("There are more than one work pools configured")
+    flow_runs = await client.get_scheduled_flow_runs_for_work_pool(
+        work_pools[0].name)
+    return flow_runs
 
 
 def get_idempotency_id():
@@ -129,6 +111,7 @@ def get_flow_run_label():
 def create_flow_run_name(idempotency_id, forecast_id):
     return f"{idempotency_id}forecast_run_{forecast_id}"
 
+
 def schedule_deployment(
         deployment_name, flow_name,
         forecastseries_id, forecast_starttime,
@@ -149,19 +132,21 @@ async def add_new_scheduled_run_rerun_forecast(
         forecast_id=forecast_id,
         connection_string=db_url,
         date=forecast_starttime)
-    print("parameters", parameters)
     async with get_client() as client:
         deployments = await client.read_deployments(
             flow_filter=FlowFilter(name={"any_": [flow_name]}),
-            deployment_filter=DeploymentFilter(name={"any_": [deployment_name]}),
+            deployment_filter=DeploymentFilter(
+                name={"any_": [deployment_name]}),
         )
         deployment_id = deployments[0].id
         await client.create_flow_run_from_deployment(
-            deployment_id=deployment_id, state=Scheduled(scheduled_time=scheduled_starttime),
+            deployment_id=deployment_id,
+            state=Scheduled(scheduled_time=scheduled_starttime),
             parameters=parameters
         )
         typer.echo(f"Scheduled new forecast run: {deployment_id} with"
                    f"parameters: {parameters}")
+
 
 async def add_new_scheduled_run(
     flow_name: str, deployment_name: str,
@@ -171,58 +156,20 @@ async def add_new_scheduled_run(
         forecastseries_id=forecastseries_id,
         connection_string=db_url,
         date=forecast_starttime)
-    print("parameters", parameters)
     async with get_client() as client:
         deployments = await client.read_deployments(
             flow_filter=FlowFilter(name={"any_": [flow_name]}),
-            deployment_filter=DeploymentFilter(name={"any_": [deployment_name]}),
+            deployment_filter=DeploymentFilter(
+                name={"any_": [deployment_name]}),
         )
         deployment_id = deployments[0].id
         await client.create_flow_run_from_deployment(
-            deployment_id=deployment_id, state=Scheduled(scheduled_time=scheduled_starttime),
+            deployment_id=deployment_id,
+            state=Scheduled(scheduled_time=scheduled_starttime),
             parameters=parameters
         )
         typer.echo(f"Scheduled new forecast run: {deployment_id} with"
                    f"parameters: {parameters}")
-        
-
-#def schedule_forecast(forecast, client, flow_run_name, label,
-#                      connection_string, data_dir,
-#                      dry_run=False, idempotency_key=None,
-#                      scheduled_wait_time=0):
-#    if forecast.starttime < datetime.utcnow():
-#        scheduled_time = datetime.utcnow() \
-#            + timedelta(seconds=scheduled_wait_time)
-#        typer.echo(f"Forecast {forecast.id} is due to run in the past. "
-#                   "Will be scheduled to run in approximately "
-#                   f"{scheduled_wait_time} seconds")
-#    else:
-#        scheduled_time = forecast.starttime
-#    parameters = dict(forecast_id=forecast.id,
-#                      connection_string=connection_string,
-#                      data_dir=data_dir)
-#
-#    options = dict(
-#        project_name=prefect_project_name,
-#        flow_name=manager_flow_name,
-#        labels=[label],
-#        run_name=flow_run_name,
-#        scheduled_start_time=scheduled_time,
-#        parameters=parameters,
-#        context={
-#            'config':
-#                {'logging':
-#                    {"format":
-#                        "%(flow_run_name)s %(message)s"}}}) # noqa
-#    if idempotency_key:
-#        options.update(dict(idempotency_key=idempotency_key))
-#    if not dry_run:
-#        flow_run_id = create_flow_run.run(**options)
-#
-#        typer.echo(
-#            f"Forecast {forecast.id} has been scheduled to run at "
-#            f"{scheduled_time} with name {flow_run_name} and flow run id: "
-#            f"{flow_run_id}")
 
 
 # To add
@@ -269,7 +216,6 @@ def deserialize_qml_data(data, ramsis_proj):
     return ret_data
 
 
-
 async def list_flow_runs_with_states(states: list):
     async with get_client() as client:
         flow_runs = await client.read_flow_runs(
@@ -307,16 +253,19 @@ async def bulk_delete_flow_runs(states: list):
     else:
         print("Aborting...")
 
+
 async def get_deployment(client, deployment_name):
-        try:
-            deployment = await client.read_deployment_by_name(f"{scheduled_ramsis_flow.name}/{deployment_name}")
-        except Exception as err:
-            print(f"Deployment {deployment_name!r} not found!, {err}")
-            raise
-        return deployment
+    try:
+        deployment = await client.read_deployment_by_name(
+            f"{scheduled_ramsis_flow.name}/{deployment_name}")
+    except Exception as err:
+        print(f"Deployment {deployment_name!r} not found!, {err}")
+        raise
+    return deployment
+
 
 async def set_schedule_inactive(forecastseries_id):
     async with get_client() as client:
         deployment_name = get_deployment_name(forecastseries_id)
         deployment = await get_deployment(client, deployment_name)
-        asyncio.run(deployment.set_schedule_inactive())
+        await deployment_set_schedule_inactive(deployment.id)
