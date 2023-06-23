@@ -1,11 +1,11 @@
 {
     "project_configs": [
         {
-            "name": "Bedretto June 23 test1",
+            "name": "Bedretto June 23 ",
             "description": "Default project",
             "starttime": "2022-06-23T05:00:00",
             "endtime": "2022-06-23T23:00:00",
-            "hydws_url": "http://bedretto-hydws.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMQ==?level=hydraulic",
+            "hydws_url": "http://inducat.ethz.ch:8080/hydws/v1/boreholes/c21pOmNoLmV0aHouc2VkL2JoL1NUMQ==?level=hydraulic",
             "fdsnws_url": "http://bedretto-dev.ethz.ch:8080/fdsnws/event/1/query?minmagnitude=-7",
 	    "seismiccatalog_required": "REQUIRED",
 	    "injectionwell_required": "REQUIRED",

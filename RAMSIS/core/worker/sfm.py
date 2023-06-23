@@ -301,7 +301,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
 
         deserializer = kwargs.get('deserializer')
 
-        self.logger.debug(
+        self.logger.info(
             'Sending computation request url={!r}).'.format(
                 self.url))
 

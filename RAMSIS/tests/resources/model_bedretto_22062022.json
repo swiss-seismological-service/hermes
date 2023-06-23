@@ -2,7 +2,10 @@
     "modelconfigs":[
         {
             "name":"EM1-MLE",
-            "url":"http://ramsis-em1.ethz.ch:5007",
+            "url":"http://localhost:5007",
+	    "tags": ["EM1", "INDUCED"],
+	    "sfm_module": "ramsis_sfm.models.EM1",
+	    "sfm_class": "EM1",
             "config":{
                 "model_parameters":{
                     "Tau":60,
@@ -10,13 +13,15 @@
                     "Mc":null,
                     "tau_force":false,
                     "mode":"MLE",
-                    "Nsim":100
+                    "Nsim":10
                 },
                 "wrapper_parameters":{
                     "well_section_publicid":"smi:ch.ethz.sed/bh/ST1/section_13",
                     "reference_point":[
 			2679643.560254707, 1151568.9821506666, 1411.25882375525
-                    ]
+                    ],
+		    "epoch_duration": 600,
+		    "local_proj_string": "epsg:2056"
                 }
             },
             "enabled":true

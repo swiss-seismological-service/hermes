@@ -22,10 +22,10 @@ runner = CliRunner(echo_stdin=True)
 dirpath = dirname(abspath(__file__))
 
 # URLs are same as in bedretto project config
-FDSNWS_URL = "http://bedretto-dev.ethz.ch:8080/fdsnws/event/1/query" \
-    "?minmagnitude=-7"
-HYDWS_URL = "http://inducat.ethz.ch:8080/hydws/v1/boreholes" \
-    "/c21pOmNoLmV0aHouc2VkL2JoL1NUMQ==?level=hydraulic"
+#FDSNWS_URL = "http://bedretto-dev.ethz.ch:8080/fdsnws/event/1/query" \
+#    "?minmagnitude=-7"
+#HYDWS_URL = "http://inducat.ethz.ch:8080/hydws/v1/boreholes" \
+#    "/c21pOmNoLmV0aHouc2VkL2JoL1NUMQ==?level=hydraulic"
 
 model_requests_path = join(dirpath, 'model_requests')
 
@@ -35,19 +35,17 @@ model_response_path = join(dirpath, 'results')
 
 resources_path = join(dirpath, 'resources')
 inj_plan_path = join(
-    resources_path, 'injection_plan_150L_20220623.json')
-disabled_bedretto_model_config_path = join(
-    resources_path, 'model_bedretto_disabled.json')
-enabled_bedretto_model_config_path = join(
-    resources_path, 'model_bedretto_enabled.json')
-bedretto_project_config_path = join(
-    resources_path, 'project_bedretto_22062022.json')
-bedretto_forecast_config_path = join(
-    resources_path, 'forecast_bedretto_22062022.json')
-fdsn_catalog_path = join(
-    resources_path, '2022-06-22_fdsn_catalog.xml')
-hyd_path = join(
-    resources_path, '2022-06-22_hydws.json')
+    resources_path, '16A-32_forge_2022_04_21.json')
+model_config_path = join(
+    resources_path, 'model_forge_2022.json')
+project_config_path = join(
+    resources_path, 'project_forge_2022.json')
+forecast_config_path = join(
+    resources_path, 'forecast_forge_2022.json')
+#fdsn_catalog_path = join(
+#    resources_path, '2022-06-22_fdsn_catalog.xml')
+#hyd_path = join(
+#    resources_path, '2022-06-22_hydws.json')
 
 
 def mocked_requests_post(*args, **kwargs):
@@ -85,24 +83,24 @@ def mocked_datasources_get(*args, **kwargs):
     return MockResponse(None, 404)
 
 
-class TestInducedCase:
-    def test_ramsis_bedretto_setup(self, mocker, session):
-        model_result = load_model(enabled_bedretto_model_config_path)
+class TestInducedForgeCase:
+    def test_ramsis_forge_setup(self, mocker, session):
+        model_result = load_model(model_config_path)
         models = session.execute(
             select(ModelConfig)).scalars().all()
         assert len(models) == 1
-        create_project(bedretto_project_config_path, catalog_data=fdsn_catalog_path, well_data=hyd_path) 
+        create_project(project_config_path) 
         projects = session.execute(
             select(Project)).scalars().all()
         assert len(projects) == 1
 
-        create_forecastseries(bedretto_forecast_config_path, "1")
+        create_forecastseries(forecast_config_path, "1")
         forecastseries = session.execute(
             select(ForecastSeries)).scalars().all()
         assert len(forecastseries) == 1
 
-    @pytest.mark.run(after='test_ramsis_bedretto_setup')
-    def test_run_bedretto_forecast(self, mocker, session):
+    @pytest.mark.run(after='test_ramsis_forge_setup')
+    def test_run_forge_forecast(self, mocker, session):
         from RAMSIS.cli import ramsis_app as app
         from RAMSIS.db import db_url
         from RAMSIS.flows.forecast import scheduled_ramsis_flow

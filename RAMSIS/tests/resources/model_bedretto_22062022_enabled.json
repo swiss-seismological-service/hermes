@@ -2,7 +2,7 @@
     "model_configs":[
         {
             "name":"EM1-MLE",
-            "url":"http://ramsis-em1.ethz.ch:5007",
+            "url":"http://localhost:5007",
 	    "tags": ["BEDRETTO"],
 	    "sfm_module": "ramsis_sfm.models.EM1.EM1",
 	    "sfm_class": "EM1",

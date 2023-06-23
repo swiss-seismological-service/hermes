@@ -26,6 +26,7 @@ def load_model(model_config):
                "--model-config",
                model_config]
     result = runner.invoke(app, options)
+    print("result", result.stdout)
     return result
 
 
@@ -38,19 +39,23 @@ def check_updated_model(session, enabled_model_config, disabled_model_config):
 
     # test update of model.
     result2 = load_model(enabled_model_config)
+    print("result", result.stdout)
     assert result2.exit_code == 0
     session.refresh(existing_model)
     assert existing_model.enabled is True
 
 
-def create_project(project_config, catalog_data=None):
+def create_project(project_config, catalog_data=None, well_data=None):
     from RAMSIS.cli import ramsis_app as app
     options = ["project", "create",
                "--config",
                project_config]
     if catalog_data:
         options.extend(["--catalog-data", catalog_data])
+    if well_data:
+        options.extend(["--well-data", well_data])
     result = runner.invoke(app, options)
+    print("result", result.stdout)
     assert result.exit_code == 0
 
 

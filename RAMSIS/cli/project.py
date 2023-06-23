@@ -34,7 +34,11 @@ def create(
         help="Path to json project config."),
         catalog_data: typer.FileBinaryRead = typer.Option(
         None, help="Path of file containing the "
-        "catalog for forecasts without using fdsnws, e.g. for replays.")):
+        "catalog for forecasts without using fdsnws, e.g. for replays."),
+        well_data: typer.FileText = typer.Option(
+        None, help="Path of file containing inj data for replays ")
+        
+        ):
 
     success = init_db(db_url)
 
@@ -69,6 +73,10 @@ def create(
                     catalog_data)
                 project.seismiccatalog = cat
                 session.add(project.seismiccatalog)
+            if well_data:
+                well = deserialize_hydws_data(well_data, False)
+                project.injectionwell = well
+                session.add(project.injectionwell)
             session.commit()
 
         for project in new_projects:

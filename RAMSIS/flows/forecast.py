@@ -38,8 +38,10 @@ def ramsis_flow(forecast_id, connection_string, date):
 
         exponential_factor = 1.2
         x = 1
+        logger.info(f"just before check model runs dispatched, {polling_ids}")
         while check_model_runs_dispatched(forecast_id, connection_string,
                                           wait_for=[polling_ids]):
+            logger.info(f"just after check model runs dispatched, {connection_string}")
 
             _ = polling_flow(forecast_id, polling_ids, connection_string)
             time.sleep(x**exponential_factor)

@@ -9,6 +9,7 @@ from prefect.server.schemas.states import Failed
 from ramsis.datamodel import EInput, EStatus, \
     Forecast, Project, SeismicObservationCatalog, InjectionWell
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
+                           HYDWSBoreholeHydraulicsSerializer,
                            SFMWorkerOMessageDeserializer)
 
 from RAMSIS.db import session_handler
@@ -168,20 +169,20 @@ def update_hyd(forecast_id: int, dttime: datetime,
         forecastseries = forecast.forecastseries
         project = forecastseries.project
         hydws_url = project.hydws_url
-        if project.seismiccatalog:
-            logger.info("Project has catalog, this will be used for the "
+        if project.injectionwell:
+            logger.info("Project has injectionwell, this will be used for the "
                         "forecast")
-            forecast.seismiccatalog = project.seismiccatalog
+            forecast.injectionwell = project.injectionwell
             session.commit()
             return
         well_used = project.injectionwell_required in \
             [EInput.REQUIRED, EInput.OPTIONAL]
-        logger.debug(f"fdsnws_url: {hydws_url}, catalog_used: {well_used}")
+        logger.debug(f"fdsnws_url: {hydws_url}, well_used: {well_used}")
 
         if well_used and hydws_url:
             if any_model_runs_complete(forecast):
                 logger.info("Some model runs are complete, therefore "
-                            "no seismic catalog will be fetched.")
+                            "no injection well will be fetched.")
                 return
             logger.info("A well is required and a url is specified: "
                         f"{hydws_url}")
@@ -232,6 +233,8 @@ def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
             'data': {
                 'attributes': {
                     'geometry_extent': forecastseries.geometryextent,
+                    'min_altitude': forecastseries.minaltitude,
+                    'max_altitude': forecastseries.maxaltitude,
                     'seismic_catalog': forecast.seismiccatalog,
                     'injection_well': forecast.injectionwell,
                     'forecast_start': forecast.starttime,
@@ -258,12 +261,14 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         model_run.status.state = EStatus.RUNNING
         session.commit()
         model_config = model_run.modelconfig
+        serializer = HYDWSBoreholeHydraulicsSerializer(plan=True)
+        injection_plan = serializer._dumpo(model_run.injectionplan)
 
         _worker_handle = RemoteSeismicityWorkerHandle.from_run(
             model_run)
         payload = {"data":
                    {"attributes":
-                    {'injection_plan': model_run.injectionplan,
+                    {'injection_plan': injection_plan,
                      'model_config':
                         {"config": json.loads(model_config.config.json()),
                          "name": model_config.name,
