@@ -1,5 +1,5 @@
-from prefect import flow, unmapped, get_run_logger
 import time
+from prefect import flow, unmapped, get_run_logger
 from ramsis.datamodel import EStatus
 
 from RAMSIS.tasks.utils import new_forecast_from_series, \
@@ -10,7 +10,7 @@ from RAMSIS.tasks.forecast import \
     update_running, model_runs, \
     check_model_run_not_complete, \
     check_model_runs_dispatched, \
-    forecast_status
+    forecast_status, waiting_task
 
 
 @flow(name="polling_flow")
@@ -41,7 +41,8 @@ def ramsis_flow(forecast_id, connection_string, date):
         logger.info(f"just before check model runs dispatched, {polling_ids}")
         while check_model_runs_dispatched(forecast_id, connection_string,
                                           wait_for=[polling_ids]):
-            logger.info(f"just after check model runs dispatched, {connection_string}")
+            logger.info("just after check model runs dispatched, "
+                        f"{connection_string}")
 
             _ = polling_flow(forecast_id, polling_ids, connection_string)
             time.sleep(x**exponential_factor)
@@ -77,11 +78,10 @@ def ramsis_flow(forecast_id, connection_string, date):
         while check_model_runs_dispatched(forecast_id, connection_string,
                                           wait_for=[polling_ids]):
 
-            _ = polling_flow(forecast_id, polling_ids, connection_string)
+            poll_flow = polling_flow(forecast_id, polling_ids,
+                                     connection_string)
             t = x**exponential_factor
-            logger.info(f"sleeping for {t} seconds...")
-            time.sleep(x**exponential_factor)
-            logger.info(f"Polling for forecast {forecast_id}, {x}")
+            waiting_task(forecast_id, t, connection_string, wait_for=poll_flow)
             x += 1
     set_statuses(forecast_id,
                  connection_string)

@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 from typing import List, Optional
 
@@ -318,6 +319,23 @@ def check_model_run_not_complete(
                         f"{model_run.status.state}")
         return None
 
+
+@task
+def waiting_task(
+        forecast_id: int,
+        seconds_to_wait: float,
+        connection_string: str) -> Optional[int]:
+    # In order to avoid a long wait at the end, only sleep if the model
+    # run is still in progress.
+    with session_handler(connection_string) as session:
+        logger = get_run_logger()
+        forecast = get_forecast(forecast_id, session)
+        if any(model_run.status.state == EStatus.DISPATCHED
+               for model_run in forecast.runs):
+            logger.info(f"sleeping for {seconds_to_wait} seconds...")
+            time.sleep(seconds_to_wait)
+        else:
+            pass
 
 @task(task_run_name="check_model_runs_dispatched(forecast_{forecast_id})") # noqa
 def check_model_runs_dispatched(
