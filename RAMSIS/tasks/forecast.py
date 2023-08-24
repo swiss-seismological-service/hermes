@@ -111,12 +111,14 @@ def update_fdsn(forecast_id: int, dttime: datetime,
             # Delete existing seismic catalog if it exsits, so that the most
             # up to date one is used
             existing_catalog = forecast.seismiccatalog
+            logger.info(f"checking if existing catalog {existing_catalog}")
             if existing_catalog:
                 assert existing_catalog.project == None # noqa
-                logger.debug("deleting existing seismic catalog on forecast")
-                session.query(SeismicObservationCatalog).filter(
-                    SeismicObservationCatalog.id == existing_catalog.id).\
-                    delete()
+                logger.info("deleting existing seismic catalog on forecast")
+                # The event checker will delete this orphan after commit.
+                # The multiple foreign keys can cause problems when
+                # deleting explicitly
+                forecast.seismiccatalog_id = None
                 session.commit()
 
             cat = fetch_fdsn(fdsnws_url, project, forecast)
@@ -196,6 +198,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
                 session.query(InjectionWell).filter(
                     InjectionWell.id == existing_well.id).\
                     delete()
+                forecast.injectionwell = None
                 session.commit()
 
             well = fetch_hyd(hydws_url, project, forecast)

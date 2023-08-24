@@ -15,39 +15,47 @@ app = typer.Typer()
 
 
 @app.command()
-def rerun(forecast_id: int,
-          force: bool = typer.Option(
-              False, help="Force the forecast to run again, "
-              "even if completed.")):
+def rerun(forecast_ids: List[int],
+        delay: int = typer.Option(120,
+            help="number of seconds to schedule the reruns apart"),
+        force: bool = typer.Option(
+            False, help="Force the forecast to run again, "
+            "even if completed.")):
     flow_to_schedule = ramsis_flow
+    add_delay = 0.0
     with session_handler(db_url) as session:
-        forecast = session.execute(
-            select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
-        if not forecast:
-            typer.echo("The forecast id does not exist")
-            raise typer.Exit()
-        if force:
-            typer.echo("Resetting RAMSIS statuses")
-            forecast = reset_forecast(forecast)
-            session.commit()
-
-        if forecast.status.state == EStatus.COMPLETE:
-            typer.echo("forecast is already complete")
+        for forecast_id in forecast_ids:
+            forecast = session.execute(
+                select(Forecast).filter_by(id=forecast_id)).scalar_one_or_none()
+            if not forecast:
+                typer.echo("The forecast id does not exist")
+                continue
             if force:
-                typer.echo("forecast will have status reset")
+                typer.echo("Resetting RAMSIS statuses")
                 forecast = reset_forecast(forecast)
                 session.commit()
             else:
                 typer.Exit()
-        deployment_name = f"forecast_{forecast_id}"
-        _ = flow_deployment_rerun_forecast(flow_to_schedule, deployment_name,
-                                           None, forecast_id, db_url)
 
-        asyncio.run(
-            add_new_scheduled_run_rerun_forecast(
-                flow_to_schedule.name, deployment_name,
-                forecast.starttime, datetime.utcnow(),
-                forecast.id, db_url))
+            if forecast.status.state == EStatus.COMPLETE:
+                typer.echo("forecast is already complete")
+                if force:
+                    typer.echo("forecast will have status reset")
+                    forecast = reset_forecast(forecast)
+                    session.commit()
+                else:
+                    typer.Exit()
+            data_dir = app_settings['data_dir']
+            deployment_name = f"forecast_{forecast_id}"
+            deployment = flow_deployment_rerun_forecast(flow_to_schedule, deployment_name, None, forecast_id, db_url)
+
+            asyncio.run(
+                add_new_scheduled_run_rerun_forecast(
+                    flow_to_schedule.name, deployment_name,
+                    forecast.starttime,
+                    datetime.utcnow()+timedelta(seconds=add_delay),
+                    forecast.id, db_url))
+            add_delay += delay
 
 
 @app.command()
