@@ -5,15 +5,13 @@ import pytest
 from typer.testing import CliRunner
 import json
 import logging
-from prefect.testing.utilities import prefect_test_harness
 
 from ramsis.datamodel import ForecastSeries, Project, ModelConfig
 from os.path import dirname, abspath, join
 
-from RAMSIS.tests.utils import check_updated_model, load_model, \
+from RAMSIS.tests.utils import load_model, \
     create_project, create_forecastseries, \
-    MockResponse, check_one_forecastseries_in_db, \
-    get_forecastseries
+    MockResponse, check_one_forecastseries_in_db
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +70,12 @@ def mocked_datasources_get_etas(*args, **kwargs):
 class TestInducedCase:
     @pytest.mark.run(after='test_run_bedretto_forecast')
     def test_ramsis_etas_setup(self, mocker, session):
-        model_result = load_model(etas_model_config_path)
+        _ = load_model(etas_model_config_path)
         models = session.execute(
             select(ModelConfig)).scalars().all()
         assert len(models) == 1
-        create_project(etas_project_config_path, catalog_data=etas_catalog_data_path)
+        create_project(etas_project_config_path,
+                       catalog_data=etas_catalog_data_path)
 
         projects = session.execute(
             select(Project)).scalars().all()
@@ -87,16 +86,17 @@ class TestInducedCase:
             select(ForecastSeries)).scalars().all()
         assert len(forecastseries) == 1
 
-
     @pytest.mark.run(after='test_ramsis_etas_setup')
     def test_run_etas_forecast(self, mocker, session):
-        from RAMSIS.cli import ramsis_app as app
+        from RAMSIS.cli import ramsis_app as app # noqa
         from RAMSIS.db import db_url
         from RAMSIS.flows.forecast import scheduled_ramsis_flow
-        #mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
-        #mock_get.side_effect = mocked_datasources_get_etas
+        # mock_get = mocker.patch('RAMSIS.core.datasources.requests.get')
+        # mock_get.side_effect = mocked_datasources_get_etas
         forecastseries = check_one_forecastseries_in_db(session)
-        logger.debug(f"Forecastseries created in test_run_forecast: {forecastseries.id}")
-        with prefect_test_harness():
-            result = scheduled_ramsis_flow(forecastseries.id, db_url, forecastseries.starttime)
+        logger.debug("Forecastseries created in test_run_forecast: "
+                     f"{forecastseries.id}")
+        _ = scheduled_ramsis_flow(
+            forecastseries.id, db_url,
+            forecastseries.starttime.strftime('%Y-%m-%dT%H:%M:%S'))
         assert 0 == 1

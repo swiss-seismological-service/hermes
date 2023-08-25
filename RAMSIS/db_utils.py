@@ -1,4 +1,3 @@
-
 from ramsis.datamodel import Forecast, \
     ForecastSeries, ModelRun
 from prefect import get_run_logger
@@ -21,6 +20,7 @@ def get_model_run(model_run_id, session):
     model_run = session.query(ModelRun).filter(
         ModelRun.id == model_run_id).first()
     return model_run
+
 
 def update_forecast_status(forecast_id, estatus, session):
     forecast = get_forecast(forecast_id, session)

@@ -1,4 +1,3 @@
-## Copyright 2018, ETH Zurich - Swiss Seismological Service SED
 """
 Seismicity forecast model (SFM) worker related facilities.
 """
@@ -377,14 +376,15 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             finally:
                 raise self.HTTPError(self.url, err)
         except requests.exceptions.ConnectionError as err:
-            self.logger.error(f"The request has a connection error to {self.url}")
+            self.logger.error("The request has a connection error to"
+                              f" {self.url}")
             raise self.ConnectionError(self.url, err)
         except requests.exceptions.RequestsError as err:
             self.logger.error(f"The request has an error {self.url}")
             raise self.RemoteWorkerError(err)
         except requests.exceptions.Timeout:
             self.logger.error(f"The request timed out to {self.url}")
-            raise 
+            raise
 
         return resp
 

@@ -36,9 +36,7 @@ def create(
         None, help="Path of file containing the "
         "catalog for forecasts without using fdsnws, e.g. for replays."),
         well_data: typer.FileText = typer.Option(
-        None, help="Path of file containing inj data for replays ")
-        
-        ):
+        None, help="Path of file containing inj data for replays ")):
 
     success = init_db(db_url)
 

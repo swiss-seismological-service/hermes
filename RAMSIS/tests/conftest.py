@@ -1,5 +1,4 @@
 import pytest
-from os import getenv
 from os import environ
 import psycopg2
 
@@ -13,7 +12,7 @@ TEMP_ENV_VARS = {testing_environment_variable: 'true'}
 def env():
     old_environ = dict(environ)
     environ.update(TEMP_ENV_VARS)
-    from RAMSIS.db import env as environment, env_file_path, testing_mode
+    from RAMSIS.db import env as environment
     yield environment
     environ.clear()
     environ.update(old_environ)

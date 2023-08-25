@@ -19,7 +19,6 @@ def check_one_model_in_db(session):
     return models[0]
 
 
-
 def load_model(model_config):
     from RAMSIS.cli import ramsis_app as app
     options = ["model", "load",
@@ -96,5 +95,6 @@ def check_one_forecastseries_in_db(session):
 
 def get_forecastseries(session, forecastseries_id):
     forecastseries = session.execute(
-        select(ForecastSeries).filter_by(id=forecastseries_id)).scalar_one_or_none()
+        select(ForecastSeries).filter_by(id=forecastseries_id)).\
+        scalar_one_or_none()
     return forecastseries

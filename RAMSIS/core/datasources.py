@@ -3,7 +3,6 @@
 Data fetching facilities.
 """
 
-import prefect
 import requests
 from prefect import get_run_logger
 
@@ -55,16 +54,18 @@ class HYDWSDataSource():
 
         except NoContent:
             self.logger.info(f'No data received from {self.url}')
-            raise 
+            raise
         except RequestsError as err:
-            self.logger.error(f"Error while fetching data from {self.url} ({err}).")
-            raise 
+            self.logger.error(
+                f"Error while fetching data from {self.url} ({err}).")
+            raise
         except HYDWSJSONIOError as err:
-            self.logger.error(f"Error while deserializing data from {self.url} ({err}).")
-            raise 
+            self.logger.error(
+                f"Error while deserializing data from {self.url} ({err}).")
+            raise
         except requests.exceptions.Timeout as err:
             self.logger.error(f"The request timed out to {self.url}, ({err})")
-            raise 
+            raise
         else:
             if bh.sections:
                 msg = f'Received borehole data (sections={len(bh.sections)}'
@@ -114,18 +115,22 @@ class FDSNWSDataSource():
 
         except NoContent:
             self.logger.info(f'No data received from {self.url}')
-            raise 
+            raise
         except RequestsError as err:
-            self.logger.error(f"Error while fetching data from {self.url} ({err}).")
-            raise 
+            self.logger.error(
+                f"Error while fetching data from {self.url} ({err}).")
+            raise
         except HYDWSJSONIOError as err:
-            self.logger.error(f"Error while deserializing data from {self.url} ({err}).")
-            raise 
+            self.logger.error(
+                f"Error while deserializing data from {self.url} ({err}).")
+            raise
         except requests.exceptions.Timeout as err:
-            self.logger.error(f"The request timed out to {self.url}, ({err})")
-            raise 
+            self.logger.error(
+                f"The request timed out to {self.url}, ({err})")
+            raise
         except QuakeMLCatalogIOError as err:
-            self.logger.error(f"Error while deserializing data ({err}).")
+            self.logger.error(
+                f"Error while deserializing data ({err}).")
         else:
             self.logger.info(
                 f"Received catalog with {len(cat)} events.")
