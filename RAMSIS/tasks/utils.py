@@ -36,7 +36,7 @@ def new_forecast_from_series(forecastseries_id: int,
     logger = get_run_logger()
     if not start_time:
         start_time = runtime.flow_run.scheduled_start_time
-    elif type(start_time) == str:
+    elif type(start_time) == str: # noqa
         start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
     with session_handler(connection_string) as session:
         forecastseries = get_forecastseries(
