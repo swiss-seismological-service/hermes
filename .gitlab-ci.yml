@@ -18,49 +18,48 @@ test-pep8:
     - tox
   tags:
     - docker
-
-# Build a docker image for an RT-RAMSIS release and push it to the registry
-deploy-docker:
-  stage: release
-  services:
-    - docker:dind
-  variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-  before_script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-  script:
-    - docker build
-      --build-arg GITLAB_USER=gitlab-ci-token
-      --build-arg GITLAB_PW=$CI_JOB_TOKEN
-      --tag $IMAGE_TAG .
-    - docker push $IMAGE_TAG
-    - docker push
-  when: manual
-  only:
-    - tags
-    - master
-  tags:
-    - docker
-
-# Deploy to production machine
-deploy-production:
-  stage: release
-  variables:
-    BASE_PATH: /opt/ramsis
-    DEPLOY_PATH: $BASE_PATH/$CI_COMMIT_REF_SLUG
-  script:
-    - echo $PATH
-    - virtualenv $DEPLOY_PATH/venv
-    - source $DEPLOY_PATH/venv/bin/activate
-    - SEARCH='//\(gitlab\.seismo\.ethz\.ch\)'
-      && sed -i "s|$SEARCH|//gitlab-ci-token:$CI_JOB_TOKEN@\1|g" ./requirements.txt
-      && sed -i 's|^-e ||g' ./requirements.txt
-    - pip install -r requirements.txt
-    - pyrcc5 -o RAMSIS/ui/views/images_rc.py RAMSIS/ui/views/images.qrc
-    - pip install .
-    - ln -fs $DEPLOY_PATH $BASE_PATH/current
-  only:
-    - tags
-    - master
-  tags:
-    - production
+# # Build a docker image for an RT-RAMSIS release and push it to the registry
+# deploy-docker:
+#   stage: release
+#   services:
+#     - docker:dind
+#   variables:
+#     IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+#   before_script:
+#     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY 
+#   script:
+#     - docker build
+#       --build-arg GITLAB_USER=gitlab-ci-token
+#       --build-arg GITLAB_PW=$CI_JOB_TOKEN
+#       --tag $IMAGE_TAG .
+#     - docker push $IMAGE_TAG
+#     - docker push
+#   when: manual
+#   only:
+#     - tags
+#     - master
+#   tags:
+#     - docker
+  
+# # Deploy to production machine
+# deploy-production:
+#   stage: release
+#   variables:
+#     BASE_PATH: /opt/ramsis
+#     DEPLOY_PATH: $BASE_PATH/$CI_COMMIT_REF_SLUG
+#   script:
+#     - echo $PATH
+#     - virtualenv $DEPLOY_PATH/venv
+#     - source $DEPLOY_PATH/venv/bin/activate
+#     - SEARCH='//\(gitlab\.seismo\.ethz\.ch\)'
+#       && sed -i "s|$SEARCH|//gitlab-ci-token:$CI_JOB_TOKEN@\1|g" ./requirements.txt
+#       && sed -i 's|^-e ||g' ./requirements.txt
+#     - pip install -r requirements.txt
+#     - pyrcc5 -o RAMSIS/ui/views/images_rc.py RAMSIS/ui/views/images.qrc
+#     - pip install .
+#     - ln -fs $DEPLOY_PATH $BASE_PATH/current
+#   only:
+#     - tags
+#     - master
+#   tags:
+#     - production
