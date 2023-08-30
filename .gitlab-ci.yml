@@ -11,7 +11,7 @@ stages:
 # Check for PEP8 issues
 test-pep8:
   stage: test
-  image: python:3.8-alpine
+  image: python:3.10-alpine
   before_script:
     - pip install tox
   script:
