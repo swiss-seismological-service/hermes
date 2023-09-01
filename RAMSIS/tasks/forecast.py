@@ -237,8 +237,8 @@ def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
             'data': {
                 'attributes': {
                     'geometry_extent': forecastseries.geometryextent,
-                    'min_altitude': forecastseries.minaltitude,
-                    'max_altitude': forecastseries.maxaltitude,
+                    'altitude_min': forecastseries.altitudemin,
+                    'altitude_max': forecastseries.altitudemax,
                     'seismic_catalog': forecast.seismiccatalog,
                     'injection_well': forecast.injectionwell,
                     'forecast_start': forecast.starttime,

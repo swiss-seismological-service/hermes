@@ -25,6 +25,15 @@ def polling_flow(
 
 @flow(name="ramsis_flow")
 def ramsis_flow(forecast_id, connection_string, date):
+    #flow_logger = logging.getLogger('prefect.flow_runs')
+    #task_logger = logging.getLogger('prefect.task_runs')
+
+    #handler = logging.FileHandler(filename=<replace with your own log file path>)
+    #handler.setFormatter(logging.Formatter("%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s - %(message)s"))
+
+    #flow_logger.addHandler(handler)
+    #task_logger.addHandler(handler)
+
     logger = get_run_logger()
     forecast_state = forecast_status(forecast_id, connection_string)
     if forecast_state == EStatus.COMPLETE:
