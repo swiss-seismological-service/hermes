@@ -48,6 +48,7 @@ def new_forecast_from_series(forecastseries_id: int,
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
         injection_plans = forecastseries.injectionplans
+        assert isinstance(injection_plans, list)
 
         model_run_list = list()
         if not injection_plans:

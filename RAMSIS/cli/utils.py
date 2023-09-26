@@ -16,8 +16,6 @@ from prefect.server.schemas.filters import FlowFilter, DeploymentFilter
 
 
 from RAMSIS.db import app_settings
-from ramsis.io.hydraulics import HYDWSBoreholeHydraulicsDeserializer
-from ramsis.io.seismics import QuakeMLObservationCatalogDeserializer
 from RAMSIS.flows.forecast import scheduled_ramsis_flow
 
 # All hyd, seismic data is expected in this projection
@@ -201,19 +199,6 @@ def configure_logging(verbosity):
     root_logger.addHandler(console_handler)
     # Transitions is a bit noisy on the INFO level
     logging.getLogger('transitions').setLevel(logging.WARNING)
-
-
-def deserialize_hydws_data(data, ramsis_proj, plan):
-    deserializer = HYDWSBoreholeHydraulicsDeserializer(
-        plan=plan)
-    ret_data = deserializer.load(data)
-    return ret_data
-
-
-def deserialize_qml_data(data, ramsis_proj):
-    deserializer = QuakeMLObservationCatalogDeserializer()
-    ret_data = deserializer.load(data)
-    return ret_data
 
 
 async def list_flow_runs_with_states(states: list):

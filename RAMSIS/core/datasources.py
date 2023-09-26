@@ -2,15 +2,11 @@
 """
 Data fetching facilities.
 """
-
+import json
 import requests
 from prefect import get_run_logger
 
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
-from ramsis.io.hydraulics import (HYDWSBoreholeHydraulicsDeserializer,
-                                  HYDWSJSONIOError)
-from ramsis.io.seismics import (QuakeMLObservationCatalogDeserializer,
-                                QuakeMLCatalogIOError)
 from ramsis.utils.clients import (binary_request,
                                   NoContent, RequestsError)
 
@@ -19,7 +15,6 @@ class HYDWSDataSource():
     """
     Fetching and deserializing data from *HYDWS*.
     """
-    DESERIALZER = HYDWSBoreholeHydraulicsDeserializer
 
     def __init__(self, url, timeout=None):
         self.url = url
@@ -28,8 +23,6 @@ class HYDWSDataSource():
         self._args = {}
         self.enabled = False
         self.logger = get_run_logger()
-
-        self._deserializer = self.DESERIALZER()
 
     def fetch(self, **kwargs):
         """
@@ -50,7 +43,7 @@ class HYDWSDataSource():
             with binary_request(
                 requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
-                bh = self._deserializer.load(ifd)
+                bh = json.load(ifd)
 
         except NoContent:
             self.logger.info(f'No data received from {self.url}')
@@ -59,18 +52,15 @@ class HYDWSDataSource():
             self.logger.error(
                 f"Error while fetching data from {self.url} ({err}).")
             raise
-        except HYDWSJSONIOError as err:
-            self.logger.error(
-                f"Error while deserializing data from {self.url} ({err}).")
-            raise
         except requests.exceptions.Timeout as err:
             self.logger.error(f"The request timed out to {self.url}, ({err})")
             raise
         else:
-            if bh.sections:
-                msg = f'Received borehole data (sections={len(bh.sections)}'
-                if bh.sections[0].hydraulics:
-                    msg += f', samples={len(bh.sections[0].hydraulics)}'
+            if bh["sections"]:
+                msg = ('Received borehole data '
+                       f'(sections={len(bh["sections"])})')
+                if bh["sections"][0]["hydraulics"]:
+                    msg += f', samples={len(bh["sections"][0]["hydraulics"])}'
                 msg += ').'
 
                 self.logger.info(msg)
@@ -83,8 +73,6 @@ class FDSNWSDataSource():
     Fetches seismic event data from a web service.
     """
 
-    DESERIALZER = QuakeMLObservationCatalogDeserializer
-
     def __init__(self, url, timeout=None):
         self.url = url
         self._timeout = timeout
@@ -92,8 +80,6 @@ class FDSNWSDataSource():
         self._args = {}
         self.enabled = False
         self.logger = get_run_logger()
-
-        self._deserializer = self.DESERIALZER()
 
     def fetch(self, **kwargs):
         self._args = kwargs
@@ -111,8 +97,7 @@ class FDSNWSDataSource():
             with binary_request(
                 requests.get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
-                cat = self._deserializer.load(ifd)
-
+                cat = ifd.read()
         except NoContent:
             self.logger.info(f'No data received from {self.url}')
             raise
@@ -120,19 +105,9 @@ class FDSNWSDataSource():
             self.logger.error(
                 f"Error while fetching data from {self.url} ({err}).")
             raise
-        except HYDWSJSONIOError as err:
-            self.logger.error(
-                f"Error while deserializing data from {self.url} ({err}).")
-            raise
         except requests.exceptions.Timeout as err:
             self.logger.error(
                 f"The request timed out to {self.url}, ({err})")
             raise
-        except QuakeMLCatalogIOError as err:
-            self.logger.error(
-                f"Error while deserializing data ({err}).")
-        else:
-            self.logger.info(
-                f"Received catalog with {len(cat)} events.")
 
         return cat
