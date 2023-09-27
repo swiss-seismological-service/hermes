@@ -5,7 +5,7 @@ from ramsis.datamodel import EStatus
 from RAMSIS.tasks.utils import new_forecast_from_series, \
     set_statuses
 from RAMSIS.tasks.forecast import \
-    update_fdsn, update_hyd, forecast_serialize_data, \
+    update_fdsn, update_hyd, \
     model_run_executor, poll_model_run, \
     update_running, model_runs, \
     check_model_run_not_complete, \
@@ -56,14 +56,14 @@ def ramsis_flow(forecast_id, connection_string, date):
         hyd_task = update_hyd(forecast_id, date, connection_string,
                               wait_for=[status_task])
 
-        forecast_data = forecast_serialize_data(
-            forecast_id, connection_string,
-            wait_for=[fdsn_task, hyd_task])
+        #forecast_data = forecast_serialize_data(
+        #    forecast_id, connection_string,
+        #    wait_for=[fdsn_task, hyd_task])
 
-        model_run_ids = model_runs(forecast_id, connection_string)
+        model_run_ids = model_runs(forecast_id, connection_string,
+                                   wait_for=[fdsn_task, hyd_task])
 
         running_ids = model_run_executor.map(unmapped(forecast_id),
-                                             unmapped(forecast_data),
                                              model_run_ids,
                                              unmapped(connection_string))
         polling_ids = check_model_run_not_complete.map(

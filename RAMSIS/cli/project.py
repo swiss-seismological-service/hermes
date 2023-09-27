@@ -56,7 +56,8 @@ def create(
                 project.seismiccatalog = catalog_data.read().encode(
                     encoding='utf-8')
             if well_data:
-                project.injectionwell = json.loads(well_data.read())
+                project.injectionwell = json.dumps(list(json.load(well_data.read()), ensure_ascii=False)).encode(
+                    encoding='utf-8')
             session.commit()
 
         for project in new_projects:

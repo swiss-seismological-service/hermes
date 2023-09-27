@@ -1,4 +1,5 @@
 from prefect import task, get_run_logger, runtime
+import json
 from datetime import timedelta, datetime
 from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
@@ -17,6 +18,7 @@ def update_status(forecast_id, connection_string, estatus):
 
 
 def create_model_runs(model_configs, injection_plan=None):
+    logger = get_run_logger()
     model_runs = list()
     for config in model_configs:
         model_runs.append(
@@ -24,7 +26,7 @@ def create_model_runs(model_configs, injection_plan=None):
                 modelconfig=config,
                 injectionplan=injection_plan,
                 status=Status(state=EStatus.PENDING)))
-    print("appending {len(model_runs)} to forecast.runs")
+    logger.info(f"Creating {len(model_runs)} model runs")
     return model_runs
 
 
@@ -48,7 +50,7 @@ def new_forecast_from_series(forecastseries_id: int,
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
         injection_plans = forecastseries.injectionplans
-        assert isinstance(injection_plans, list)
+        injection_plans = json.loads(injection_plans.decode('utf-8'))
 
         model_run_list = list()
         if not injection_plans:
@@ -64,7 +66,7 @@ def new_forecast_from_series(forecastseries_id: int,
             for injection_plan in injection_plans:
                 model_run_list.extend(create_model_runs(
                     model_configs_set,
-                    injection_plan=injection_plan))
+                    injection_plan=json.dumps(injection_plan, ensure_ascii=False).encode('utf-8')))
         if not model_run_list:
             raise Exception("No model runs created for forecast")
         # Set forecast endtime

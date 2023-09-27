@@ -182,7 +182,8 @@ def update_hyd(forecast_id: int, dttime: datetime,
 
             well = fetch_hyd(hydws_url, project, forecast)
             # We expect wells to be stored within lists by default
-            forecast.injectionwell = [well]
+            print("type of well: ", type(well))
+            forecast.injectionwell = json.dumps([well], ensure_ascii=False).encode('utf-8')
             session.commit()
         elif not forecast.injectionwell:
             if project.injectionwell_required == EInput.OPTIONAL:
@@ -203,31 +204,31 @@ def model_runs(
     return model_run_ids
 
 
-@task(task_run_name="forecast_serialize_data(forecast{forecast_id})")
-def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
-    with session_handler(connection_string) as session:
-        forecast = get_forecast(forecast_id, session)
-        forecastseries = forecast.forecastseries
-
-        serializer = SFMWorkerIMessageSerializer()
-        payload = {
-            'data': {
-                'attributes': {
-                    'geometry_extent': forecastseries.geometryextent,
-                    'altitude_min': forecastseries.altitudemin,
-                    'altitude_max': forecastseries.altitudemax,
-                    'seismic_catalog': forecast.seismiccatalog,
-                    'injection_well': forecast.injectionwell,
-                    'forecast_start': forecast.starttime,
-                    'forecast_end': forecast.endtime}}}
-        print("about to serialize data")
-        data = serializer._serialize_dict(payload)
-        return data
+#@task(task_run_name="forecast_serialize_data(forecast{forecast_id})")
+#def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
+#    with session_handler(connection_string) as session:
+#        forecast = get_forecast(forecast_id, session)
+#        forecastseries = forecast.forecastseries
+#
+#        serializer = SFMWorkerIMessageSerializer()
+#        payload = {
+#            'data': {
+#                'attributes': {
+#                    'geometry_extent': forecastseries.geometryextent,
+#                    'altitude_min': forecastseries.altitudemin,
+#                    'altitude_max': forecastseries.altitudemax,
+#                    'seismic_catalog': forecast.seismiccatalog,
+#                    'injection_well': forecast.injectionwell,
+#                    'forecast_start': forecast.starttime,
+#                    'forecast_end': forecast.endtime}}}
+#        print("about to serialize data")
+#        data = serializer._serialize_dict(payload)
+#        return data
 
 
 @task(task_run_name="model_run_executor(forecast{forecast_id}_model_run)",
       tags=["model_run"])
-def model_run_executor(forecast_id: int, forecast_data: dict,
+def model_run_executor(forecast_id: int,
                        model_run_id: dict, connection_string: str) -> int:
     """
     Executes a single seimicity model run
@@ -244,23 +245,36 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         session.commit()
         model_config = model_run.modelconfig
         injection_plan = model_run.injectionplan
+        forecast = model_run.forecast
+        forecastseries = forecast.forecastseries
 
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
-        payload = {"data":
-                   {"attributes":
-                    {'injection_plan': injection_plan,
+        serializer = SFMWorkerIMessageSerializer()
+        payload = {
+            'data': {
+                'attributes': {
+                    'geometry_extent': forecastseries.geometryextent,
+                    'altitude_min': forecastseries.altitudemin,
+                    'altitude_max': forecastseries.altitudemax,
+                    'seismic_catalog': forecast.seismiccatalog,
+                    'injection_well': forecast.injectionwell,
+                    'forecast_start': forecast.starttime,
+                    'forecast_end': forecast.endtime,
+                    'injection_plan': injection_plan,
                      'model_config':
-                        {"config": json.loads(model_config.config.json()),
+                        {"config": model_config.config,
                          "name": model_config.name,
                          "description": model_config.description,
                          "sfm_module": model_config.sfm_module,
-                         "sfm_class": model_config.sfm_class},
-                     **forecast_data["data"]["attributes"]}}}
+                         "sfm_class": model_config.sfm_class}}}}
+
+        data = json.dumps(serializer._serialize_dict(payload))
+        print(data)
+
+        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
+            model_run)
         try:
-            json_payload = json.dumps(payload)
             resp = _worker_handle.compute(
-                json_payload,
+                data,
                 deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
