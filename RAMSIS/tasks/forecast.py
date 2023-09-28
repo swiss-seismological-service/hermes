@@ -229,6 +229,11 @@ def model_run_executor(forecast_id: int,
         serializer = SFMWorkerIMessageSerializer()
         payload = {
             'data': {
+                "worker_config": {
+                    "model_name": model_config.name,
+                    "model_description": model_config.description,
+                    "model_module": model_config.sfm_module,
+                    "model_class": model_config.sfm_class},
                 'attributes': {
                     'geometry_extent': forecastseries.geometryextent,
                     'altitude_min': forecastseries.altitudemin,
@@ -238,12 +243,7 @@ def model_run_executor(forecast_id: int,
                     'forecast_start': forecast.starttime,
                     'forecast_end': forecast.endtime,
                     'injection_plan': injection_plan,
-                    'model_config':
-                        {"config": model_config.config,
-                         "name": model_config.name,
-                         "description": model_config.description,
-                         "sfm_module": model_config.sfm_module,
-                         "sfm_class": model_config.sfm_class}}}}
+                    'model_config': model_config.config}}}
 
         data = json.dumps(serializer._serialize_dict(payload))
 
