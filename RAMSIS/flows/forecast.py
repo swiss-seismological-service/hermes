@@ -56,10 +56,6 @@ def ramsis_flow(forecast_id, connection_string, date):
         hyd_task = update_hyd(forecast_id, date, connection_string,
                               wait_for=[status_task])
 
-        #forecast_data = forecast_serialize_data(
-        #    forecast_id, connection_string,
-        #    wait_for=[fdsn_task, hyd_task])
-
         model_run_ids = model_runs(forecast_id, connection_string,
                                    wait_for=[fdsn_task, hyd_task])
 

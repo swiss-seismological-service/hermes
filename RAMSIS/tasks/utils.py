@@ -66,7 +66,8 @@ def new_forecast_from_series(forecastseries_id: int,
             for injection_plan in injection_plans:
                 model_run_list.extend(create_model_runs(
                     model_configs_set,
-                    injection_plan=json.dumps(injection_plan, ensure_ascii=False).encode('utf-8')))
+                    injection_plan=json.dumps(
+                        injection_plan, ensure_ascii=False).encode('utf-8')))
         if not model_run_list:
             raise Exception("No model runs created for forecast")
         # Set forecast endtime
