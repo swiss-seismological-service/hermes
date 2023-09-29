@@ -8,9 +8,8 @@ from prefect import task, get_run_logger
 from prefect.tasks import exponential_backoff
 from prefect.server.schemas.states import Failed
 from ramsis.datamodel import EInput, EStatus, \
-    Forecast, Project, SeismicObservationCatalog, InjectionWell
+    Forecast, Project
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
-                           HYDWSBoreholeHydraulicsSerializer,
                            SFMWorkerOMessageDeserializer)
 
 from RAMSIS.db import session_handler
@@ -66,8 +65,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
     a catalog is optional/required
     """
     def fetch_fdsn(url: str, project: Project,
-                   forecast: Forecast) -> \
-            SeismicObservationCatalog:
+                   forecast: Forecast) -> bytes:
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
         # Do we want timeout to be configurable? Does this timeout
@@ -99,7 +97,6 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         catalog_used = project.seismiccatalog_required in \
             [EInput.REQUIRED, EInput.OPTIONAL]
         fdsnws_url = project.fdsnws_url
-        logger.debug(f"fdsnws_url: {fdsnws_url}, catalog_used: {catalog_used}")
 
         if catalog_used and fdsnws_url:
             if any_model_runs_complete(forecast):
@@ -111,28 +108,20 @@ def update_fdsn(forecast_id: int, dttime: datetime,
             # Delete existing seismic catalog if it exsits, so that the most
             # up to date one is used
             existing_catalog = forecast.seismiccatalog
-            logger.info(f"checking if existing catalog {existing_catalog}")
             if existing_catalog:
-                assert existing_catalog.project == None # noqa
-                logger.info("deleting existing seismic catalog on forecast")
-                # The event checker will delete this orphan after commit.
-                # The multiple foreign keys can cause problems when
-                # deleting explicitly
-                forecast.seismiccatalog_id = None
-                session.commit()
+                logger.info("updating seismic catalog on forecast")
 
             cat = fetch_fdsn(fdsnws_url, project, forecast)
             if not cat:
-                cat = SeismicObservationCatalog()
+                cat = bytes("", "utf-8")
                 logger.warning(
                     "An empty catalog has been created as no "
                     "catalog has been returned from the FDSN web service.")
             else:
-                logger.info(f"A catalog has been returned: {cat}")
+                logger.info("A catalog has been returned with "
+                            f"character length: {len(cat)}")
 
-            cat.creationinfo_creationtime = dttime
             forecast.seismiccatalog = cat
-            session.add(cat)
             session.commit()
         elif not forecast.catalog:
             if project.seismiccatalog_required == EInput.OPTIONAL:
@@ -150,7 +139,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
     a hydraulics are optional/required
     """
     def fetch_hyd(url: str, project: Project,
-                  forecast: Forecast) -> InjectionWell:
+                  forecast: Forecast) -> dict:
         logger = get_run_logger()
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
@@ -180,7 +169,6 @@ def update_hyd(forecast_id: int, dttime: datetime,
             return
         well_used = project.injectionwell_required in \
             [EInput.REQUIRED, EInput.OPTIONAL]
-        logger.debug(f"fdsnws_url: {hydws_url}, well_used: {well_used}")
 
         if well_used and hydws_url:
             if any_model_runs_complete(forecast):
@@ -189,23 +177,13 @@ def update_hyd(forecast_id: int, dttime: datetime,
                 return
             logger.info("A well is required and a url is specified: "
                         f"{hydws_url}")
-            # Delete existing injection if it exsits, so that the most
-            # up to date one is used
-            existing_well = forecast.injectionwell
-            if existing_well:
-                assert existing_well.project == None # noqa
-                logger.debug("deleting existing well on forecast")
-                session.query(InjectionWell).filter(
-                    InjectionWell.id == existing_well.id).\
-                    delete()
-                forecast.injectionwell = None
-                session.commit()
+            if forecast.injectionwell:
+                logger.debug("modifying injection well on forecast")
 
             well = fetch_hyd(hydws_url, project, forecast)
-            assert hasattr(well, 'sections')
-            well.creationinfo_creationtime = dttime
-            forecast.injectionwell = well
-            session.add(well)
+            # We expect wells to be stored within lists by default
+            forecast.injectionwell = json.dumps([well], ensure_ascii=False).\
+                encode('utf-8')
             session.commit()
         elif not forecast.injectionwell:
             if project.injectionwell_required == EInput.OPTIONAL:
@@ -226,30 +204,9 @@ def model_runs(
     return model_run_ids
 
 
-@task(task_run_name="forecast_serialize_data(forecast{forecast_id})")
-def forecast_serialize_data(forecast_id: int, connection_string: int) -> dict:
-    with session_handler(connection_string) as session:
-        forecast = get_forecast(forecast_id, session)
-        forecastseries = forecast.forecastseries
-
-        serializer = SFMWorkerIMessageSerializer()
-        payload = {
-            'data': {
-                'attributes': {
-                    'geometry_extent': forecastseries.geometryextent,
-                    'altitude_min': forecastseries.altitudemin,
-                    'altitude_max': forecastseries.altitudemax,
-                    'seismic_catalog': forecast.seismiccatalog,
-                    'injection_well': forecast.injectionwell,
-                    'forecast_start': forecast.starttime,
-                    'forecast_end': forecast.endtime}}}
-        data = serializer._serialize_dict(payload)
-        return data
-
-
 @task(task_run_name="model_run_executor(forecast{forecast_id}_model_run)",
       tags=["model_run"])
-def model_run_executor(forecast_id: int, forecast_data: dict,
+def model_run_executor(forecast_id: int,
                        model_run_id: dict, connection_string: str) -> int:
     """
     Executes a single seimicity model run
@@ -265,25 +222,36 @@ def model_run_executor(forecast_id: int, forecast_data: dict,
         model_run.status.state = EStatus.RUNNING
         session.commit()
         model_config = model_run.modelconfig
-        serializer = HYDWSBoreholeHydraulicsSerializer(plan=True)
-        injection_plan = serializer._dumpo(model_run.injectionplan)
+        injection_plan = model_run.injectionplan
+        forecast = model_run.forecast
+        forecastseries = forecast.forecastseries
 
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
-        payload = {"data":
-                   {"attributes":
-                    {'injection_plan': injection_plan,
-                     'model_config':
-                        {"config": json.loads(model_config.config.json()),
+        serializer = SFMWorkerIMessageSerializer()
+        payload = {
+            'data': {
+                'attributes': {
+                    'geometry_extent': forecastseries.geometryextent,
+                    'altitude_min': forecastseries.altitudemin,
+                    'altitude_max': forecastseries.altitudemax,
+                    'seismic_catalog': forecast.seismiccatalog,
+                    'injection_well': forecast.injectionwell,
+                    'forecast_start': forecast.starttime,
+                    'forecast_end': forecast.endtime,
+                    'injection_plan': injection_plan,
+                    'model_config':
+                        {"config": model_config.config,
                          "name": model_config.name,
                          "description": model_config.description,
                          "sfm_module": model_config.sfm_module,
-                         "sfm_class": model_config.sfm_class},
-                     **forecast_data["data"]["attributes"]}}}
+                         "sfm_class": model_config.sfm_class}}}}
+
+        data = json.dumps(serializer._serialize_dict(payload))
+
+        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
+            model_run)
         try:
-            json_payload = json.dumps(payload)
             resp = _worker_handle.compute(
-                json_payload,
+                data,
                 deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:

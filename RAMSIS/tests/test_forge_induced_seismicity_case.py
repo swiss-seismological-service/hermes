@@ -6,7 +6,8 @@ from typer.testing import CliRunner
 # import json
 import logging
 
-from ramsis.datamodel import ForecastSeries, Project, ModelConfig
+from ramsis.datamodel import ForecastSeries, Project, ModelConfig, \
+    Forecast
 from os.path import dirname, abspath, join
 
 from RAMSIS.tests.utils import load_model, \
@@ -104,6 +105,16 @@ class TestInducedForgeCase:
         _ = scheduled_ramsis_flow(
             forecastseries.id, db_url,
             forecastseries.starttime.strftime('%Y-%m-%dT%H:%M:%S'))
+        forecast = session.execute(
+            select(Forecast)).scalars().one()
+        timebins = forecast.runs[0].resulttimebins
+        assert len(timebins) == 33
+        for timebin in timebins[0:5]:
+            assert len(timebin.seismicforecastgrids) == 1
+            assert len(timebin.seismicforecastgrids[0].seismicrates) == 1
+        for timebin in timebins[5:33]:
+            assert len(timebin.seismicforecastgrids) == 10
+            assert len(timebin.seismicforecastgrids[0].seismicrates) == 1
 
         # Make the test fail to see full output
-        assert 0 == 1
+        # assert 0 == 1

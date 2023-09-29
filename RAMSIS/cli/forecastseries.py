@@ -3,7 +3,7 @@ import asyncio
 import typer
 import json
 from dateutil.rrule import rrule, SECONDLY
-from prefect.orion.schemas.schedules import RRuleSchedule
+from prefect.server.schemas.schedules import RRuleSchedule
 from marshmallow import EXCLUDE
 from datetime import timedelta, datetime
 from sqlalchemy import select
