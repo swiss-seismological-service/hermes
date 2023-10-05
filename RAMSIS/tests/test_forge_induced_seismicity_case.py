@@ -83,7 +83,7 @@ class TestInducedForgeCase:
         models = session.execute(
             select(ModelConfig)).scalars().all()
         assert len(models) == 1
-        create_project(project_config_path)
+        create_project(project_config_path, well_data=inj_plan_path)
         projects = session.execute(
             select(Project)).scalars().all()
         assert len(projects) == 1
