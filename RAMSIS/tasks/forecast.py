@@ -235,9 +235,10 @@ def model_run_executor(forecast_id: int,
                     "model_module": model_config.sfm_module,
                     "model_class": model_config.sfm_class},
                 'attributes': {
-                    'geometry_extent': forecastseries.geometryextent,
-                    'altitude_min': forecastseries.altitudemin,
-                    'altitude_max': forecastseries.altitudemax,
+                    'geometry': {
+                        'bounding_polygon': forecastseries.boundingpolygon,
+                        'altitude_min': forecastseries.altitudemin,
+                        'altitude_max': forecastseries.altitudemax},
                     'seismic_catalog': forecast.seismiccatalog,
                     'injection_well': forecast.injectionwell,
                     'forecast_start': forecast.starttime,
