@@ -15,8 +15,8 @@ import sys
 from setuptools import setup, find_packages
 
 
-if sys.version_info[:2] < (3, 6):
-    raise RuntimeError("Python version >= 3.6 required.")
+if sys.version_info[:2] < (3, 8):
+    raise RuntimeError("Python version >= 3.8 required.")
 
 _authors = [
     'Lukas Heiniger',
@@ -27,19 +27,15 @@ _authors_email = [
     'laura.sarson@sed.ethz.ch']
 
 _install_requires = [
-    "lxml>=3.3.3",
     "marshmallow",
-    "numpy>=1.22.3",
-    "obspy>=1.3.0",
     "python-dateutil>=2.8.0",
     "PyYAML>=5.1.1",
-    "ramsis.datamodel==1.0",
+    "ramsis.datamodel==1.1",
     "requests>=2.18.4",
     "transitions==0.6.9",
     "prefect>=2.8",
     "pyproj>=3.2.1",
     "jinja2",
-    "xmltodict",
     "sqlalchemy>=1.4",
     "typer",
     "pytest-mock",
@@ -66,8 +62,7 @@ _data_files = [
 
 setup(
     name='RAMSIS',
-    # TODO(damb): Provide version string globally
-    version='1.0',
+    version='1.1',
     author=' (SED, ETHZ),'.join(_authors),
     author_email=', '.join(_authors_email),
     description=('Real Time Risk Assessment and Mitigation for Induced'
