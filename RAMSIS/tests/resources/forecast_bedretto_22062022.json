@@ -12,7 +12,7 @@
             "injectionplan_filenames": ["injection_plan_150L_20220623.json"],
 	    "altitudemin": 0.0,
 	    "altitudemax": 0.0,
-            "geometryboundingbox": 
+            "boundingbox": 
                     {"x_min": 2679483.7937913937,
                      "x_max": 2679783.7937913937,
                      "y_min": 1151409.661100654,

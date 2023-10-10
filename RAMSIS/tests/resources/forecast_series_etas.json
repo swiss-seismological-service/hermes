@@ -8,7 +8,7 @@
 	    "forecastinterval": 86400,
             "forecastduration": 2678400,
             "tags": ["NATURAL", "RISE"], 
-	    "geometryextent": {"type":"Polygon","coordinates":
+	    "boundingpolygon": {"type":"Polygon","coordinates":
 		    [[[46.05211132,  5.84413185],
                       [45.99464811,  5.94225118],
                       [46.01478741,  6.2105252 ],

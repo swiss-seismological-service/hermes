@@ -6,7 +6,7 @@
             "starttime": "2021-01-01T00:00:00",
             "forecastduration": 31536000,
             "tags": ["RISE"], 
-	    "geometryextent": {"type":"Polygon","coordinates":
+	    "boundingpolygon": {"type":"Polygon","coordinates":
 		    [[[46.05211132,  5.84413185],
                       [45.99464811,  5.94225118],
                       [46.01478741,  6.2105252 ],
