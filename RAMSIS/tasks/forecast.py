@@ -258,8 +258,7 @@ def model_run_executor(forecast_id: int,
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             raise RemoteWorkerError(
                 "model run submission has failed with "
-                "error: RemoteWorkerError. Check if remote worker is"
-                f" accepting requests. {err}")
+                f"error: RemoteWorkerError {err}.")
 
         status = resp['data']['attributes']['status_code']
 
@@ -399,9 +398,9 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         f"{resp})")
                     model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                     session.commit()
-                except Exception:
+                except Exception as err:
                     logger.error("EXCEPTION! setting model run to finished "
-                                 "with errors")
+                                 f"with errors: {err}")
                     model_run.status.state = EStatus.FINISHED_WITH_ERRORS
                     session.commit()
 
@@ -410,6 +409,8 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                     logger.debug("setting model run to complete.")
                     model_run.status.state = EStatus.COMPLETE
                     session.commit()
+                # After committing results, delete task from worker.
+                _worker_handle.delete(model_run.runid)
 
             elif status in TASK_ERROR:
                 logger.error("EXCEPTION! task error. setting model run "

@@ -292,12 +292,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         :param deserializer: Optional deserializer instance used to load the
             response
         """
-        # TODO(damb): Howto extract the correct hydraulics catalog for the
-        # injection well?
-        # -> Something like well.snapshot(hydraulics_idx=0) might be
-        # implemented returning the current well with an hydraulics catalog
-        # snapshot.
-
         deserializer = kwargs.get('deserializer')
 
         self.logger.info(
@@ -377,7 +371,8 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 raise self.HTTPError(self.url, err)
         except requests.exceptions.ConnectionError as err:
             self.logger.error("The request has a connection error to"
-                              f" {self.url}")
+                              f" {self.url}. Please check if the connection"
+                              f"is accepting requests")
             raise self.ConnectionError(self.url, err)
         except requests.exceptions.RequestsError as err:
             self.logger.error(f"The request has an error {self.url}")
