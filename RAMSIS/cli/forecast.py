@@ -39,7 +39,7 @@ def rerun(forecast_ids: List[int],
             else:
                 typer.Exit()
 
-            if forecast.status.state == EStatus.COMPLETE:
+            if forecast.status == EStatus.COMPLETED:
                 typer.echo("forecast is already complete")
                 if force:
                     typer.echo("forecast will have status reset")

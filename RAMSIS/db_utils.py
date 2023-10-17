@@ -24,11 +24,11 @@ def get_model_run(model_run_id, session):
 
 def update_forecast_status(forecast_id, estatus, session):
     forecast = get_forecast(forecast_id, session)
-    forecast.status.state = estatus
+    forecast.status = estatus
 
 
 def set_statuses_db(forecast_id, estatus, session):
     logger = get_run_logger()
     forecast = session.execute(
         select(Forecast).filter_by(id=forecast_id)).scalar_one()
-    logger.info(f"forecast state: {forecast.status.state}")
+    logger.info(f"forecast status: {forecast.status}")

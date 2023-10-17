@@ -1,13 +1,28 @@
 from prefect import task, get_run_logger, runtime
 import json
 from datetime import timedelta, datetime
-from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, Status
+from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast
+from typing import Union
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
 from RAMSIS.db import session_handler
 
 forecast_context_format = "forecast_id: {forecast_id} |"
 model_run_context_format = "forecast_id: {forecast_id} " \
     "model_run_id: {model_run_id}|"
+
+
+def fork_log(obj: Union[ModelRun, Forecast], estatus: EStatus,
+             msg: str, session, logger):
+    if estatus == EStatus.FAILED:
+        logger.error(msg)
+    else:
+        logger.info(msg)
+    obj.add_log(msg)
+    obj.status = estatus
+    if isinstance(obj, ModelRun):
+        forecast_msg = f"Model run {obj.id}: {msg}"
+        obj.forecast.add_log(forecast_msg)
+    session.commit()
 
 
 @task
@@ -18,15 +33,13 @@ def update_status(forecast_id, connection_string, estatus):
 
 
 def create_model_runs(model_configs, injection_plan=None):
-    logger = get_run_logger()
     model_runs = list()
     for config in model_configs:
         model_runs.append(
             ModelRun(
                 modelconfig=config,
                 injectionplan=injection_plan,
-                status=Status(state=EStatus.PENDING)))
-    logger.info(f"Creating {len(model_runs)} model runs")
+                status=EStatus.PENDING))
     return model_runs
 
 
@@ -84,15 +97,20 @@ def new_forecast_from_series(forecastseries_id: int,
                             starttime=start_time,
                             endtime=endtime,
                             runs=model_run_list,
-                            status=Status(state=EStatus.PENDING))
-
-        logger.info("The new forecast will have a starttime of: "
-                    f"{forecast.starttime} and an endtime of: "
-                    f"{forecast.endtime}")
+                            status=EStatus.PENDING)
 
         session.add(forecast)
         session.commit()
-        logger.info(f"The new forecast has an id: {forecast.id}")
+
+        msg = (f"The new forecast {forecast.id} will have a starttime of: "
+               f"{forecast.starttime} and an endtime of: "
+               f"{forecast.endtime} and {len(model_run_list)} model runs.")
+        fork_log(forecast, EStatus.PENDING, msg, session, logger)
+
+        for run in forecast.runs:
+            run.add_log("Model run created.")
+        session.commit()
+
         return forecast.id, start_time
 
 
@@ -102,25 +120,25 @@ def set_statuses(forecast_id: int,
     logger = get_run_logger()
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
+        model_statuses = [model.status for model in forecast.runs]
+        model_status_names = [status.name for status in model_statuses]
         models_finished = all([
-            True if model.status.state in
-            [EStatus.COMPLETE, EStatus.FINISHED_WITH_ERRORS] else False
-            for model in forecast.runs])
+            True if status in
+            [EStatus.COMPLETED, EStatus.FAILED] else False
+            for status in model_statuses])
         if not models_finished:
-            logger.error("The model runs have mixed statuses and appear to "
-                         "be unfinished.")
-            forecast.status.state = EStatus.FINISHED_WITH_ERRORS
-            session.commit()
-            raise Exception("The model runs have mixed statuses and appear to "
-                            "be unfinished. ")
+            msg = ("The model runs have mixed statuses and appear to "
+                   f"be unfinished. {model_status_names}")
+            fork_log(forecast, EStatus.FAILED, msg, session, logger)
+            raise Exception(msg)
 
         models_complete = all([
-            True if model.status.state == EStatus.COMPLETE else False
+            True if model.status == EStatus.COMPLETED else False
             for model in forecast.runs])
         if models_complete:
-            forecast.status.state = EStatus.COMPLETE
-            session.commit()
+            msg = "The model runs are all completed "
+            fork_log(forecast, EStatus.COMPLETED, msg, session, logger)
         else:
-            forecast.status.state = EStatus.FINISHED_WITH_ERRORS
-            session.commit()
+            msg = f"Some model runs have failed. {model_status_names}"
+            fork_log(forecast, EStatus.FAILED, msg, session, logger)
             raise Exception("Forecast has errors")

@@ -95,6 +95,29 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 resp = [resp]
             self._resp = resp
 
+        def all(self):
+            """
+            Return the results represented by this :py:class:`QueryResult` as a
+            list.
+            """
+            return self._resp
+
+        def count(self):
+            """
+            Return a count this :py:class:`QueryResult` would return.
+            """
+            return len(self._resp)
+
+        def first(self):
+            """
+            Return the first result of the :py:class:`QueryResult` or None if
+            the result is empty.
+            """
+            if not self.count():
+                return None
+
+            return self._resp[0]
+
         @classmethod
         def from_requests(cls, resp, deserializer=None):
             """
@@ -142,62 +165,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             if deserializer is None:
                 return cls(demux_data(_json(resp)))
             return cls(deserializer._loado(demux_data(_json(resp))))
-
-        def filter_by(self, **kwargs):
-            """
-            Apply the given filtering criterion to a copy of the
-            :py:class:`QueryResult`, using keyword expressions.
-
-            Multiple criteria may be specified as comma separated; the effect
-            is that they will be joined together using a logical :code:`and`.
-            """
-
-            # XXX(damb): Validate filter conditions
-            try:
-                filter_conditions = FilterSchema().load(kwargs)
-            except marshmallow.exceptions.ValidationError as err:
-                raise RemoteSeismicityWorkerHandle.WorkerHandleError(err)
-
-            retval = []
-
-            for resp in self._resp:
-                if (resp is not None and
-                    all(resp[KEY_DATA][KEY_ATTRIBUTES][k] == v
-                        for k, v in filter_conditions.items())):
-                    retval.append(resp)
-
-            return self.__class__(retval)
-
-        def all(self):
-            """
-            Return the results represented by this :py:class:`QueryResult` as a
-            list.
-            """
-            return self._resp
-
-        def count(self):
-            """
-            Return a count this :py:class:`QueryResult` would return.
-            """
-            return len(self._resp)
-
-        def first(self):
-            """
-            Return the first result of the :py:class:`QueryResult` or None if
-            the result is empty.
-            """
-            if not self.count():
-                return None
-
-            return self._resp[0]
-
-        @staticmethod
-        def _extract(obj):
-            return obj[KEY_DATA] if KEY_DATA in obj else []
-
-        @staticmethod
-        def _wrap(value):
-            return {KEY_DATA: value}
 
     def __init__(self, base_url, **kwargs):
         """
@@ -344,7 +311,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                                     timeout=self._timeout)
             response = self._handle_exceptions(req)
 
-            self.logger.debug(
+            self.logger.info(
                 'Task removed (task_id={!r}): {!r}'.format(
                     t, response))
 
