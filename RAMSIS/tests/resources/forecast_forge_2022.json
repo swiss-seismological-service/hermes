@@ -6,10 +6,9 @@
             "starttime": "2022-04-21T14:00:00",
             "endtime": "2022-04-21T16:00:00",
 	    "forecastinterval": 1800,
-            "forecastduration": 17200,
             "tags": ["BEDRETTO", "INDUCED"], 
             "injectionplan_dir": "/home/sarsonl/repos/rt-ramsis/RAMSIS/tests/resources",
-            "injectionplan_filenames": ["16A-32_forge_2022_04_21.json"],
+            "injectionplan_filenames": ["16A-32_forge_2022_04_21_plan.json"],
 	    "altitudemin": -150.0,
 	    "altitudemax": 150.0,
             "boundingbox": 

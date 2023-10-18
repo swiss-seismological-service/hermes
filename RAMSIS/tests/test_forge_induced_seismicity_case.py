@@ -31,8 +31,10 @@ model_request_1 = 'model_request_induced_1.json'
 model_response_path = join(dirpath, 'results')
 
 resources_path = join(dirpath, 'resources')
-inj_plan_path = join(
+hyd_path = join(
     resources_path, '16A-32_forge_2022_04_21.json')
+inj_plan_path = join(
+    resources_path, '16A-32_forge_2022_04_21_plan.json')
 model_config_path = join(
     resources_path, 'model_forge_2022.json')
 project_config_path = join(
@@ -83,7 +85,7 @@ class TestInducedForgeCase:
         models = session.execute(
             select(ModelConfig)).scalars().all()
         assert len(models) == 1
-        create_project(project_config_path, well_data=inj_plan_path)
+        create_project(project_config_path, well_data=hyd_path)
         projects = session.execute(
             select(Project)).scalars().all()
         assert len(projects) == 1
@@ -108,11 +110,11 @@ class TestInducedForgeCase:
         forecast = session.execute(
             select(Forecast)).scalars().one()
         timebins = forecast.runs[0].resulttimebins
-        assert len(timebins) == 33
-        for timebin in timebins[0:5]:
+        assert len(timebins) == 24
+        for timebin in timebins[0:12]:
             assert len(timebin.seismicforecastgrids) == 1
             assert len(timebin.seismicforecastgrids[0].seismicrates) == 1
-        for timebin in timebins[5:33]:
+        for timebin in timebins[12:24]:
             assert len(timebin.seismicforecastgrids) == 10
             assert len(timebin.seismicforecastgrids[0].seismicrates) == 1
 

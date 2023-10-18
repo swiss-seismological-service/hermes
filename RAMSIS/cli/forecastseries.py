@@ -30,7 +30,10 @@ def disable_schedule(forecastseries_id: int):
             typer.echo("The forecastseries id does not exist")
             raise typer.Exit()
         asyncio.run(set_schedule_inactive(forecastseries.id))
-        # Need to add enabled to the db and update here.
+        forecastseries.active = False
+        msg = "Forecast series is set to inactive"
+        forecastseries.add_log(msg)
+        session.commit()
 
 
 @app.command()
@@ -80,15 +83,23 @@ def schedule(forecastseries_id: int,
             # Check for runs that were scheduled in the past and
             # will therefore not run
             scheduled_wait_time = 0
-            typer.echo("scheduling forecasts for the following times..."
-                       f"{list(rrule_obj)[0:10]}...")
+            msg = ("scheduling forecasts for the following times..."
+                   f"{list(rrule_obj)[0:10]}...")
+            typer.echo(msg)
+            forecastseries.add_log(msg)
+            session.commit()
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
                 dtstart=forecastseries.starttime, until=datetime_now)
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)
-                typer.echo(f"scheduling forecast for {forecast_starttime}")
+                msg = ("scheduling overdue forecast with starttime: "
+                       f"{forecast_starttime} to be run at: "
+                       f"{scheduled_wait_time}.")
+                typer.echo(msg)
+                forecastseries.add_log(msg)
+                session.commit()
                 asyncio.run(
                     add_new_scheduled_run(
                         flow_to_schedule.name, deployment.name,
@@ -97,11 +108,19 @@ def schedule(forecastseries_id: int,
                 scheduled_wait_time += overdue_interval
         else:
             # run single forecast
+            msg = ("scheduling single forecast with "
+                   f"scheduled start time: {forecastseries.starttime}")
+            typer.echo(msg)
+            forecastseries.add_log(msg)
+            session.commit()
             asyncio.run(
                 add_new_scheduled_run(
                     flow_to_schedule.name, deployment_name,
                     forecastseries.starttime, forecastseries.starttime,
                     forecastseries.id, db_url))
+        forecastseries.active = True
+        forecastseries.add_log("The forecast series is active.")
+        session.commit()
 
 
 @app.command()
@@ -165,9 +184,11 @@ def create(
             session.add(forecastseries)
             session.commit()
 
-        session.commit()
         for forecastseries in new_forecastseries:
-            typer.echo(f"created forecastseries: {forecastseries.name} "
-                       f"with id: {forecastseries.id} under project: "
-                       f"{project.name}, with id: {project.id}"
-                       f" with tags: {forecastseries.tags}")
+            msg = (f"created forecastseries: {forecastseries.name} "
+                   f"with id: {forecastseries.id} under project: "
+                   f"{project.name}, with id: {project.id}"
+                   f" with tags: {forecastseries.tags}")
+            typer.echo(msg)
+            forecastseries.add_log(msg)
+        session.commit()

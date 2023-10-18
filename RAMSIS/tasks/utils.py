@@ -15,7 +15,7 @@ model_run_context_format = "forecast_id: {forecast_id} " \
 
 def fork_log(obj: Union[ModelRun, Forecast, ForecastSeries],
              estatus: EStatus,
-             msg: str, session: Session, logger):
+             msg: str, session: Session, logger, propagate=True):
     """
     Some important logs are stored in the database,
     these messages are logged traditionally and appended
@@ -30,7 +30,8 @@ def fork_log(obj: Union[ModelRun, Forecast, ForecastSeries],
     obj.status = estatus
     # Add model run logs to the forecast also,
     # so we can see how many have completed and failed.
-    if isinstance(obj, ModelRun):
+    # Option to propagate the log to forecast level also.
+    if isinstance(obj, ModelRun) and propagate is True:
         forecast_msg = f"Model run {obj.id}: {msg}"
         obj.forecast.add_log(forecast_msg)
     session.commit()
@@ -133,6 +134,7 @@ def set_statuses(forecast_id: int,
     logger = get_run_logger()
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
+        forecastseries = forecast.forecastseries
         model_statuses = [model.status for model in forecast.runs]
         model_status_names = [status.name for status in model_statuses]
         models_finished = all([
@@ -150,6 +152,32 @@ def set_statuses(forecast_id: int,
         if models_complete:
             msg = "The model runs are all completed "
             fork_log(forecast, EStatus.COMPLETED, msg, session, logger)
+            if forecastseries.endtime:
+                if forecast.starttime >= forecastseries.endtime:
+                    forecastseries.active = False
+                    fork_log(forecast.forecastseries, EStatus.COMPLETED,
+                             "All forecasts are complete", session, logger)
         else:
             msg = f"Some model runs have failed. {model_status_names}"
             fork_log(forecast, EStatus.FAILED, msg, session, logger)
+
+        # Set status for forecastseries.
+        if forecastseries.forecastinterval:
+            # If there is no endtime then the forecast series will never
+            # become inactive unless the user inactivates it manually.
+            if forecastseries.endtime:
+                # Earliest possible starttime for the last forecast.
+                last_dttime = (
+                    forecastseries.endtime - timedelta(
+                        seconds=forecastseries.forecastinterval))
+                if forecast.starttime > last_dttime:
+                    forecastseries.active = False
+                    fork_log(forecast.forecastseries, EStatus.COMPLETED,
+                             "No more forecasts are scheduled", session,
+                             logger)
+        else:
+            # If there is no forecastinterval set, only a single forecast
+            # is run
+            forecastseries.active = False
+            fork_log(forecast.forecastseries, EStatus.COMPLETED,
+                     "No more forecasts are scheduled", session, logger)

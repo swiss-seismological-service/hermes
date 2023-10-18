@@ -14,8 +14,8 @@ from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
 from RAMSIS.db import session_handler
-from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
-from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
+from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
+from RAMSIS.clients.sfm import RemoteSeismicityWorkerHandle
 from RAMSIS.db_utils import get_forecast, get_model_run
 from RAMSIS.tasks.utils import fork_log
 
@@ -232,7 +232,6 @@ def model_run_executor(forecast_id: int,
         forecast = model_run.forecast
         forecastseries = forecast.forecastseries
 
-        serializer = SFMWorkerIMessageSerializer()
         payload = {
             'data': {
                 "worker_config": {
@@ -252,17 +251,19 @@ def model_run_executor(forecast_id: int,
                     'injection_plan': injection_plan,
                     'model_config': model_config.config}}}
 
-        data = json.dumps(serializer._serialize_dict(payload))
-
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
+        _worker_handle = RemoteSeismicityWorkerHandle(
+            model_run.modelconfig.url)
         try:
             resp = _worker_handle.compute(
-                data,
-                deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
+                payload,
+                SFMWorkerIMessageSerializer(),
+                SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             msg = f"Remote worker error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+        except RemoteSeismicityWorkerHandle.EncodingError as err:
+            msg = f"Error encoding the payload: {err}"
             fork_log(model_run, EStatus.FAILED, msg, session, logger)
         else:
             status = resp['data']['attributes']['status_code']
@@ -366,10 +367,11 @@ def poll_model_run(forecast_id: int, model_run_id: int,
             logger.info("model run is complete or has errors, exiting")
             return
         msg = f"Polling for runid={model_run.runid}"
-        fork_log(model_run, EStatus.RUNNING, msg, session, logger)
+        fork_log(model_run, EStatus.RUNNING, msg, session,
+                 logger, propagate=False)
 
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
+        _worker_handle = RemoteSeismicityWorkerHandle(
+            model_run.modelconfig.url)
 
         deserializer = SFMWorkerOMessageDeserializer(
             many=True)
