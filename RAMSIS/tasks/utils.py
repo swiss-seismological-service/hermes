@@ -1,7 +1,9 @@
 from prefect import task, get_run_logger, runtime
 import json
+from sqlalchemy.orm.session import Session
 from datetime import timedelta, datetime
-from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast
+from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, \
+    ForecastSeries
 from typing import Union
 from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
 from RAMSIS.db import session_handler
@@ -11,14 +13,23 @@ model_run_context_format = "forecast_id: {forecast_id} " \
     "model_run_id: {model_run_id}|"
 
 
-def fork_log(obj: Union[ModelRun, Forecast], estatus: EStatus,
-             msg: str, session, logger):
+def fork_log(obj: Union[ModelRun, Forecast, ForecastSeries],
+             estatus: EStatus,
+             msg: str, session: Session, logger):
+    """
+    Some important logs are stored in the database,
+    these messages are logged traditionally and appended
+    to a list of logs on the object (datetime added in db).
+    """
+    # Choose log level
     if estatus == EStatus.FAILED:
         logger.error(msg)
     else:
         logger.info(msg)
     obj.add_log(msg)
     obj.status = estatus
+    # Add model run logs to the forecast also,
+    # so we can see how many have completed and failed.
     if isinstance(obj, ModelRun):
         forecast_msg = f"Model run {obj.id}: {msg}"
         obj.forecast.add_log(forecast_msg)
@@ -69,10 +80,12 @@ def new_forecast_from_series(forecastseries_id: int,
         if not injection_plans:
             if forecastseries.project.injectionplan_required == \
                     EInput.REQUIRED:
-                raise Exception(
+                msg = (
                     "Project requires injection plan but none were "
                     "given on the forecast series. Please modify the "
                     "forecast series before trying to run again.")
+                fork_log(forecastseries, EStatus.FAILED, msg, session, logger)
+                return
             else:
                 model_run_list.extend(create_model_runs(model_configs_set))
         else:
@@ -81,8 +94,6 @@ def new_forecast_from_series(forecastseries_id: int,
                     model_configs_set,
                     injection_plan=json.dumps(
                         injection_plan, ensure_ascii=False).encode('utf-8')))
-        if not model_run_list:
-            raise Exception("No model runs created for forecast")
         # Set forecast endtime
         if forecastseries.forecastduration:
             endtime = start_time + timedelta(
@@ -90,9 +101,11 @@ def new_forecast_from_series(forecastseries_id: int,
         elif forecastseries.endtime:
             endtime = forecastseries.endtime
         else:
-            raise Exception(
+            msg = (
                 "forecast series endtime or forecastduration "
                 "not set. Please update the forecastseries configuration.")
+            fork_log(forecastseries, EStatus.FAILED, msg, session, logger)
+            return
         forecast = Forecast(forecastseries_id=forecastseries_id,
                             starttime=start_time,
                             endtime=endtime,
@@ -108,7 +121,7 @@ def new_forecast_from_series(forecastseries_id: int,
         fork_log(forecast, EStatus.PENDING, msg, session, logger)
 
         for run in forecast.runs:
-            run.add_log("Model run created.")
+            run.add_log(f"Model run {run.id} created.")
         session.commit()
 
         return forecast.id, start_time
@@ -130,7 +143,6 @@ def set_statuses(forecast_id: int,
             msg = ("The model runs have mixed statuses and appear to "
                    f"be unfinished. {model_status_names}")
             fork_log(forecast, EStatus.FAILED, msg, session, logger)
-            raise Exception(msg)
 
         models_complete = all([
             True if model.status == EStatus.COMPLETED else False
@@ -141,4 +153,3 @@ def set_statuses(forecast_id: int,
         else:
             msg = f"Some model runs have failed. {model_status_names}"
             fork_log(forecast, EStatus.FAILED, msg, session, logger)
-            raise Exception("Forecast has errors")

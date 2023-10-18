@@ -86,7 +86,12 @@ def ramsis_flow(forecast_id, connection_string, date):
 def scheduled_ramsis_flow(
         forecastseries_id, connection_string,
         date=None):
-    forecast_id, date = new_forecast_from_series(
-        forecastseries_id,
-        connection_string, date)
-    _ = ramsis_flow(forecast_id, connection_string, date)
+    try:
+        forecast_id, date = new_forecast_from_series(
+            forecastseries_id,
+            connection_string, date)
+        _ = ramsis_flow(forecast_id, connection_string, date)
+    except TypeError:
+        # If None is returned from new_forecast_from_series,
+        # exit the flow. The information is already logged.
+        pass

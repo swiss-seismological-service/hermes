@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from typing import List, Optional
 
+from sqlalchemy.orm.session import Session
 from marshmallow import EXCLUDE
 from prefect import task, get_run_logger
 from prefect.tasks import exponential_backoff
@@ -15,10 +16,8 @@ from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
 from RAMSIS.db import session_handler
 from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
-from RAMSIS.core.worker import WorkerError
 from RAMSIS.db_utils import get_forecast, get_model_run
 from RAMSIS.tasks.utils import fork_log
-from RAMSIS.error import RemoteWorkerError
 
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
@@ -35,9 +34,8 @@ def forecast_status(forecast_id: int, connection_string: str) -> bool:
 
 
 def any_model_runs_complete(
-        forecast: Forecast, session) -> bool:
+        forecast: Forecast, session: Session) -> bool:
     """Return True if any model runs are complete"""
-    print("type of session:", type(session))
     logger = get_run_logger()
     model_run_complete = any([r.id for r in forecast.runs if
                               r.status == EStatus.COMPLETED])
@@ -74,8 +72,6 @@ def update_fdsn(forecast_id: int, dttime: datetime,
                    forecast: Forecast) -> bytes:
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
-        # Do we want timeout to be configurable? Does this timeout
-        # also cover contacting the webservice?
         seismics_data_source = FDSNWSDataSource(
             url, timeout=700)
         seismics_data_source.enabled = True
@@ -205,7 +201,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
                 logger.info("No well allowed for forecast.")
 
 
-@task(task_run_name="model_runs(scenario{forecast_id})")
+@task(task_run_name="model_runs(forecast{forecast_id})")
 def model_runs(
         forecast_id: int,
         connection_string: str) -> List[int]:
@@ -266,25 +262,27 @@ def model_run_executor(forecast_id: int,
                 deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
-            raise RemoteWorkerError(
-                "model run submission has failed with "
-                f"error: RemoteWorkerError {err}.")
+            msg = f"Remote worker error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+        else:
+            status = resp['data']['attributes']['status_code']
 
-        status = resp['data']['attributes']['status_code']
+            if status != TASK_ACCEPTED:
+                msg = (f"model run {resp['data']['task_id']} "
+                       f"has returned an error: {resp}")
+                fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
-        if status != TASK_ACCEPTED:
-            raise RemoteWorkerError(f"model run {resp['data']['task_id']} "
-                                    f"has returned an error: {resp}")
-
-        model_run.runid = resp['data']['task_id']
-        # Add commit here as above information is very important.
-        session.commit()
-        msg = (
-            f"model run is dispatched to {_worker_handle.url}. "
-            "Results will be polled at: "
-            f"{_worker_handle.url}/{model_run.runid}.")
-        fork_log(model_run, EStatus.RUNNING, msg, session, logger)
-        return int(model_run.id)
+            else:
+                model_run.runid = resp['data']['task_id']
+                # Add commit here as above information is very important.
+                session.commit()
+                msg = (
+                    f"model run is dispatched to {_worker_handle.url}. "
+                    "Results will be polled at: "
+                    f"{_worker_handle.url}/{model_run.runid}.")
+                fork_log(model_run, EStatus.RUNNING, msg, session, logger)
+        finally:
+            return int(model_run.id)
 
 @task(task_run_name="check_model_run_not_complete(model_run{model_run_id})") # noqa
 def check_model_run_not_complete(
@@ -415,14 +413,12 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
                     fork_log(model_run, EStatus.FAILED, msg, session, logger)
-                    #raise
 
                 except Exception as err:
                     msg = (
                         "EXCEPTION! setting model run to finished "
                         f"with errors: {err}")
                     fork_log(model_run, EStatus.FAILED, msg, session, logger)
-                    #raise
 
             elif status in TASK_ERROR:
                 msg = (
@@ -430,7 +426,6 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                     " has returned an unsuccessful status code."
                     f"(runid={model_run.runid}: {resp})")
                 fork_log(model_run, EStatus.FAILED, msg, session, logger)
-                #raise WorkerError(msg)
 
             else:
                 msg = (
