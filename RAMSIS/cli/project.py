@@ -1,10 +1,13 @@
 import typer
 from rich import print
+from rich.pretty import pprint
 from rich.table import Table
 import json
+from datetime import datetime
 from sqlalchemy import select
 from ramsis.datamodel import Project
 from pathlib import Path
+from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.db import db_url, session_handler, init_db
 from ramsis.io.configuration import ProjectConfigurationSchema
 
@@ -132,3 +135,44 @@ def delete(project_id: int):
         session.delete(project)
         session.commit()
         print("Finished deleting project")
+
+
+@app.command()
+def check_ws(project_id: int,
+             timeout: int = typer.Option(
+                 15, help="timeout applied to each request for data."),
+             max_string: int = typer.Option(
+                 1000, help="Character limit for string output."),
+             help="Calls the web services and check there is data"
+             "A maximum of 5 events will be retrieved from FDSNWS "
+             "and the full data from HYDWS. If there is a timeout error, "
+             "please adjust the timeout option."):
+    datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
+    with session_handler(db_url) as session:
+        project = session.execute(
+            select(Project).filter_by(id=project_id)).scalar_one_or_none()
+        if not project:
+            print("The project does not exist")
+            raise typer.Exit()
+
+        starttime = datetime.strftime(project.starttime, datetime_format)
+        endtime_unformatted = project.endtime if project.endtime \
+            else datetime.now()
+        endtime = datetime.strftime(endtime_unformatted, datetime_format)
+        if project.fdsnws_url:
+
+            seismics_data_source = FDSNWSDataSource(
+                project.fdsnws_url, timeout=5)
+            cat = seismics_data_source.fetch(
+                starttime=starttime,
+                endtime=endtime, limit=10)
+            pprint("Seismic catalog successfully retrieved from web service."
+                   f" Excerpt from data: {cat}", max_string=max_string)
+        if project.hydws_url:
+            hyd_data_source = HYDWSDataSource(
+                project.hydws_url, timeout=15)
+            hyd = hyd_data_source.fetch(
+                starttime=starttime,
+                endtime=endtime)
+            pprint("Hydraulic data successfully retrieved from web service."
+                   f" Excerpt from data: {hyd}", max_string=max_string)

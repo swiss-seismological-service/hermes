@@ -74,7 +74,6 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         logger.info("Fetch fdsn called")
         seismics_data_source = FDSNWSDataSource(
             url, timeout=700)
-        seismics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
@@ -150,7 +149,6 @@ def update_hyd(forecast_id: int, dttime: datetime,
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
             url, timeout=300)
-        hydraulics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
