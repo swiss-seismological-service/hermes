@@ -416,6 +416,10 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         f"{resp})")
                     fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
+                except RemoteSeismicityWorkerHandle.ConnectionError:
+                    msg = ("A connection error to the worker means the data cannot be deleted in the worker database.")
+                    fork_log(model_run, EStatus.COMPLETED, msg, session, logger)
+
                 except Exception as err:
                     msg = (
                         "EXCEPTION! setting model run to finished "

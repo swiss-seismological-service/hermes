@@ -8,6 +8,16 @@ testing_environment_variable = "RAMSIS_TESTING_MODE"
 TEMP_ENV_VARS = {testing_environment_variable: 'true'}
 
 
+def pytest_addoption(parser):
+    parser.addoption("--use-ws", default=False,
+                     dest='use_ws', action='store_true')
+
+
+@pytest.fixture
+def use_ws(pytestconfig):
+    return pytestconfig.getoption("use_ws")
+
+
 @pytest.fixture(scope='session')
 def env():
     old_environ = dict(environ)
@@ -18,7 +28,7 @@ def env():
     environ.update(old_environ)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='function')
 def session():
     from RAMSIS.db import connect_to_db, db_url
     session = connect_to_db(db_url)
@@ -27,7 +37,7 @@ def session():
     session.close()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def connection(env):
     connection = psycopg2.connect(
         port=env["POSTGRES_PORT"], user=env["DEFAULT_USER"],
@@ -38,7 +48,7 @@ def connection(env):
     connection.close()
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def setup_database(connection, env):
     try:
         user = env["POSTGRES_USER"]

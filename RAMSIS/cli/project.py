@@ -1,4 +1,6 @@
 import typer
+from rich import print
+from rich.table import Table
 import json
 from sqlalchemy import select
 from ramsis.datamodel import Project
@@ -28,7 +30,7 @@ def create(
     if success:
         pass
     else:
-        typer.echo(f"Error, db could not be initialized: {success}")
+        print(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
 
     with session_handler(db_url) as session:
@@ -62,8 +64,8 @@ def create(
             session.commit()
 
         for project in new_projects:
-            typer.echo(f"created project {project.name} "
-                       f"with id: {project.id}")
+            print(f"created project {project.name} "
+                  f"with id: {project.id}")
 
 
 @app.command()
@@ -85,33 +87,32 @@ def update(
         project = session.execute(
             select(Project).filter_by(id=project_id)).scalar_one_or_none()
         if not project:
-            typer.echo(f"Project id {project_id} does not exist")
+            print(f"Project id {project_id} does not exist")
             raise typer.Exit()
 
         updated_project = ProjectConfigurationSchema(project_config)
         updated_project.id = project.id
         session.merge()
         session.commit()
-        typer.echo(f"updated project {project.name} "
-                   f"with id: {project.id}")
+        print(f"updated project {project.name} "
+              f"with id: {project.id}")
 
 
 @app.command()
-def list(project_id: int = typer.Option(None,
-         help="Project id to list information for")):
+def ls(help="Outputs list of projects"):
     with session_handler(db_url) as session:
-        if project_id:
-            projects = session.execute(
-                select(Project).filter_by(id=project_id)).scalars()
-            if not projects:
-                typer.echo("The project does not exist")
-                raise typer.Exit()
-        else:
-            projects = session.execute(
-                select(Project)).scalars()
-            for project in projects:
-                p_out = ProjectConfigurationSchema().dumps(project)
-                typer.echo(p_out)
+        projects = session.execute(
+            select(Project)).scalars().all()
+        for project in projects:
+            table = Table(show_footer=False,
+                          title=f"Project {project.name}",
+                          title_justify="left")
+            table.add_column("attribute")
+            table.add_column("value")
+            for attr in Project.__table__.columns:
+                table.add_row(str(attr.name), str(getattr(project, attr.name)))
+
+            print(table)
 
 
 @app.command()
@@ -120,14 +121,14 @@ def delete(project_id: int):
         project = session.execute(
             select(Project).filter_by(id=project_id)).scalar_one_or_none()
         if not project:
-            typer.echo("The project does not exist")
+            print("The project does not exist")
             raise typer.Exit()
         delete = typer.confirm("Are you sure you want to delete the  "
                                f"project with id: {project_id}")
         if not delete:
-            typer.echo("Not deleting")
+            print("Not deleting")
             raise typer.Abort()
 
         session.delete(project)
         session.commit()
-        typer.echo("Finished deleting project")
+        print("Finished deleting project")

@@ -29,6 +29,16 @@ def load_model(model_config):
     return result
 
 
+def delete_model(model_name):
+    from RAMSIS.cli import ramsis_app as app
+    options = ["model", "delete",
+               model_name,
+               "--force"]
+    result = runner.invoke(app, options)
+    print("result", result.stdout)
+    return result
+
+
 def check_updated_model(session, enabled_model_config, disabled_model_config):
     result = load_model(disabled_model_config)
     assert result.exit_code == 0
