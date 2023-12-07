@@ -34,6 +34,7 @@ def fork_log(obj: Union[ModelRun, Forecast, ForecastSeries],
     if isinstance(obj, ModelRun) and propagate is True:
         forecast_msg = f"Model run {obj.id}: {msg}"
         obj.forecast.add_log(forecast_msg)
+    print(f"new status of {obj}: {estatus}")
     session.commit()
 
 
@@ -75,7 +76,6 @@ def new_forecast_from_series(forecastseries_id: int,
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
         injection_plans = forecastseries.injectionplans
-        injection_plans = json.loads(injection_plans.decode('utf-8'))
 
         model_run_list = list()
         if not injection_plans:
@@ -90,6 +90,7 @@ def new_forecast_from_series(forecastseries_id: int,
             else:
                 model_run_list.extend(create_model_runs(model_configs_set))
         else:
+            injection_plans = json.loads(injection_plans.decode('utf-8'))
             for injection_plan in injection_plans:
                 model_run_list.extend(create_model_runs(
                     model_configs_set,

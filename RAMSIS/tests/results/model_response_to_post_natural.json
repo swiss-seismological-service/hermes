@@ -1,0 +1,1 @@
+{"data": {"task_id": "d19408c97cf7486ebce982c99b640e15", "attributes": {"status": "TaskAccepted", "status_code": 202, "warning": "", "model_result_uri": "http://localhost:5007/v1/sfm/run/d19408c9-7cf7-486e-bce9-82c99b640e15"}}}

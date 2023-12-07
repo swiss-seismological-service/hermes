@@ -233,10 +233,10 @@ def model_run_executor(forecast_id: int,
         payload = {
             'data': {
                 "worker_config": {
-                    "model_name": model_config.name,
-                    "model_description": model_config.description,
-                    "model_module": model_config.sfm_module,
-                    "model_class": model_config.sfm_class},
+                    "name": model_config.name,
+                    "description": model_config.description,
+                    "sfm_module": model_config.sfm_module,
+                    "sfm_function": model_config.sfm_function},
                 'attributes': {
                     'geometry': {
                         'bounding_polygon': forecastseries.boundingpolygon,
@@ -380,14 +380,24 @@ def poll_model_run(forecast_id: int, model_run_id: int,
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
             msg = f"Model run has got a worker error: {err}"
             fork_log(model_run, EStatus.FAILED, msg, session, logger)
-            return Failed(message=err)
+            return Failed(message=msg)
         except RemoteSeismicityWorkerHandle.HTTPError as err:
             msg = f"Model run has got a http error: {err}"
             fork_log(model_run, EStatus.FAILED, msg, session, logger)
-            return Failed(message=err)
+            return Failed(message=msg)
+        except RemoteSeismicityWorkerHandle.DeserializationError as err:
+            msg = f"Deserializing the result caused an error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+            return Failed(message=msg)
         else:
-            status = resp['data']['attributes']['status_code']
-            logger.info(f"status code of model run: {status}")
+            try:
+                status = resp['data']['attributes']['status_code']
+                logger.info(f"status code of model run: {status}")
+            except TypeError as err:
+
+                msg = f"The response is not as expected: {err}"
+                fork_log(model_run, EStatus.FAILED, msg, session, logger)
+                return Failed(message=msg)
 
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")

@@ -9,13 +9,20 @@ TEMP_ENV_VARS = {testing_environment_variable: 'true'}
 
 
 def pytest_addoption(parser):
-    parser.addoption("--use-ws", default=False,
-                     dest='use_ws', action='store_true')
+    parser.addoption("--use-data-ws", default=False,
+                     dest='use_data_ws', action='store_true')
+    parser.addoption("--use-model-ws", default=False,
+                     dest='use_model_ws', action='store_true')
 
 
 @pytest.fixture
-def use_ws(pytestconfig):
-    return pytestconfig.getoption("use_ws")
+def use_model_ws(pytestconfig):
+    return pytestconfig.getoption("use_model_ws")
+
+
+@pytest.fixture
+def use_data_ws(pytestconfig):
+    return pytestconfig.getoption("use_data_ws")
 
 
 @pytest.fixture(scope='session')
