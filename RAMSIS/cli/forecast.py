@@ -88,11 +88,13 @@ def delete(forecast_ids: List[int],
 
 
 @app.command()
-def ls(help="Outputs list of forecasts"):
+def ls(status: bool = typer.Option(
+        False, help="Only give id's and status."),
+        help="Outputs list of forecasts"):
     with session_handler(db_url) as session:
         forecasts = session.execute(
-            select(Forecast)).order_by(
-                Forecast.forecastseries_id).scalars().all()
+            select(Forecast).order_by(
+                Forecast.forecastseries_id)).scalars().all()
         for forecast in forecasts:
             table = Table(show_footer=False,
                           title=f"Forecast {forecast.name}",
@@ -100,6 +102,9 @@ def ls(help="Outputs list of forecasts"):
             table.add_column("attribute")
             table.add_column("value")
             for attr in Forecast.__table__.columns:
+                if status:
+                    if attr.name not in ['status', 'id']:
+                        continue
                 table.add_row(str(attr.name),
                               str(getattr(forecast, attr.name)))
 

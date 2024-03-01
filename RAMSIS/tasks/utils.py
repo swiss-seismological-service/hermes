@@ -45,13 +45,15 @@ def update_status(forecast_id, connection_string, estatus):
         session.commit()
 
 
-def create_model_runs(model_configs, injection_plan=None):
+def create_model_runs(model_configs, injection_plan=None,
+                      injection_plan_id=None):
     model_runs = list()
     for config in model_configs:
         model_runs.append(
             ModelRun(
                 modelconfig=config,
                 injectionplan=injection_plan,
+                injectionplan_id=injection_plan_id,
                 status=EStatus.PENDING))
     return model_runs
 
@@ -75,6 +77,8 @@ def new_forecast_from_series(forecastseries_id: int,
         for tag in forecastseries.tags:
             model_configs.extend(tag.modelconfigs)
         model_configs_set = set(model_configs)
+        model_configs_enabled = [c for c in model_configs_set if c.enabled]
+        print("################## model configs enabled: ", model_configs_enabled)
         injection_plans = forecastseries.injectionplans
 
         model_run_list = list()
@@ -88,14 +92,18 @@ def new_forecast_from_series(forecastseries_id: int,
                 fork_log(forecastseries, EStatus.FAILED, msg, session, logger)
                 return
             else:
-                model_run_list.extend(create_model_runs(model_configs_set))
+                model_run_list.extend(create_model_runs(model_configs_enabled))
         else:
             injection_plans = json.loads(injection_plans.decode('utf-8'))
-            for injection_plan in injection_plans:
+            # id for injection plan only distinguishes between injection plans
+            # in the same forecast series, with the aim being to track which
+            # model runs are associated with which injection plan.
+            for id, injection_plan in enumerate(injection_plans):
                 model_run_list.extend(create_model_runs(
-                    model_configs_set,
+                    model_configs_enabled,
                     injection_plan=json.dumps(
-                        injection_plan, ensure_ascii=False).encode('utf-8')))
+                        injection_plan, ensure_ascii=False).encode('utf-8'),
+                    injection_plan_id=id))
         # Set forecast endtime
         if forecastseries.forecastduration:
             endtime = start_time + timedelta(

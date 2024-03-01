@@ -74,7 +74,7 @@ def schedule(forecastseries_id: int,
         if forecasts:
             print("Forecasts exist, please reset forecastseries or "
                   "create a new one.")
-            typer.Exit()
+            raise typer.Exit()
         deployment_name = get_deployment_name(forecastseries_id)
         if forecastseries.forecastinterval:
             rrule_obj = rrule(
@@ -88,20 +88,29 @@ def schedule(forecastseries_id: int,
             # Check for runs that were scheduled in the past and
             # will therefore not run
             scheduled_wait_time = 0
-            msg = ("scheduling forecasts for the following times..."
-                   f"{list(rrule_obj)[0:10]}...")
-            print(msg)
-            forecastseries.add_log(msg)
-            session.commit()
+            # If times exist in the future, these are logged.
+            if list(rrule_obj):
+                msg = ("scheduling forecasts for the following times..."
+                       f"{list(rrule_obj)[0:10]}...")
+                print(msg)
+                forecastseries.add_log(msg)
+                session.commit()
+
+            # Find times that occured in the past
+            if forecastseries.endtime and datetime_now > forecastseries.endtime:
+                overdue_limit = forecastseries.endtime
+            else:
+                overdue_limit = datetime_now
+
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
-                dtstart=forecastseries.starttime, until=datetime_now)
+                dtstart=forecastseries.starttime, until=overdue_limit - timedelta(seconds=1))
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)
                 msg = ("scheduling overdue forecast with starttime: "
                        f"{forecast_starttime} to be run at: "
-                       f"{scheduled_wait_time}.")
+                       f"{scheduled_start_time}.")
                 print(msg)
                 forecastseries.add_log(msg)
                 session.commit()

@@ -1,4 +1,5 @@
 import typer
+from datetime import datetime
 from rich import print
 from rich.table import Table
 from marshmallow import EXCLUDE
@@ -32,10 +33,8 @@ def ls(help="Outputs list of models"):
 
 
 @app.command()
-def delete(
-        model_name: str,
-        force: bool = typer.Option(
-            False, help="Force the deletes without asking")):
+def disable(
+        model_name: str):
     with session_handler(db_url) as session:
         model_config = session.execute(
             select(ModelConfig).filter_by(
@@ -44,19 +43,44 @@ def delete(
         if not model_config:
             print("Model does not exist")
             raise typer.Exit()
-        if model_config.runs:
-            print("Model config is associated with model runs, "
-                  "cannot delete. You can disable instead.")
-            raise typer.Exit()
-            if not force:
-                delete = typer.confirm("Are you sure you want to delete the  "
-                                       f"model with name: {model_name}?")
-                if not delete:
-                    print("Not deleting")
-                    raise typer.Abort()
-        session.delete(model_config)
+        model_config.enabled = False
         session.commit()
 
+@app.command()
+def enable(
+        model_name: str):
+    with session_handler(db_url) as session:
+        model_config = session.execute(
+            select(ModelConfig).filter_by(
+                name=model_name)).\
+            scalar_one_or_none()
+        if not model_config:
+            print("Model does not exist")
+            raise typer.Exit()
+        model_config.enabled = True
+        session.commit()
+
+@app.command()
+def archive_all(
+        force: bool = typer.Option(
+            False, help="Force the deletes without asking")):
+    """Appends timestamp to the name of all models. For use
+    in cases when you change the model config/code and want to
+    archive the results.
+    """
+    with session_handler(db_url) as session:
+        model_configs = session.execute(
+            select(ModelConfig)).\
+            scalars().all()
+        if not model_configs:
+            print("Model does not exist")
+            raise typer.Exit()
+        for model in model_configs:
+            if 'ARCHIVED' not in model.name:
+                model.name = f"{model.name}-ARCHIVED-{datetime.now().strftime('%Y-%m-%d')}"
+                model.enabled = False
+        session.commit()
+        print(f'All models successfully archived: {[model.name for model in model_configs]}')
 
 @app.command()
 def load(
