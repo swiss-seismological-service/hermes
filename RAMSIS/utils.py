@@ -11,9 +11,9 @@ from ramsis.datamodel import EStatus
 
 
 def reset_forecast(forecast):
-    forecast.status.state = EStatus.PENDING
+    forecast.status = EStatus.PENDING
     for run in forecast.runs:
-        run.status.state = EStatus.PENDING
+        run.status = EStatus.PENDING
     return forecast
 
 

@@ -1,8 +1,13 @@
 import typer
+from rich import print
+from rich.pretty import pprint
+from rich.table import Table
 import json
+from datetime import datetime
 from sqlalchemy import select
 from ramsis.datamodel import Project
 from pathlib import Path
+from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.db import db_url, session_handler, init_db
 from ramsis.io.configuration import ProjectConfigurationSchema
 
@@ -28,7 +33,7 @@ def create(
     if success:
         pass
     else:
-        typer.echo(f"Error, db could not be initialized: {success}")
+        print(f"Error, db could not be initialized: {success}")
         raise typer.Exit()
 
     with session_handler(db_url) as session:
@@ -62,8 +67,8 @@ def create(
             session.commit()
 
         for project in new_projects:
-            typer.echo(f"created project {project.name} "
-                       f"with id: {project.id}")
+            print(f"created project {project.name} "
+                  f"with id: {project.id}")
 
 
 @app.command()
@@ -85,33 +90,32 @@ def update(
         project = session.execute(
             select(Project).filter_by(id=project_id)).scalar_one_or_none()
         if not project:
-            typer.echo(f"Project id {project_id} does not exist")
+            print(f"Project id {project_id} does not exist")
             raise typer.Exit()
 
         updated_project = ProjectConfigurationSchema(project_config)
         updated_project.id = project.id
         session.merge()
         session.commit()
-        typer.echo(f"updated project {project.name} "
-                   f"with id: {project.id}")
+        print(f"updated project {project.name} "
+              f"with id: {project.id}")
 
 
 @app.command()
-def list(project_id: int = typer.Option(None,
-         help="Project id to list information for")):
+def ls(help="Outputs list of projects"):
     with session_handler(db_url) as session:
-        if project_id:
-            projects = session.execute(
-                select(Project).filter_by(id=project_id)).scalars()
-            if not projects:
-                typer.echo("The project does not exist")
-                raise typer.Exit()
-        else:
-            projects = session.execute(
-                select(Project)).scalars()
-            for project in projects:
-                p_out = ProjectConfigurationSchema().dumps(project)
-                typer.echo(p_out)
+        projects = session.execute(
+            select(Project)).scalars().all()
+        for project in projects:
+            table = Table(show_footer=False,
+                          title=f"Project {project.name}",
+                          title_justify="left")
+            table.add_column("attribute")
+            table.add_column("value")
+            for attr in Project.__table__.columns:
+                table.add_row(str(attr.name), str(getattr(project, attr.name)))
+
+            print(table)
 
 
 @app.command()
@@ -120,14 +124,55 @@ def delete(project_id: int):
         project = session.execute(
             select(Project).filter_by(id=project_id)).scalar_one_or_none()
         if not project:
-            typer.echo("The project does not exist")
+            print("The project does not exist")
             raise typer.Exit()
         delete = typer.confirm("Are you sure you want to delete the  "
                                f"project with id: {project_id}")
         if not delete:
-            typer.echo("Not deleting")
+            print("Not deleting")
             raise typer.Abort()
 
         session.delete(project)
         session.commit()
-        typer.echo("Finished deleting project")
+        print("Finished deleting project")
+
+
+@app.command()
+def check_ws(project_id: int,
+             timeout: int = typer.Option(
+                 15, help="timeout applied to each request for data."),
+             max_string: int = typer.Option(
+                 1000, help="Character limit for string output."),
+             help="Calls the web services and check there is data"
+             "A maximum of 5 events will be retrieved from FDSNWS "
+             "and the full data from HYDWS. If there is a timeout error, "
+             "please adjust the timeout option."):
+    datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
+    with session_handler(db_url) as session:
+        project = session.execute(
+            select(Project).filter_by(id=project_id)).scalar_one_or_none()
+        if not project:
+            print("The project does not exist")
+            raise typer.Exit()
+
+        starttime = datetime.strftime(project.starttime, datetime_format)
+        endtime_unformatted = project.endtime if project.endtime \
+            else datetime.now()
+        endtime = datetime.strftime(endtime_unformatted, datetime_format)
+        if project.fdsnws_url:
+
+            seismics_data_source = FDSNWSDataSource(
+                project.fdsnws_url, timeout=5)
+            cat = seismics_data_source.fetch(
+                starttime=starttime,
+                endtime=endtime, limit=10)
+            pprint("Seismic catalog successfully retrieved from web service."
+                   f" Excerpt from data: {cat}", max_string=max_string)
+        if project.hydws_url:
+            hyd_data_source = HYDWSDataSource(
+                project.hydws_url, timeout=15)
+            hyd = hyd_data_source.fetch(
+                starttime=starttime,
+                endtime=endtime)
+            pprint("Hydraulic data successfully retrieved from web service."
+                   f" Excerpt from data: {hyd}", max_string=max_string)

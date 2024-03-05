@@ -254,3 +254,24 @@ async def set_schedule_inactive(forecastseries_id):
         deployment_name = get_deployment_name(forecastseries_id)
         deployment = await get_deployment(client, deployment_name)
         await deployment_set_schedule_inactive(deployment.id)
+
+
+async def limit_model_runs(concurrency_limit):
+    async with get_client() as client:
+        # set a concurrency limit of 10 on the 'small_instance' tag
+        _ = await client.create_concurrency_limit(
+            tag="model_run",
+            concurrency_limit=concurrency_limit)
+
+
+async def remove_limit_model_runs():
+    async with get_client() as client:
+        # remove a concurrency limit on the 'small_instance' tag
+        await client.delete_concurrency_limit_by_tag(tag="model_run")
+
+
+async def read_limit_model_runs():
+    async with get_client() as client:
+        # query the concurrency limit on the 'small_instance' tag
+        limit = await client.read_concurrency_limit_by_tag(tag="model_run")
+        return limit

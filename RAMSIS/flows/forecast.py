@@ -9,7 +9,7 @@ from RAMSIS.tasks.forecast import \
     model_run_executor, poll_model_run, \
     update_running, model_runs, \
     check_model_run_not_complete, \
-    check_model_runs_dispatched, \
+    check_model_runs_running, \
     forecast_status, waiting_task
 
 
@@ -20,14 +20,13 @@ def polling_flow(
     logger.info(f"Polling ids: {polling_ids}")
     _ = poll_model_run.map(unmapped(forecast_id), polling_ids,
                            unmapped(connection_string))
-    logger.debug("After poll_task.")
 
 
 @flow(name="ramsis_flow")
 def ramsis_flow(forecast_id, connection_string, date):
     logger = get_run_logger()
     forecast_state = forecast_status(forecast_id, connection_string)
-    if forecast_state == EStatus.COMPLETE:
+    if forecast_state == EStatus.COMPLETED:
         logger.info(f'Forecast {forecast_id} will not be run '
                     ' as it is complete')
     elif forecast_state == EStatus.RUNNING:
@@ -38,15 +37,15 @@ def ramsis_flow(forecast_id, connection_string, date):
 
         exponential_factor = 1.2
         x = 1
-        logger.info(f"just before check model runs dispatched, {polling_ids}")
-        while check_model_runs_dispatched(forecast_id, connection_string,
-                                          wait_for=[polling_ids]):
-            logger.info("just after check model runs dispatched, "
+        logger.info(f"just before check model runs sent off, {polling_ids}")
+        while check_model_runs_running(forecast_id, connection_string,
+                                       wait_for=[polling_ids]):
+            logger.info("just after check model runs set to run, "
                         f"{connection_string}")
 
             _ = polling_flow(forecast_id, polling_ids, connection_string)
             time.sleep(x**exponential_factor)
-            print(f"Polling for forecast {forecast_id}, {x}")
+            logger.info(f"Polling for forecast {forecast_id}, {x}")
             x += 1
 
     else:
@@ -66,13 +65,13 @@ def ramsis_flow(forecast_id, connection_string, date):
             running_ids,
             connection_string,
             wait_for=[running_ids])
-        _ = check_model_runs_dispatched(forecast_id, connection_string,
-                                        wait_for=[polling_ids])
+        _ = check_model_runs_running(forecast_id, connection_string,
+                                     wait_for=[polling_ids])
 
         exponential_factor = 1.2
         x = 1
-        while check_model_runs_dispatched(forecast_id, connection_string,
-                                          wait_for=[polling_ids]):
+        while check_model_runs_running(forecast_id, connection_string,
+                                       wait_for=[polling_ids]):
 
             poll_flow = polling_flow(forecast_id, polling_ids,
                                      connection_string)
@@ -87,7 +86,12 @@ def ramsis_flow(forecast_id, connection_string, date):
 def scheduled_ramsis_flow(
         forecastseries_id, connection_string,
         date=None):
-    forecast_id, date = new_forecast_from_series(
-        forecastseries_id,
-        connection_string, date)
-    _ = ramsis_flow(forecast_id, connection_string, date)
+    try:
+        forecast_id, date = new_forecast_from_series(
+            forecastseries_id,
+            connection_string, date)
+        _ = ramsis_flow(forecast_id, connection_string, date)
+    except TypeError:
+        # If None is returned from new_forecast_from_series,
+        # exit the flow. The information is already logged.
+        pass

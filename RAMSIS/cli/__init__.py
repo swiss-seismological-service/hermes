@@ -1,7 +1,16 @@
 import typer
+import json
 import asyncio
+from pathlib import Path
+from sqlalchemy import select
+from os.path import join
 from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
-from RAMSIS.cli.utils import bulk_delete_flow_runs
+from RAMSIS.cli.utils import bulk_delete_flow_runs, limit_model_runs, \
+    remove_limit_model_runs, read_limit_model_runs
+from ramsis.datamodel import Project
+from RAMSIS.db import db_url, session_handler
+from ramsis.io.configuration import MasterConfigurationSchema, \
+    ProjectConfigurationSchema
 
 ramsis_app = typer.Typer()
 ramsis_app.add_typer(_forecast.app, name="forecast")
@@ -12,7 +21,7 @@ ramsis_app.add_typer(project.app, name="project")
 
 @ramsis_app.command()
 def delete_scheduled_flow_runs():
-    asyncio.run(bulk_delete_flow_runs(state=["Scheduled"]))
+    asyncio.run(bulk_delete_flow_runs(states=["Scheduled"]))
 
 
 @ramsis_app.command()
@@ -45,6 +54,107 @@ def delete_all_flow_runs():
               'Failed',
               'Crashed']
     asyncio.run(bulk_delete_flow_runs(states=states))
+
+
+@ramsis_app.command()
+def create_all(
+        directory: Path = typer.Option(
+            ...,
+            exists=True,
+            readable=True),
+        config: str = typer.Option(
+            'config.json',
+            help="name of the master config file within the directory "
+            "that contains names of the various project, "
+            "forecast series etc configurations."),
+        delete_existing: bool = typer.Option(False)):
+
+    # Needs a file in the directory called config.json what contains all
+    # following information.
+    with open(join(directory, config)) as m_config:
+        json_config = json.load(m_config)
+        master_config_dict = MasterConfigurationSchema().load(json_config)
+
+    project_config = master_config_dict["project_config"]
+
+    with open(join(directory, project_config)) as p_config:
+        json_config = json.load(p_config)
+        project_config_list = ProjectConfigurationSchema(many=True).\
+            load(json_config["project_configs"])
+    for project_config in project_config_list:
+        project_name = project_config.name
+
+        with session_handler(db_url) as session:
+
+            matching_project = session.execute(
+                select(Project).where(
+                    Project.name == project_name)).scalar_one_or_none()
+            if matching_project:
+                print(matching_project, type(matching_project))
+                if delete_existing:
+                    delete = typer.confirm(
+                        "Are you sure you want to delete the  "
+                        f"project with id: {matching_project.id}")
+                    if not delete:
+                        print("Not deleting")
+                        raise typer.Abort()
+
+                    print(matching_project, type(matching_project))
+                    session.delete(matching_project)
+                    session.commit()
+                else:
+                    raise Exception(
+                        "Project name: "
+                        f"{matching_project.name} already exists "
+                        f"with id: {matching_project.id}. Please set "
+                        "delete-existing.")
+        with open(join(
+            directory, master_config_dict['catalog']), 'r') as catalog_data, \
+            open(join(directory, master_config_dict['wells']), 'r') \
+                as well_data:
+            project.create(
+                join(directory, master_config_dict['project_config']),
+                catalog_data=catalog_data,
+                well_data=well_data)
+        model.load(join(directory, master_config_dict['model_config']))
+
+        new_project = session.execute(
+            select(Project).where(
+                Project.name == project_name)).scalar_one_or_none()
+
+        forecastseries.create(
+            join(directory, master_config_dict['forecastseries_config']),
+            new_project.id)
+    print("Complete")
+
+
+@ramsis_app.command()
+def update_model_run_concurrency(
+        concurrency_limit: int,
+        help=(
+        "Set concurrency limit for the number of tasks running which either"
+        " starts a model run or is polling for it. No new model runs should be"
+        " started once the limit is reached. This stops too many model runs "
+        " running at the same time and crashing in the case of high memory "
+        "usage.")):
+    asyncio.run(limit_model_runs(concurrency_limit))
+
+
+@ramsis_app.command()
+def remove_model_run_concurrency(
+        help=(
+        "Remove concurrency limit for the number of model runs "
+        "being executed at the same time.")):
+    asyncio.run(remove_limit_model_runs())
+
+
+@ramsis_app.command()
+def read_model_run_concurrency(
+        help=(
+        "Return concurrency limit for the number of model runs "
+        "being executed at the same time.")):
+    limit = asyncio.run(read_limit_model_runs())
+    print(f"Limit: {limit.concurrency_limit}")
 
 
 def main():

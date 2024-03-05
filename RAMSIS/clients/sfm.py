@@ -2,6 +2,7 @@
 Seismicity forecast model (SFM) worker related facilities.
 """
 
+import json
 import enum
 import functools
 import uuid
@@ -9,15 +10,19 @@ import uuid
 from urllib.parse import urlparse
 
 import marshmallow
-import requests
+from requests import get, post, delete, exceptions
 from prefect import get_run_logger
 from marshmallow import Schema, fields, validate
 
-from RAMSIS.core.worker import WorkerHandleBase
+from ramsis.utils.error import Error
 
 
 KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'
+
+
+class WorkerError(Error):
+    """Base worker error ({})."""
 
 
 class StatusCode(enum.Enum):
@@ -51,35 +56,37 @@ class FilterSchema(Schema):
 
 
 # -----------------------------------------------------------------------------
-class RemoteSeismicityWorkerHandle(WorkerHandleBase):
+class RemoteSeismicityWorkerHandle:
     """
     Base class simplifying the communication with *RT-RAMSIS* remote seismicity
     forecast model worker implementations (i.e. webservice implementations of
-    scientific forecast models). Concrete implementations are intended to
-    abstract the communication with their corresponding worker.
+    scientific forecast models).
     """
 
     URI_BASE = '/v1/sfm/run'
 
     MIMETYPE = 'application/json'
-    LOGGER = 'ramsis.core.worker.remote_seismicity_worker_handle'
+    LOGGER = 'ramsis.remote_seismicity_worker_handle'
 
-    class EncodingError(WorkerHandleBase.WorkerHandleError):
+    class EncodingError(WorkerError):
         """Error while encoding payload ({})."""
 
-    class DecodingError(WorkerHandleBase.WorkerHandleError):
+    class DecodingError(WorkerError):
         """Error while decoding response ({})."""
 
-    class RemoteWorkerError(WorkerHandleBase.WorkerHandleError):
+    class RemoteWorkerError(WorkerError):
         """Base worker error ({})."""
 
-    class HTTPError(RemoteWorkerError):
+    class DeserializationError(WorkerError):
+        """Deserialization of model result error ({})."""
+
+    class HTTPError(WorkerError):
         """Worker HTTP error (url={!r}, reason={!r})."""
 
-    class ConnectionError(RemoteWorkerError):
+    class ConnectionError(WorkerError):
         """Worker connection error (url={!r}, reason={!r})."""
 
-    class QueryResult(object):
+    class QueryResult:
         """
         Implementation of a query result. Partly implements the interface from
         :py:class:`sqlalchemy.orm.query.Query`.
@@ -94,6 +101,29 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             if not isinstance(resp, list):
                 resp = [resp]
             self._resp = resp
+
+        def all(self):
+            """
+            Return the results represented by this :py:class:`QueryResult` as a
+            list.
+            """
+            return self._resp
+
+        def count(self):
+            """
+            Return a count this :py:class:`QueryResult` would return.
+            """
+            return len(self._resp)
+
+        def first(self):
+            """
+            Return the first result of the :py:class:`QueryResult` or None if
+            the result is empty.
+            """
+            if not self.count():
+                return None
+
+            return self._resp[0]
 
         @classmethod
         def from_requests(cls, resp, deserializer=None):
@@ -134,6 +164,21 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                         else:
                             retval.append({KEY_DATA: r[KEY_DATA]})
 
+                # Uncomment if creating new test resources
+                # from uuid import UUID
+
+                # class UUIDEncoder(json.JSONEncoder):
+                #     def default(self, obj):
+                #         if isinstance(obj, UUID):
+                #             # if the obj is uuid, we simply return the
+                #             #value of uuid
+                #             return obj.hex
+                #         return json.JSONEncoder.default(self, obj)
+                # if retval:
+                #     with open(
+                #         '../../tests/results/model_response_natural.json',
+                #         'w') as f:
+                #         f.write(json.dumps(retval, cls=UUIDEncoder))
                 return retval
 
             if not isinstance(resp, list):
@@ -143,62 +188,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 return cls(demux_data(_json(resp)))
             return cls(deserializer._loado(demux_data(_json(resp))))
 
-        def filter_by(self, **kwargs):
-            """
-            Apply the given filtering criterion to a copy of the
-            :py:class:`QueryResult`, using keyword expressions.
-
-            Multiple criteria may be specified as comma separated; the effect
-            is that they will be joined together using a logical :code:`and`.
-            """
-
-            # XXX(damb): Validate filter conditions
-            try:
-                filter_conditions = FilterSchema().load(kwargs)
-            except marshmallow.exceptions.ValidationError as err:
-                raise RemoteSeismicityWorkerHandle.WorkerHandleError(err)
-
-            retval = []
-
-            for resp in self._resp:
-                if (resp is not None and
-                    all(resp[KEY_DATA][KEY_ATTRIBUTES][k] == v
-                        for k, v in filter_conditions.items())):
-                    retval.append(resp)
-
-            return self.__class__(retval)
-
-        def all(self):
-            """
-            Return the results represented by this :py:class:`QueryResult` as a
-            list.
-            """
-            return self._resp
-
-        def count(self):
-            """
-            Return a count this :py:class:`QueryResult` would return.
-            """
-            return len(self._resp)
-
-        def first(self):
-            """
-            Return the first result of the :py:class:`QueryResult` or None if
-            the result is empty.
-            """
-            if not self.count():
-                return None
-
-            return self._resp[0]
-
-        @staticmethod
-        def _extract(obj):
-            return obj[KEY_DATA] if KEY_DATA in obj else []
-
-        @staticmethod
-        def _wrap(value):
-            return {KEY_DATA: value}
-
     def __init__(self, base_url, **kwargs):
         """
         :param str base_url: The worker's base URL
@@ -206,7 +195,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             <http://docs.python-requests.org/en/master/>`_ library functions
         :type timeout: float or tlple
         """
-        super().__init__(**kwargs)
         self.logger = get_run_logger()
         base_url = self.validate_ctor_args(
             base_url)
@@ -216,17 +204,6 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         self._url_path = f"{self.URI_BASE}"
 
         self._timeout = kwargs.get('timeout')
-
-    @classmethod
-    def from_run(cls, model_run, **kwargs):
-        """
-        Create a :py:class:`RemoteSeismicityWorkerHandle` from a model run.
-
-        :param model_run:
-        :type model_run:
-            :py:class:`ramsis.datamodel.seismicity.SeismicityModelRun`
-        """
-        return cls(model_run.modelconfig.url, **kwargs)
 
     @property
     def url(self):
@@ -250,7 +227,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Requesting tasks results (bulk mode).')
             self.logger.info(f"URL for model: {self.url}")
             req = functools.partial(
-                requests.get, self.url, timeout=self._timeout)
+                get, self.url, timeout=self._timeout)
 
             resp = self._handle_exceptions(req)
 
@@ -272,7 +249,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 format(url, t))
 
             req = functools.partial(
-                requests.get, url, timeout=(5, 30))
+                get, url, timeout=(5, 30))
 
             response = self._handle_exceptions(req)
 
@@ -280,26 +257,18 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Task result (task_id={!r}): {!r}'.format(
                     t, response))
             resp.append(response)
-        return self.QueryResult.from_requests(
-            resp, deserializer=deserializer)
+        try:
+            return self.QueryResult.from_requests(
+                resp, deserializer=deserializer)
+        except Exception as err:
+            raise self.DeserializationError(err)
 
-    def compute(self, _payload, **kwargs):
-        """
-        Issue a task to a remote seismicity forecast worker.
+    def compute(self, payload, serializer, deserializer, **kwargs):
 
-        :param payload: Payload sent to the remote worker
-        :type payload: str
-        :param deserializer: Optional deserializer instance used to load the
-            response
-        """
-        # TODO(damb): Howto extract the correct hydraulics catalog for the
-        # injection well?
-        # -> Something like well.snapshot(hydraulics_idx=0) might be
-        # implemented returning the current well with an hydraulics catalog
-        # snapshot.
-
-        deserializer = kwargs.get('deserializer')
-
+        try:
+            _payload = json.dumps(serializer._serialize_dict(payload))
+        except Exception as err:
+            raise self.EncodingError(err)
         self.logger.info(
             'Sending computation request url={!r}).'.format(
                 self.url))
@@ -307,16 +276,34 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         headers = {'Content-Type': self.MIMETYPE,
                    'Accept': 'application/json'}
         req = functools.partial(
-            requests.post, self.url, data=_payload, headers=headers,
+            post, self.url, data=_payload, headers=headers,
             timeout=self._timeout)
         response = self._handle_exceptions(req)
 
         try:
-            result = response.json()
-            if deserializer:
-                result = deserializer._loado(result)
+            result_json = response.json()
+            result = deserializer._loado(result_json)
+
+            # Uncomment if creating new test resources
+            # from uuid import UUID
+
+            # class UUIDEncoder(json.JSONEncoder):
+            #     def default(self, obj):
+            #         if isinstance(obj, UUID):
+            #             # if the obj is uuid, we simply return the value
+            #             # of uuid
+            #             return obj.hex
+            #         return json.JSONEncoder.default(self, obj)
+            # with open(
+            #     '../../tests/results/model_response_to_post_natural.json',
+            #     'w') as f:
+            #     f.write(json.dumps(result, cls=UUIDEncoder))
+
         except (ValueError, marshmallow.exceptions.ValidationError) as err:
             raise self.DecodingError(err)
+        except Exception as err:
+            self.logger.error(err)
+            raise
 
         self.logger.debug(
             'Worker response (url={!r}): {!r}.'.format(
@@ -346,11 +333,11 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 'Removing task (url={!r}, task_id={!r}).'.
                 format(url, t))
 
-            req = functools.partial(requests.delete, url,
+            req = functools.partial(delete, url,
                                     timeout=self._timeout)
             response = self._handle_exceptions(req)
 
-            self.logger.debug(
+            self.logger.info(
                 'Task removed (task_id={!r}): {!r}'.format(
                     t, response))
 
@@ -367,7 +354,7 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
         try:
             resp = req()
             resp.raise_for_status()
-        except requests.exceptions.HTTPError as err:
+        except exceptions.HTTPError as err:
             try:
                 self.logger.warning(
                     f'JSON response (HTTPError): {resp.json()!r}')
@@ -375,14 +362,15 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
                 pass
             finally:
                 raise self.HTTPError(self.url, err)
-        except requests.exceptions.ConnectionError as err:
+        except exceptions.ConnectionError as err:
             self.logger.error("The request has a connection error to"
-                              f" {self.url}")
+                              f" {self._url_base}. Please check if the "
+                              "connection is accepting requests")
             raise self.ConnectionError(self.url, err)
-        except requests.exceptions.RequestsError as err:
+        except exceptions.RequestsError as err:
             self.logger.error(f"The request has an error {self.url}")
             raise self.RemoteWorkerError(err)
-        except requests.exceptions.Timeout:
+        except exceptions.Timeout:
             self.logger.error(f"The request timed out to {self.url}")
             raise
 
@@ -399,7 +387,3 @@ class RemoteSeismicityWorkerHandle(WorkerHandleBase):
             raise ValueError(f"Invalid URL: {url}.")
 
         return url.geturl()
-
-
-SeismicityWorkerHandle = RemoteSeismicityWorkerHandle
-WorkerHandleBase.register(SeismicityWorkerHandle)

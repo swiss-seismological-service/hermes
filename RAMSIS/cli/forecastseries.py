@@ -1,4 +1,6 @@
 from typing import List
+from rich import print
+from rich.table import Table
 import asyncio
 import typer
 import json
@@ -27,25 +29,31 @@ def disable_schedule(forecastseries_id: int):
             select(ForecastSeries).filter_by(id=forecastseries_id)).\
             scalar_one_or_none()
         if not forecastseries:
-            typer.echo("The forecastseries id does not exist")
+            print("The forecastseries id does not exist")
             raise typer.Exit()
         asyncio.run(set_schedule_inactive(forecastseries.id))
-        # Need to add enabled to the db and update here.
+        forecastseries.active = False
+        msg = "Forecast series is set to inactive"
+        forecastseries.add_log(msg)
+        session.commit()
 
 
 @app.command()
-def ls(forecastseries_id: int):
+def ls():
     with session_handler(db_url) as session:
         forecastseries_list = session.execute(
             select(ForecastSeries)).\
             scalars().all()
         for series in forecastseries_list:
-            typer.echo(
-                f"ForecastSeries id: {series.id}, name: {series.name}"
-                f" tags: {series.tags}, project: {series.project}, "
-                f"forecast interval {series.forecastinterval}, "
-                f"forecasts: {series.forecasts}, injectionplans: "
-                f"{series.injectionplans}")
+            table = Table(show_footer=False,
+                          title=f"Forecast Series {series.name}",
+                          title_justify="left")
+            table.add_column("attribute")
+            table.add_column("value")
+            for attr in ForecastSeries.__table__.columns:
+                table.add_row(str(attr.name), str(getattr(series, attr.name)))
+
+            print(table)
 
 
 @app.command()
@@ -58,15 +66,15 @@ def schedule(forecastseries_id: int,
             select(ForecastSeries).filter_by(id=forecastseries_id)).\
             scalar_one_or_none()
         if not forecastseries:
-            typer.echo("The forecastseries id does not exist")
+            print("The forecastseries id does not exist")
             raise typer.Exit()
 
         datetime_now = datetime.utcnow()
         forecasts = forecastseries.forecasts
         if forecasts:
-            typer.echo("Forecasts exist, please reset forecastseries or "
-                       "create a new one.")
-            typer.Exit()
+            print("Forecasts exist, please reset forecastseries or "
+                  "create a new one.")
+            raise typer.Exit()
         deployment_name = get_deployment_name(forecastseries_id)
         if forecastseries.forecastinterval:
             rrule_obj = rrule(
@@ -80,15 +88,33 @@ def schedule(forecastseries_id: int,
             # Check for runs that were scheduled in the past and
             # will therefore not run
             scheduled_wait_time = 0
-            typer.echo("scheduling forecasts for the following times..."
+            # If times exist in the future, these are logged.
+            if list(rrule_obj):
+                msg = ("scheduling forecasts for the following times..."
                        f"{list(rrule_obj)[0:10]}...")
+                print(msg)
+                forecastseries.add_log(msg)
+                session.commit()
+
+            # Find times that occured in the past
+            if forecastseries.endtime and \
+                    datetime_now > forecastseries.endtime:
+                overdue_limit = forecastseries.endtime
+            else:
+                overdue_limit = datetime_now
+
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
-                dtstart=forecastseries.starttime, until=datetime_now)
+                dtstart=forecastseries.starttime, until=overdue_limit)
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)
-                typer.echo(f"scheduling forecast for {forecast_starttime}")
+                msg = ("scheduling overdue forecast with starttime: "
+                       f"{forecast_starttime} to be run at: "
+                       f"{scheduled_wait_time}.")
+                print(msg)
+                forecastseries.add_log(msg)
+                session.commit()
                 asyncio.run(
                     add_new_scheduled_run(
                         flow_to_schedule.name, deployment.name,
@@ -97,11 +123,19 @@ def schedule(forecastseries_id: int,
                 scheduled_wait_time += overdue_interval
         else:
             # run single forecast
+            msg = ("scheduling single forecast with "
+                   f"scheduled start time: {forecastseries.starttime}")
+            print(msg)
+            forecastseries.add_log(msg)
+            session.commit()
             asyncio.run(
                 add_new_scheduled_run(
                     flow_to_schedule.name, deployment_name,
                     forecastseries.starttime, forecastseries.starttime,
                     forecastseries.id, db_url))
+        forecastseries.active = True
+        forecastseries.add_log("The forecast series is active.")
+        session.commit()
 
 
 @app.command()
@@ -114,19 +148,19 @@ def delete(forecastseries_ids: List[int],
                 select(ForecastSeries).filter_by(id=forecastseries_id)).\
                 scalar_one_or_none()
             if not forecastseries:
-                typer.echo("The forecastseries does not exist")
+                print("The forecastseries does not exist")
                 raise typer.Exit()
             if not force:
                 delete = typer.confirm(
                     "Are you sure you want to delete the "
                     f"forecastseries with id: {forecastseries_id}")
                 if not delete:
-                    typer.echo("Not deleting")
+                    print("Not deleting")
                     raise typer.Abort()
 
             session.delete(forecastseries)
             session.commit()
-            typer.echo(f"Finished deleting forecast {forecastseries_id}")
+            print(f"Finished deleting forecast {forecastseries_id}")
 
 
 @app.command()
@@ -150,7 +184,7 @@ def create(
                 select(Project).filter_by(id=project_id)).scalar_one_or_none()
 
         if not project:
-            typer.echo(f"Project id {project_id} does not exist")
+            print(f"Project id {project_id} does not exist")
             raise typer.Exit()
 
         with open(config, "r") as forecastseries_json:
@@ -165,9 +199,13 @@ def create(
             session.add(forecastseries)
             session.commit()
 
-        session.commit()
         for forecastseries in new_forecastseries:
-            typer.echo(f"created forecastseries: {forecastseries.name} "
-                       f"with id: {forecastseries.id} under project: "
-                       f"{project.name}, with id: {project.id}"
-                       f" with tags: {forecastseries.tags}")
+            msg = (f"created forecastseries: {forecastseries.name} "
+                   f"with id: {forecastseries.id} under project: "
+                   f"{project.name}, with id: {project.id}"
+                   f" with tags: {forecastseries.tags}."
+                   " To schedule forecast series: "
+                   f"ramsis forecastseries schedule {forecastseries.id}")
+            print(msg)
+            forecastseries.add_log(msg)
+        session.commit()

@@ -1,15 +1,14 @@
 {
     "model_configs":
     [{
-	    "name": "ETAS model 1997 start 10,000",
+	    "name": "ETAS model 1997 start.",
 	    "description": "Standard config for ETAS model for switzerland",
-            "url":"http://ramsis-nsfm-dev.ethz.ch:5007",
+            "url":"http://localhost:5007",
             "enabled":true,
 	    "tags": ["ETAS", "RISE", "mc_2.3"],
-	    "sfm_module": "ramsis_nsfm.models.etas",
-	    "sfm_class": "ETASCalculation",
+	    "sfm_module": "runnable_code.run_model",
+	    "sfm_function": "main",
 	    "config":{
-	        "model_parameters": {
                 "auxiliary_start": "1992-01-01 00:00:00",
 	        "timewindow_start": "1997-01-01 00:00:00",
 
@@ -28,8 +27,6 @@
 	            "delta_m": 0.1,
 	            "coppersmith_multiplier": 100,
 	            "earth_radius": 6.3781e3,
-	            "n_simulations": 10000
-	        },
-                "wrapper_parameters":{
-	            }}}]
+	            "n_simulations": 10
+	            }}]
         }

@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from typing import List, Optional
 
+from sqlalchemy.orm.session import Session
 from marshmallow import EXCLUDE
 from prefect import task, get_run_logger
 from prefect.tasks import exponential_backoff
@@ -13,10 +14,10 @@ from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 
 from RAMSIS.db import session_handler
-from RAMSIS.core.datasources import FDSNWSDataSource, HYDWSDataSource
-from RAMSIS.core.worker.sfm import RemoteSeismicityWorkerHandle
+from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
+from RAMSIS.clients.sfm import RemoteSeismicityWorkerHandle
 from RAMSIS.db_utils import get_forecast, get_model_run
-from RAMSIS.error import RemoteWorkerError
+from RAMSIS.tasks.utils import fork_log
 
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
@@ -29,19 +30,22 @@ def forecast_status(forecast_id: int, connection_string: str) -> bool:
     """
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
-        return forecast.status.state
+        return forecast.status
 
 
 def any_model_runs_complete(
-        forecast: Forecast) -> bool:
+        forecast: Forecast, session: Session) -> bool:
     """Return True if any model runs are complete"""
     logger = get_run_logger()
     model_run_complete = any([r.id for r in forecast.runs if
-                              r.status.state == EStatus.COMPLETE])
+                              r.status == EStatus.COMPLETED])
     if model_run_complete:
-        logger.warning("At least one model run has a COMPLETE status "
-                       "which means that datasources will not be "
-                       "refreshed")
+        msg = ("At least one model run has a COMPLETED status "
+               "which means that datasources will not be "
+               "refreshed")
+        logger.warning(msg)
+        forecast.add_log(msg)
+        session.commit()
         return True
     return False
 
@@ -53,7 +57,7 @@ def update_running(forecast_id: int, connection_string: str) -> None:
     """
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
-        forecast.status.state = EStatus.RUNNING
+        forecast.status = EStatus.RUNNING
         session.commit()
 
 
@@ -68,11 +72,8 @@ def update_fdsn(forecast_id: int, dttime: datetime,
                    forecast: Forecast) -> bytes:
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
-        # Do we want timeout to be configurable? Does this timeout
-        # also cover contacting the webservice?
         seismics_data_source = FDSNWSDataSource(
             url, timeout=700)
-        seismics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
@@ -88,10 +89,11 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         forecastseries = forecast.forecastseries
         project = forecastseries.project
         if project.seismiccatalog:
-            logger.info("Project has catalog, this will be used for the "
-                        "forecast")
             forecast.seismiccatalog = project.seismiccatalog
             session.commit()
+            msg = ("Project has catalog, this will be used for the "
+                   "forecast")
+            fork_log(forecast, EStatus.RUNNING, msg, session, logger)
             return
         # Check if catalog is required and url is provided
         catalog_used = project.seismiccatalog_required in \
@@ -99,9 +101,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
         fdsnws_url = project.fdsnws_url
 
         if catalog_used and fdsnws_url:
-            if any_model_runs_complete(forecast):
-                logger.info("Some model runs are complete, therefore "
-                            "no seismic catalog will be fetched.")
+            if any_model_runs_complete(forecast, session):
                 return
             logger.info("A catalog is required and a url is specified: "
                         f"{fdsnws_url}")
@@ -123,12 +123,17 @@ def update_fdsn(forecast_id: int, dttime: datetime,
 
             forecast.seismiccatalog = cat
             session.commit()
+            msg = ("A seismic catalog has been added to "
+                   "the forecast")
+            fork_log(forecast, EStatus.RUNNING, msg, session, logger)
         elif not forecast.catalog:
             if project.seismiccatalog_required == EInput.OPTIONAL:
-                logger.info("No seismic catalog will be attached to the "
-                            "forecast")
+                msg = ("No seismic catalog will be attached to the "
+                       "forecast")
+                fork_log(forecast, EStatus.RUNNING, msg, session, logger)
             elif project.seismiccatalog_required == EInput.NOT_ALLOWED:
-                logger.info("No seismic catalog allowed for forecast.")
+                msg = ("No seismic catalog allowed for forecast.")
+                fork_log(forecast, EStatus.RUNNING, msg, session, logger)
 
 
 @task(task_run_name="update_hyd(forecast{forecast_id})")
@@ -144,7 +149,6 @@ def update_hyd(forecast_id: int, dttime: datetime,
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
             url, timeout=300)
-        hydraulics_data_source.enabled = True
 
         starttime = datetime.strftime(project.starttime, datetime_format)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
@@ -162,18 +166,17 @@ def update_hyd(forecast_id: int, dttime: datetime,
         project = forecastseries.project
         hydws_url = project.hydws_url
         if project.injectionwell:
-            logger.info("Project has injectionwell, this will be used for the "
-                        "forecast")
             forecast.injectionwell = project.injectionwell
             session.commit()
+            msg = ("Project has injectionwell, this will be used for the "
+                   "forecast")
+            fork_log(forecast, EStatus.RUNNING, msg, session, logger)
             return
         well_used = project.injectionwell_required in \
             [EInput.REQUIRED, EInput.OPTIONAL]
 
         if well_used and hydws_url:
-            if any_model_runs_complete(forecast):
-                logger.info("Some model runs are complete, therefore "
-                            "no injection well will be fetched.")
+            if any_model_runs_complete(forecast, session):
                 return
             logger.info("A well is required and a url is specified: "
                         f"{hydws_url}")
@@ -185,6 +188,9 @@ def update_hyd(forecast_id: int, dttime: datetime,
             forecast.injectionwell = json.dumps([well], ensure_ascii=False).\
                 encode('utf-8')
             session.commit()
+            msg = ("An Injection well has been added to "
+                   "the forecast")
+            fork_log(forecast, EStatus.RUNNING, msg, session, logger)
         elif not forecast.injectionwell:
             if project.injectionwell_required == EInput.OPTIONAL:
                 logger.info("No observed well will be attached to the "
@@ -193,14 +199,14 @@ def update_hyd(forecast_id: int, dttime: datetime,
                 logger.info("No well allowed for forecast.")
 
 
-@task(task_run_name="model_runs(scenario{forecast_id})")
+@task(task_run_name="model_runs(forecast{forecast_id})")
 def model_runs(
         forecast_id: int,
         connection_string: str) -> List[int]:
     with session_handler(connection_string) as session:
         forecast = get_forecast(forecast_id, session)
         model_run_ids = [r.id for r in forecast.runs if
-                         r.status.state != EStatus.COMPLETE]
+                         r.status != EStatus.COMPLETED]
     return model_run_ids
 
 
@@ -219,21 +225,18 @@ def model_run_executor(forecast_id: int,
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         model_run = get_model_run(model_run_id, session)
-        model_run.status.state = EStatus.RUNNING
-        session.commit()
         model_config = model_run.modelconfig
         injection_plan = model_run.injectionplan
         forecast = model_run.forecast
         forecastseries = forecast.forecastseries
 
-        serializer = SFMWorkerIMessageSerializer()
         payload = {
             'data': {
                 "worker_config": {
-                    "model_name": model_config.name,
-                    "model_description": model_config.description,
-                    "model_module": model_config.sfm_module,
-                    "model_class": model_config.sfm_class},
+                    "name": model_config.name,
+                    "description": model_config.description,
+                    "sfm_module": model_config.sfm_module,
+                    "sfm_function": model_config.sfm_function},
                 'attributes': {
                     'geometry': {
                         'bounding_polygon': forecastseries.boundingpolygon,
@@ -246,32 +249,39 @@ def model_run_executor(forecast_id: int,
                     'injection_plan': injection_plan,
                     'model_config': model_config.config}}}
 
-        data = json.dumps(serializer._serialize_dict(payload))
-
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
+        _worker_handle = RemoteSeismicityWorkerHandle(
+            model_run.modelconfig.url)
         try:
             resp = _worker_handle.compute(
-                data,
-                deserializer=SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
+                payload,
+                SFMWorkerIMessageSerializer(),
+                SFMWorkerOMessageDeserializer(unknown=EXCLUDE))
             logger.info(f"response of seismicity worker: {resp}")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
-            raise RemoteWorkerError(
-                "model run submission has failed with "
-                "error: RemoteWorkerError. Check if remote worker is"
-                f" accepting requests. {err}")
+            msg = f"Remote worker error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+        except RemoteSeismicityWorkerHandle.EncodingError as err:
+            msg = f"Error encoding the payload: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+        else:
+            status = resp['data']['attributes']['status_code']
 
-        status = resp['data']['attributes']['status_code']
+            if status != TASK_ACCEPTED:
+                msg = (f"model run {resp['data']['task_id']} "
+                       f"has returned an error: {resp}")
+                fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
-        if status != TASK_ACCEPTED:
-            raise RemoteWorkerError(f"model run {resp['data']['task_id']} "
-                                    f"has returned an error: {resp}")
-
-        model_run.runid = resp['data']['task_id']
-        model_run.status.state = EStatus.DISPATCHED
-        session.commit()
-        logger.info("returning model run id from model run task")
-        return int(model_run.id)
+            else:
+                model_run.runid = resp['data']['task_id']
+                # Add commit here as above information is very important.
+                session.commit()
+                msg = (
+                    f"model run is dispatched to {_worker_handle.url}. "
+                    "Results will be polled at: "
+                    f"{_worker_handle.url}/{model_run.runid}.")
+                fork_log(model_run, EStatus.RUNNING, msg, session, logger)
+        finally:
+            return int(model_run.id)
 
 @task(task_run_name="check_model_run_not_complete(model_run{model_run_id})") # noqa
 def check_model_run_not_complete(
@@ -280,15 +290,15 @@ def check_model_run_not_complete(
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         model_run = get_model_run(model_run_id, session)
-        if model_run.status.state == EStatus.DISPATCHED:
+        if model_run.status == EStatus.RUNNING:
             return model_run_id
-        elif model_run.status.state == EStatus.COMPLETE:
+        elif model_run.status == EStatus.COMPLETED:
             logger.info("The model run is complete.")
-        elif model_run.status.state == EStatus.FINISHED_WITH_ERRORS:
-            logger.info("The model run is in a state of error")
+        elif model_run.status == EStatus.FAILED:
+            logger.info("The model run has a status of failed")
         else:
-            logger.info("The model run is in an unknown state: "
-                        f"{model_run.status.state}")
+            logger.info("The model run has an unknown status: "
+                        f"{model_run.status}")
         return None
 
 
@@ -302,28 +312,28 @@ def waiting_task(
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         forecast = get_forecast(forecast_id, session)
-        if any(model_run.status.state == EStatus.DISPATCHED
+        if any(model_run.status == EStatus.RUNNING
                for model_run in forecast.runs):
             logger.info(f"sleeping for {seconds_to_wait} seconds...")
             time.sleep(seconds_to_wait)
         else:
             pass
 
-@task(task_run_name="check_model_runs_dispatched(forecast_{forecast_id})") # noqa
-def check_model_runs_dispatched(
+@task(task_run_name="check_model_runs_running(forecast_{forecast_id})") # noqa
+def check_model_runs_running(
         forecast_id: int,
         connection_string: str) -> bool:
     with session_handler(connection_string) as session:
         logger = get_run_logger()
-        logger.info(f"check model runs dispatched forecast_id: {forecast_id}")
+        logger.info(f"check model runs running forecast_id: {forecast_id}")
         forecast = get_forecast(forecast_id, session)
-        all_statuses = [r.status.state for r in forecast.runs]
-        logger.info(f"In checking dispatched, forecast: {forecast_id}, "
+        all_statuses = [r.status for r in forecast.runs]
+        logger.info(f"In checking models running, forecast: {forecast_id}, "
                     f"statuses: {all_statuses}")
-        if EStatus.DISPATCHED in all_statuses:
-            logger.debug("EStatus.DISPATCHED in all statuses")
+        if EStatus.RUNNING in all_statuses:
+            logger.debug("EStatus.RUNNING in all statuses")
             return True
-        logger.debug("EStatus.DISPATCHED not in all statuses, quitting loop")
+        logger.debug("EStatus.RUNNING not in all statuses, quitting loop")
         return False
 
 
@@ -349,38 +359,45 @@ def poll_model_run(forecast_id: int, model_run_id: int,
     with session_handler(connection_string) as session:
         logger = get_run_logger()
         model_run = get_model_run(model_run_id, session)
-        if model_run.status.state in (
-                EStatus.COMPLETE,
-                EStatus.FINISHED_WITH_ERRORS):
+        if model_run.status in (
+                EStatus.COMPLETED,
+                EStatus.FAILED):
             logger.info("model run is complete or has errors, exiting")
             return
-        logger.info(f"Polling for runid={model_run.runid}")
+        msg = f"Polling for runid={model_run.runid}"
+        fork_log(model_run, EStatus.RUNNING, msg, session,
+                 logger, propagate=False)
 
-        _worker_handle = RemoteSeismicityWorkerHandle.from_run(
-            model_run)
+        _worker_handle = RemoteSeismicityWorkerHandle(
+            model_run.modelconfig.url)
 
         deserializer = SFMWorkerOMessageDeserializer(
             many=True)
         try:
-            logger.info("getting response from worker")
             resp = _worker_handle.query(
                 task_ids=model_run.runid,
                 deserializer=deserializer).first()
-            logger.info("after getting response from worker")
         except RemoteSeismicityWorkerHandle.RemoteWorkerError as err:
-            model_run.status.state = EStatus.FINISHED_WITH_ERRORS
-            return Failed(message=err)
+            msg = f"Model run has got a worker error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+            return Failed(message=msg)
         except RemoteSeismicityWorkerHandle.HTTPError as err:
-            model_run.status.state = EStatus.FINISHED_WITH_ERRORS
-            return Failed(message=err)
+            msg = f"Model run has got a http error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+            return Failed(message=msg)
+        except RemoteSeismicityWorkerHandle.DeserializationError as err:
+            msg = f"Deserializing the result caused an error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+            return Failed(message=msg)
         else:
-            logger.info(f"type of resp: {type(resp), len(resp)}")
-            status = resp['data']['attributes']['status_code']
-            logger.info(f"status code of model run: {status}")
-            status_bool = status in (TASK_ACCEPTED, TASK_PROCESSING)
-            status_bool_complete = status == TASK_COMPLETE
-            logger.info(f"status_bool: {status_bool}")
-            logger.info(f"status_bool complete: {status_bool_complete}")
+            try:
+                status = resp['data']['attributes']['status_code']
+                logger.info(f"status code of model run: {status}")
+            except TypeError as err:
+
+                msg = f"The response is not as expected: {err}"
+                fork_log(model_run, EStatus.FAILED, msg, session, logger)
+                return Failed(message=msg)
 
             if status in (TASK_ACCEPTED, TASK_PROCESSING):
                 logger.info("status in accepted or processing")
@@ -392,39 +409,43 @@ def poll_model_run(forecast_id: int, model_run_id: int,
             if status == TASK_COMPLETE:
                 try:
                     result = resp['data']['attributes']['forecast']
+                    model_run.resulttimebins = result
+                    session.commit()
+                    msg = "setting model run to complete"
+                    fork_log(model_run, EStatus.COMPLETED,
+                             msg, session, logger)
+                    # After committing results, delete task from worker.
+                    _worker_handle.delete(model_run.runid)
+                    return
                 except KeyError:
-                    logger.error(
+                    msg = (
                         "Remote Seismicity Worker has not returned "
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
-                    model_run.status.state = EStatus.FINISHED_WITH_ERRORS
-                    session.commit()
-                except Exception:
-                    logger.error("EXCEPTION! setting model run to finished "
-                                 "with errors")
-                    model_run.status.state = EStatus.FINISHED_WITH_ERRORS
-                    session.commit()
+                    fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
-                else:
-                    model_run.resulttimebins = result
-                    logger.debug("setting model run to complete.")
-                    model_run.status.state = EStatus.COMPLETE
-                    session.commit()
+                except RemoteSeismicityWorkerHandle.ConnectionError:
+                    msg = ("A connection error to the worker means the "
+                           "data cannot be deleted in the worker database.")
+                    fork_log(model_run, EStatus.COMPLETED, msg,
+                             session, logger)
+
+                except Exception as err:
+                    msg = (
+                        "EXCEPTION! setting model run to finished "
+                        f"with errors: {err}")
+                    fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
             elif status in TASK_ERROR:
-                logger.error("EXCEPTION! task error. setting model run "
-                             "to finished with errors")
-                model_run.status.state = EStatus.FINISHED_WITH_ERRORS
-                session.commit()
-                logger.error("Remote Seismicity Model Worker"
-                             " has returned an unsuccessful status code."
-                             f"(runid={model_run.runid}: {resp})")
+                msg = (
+                    "Remote Seismicity Model Worker"
+                    " has returned an unsuccessful status code."
+                    f"(runid={model_run.runid}: {resp})")
+                fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
             else:
-                logger.error(f"Unhandled status code recieved: {status}")
-                model_run.status.state = EStatus.FINISHED_WITH_ERRORS
-                session.commit()
-                logger.error(
+                msg = (
                     "Remote Seismicity Model Worker"
                     " has returned an unhandled status code."
                     f"(runid={model_run.runid}: {resp})")
+                fork_log(model_run, EStatus.FAILED, msg, session, logger)

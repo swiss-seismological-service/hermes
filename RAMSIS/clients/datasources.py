@@ -3,15 +3,17 @@
 Data fetching facilities.
 """
 import json
-import requests
+import logging
+from requests import get, exceptions
 from prefect import get_run_logger
+from prefect.exceptions import MissingContextError
 
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
 from ramsis.utils.clients import (binary_request,
                                   NoContent, RequestsError)
 
 
-class HYDWSDataSource():
+class HYDWSDataSource:
     """
     Fetching and deserializing data from *HYDWS*.
     """
@@ -21,16 +23,17 @@ class HYDWSDataSource():
         self._timeout = timeout
 
         self._args = {}
-        self.enabled = False
-        self.logger = get_run_logger()
+        try:
+            self.logger = get_run_logger()
+        except MissingContextError:
+            self.logger = logging.getLogger("HYDWSDataSource")
 
     def fetch(self, **kwargs):
         """
         :param kwargs: args dict forwarded to the HYDWS
         """
         self._args = kwargs
-        if self.enabled:
-            bh = self.run()
+        bh = self.run()
         return bh
 
     def run(self):
@@ -41,7 +44,7 @@ class HYDWSDataSource():
             f"params={self._args}).")
         try:
             with binary_request(
-                requests.get, self.url, self._args, self._timeout,
+                get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
                 bh = json.load(ifd)
 
@@ -52,7 +55,7 @@ class HYDWSDataSource():
             self.logger.error(
                 f"Error while fetching data from {self.url} ({err}).")
             raise
-        except requests.exceptions.Timeout as err:
+        except exceptions.Timeout as err:
             self.logger.error(f"The request timed out to {self.url}, ({err})")
             raise
         else:
@@ -68,7 +71,7 @@ class HYDWSDataSource():
         return bh
 
 
-class FDSNWSDataSource():
+class FDSNWSDataSource:
     """
     Fetches seismic event data from a web service.
     """
@@ -78,13 +81,14 @@ class FDSNWSDataSource():
         self._timeout = timeout
 
         self._args = {}
-        self.enabled = False
-        self.logger = get_run_logger()
+        try:
+            self.logger = get_run_logger()
+        except MissingContextError:
+            self.logger = logging.getLogger("FDSNWSDataSource")
 
     def fetch(self, **kwargs):
         self._args = kwargs
-        if self.enabled:
-            cat = self.run()
+        cat = self.run()
         return cat
 
     def run(self):
@@ -95,7 +99,7 @@ class FDSNWSDataSource():
             f"params={self._args}).")
         try:
             with binary_request(
-                requests.get, self.url, self._args, self._timeout,
+                get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
                 cat = ifd.read()
         except NoContent:
@@ -105,7 +109,7 @@ class FDSNWSDataSource():
             self.logger.error(
                 f"Error while fetching data from {self.url} ({err}).")
             raise
-        except requests.exceptions.Timeout as err:
+        except exceptions.Timeout as err:
             self.logger.error(
                 f"The request timed out to {self.url}, ({err})")
             raise

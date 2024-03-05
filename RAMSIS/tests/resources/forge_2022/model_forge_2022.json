@@ -3,8 +3,8 @@
     [{
         "name":"EM1-MLE Forge",
         "url":"http://localhost:5007",
-	"sfm_module": "ramsis_sfm.models.EM1.EM1",
-	"sfm_class": "EM1",
+	"sfm_module": "ramsis_sfm.models.EM1.entry_point",
+	"sfm_function": "main",
         "enabled":true,
 	"description": "Standard config for EM1 MLE model with 1800 second forecast epoch.",
 	"tags": ["FORGE", "INDUCED"],

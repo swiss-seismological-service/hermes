@@ -1,4 +1,6 @@
 from typing import List
+from rich import print
+from rich.table import Table
 import asyncio
 import typer
 from datetime import datetime, timedelta
@@ -30,19 +32,19 @@ def rerun(forecast_ids: List[int],
                 select(Forecast).filter_by(id=forecast_id)).\
                 scalar_one_or_none()
             if not forecast:
-                typer.echo("The forecast id does not exist")
+                print("The forecast id does not exist")
                 continue
             if force:
-                typer.echo("Resetting RAMSIS statuses")
+                print("Resetting RAMSIS statuses")
                 forecast = reset_forecast(forecast)
                 session.commit()
             else:
                 typer.Exit()
 
-            if forecast.status.state == EStatus.COMPLETE:
-                typer.echo("forecast is already complete")
+            if forecast.status == EStatus.COMPLETED:
+                print("forecast is already complete")
                 if force:
-                    typer.echo("forecast will have status reset")
+                    print("forecast will have status reset")
                     forecast = reset_forecast(forecast)
                     session.commit()
                 else:
@@ -71,15 +73,39 @@ def delete(forecast_ids: List[int],
                 select(Forecast).filter_by(id=forecast_id)).\
                 scalar_one_or_none()
             if not forecast:
-                typer.echo("The forecast does not exist")
+                print("The forecast does not exist")
                 raise typer.Exit()
             if not force:
                 delete = typer.confirm("Are you sure you want to delete the  "
                                        f"forecast with id: {forecast_id}?")
                 if not delete:
-                    typer.echo("Not deleting")
+                    print("Not deleting")
                     raise typer.Abort()
 
             session.delete(forecast)
             session.commit()
-            typer.echo(f"Finished deleting forecast {forecast_id}")
+            print(f"Finished deleting forecast {forecast_id}")
+
+
+@app.command()
+def ls(status: bool = typer.Option(
+        False, help="Only give id's and status."),
+        help="Outputs list of forecasts"):
+    with session_handler(db_url) as session:
+        forecasts = session.execute(
+            select(Forecast).order_by(
+                Forecast.forecastseries_id)).scalars().all()
+        for forecast in forecasts:
+            table = Table(show_footer=False,
+                          title=f"Forecast {forecast.name}",
+                          title_justify="left")
+            table.add_column("attribute")
+            table.add_column("value")
+            for attr in Forecast.__table__.columns:
+                if status:
+                    if attr.name not in ['status', 'id']:
+                        continue
+                table.add_row(str(attr.name),
+                              str(getattr(forecast, attr.name)))
+
+            print(table)

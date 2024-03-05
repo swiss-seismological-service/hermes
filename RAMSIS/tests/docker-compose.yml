@@ -1,6 +1,0 @@
-version: '2'
-services:
-  httpbin:
-    image: "postgres:14.4"
-    ports:
-      - "8000:80"
