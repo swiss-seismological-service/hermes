@@ -97,20 +97,21 @@ def schedule(forecastseries_id: int,
                 session.commit()
 
             # Find times that occured in the past
-            if forecastseries.endtime and datetime_now > forecastseries.endtime:
+            if forecastseries.endtime and \
+                    datetime_now > forecastseries.endtime:
                 overdue_limit = forecastseries.endtime
             else:
                 overdue_limit = datetime_now
 
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
-                dtstart=forecastseries.starttime, until=overdue_limit - timedelta(seconds=1))
+                dtstart=forecastseries.starttime, until=overdue_limit)
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)
                 msg = ("scheduling overdue forecast with starttime: "
                        f"{forecast_starttime} to be run at: "
-                       f"{scheduled_start_time}.")
+                       f"{scheduled_wait_time}.")
                 print(msg)
                 forecastseries.add_log(msg)
                 session.commit()
@@ -202,7 +203,9 @@ def create(
             msg = (f"created forecastseries: {forecastseries.name} "
                    f"with id: {forecastseries.id} under project: "
                    f"{project.name}, with id: {project.id}"
-                   f" with tags: {forecastseries.tags}")
+                   f" with tags: {forecastseries.tags}."
+                   " To schedule forecast series: "
+                   f"ramsis forecastseries schedule {forecastseries.id}")
             print(msg)
             forecastseries.add_log(msg)
         session.commit()

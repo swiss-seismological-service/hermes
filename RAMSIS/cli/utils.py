@@ -275,4 +275,3 @@ async def read_limit_model_runs():
         # query the concurrency limit on the 'small_instance' tag
         limit = await client.read_concurrency_limit_by_tag(tag="model_run")
         return limit
-

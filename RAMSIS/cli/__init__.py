@@ -79,7 +79,8 @@ def create_all(
 
     with open(join(directory, project_config)) as p_config:
         json_config = json.load(p_config)
-        project_config_list = ProjectConfigurationSchema(many=True).load(json_config["project_configs"])
+        project_config_list = ProjectConfigurationSchema(many=True).\
+            load(json_config["project_configs"])
     for project_config in project_config_list:
         project_name = project_config.name
 
@@ -110,7 +111,7 @@ def create_all(
         with open(join(
             directory, master_config_dict['catalog']), 'r') as catalog_data, \
             open(join(directory, master_config_dict['wells']), 'r') \
-                    as well_data:
+                as well_data:
             project.create(
                 join(directory, master_config_dict['project_config']),
                 catalog_data=catalog_data,
@@ -130,29 +131,31 @@ def create_all(
 @ramsis_app.command()
 def update_model_run_concurrency(
         concurrency_limit: int,
-        help = (
-    "Set concurrency limit for the number of tasks running which either"
-    " starts a model run or is polling for it. No new model runs should be"
-    " started once the limit is reached. This stops too many model runs "
-    " running at the same time and crashing in the case of high memory usage.")):
+        help=(
+        "Set concurrency limit for the number of tasks running which either"
+        " starts a model run or is polling for it. No new model runs should be"
+        " started once the limit is reached. This stops too many model runs "
+        " running at the same time and crashing in the case of high memory "
+        "usage.")):
     asyncio.run(limit_model_runs(concurrency_limit))
 
 
 @ramsis_app.command()
 def remove_model_run_concurrency(
-        help = (
-    "Remove concurrency limit for the number of model runs "
-    "being executed at the same time.")):
+        help=(
+        "Remove concurrency limit for the number of model runs "
+        "being executed at the same time.")):
     asyncio.run(remove_limit_model_runs())
 
 
 @ramsis_app.command()
 def read_model_run_concurrency(
-        help = (
-    "Return concurrency limit for the number of model runs "
-    "being executed at the same time.")):
+        help=(
+        "Return concurrency limit for the number of model runs "
+        "being executed at the same time.")):
     limit = asyncio.run(read_limit_model_runs())
     print(f"Limit: {limit.concurrency_limit}")
+
 
 def main():
     ramsis_app()

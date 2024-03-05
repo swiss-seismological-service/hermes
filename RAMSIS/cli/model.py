@@ -46,6 +46,7 @@ def disable(
         model_config.enabled = False
         session.commit()
 
+
 @app.command()
 def enable(
         model_name: str):
@@ -59,6 +60,7 @@ def enable(
             raise typer.Exit()
         model_config.enabled = True
         session.commit()
+
 
 @app.command()
 def archive_all(
@@ -77,10 +79,13 @@ def archive_all(
             raise typer.Exit()
         for model in model_configs:
             if 'ARCHIVED' not in model.name:
-                model.name = f"{model.name}-ARCHIVED-{datetime.now().strftime('%Y-%m-%d')}"
+                model.name = (f"{model.name}-ARCHIVED-"
+                              f"{datetime.now().strftime('%Y-%m-%d')}")
                 model.enabled = False
         session.commit()
-        print(f'All models successfully archived: {[model.name for model in model_configs]}')
+        print("All models successfully archived: "
+              f"{[model.name for model in model_configs]}")
+
 
 @app.command()
 def load(
