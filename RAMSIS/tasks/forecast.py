@@ -246,8 +246,8 @@ def model_run_executor(forecast_id: int,
                     'injection_well': forecast.injectionwell,
                     'forecast_start': forecast.starttime,
                     'forecast_end': forecast.endtime,
-                    'injection_plan': injection_plan,
-                    'model_config': model_config.config}}}
+                    'injection_plan': injection_plan.data,
+                    'model_parameters': model_config.config}}}
 
         _worker_handle = RemoteSeismicityWorkerHandle(
             model_run.modelconfig.url)
