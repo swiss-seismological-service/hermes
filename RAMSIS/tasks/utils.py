@@ -1,5 +1,4 @@
 from prefect import task, get_run_logger, runtime
-import json
 from sqlalchemy.orm.session import Session
 from datetime import timedelta, datetime
 from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, \
@@ -52,7 +51,6 @@ def create_model_runs(model_configs, injection_plan=None,
             ModelRun(
                 modelconfig=config,
                 injectionplan=injection_plan,
-                injectionplan_id=injection_plan_id,
                 status=EStatus.PENDING))
     return model_runs
 
@@ -92,16 +90,13 @@ def new_forecast_from_series(forecastseries_id: int,
             else:
                 model_run_list.extend(create_model_runs(model_configs_enabled))
         else:
-            injection_plans = json.loads(injection_plans.decode('utf-8'))
             # id for injection plan only distinguishes between injection plans
             # in the same forecast series, with the aim being to track which
             # model runs are associated with which injection plan.
-            for id, injection_plan in enumerate(injection_plans):
+            for injection_plan in injection_plans:
                 model_run_list.extend(create_model_runs(
                     model_configs_enabled,
-                    injection_plan=json.dumps(
-                        injection_plan, ensure_ascii=False).encode('utf-8'),
-                    injection_plan_id=id))
+                    injection_plan=injection_plan))
         # Set forecast endtime
         if forecastseries.forecastduration:
             endtime = start_time + timedelta(

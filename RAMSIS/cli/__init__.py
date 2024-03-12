@@ -3,6 +3,7 @@ import json
 import asyncio
 from pathlib import Path
 from sqlalchemy import select
+from sqlalchemy.exc import ProgrammingError
 from os.path import join
 from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
 from RAMSIS.cli.utils import bulk_delete_flow_runs, limit_model_runs, \
@@ -86,9 +87,13 @@ def create_all(
 
         with session_handler(db_url) as session:
 
-            matching_project = session.execute(
-                select(Project).where(
-                    Project.name == project_name)).scalar_one_or_none()
+            try:
+                matching_project = session.execute(
+                    select(Project).where(
+                        Project.name == project_name)).scalar_one_or_none()
+            except ProgrammingError:
+                # In the case where a db is not populated by tables yet.
+                matching_project = False
             if matching_project:
                 print(matching_project, type(matching_project))
                 if delete_existing:
