@@ -14,7 +14,7 @@ from requests import get, post, delete, exceptions
 from prefect import get_run_logger
 from marshmallow import Schema, fields, validate
 
-from ramsis.utils.error import Error
+from RAMSIS.error import Error
 
 
 KEY_DATA = 'data'
