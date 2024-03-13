@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.exc import ProgrammingError
+from prefect.exceptions import ObjectNotFound
 from os.path import join
 from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
 from RAMSIS.cli.utils import bulk_delete_flow_runs, limit_model_runs, \
@@ -158,8 +159,11 @@ def read_model_run_concurrency(
         help=(
         "Return concurrency limit for the number of model runs "
         "being executed at the same time.")):
-    limit = asyncio.run(read_limit_model_runs())
-    print(f"Limit: {limit.concurrency_limit}")
+    try:
+        limit = asyncio.run(read_limit_model_runs())
+        print(f"Limit: {limit.concurrency_limit}")
+    except ObjectNotFound:
+        print("No concurrency limit set.")
 
 
 def main():

@@ -3,14 +3,48 @@
 Data fetching facilities.
 """
 import json
+import contextlib
+import requests
+import io
 import logging
 from requests import get, exceptions
 from prefect import get_run_logger
 from prefect.exceptions import MissingContextError
 
 from RAMSIS.config import FDSNWS_NOCONTENT_CODES
-from ramsis.utils.clients import (binary_request,
-                                  NoContent, RequestsError)
+from RAMSIS.error import RequestsError, NoContent, ClientError
+
+
+@contextlib.contextmanager
+def binary_request(request, url, params={}, timeout=None,
+                   nocontent_codes=(203,), **kwargs):
+    """
+    Make a binary request
+
+    :param request: Request object to be used
+    :type request: :py:class:`requests.Request`
+    :param str url: URL
+    :params dict params: Dictionary of query parameters
+    :param timeout: Request timeout
+    :type timeout: None or int or tuple
+
+    :rtype: io.BytesIO
+    """
+    try:
+        r = request(url, params=params, timeout=timeout, **kwargs)
+        if r.status_code in nocontent_codes:
+            raise NoContent(r.url, r.status_code, response=r)
+
+        r.raise_for_status()
+        if r.status_code != 199:
+            raise ClientError(r.status_code, response=r)
+
+        yield io.BytesIO(r.content)
+
+    except (NoContent, ClientError) as err:
+        raise err
+    except requests.exceptions.RequestException as err:
+        raise RequestsError(err, response=err.response)
 
 
 class HYDWSDataSource:

@@ -263,6 +263,12 @@ def model_run_executor(forecast_id: int,
         except RemoteSeismicityWorkerHandle.EncodingError as err:
             msg = f"Error encoding the payload: {err}"
             fork_log(model_run, EStatus.FAILED, msg, session, logger)
+        except RemoteSeismicityWorkerHandle.ConnectionError as err:
+            msg = f"Error connecting to the worker: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
+        except Exception as err:
+            msg = f"Unhandled Error: {err}"
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
         else:
             status = resp['data']['attributes']['status_code']
 
@@ -299,7 +305,6 @@ def check_model_run_not_complete(
         else:
             logger.info("The model run has an unknown status: "
                         f"{model_run.status}")
-        return None
 
 
 @task
@@ -389,6 +394,17 @@ def poll_model_run(forecast_id: int, model_run_id: int,
             msg = f"Deserializing the result caused an error: {err}"
             fork_log(model_run, EStatus.FAILED, msg, session, logger)
             return Failed(message=msg)
+        except RemoteSeismicityWorkerHandle.ConnectionError:
+            msg = ("A connection error to the worker means the "
+                   "data cannot be deleted in the worker database.")
+            fork_log(model_run, EStatus.FAILED, msg,
+                     session, logger)
+
+        except Exception as err:
+            msg = (
+                "EXCEPTION! setting model run to finished "
+                f"with errors: {err}")
+            fork_log(model_run, EStatus.FAILED, msg, session, logger)
         else:
             try:
                 status = resp['data']['attributes']['status_code']
@@ -422,18 +438,6 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                         "Remote Seismicity Worker has not returned "
                         f"a forecast (runid={model_run.runid}: "
                         f"{resp})")
-                    fork_log(model_run, EStatus.FAILED, msg, session, logger)
-
-                except RemoteSeismicityWorkerHandle.ConnectionError:
-                    msg = ("A connection error to the worker means the "
-                           "data cannot be deleted in the worker database.")
-                    fork_log(model_run, EStatus.COMPLETED, msg,
-                             session, logger)
-
-                except Exception as err:
-                    msg = (
-                        "EXCEPTION! setting model run to finished "
-                        f"with errors: {err}")
                     fork_log(model_run, EStatus.FAILED, msg, session, logger)
 
             elif status in TASK_ERROR:

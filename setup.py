@@ -97,8 +97,6 @@ setup(
     scripts=_scripts,
     include_package_data=True,
     zip_safe=False,
-    # TODO(damb): test_suite=unittest.TestCase
-    # TODO(damb): ramsis does not necessarily depend on doc extras flag
     entry_points={
         'console_scripts': ['ramsis = RAMSIS.cli:main', ]}
 )
