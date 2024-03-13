@@ -65,8 +65,6 @@ def ramsis_flow(forecast_id, connection_string, date):
             running_ids,
             connection_string,
             wait_for=[running_ids])
-        _ = check_model_runs_running(forecast_id, connection_string,
-                                     wait_for=[polling_ids])
 
         exponential_factor = 1.2
         x = 1
