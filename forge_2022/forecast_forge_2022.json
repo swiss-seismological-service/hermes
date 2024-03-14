@@ -1,0 +1,21 @@
+{
+    "forecastseries_configs": [
+        {
+            "name": "Forecast Forge April 2022",
+	    "description": "Forecasting for forge 2022",
+            "starttime": "2022-04-21T14:00:00",
+            "endtime": "2022-04-21T16:00:00",
+	    "forecastinterval": 1800,
+            "tags": ["BEDRETTO", "INDUCED"], 
+            "injectionplan_dir": "/home/sarsonl/repos/rt-ramsis/forge_2022",
+	    "injectionplan_filenames": ["plan_150Lm.json", "plan_200Lm.json"],
+	    "altitudemin": -150.0,
+	    "altitudemax": 150.0,
+            "boundingbox": 
+                    {"x_min": 334491.1891,
+                     "x_max": 334791.18910,
+                     "y_min": 4263293.6931,
+                     "y_max": 4263593.6931,
+		     "srid": "epsg:26912"}
+	}]
+        }

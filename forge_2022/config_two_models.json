@@ -1,0 +1,10 @@
+{
+
+"project_config": "project_forge_2022.json",
+"model_config": "model_forge_2022_bayes.json",
+"forecastseries_config": "forecast_forge_2022.json",
+"catalog": "2022-04-21_fdsn_catalog.xml",
+"injection_plans": ["plan_150Lm.json"],
+"wells": "16A-32_forge_2022_04_21_full.json"
+
+}
