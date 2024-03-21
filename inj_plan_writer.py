@@ -19,7 +19,7 @@ def create_df(plan, resample_rule, starttime):
     df['datetime'] = pd.to_datetime(df['datetime'])
     df.set_index('datetime', inplace=True)
     # get topflow in m^3/s
-    df['topflow'] = df['L/m'] * 0.06
+    df['topflow'] = df['L/m'] / 60000.0
     df.drop(columns='L/m', inplace=True)
     df = df.resample(resample_rule).ffill()
     df = df.reset_index()
