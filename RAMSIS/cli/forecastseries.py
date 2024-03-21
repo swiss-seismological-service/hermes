@@ -51,7 +51,9 @@ def ls():
             table.add_column("attribute")
             table.add_column("value")
             for attr in ForecastSeries.__table__.columns:
-                table.add_row(str(attr.name), str(getattr(series, attr.name)))
+                if str(attr.name) not in ['injectionplans']:
+                    table.add_row(str(attr.name), str(
+                        getattr(series, attr.name)))
 
             print(table)
 

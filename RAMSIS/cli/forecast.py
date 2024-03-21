@@ -5,6 +5,7 @@ import asyncio
 import typer
 from datetime import datetime, timedelta
 from sqlalchemy import select
+from sqlalchemy.orm import defer
 from ramsis.datamodel import Forecast, EStatus
 from RAMSIS.db import db_url, session_handler
 from RAMSIS.cli.utils import flow_deployment_rerun_forecast, \
@@ -93,7 +94,8 @@ def ls(status: bool = typer.Option(
         help="Outputs list of forecasts"):
     with session_handler(db_url) as session:
         forecasts = session.execute(
-            select(Forecast).order_by(
+            select(Forecast).options(defer(Forecast.seismiccatalog),
+                                     defer(Forecast.injectionwell)).order_by(
                 Forecast.forecastseries_id)).scalars().all()
         for forecast in forecasts:
             table = Table(show_footer=False,
@@ -102,10 +104,8 @@ def ls(status: bool = typer.Option(
             table.add_column("attribute")
             table.add_column("value")
             for attr in Forecast.__table__.columns:
-                if status:
-                    if attr.name not in ['status', 'id']:
-                        continue
-                table.add_row(str(attr.name),
-                              str(getattr(forecast, attr.name)))
+                if str(attr.name) not in ['seismiccatalog', 'injectionwell']:
+                    table.add_row(str(attr.name),
+                                  str(getattr(forecast, attr.name)))
 
             print(table)

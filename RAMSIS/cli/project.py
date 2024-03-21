@@ -7,6 +7,7 @@ from datetime import datetime
 from sqlalchemy import select
 from ramsis.datamodel import Project
 from pathlib import Path
+from sqlalchemy.orm import defer
 from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.db import db_url, session_handler, init_db
 from ramsis.io.configuration import ProjectConfigurationSchema
@@ -105,7 +106,9 @@ def update(
 def ls(help="Outputs list of projects"):
     with session_handler(db_url) as session:
         projects = session.execute(
-            select(Project)).scalars().all()
+            select(Project).options(defer(Project.seismiccatalog),
+                                    defer(Project.injectionwell))).\
+            scalars().all()
         for project in projects:
             table = Table(show_footer=False,
                           title=f"Project {project.name}",
@@ -113,7 +116,9 @@ def ls(help="Outputs list of projects"):
             table.add_column("attribute")
             table.add_column("value")
             for attr in Project.__table__.columns:
-                table.add_row(str(attr.name), str(getattr(project, attr.name)))
+                if str(attr.name) not in ['seismiccatalog', 'injectionwell']:
+                    table.add_row(str(attr.name), str(getattr(
+                        project, attr.name)))
 
             print(table)
 
