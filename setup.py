@@ -33,7 +33,7 @@ _install_requires = [
     "ramsis.datamodel==1.1",
     "requests>=2.18.4",
     "transitions==0.6.9",
-    "prefect>=2.8",
+    "prefect==2.10.9",
     "pyproj>=3.2.1",
     "jinja2",
     "sqlalchemy>=1.4",
@@ -41,8 +41,8 @@ _install_requires = [
     "pytest-mock",
     "pytest-order",
     "python-dotenv",
-    "docker-compose",
-    "psycopg2-binary"]
+    "psycopg2-binary",
+    "pydantic==1.10.11", ]
 
 _extras_require = {'doc': [
     "epydoc==3.0.1",

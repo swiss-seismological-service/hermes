@@ -1,4 +1,5 @@
 from typing import List
+import os
 from rich import print
 from rich.table import Table
 import asyncio
@@ -12,6 +13,7 @@ from RAMSIS.cli.utils import flow_deployment_rerun_forecast, \
     add_new_scheduled_run_rerun_forecast
 from RAMSIS.utils import reset_forecast
 from RAMSIS.flows.forecast import ramsis_flow
+from RAMSIS.db import db_url
 
 
 app = typer.Typer()
@@ -25,6 +27,8 @@ def rerun(forecast_ids: List[int],
           force: bool = typer.Option(
               False, help="Force the forecast to run again, "
               "even if completed.")):
+    print(os.environ["RAMSIS_TESTING_MODE"])
+    print(db_url)
     flow_to_schedule = ramsis_flow
     add_delay = 0.0
     with session_handler(db_url) as session:

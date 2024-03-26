@@ -8,6 +8,7 @@
         "enabled":true,
 	"description": "Standard config for EM1 MLE model with 1800 second forecast epoch.",
 	"tags": ["FORGE", "INDUCED"],
+	"result_type": "GRID",
         "config":{
                 "Tau":60,
                 "dM":0.05,

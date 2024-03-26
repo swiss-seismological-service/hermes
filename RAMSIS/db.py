@@ -51,7 +51,7 @@ def init_db(connection_string: str) -> bool:
         if module_name not in sys.modules:
             finder.find_module(module_name).load_module(module_name)
     engine = create_engine(connection_string)
-    engine.execute('create extension if not exists postgis')
+    #engine.execute('create extension if not exists postgis')
     try:
         ORMBase.metadata.create_all(engine, checkfirst=True)
     except SQLAlchemyError as e:
