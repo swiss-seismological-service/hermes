@@ -1,5 +1,4 @@
 import typer
-from typing import List, Dict
 from prefect.client import get_client
 import logging
 from datetime import datetime
@@ -63,23 +62,6 @@ def flow_deployment(flow, deployment_name, schedule, forecastseries_id,
         apply=True
     )
     return deployment
-
-
-# Don't know if we require this function
-async def scheduled_flow_runs() -> List[Dict]:
-    """
-    Get list of information about all currently scheduled flow runs
-    """
-    client = get_client()
-    work_pools = await client.read_work_pools()
-    print(work_pools)
-    if not work_pools:
-        raise Exception("There are no work pools configured")
-    if len(work_pools) > 1:
-        raise Exception("There are more than one work pools configured")
-    flow_runs = await client.get_scheduled_flow_runs_for_work_pool(
-        work_pools[0].name)
-    return flow_runs
 
 
 def get_idempotency_id():

@@ -169,6 +169,18 @@ Sometimes, when there have been crashes or failed runs, there are prefect tasks 
 
 `ramsis delete-incomplete-flow-runs` is another option, and will delete anything that is not scheduled or already complete.
 
+If rerunning a forecast doesn't gets stuck after this, you can look at the prefect concurrency limits and if they are filled with active tasks using:
+
+`prefect concurrency-limit inspect model_run`
+
+I think that the currently used version of prefect (2.10.9) has a bug where sometimes all the tasks are not removed when deleting a flow run. (Yes, very annoying) which will hopefully be resolved when upgrading prefect.
+
+If this is the case, and all the slots are filled with active tasks, the concurrency limit can be reset:
+
+`prefect concurrency-limit reset model_run`
+
+
+
 If that doesn't work, you can do a full prefect database reset:
 
 `prefect server database reset -y`

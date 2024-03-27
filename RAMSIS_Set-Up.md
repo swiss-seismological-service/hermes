@@ -89,9 +89,7 @@ However, the current version of prefect contains a but that does not find a requ
 
 
 
-
-
-Docker containers
+#### Docker containers (forge specific)
 
 There are two postgres docker containers running for the db for ramsis and the worker. There is a volume configured at /home/indu/docker/volumes/postgres.
 
@@ -113,6 +111,6 @@ Once a database is created at postgresql://postgres:indu@localhost:5433/worker_f
 
 
 
-#### Configuration 
+#### Configuration (forge specific)
 
 The configuration for the forge 2022 rerun is under the top directory 'forge_2022'. The main configuration file config.json defines which files to use for initializing a forecastseries and project. Of course these configuration files can be used individually without the use of config.json as found in the user_guide.

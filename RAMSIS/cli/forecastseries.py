@@ -101,13 +101,14 @@ def schedule(forecastseries_id: int,
             # Find times that occured in the past
             if forecastseries.endtime and \
                     datetime_now > forecastseries.endtime:
-                overdue_limit = forecastseries.endtime
+                overdue_limit = forecastseries.endtime - timedelta(seconds=1)
             else:
                 overdue_limit = datetime_now
 
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
                 dtstart=forecastseries.starttime, until=overdue_limit)
+            print(list(overdue_rrule_obj))
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)

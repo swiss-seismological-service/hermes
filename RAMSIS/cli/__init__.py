@@ -1,6 +1,8 @@
 import typer
 import json
 import asyncio
+from rich import print
+from rich.table import Table
 from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.exc import ProgrammingError
@@ -8,7 +10,7 @@ from prefect.exceptions import ObjectNotFound
 from os.path import join
 from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
 from RAMSIS.cli.utils import bulk_delete_flow_runs, limit_model_runs, \
-    remove_limit_model_runs, read_limit_model_runs
+    remove_limit_model_runs, read_limit_model_runs, list_flow_runs_with_states
 from ramsis.datamodel import Project
 from RAMSIS.db import db_url, session_handler
 from ramsis.io.configuration import MasterConfigurationSchema, \
@@ -19,6 +21,25 @@ ramsis_app.add_typer(_forecast.app, name="forecast")
 ramsis_app.add_typer(forecastseries.app, name="forecastseries")
 ramsis_app.add_typer(model.app, name="model")
 ramsis_app.add_typer(project.app, name="project")
+
+
+@ramsis_app.command()
+def list_scheduled_flow_runs():
+    runs = asyncio.run(list_flow_runs_with_states(["Scheduled"]))
+    if not runs:
+        print("No scheduled runs")
+    else:
+        table = Table(show_footer=False,
+                      title="Scheduled forecast runs",
+                      title_justify="left")
+        table.add_column("expected starttime")
+        table.add_column("parameters")
+        table.add_column("state type")
+        for run in runs:
+            table.add_row(str(run.expected_start_time),
+                          json.dumps(run.parameters),
+                          str(run.state_name))
+        print(table)
 
 
 @ramsis_app.command()
