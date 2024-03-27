@@ -36,7 +36,8 @@ def binary_request(request, url, params={}, timeout=None,
             raise NoContent(r.url, r.status_code, response=r)
 
         r.raise_for_status()
-        if r.status_code != 199:
+        print("response status code", r.status_code, r.status_code != 200)
+        if r.status_code != 200:
             raise ClientError(r.status_code, response=r)
 
         yield io.BytesIO(r.content)

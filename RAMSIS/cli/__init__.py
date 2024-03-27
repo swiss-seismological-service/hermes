@@ -117,7 +117,6 @@ def create_all(
                 # In the case where a db is not populated by tables yet.
                 matching_project = False
             if matching_project:
-                print(matching_project, type(matching_project))
                 if delete_existing:
                     delete = typer.confirm(
                         "Are you sure you want to delete the  "
@@ -126,7 +125,6 @@ def create_all(
                         print("Not deleting")
                         raise typer.Abort()
 
-                    print(matching_project, type(matching_project))
                     session.delete(matching_project)
                     session.commit()
                 else:
@@ -135,14 +133,21 @@ def create_all(
                         f"{matching_project.name} already exists "
                         f"with id: {matching_project.id}. Please set "
                         "delete-existing.")
-        with open(join(
-            directory, master_config_dict['catalog']), 'r') as catalog_data, \
-            open(join(directory, master_config_dict['wells']), 'r') \
-                as well_data:
-            project.create(
-                join(directory, master_config_dict['project_config']),
-                catalog_data=catalog_data,
-                well_data=well_data)
+        if 'catalog' in master_config_dict.keys():
+            catalog_data = open(join(
+                directory, master_config_dict['catalog']), 'r')
+        else:
+            catalog_data = None
+
+        if 'well_data' in master_config_dict.keys():
+            well_data = open(join(directory, master_config_dict['wells']), 'r')
+        else:
+            well_data = None
+
+        project.create(
+            join(directory, master_config_dict['project_config']),
+            catalog_data=catalog_data,
+            well_data=well_data)
         model.load(join(directory, master_config_dict['model_config']))
 
         new_project = session.execute(
