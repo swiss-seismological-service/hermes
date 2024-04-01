@@ -29,6 +29,8 @@ doc/_build
 # Virtual environment
 venv*
 env/
+.env
+.env.test
 
 ## OS specific files
 
