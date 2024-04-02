@@ -1,5 +1,4 @@
 from typing import List
-import os
 from rich import print
 from rich.table import Table
 import asyncio
@@ -26,8 +25,6 @@ def rerun(forecast_ids: List[int],
           force: bool = typer.Option(
               False, help="Force the forecast to run again, "
               "even if completed.")):
-    print(os.environ["RAMSIS_TESTING_MODE"])
-    print(db_url)
     flow_to_schedule = ramsis_flow
     add_delay = 0.0
     with session_handler(db_url) as session:
@@ -92,14 +89,25 @@ def delete(forecast_ids: List[int],
 
 
 @app.command()
-def ls(full: bool = typer.Option(
+def ls(forecast_id: int = typer.Option(
+        None, help="Option to view information on one forecast"),
+        full: bool = typer.Option(
         False, help="Give all info on forecasts."),
         help="Outputs list of forecasts"):
     with session_handler(db_url) as session:
-        forecasts = session.execute(
-            select(Forecast).options(defer(Forecast.seismiccatalog),
-                                     defer(Forecast.injectionwell)).order_by(
-                Forecast.forecastseries_id)).scalars().all()
+        if forecast_id:
+
+            forecasts = session.execute(
+                select(Forecast).filter_by(id=forecast_id).
+                options(defer(Forecast.seismiccatalog),
+                        defer(Forecast.injectionwell)).order_by(
+                    Forecast.forecastseries_id)).scalars().all()
+        else:
+            forecasts = session.execute(
+                select(Forecast).options(defer(Forecast.seismiccatalog),
+                                         defer(Forecast.injectionwell)).
+                order_by(
+                    Forecast.forecastseries_id)).scalars().all()
         for forecast in forecasts:
             table = Table(show_footer=False,
                           title=f"Forecast {forecast.name}",

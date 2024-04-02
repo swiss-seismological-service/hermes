@@ -10,8 +10,10 @@ from ramsis.datamodel import EStatus
 
 def reset_forecast(forecast):
     forecast.status = EStatus.PENDING
+    forecast.log = []
     for run in forecast.runs:
         run.status = EStatus.PENDING
+        run.log = []
     return forecast
 
 

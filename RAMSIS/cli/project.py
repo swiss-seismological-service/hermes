@@ -94,9 +94,9 @@ def update(
             print(f"Project id {project_id} does not exist")
             raise typer.Exit()
 
-        updated_project = ProjectConfigurationSchema(project_config)
+        updated_project = ProjectConfigurationSchema().load(project_config)
         updated_project.id = project.id
-        session.merge()
+        session.merge(updated_project)
         session.commit()
         print(f"updated project {project.name} "
               f"with id: {project.id}")

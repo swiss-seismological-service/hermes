@@ -139,15 +139,15 @@ def create_all(
         else:
             catalog_data = None
 
-        if 'well_data' in master_config_dict.keys():
-            well_data = open(join(directory, master_config_dict['wells']), 'r')
+        if 'wells' in master_config_dict.keys():
+            wells = open(join(directory, master_config_dict['wells']), 'r')
         else:
-            well_data = None
+            wells = None
 
         project.create(
             join(directory, master_config_dict['project_config']),
             catalog_data=catalog_data,
-            well_data=well_data)
+            well_data=wells)
         model.load(join(directory, master_config_dict['model_config']))
 
         new_project = session.execute(
