@@ -18,7 +18,7 @@ There is a testing mode which accesses a different set of postgres credentials a
 
 The test mode is defined by setting an environment variable within the terminal window that you run the various CLI commands, for example:
 
-export RAMSIS_TESTING_MODE=true
+`export RAMSIS_TESTING_MODE=true`
 
 To go back to using the main database, simply unset this variable or set it to false.
 

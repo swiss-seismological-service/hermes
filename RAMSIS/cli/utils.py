@@ -3,8 +3,8 @@ from prefect.client import get_client
 import logging
 from datetime import datetime
 from prefect.deployments import run_deployment
-from prefect.server.api.deployments import set_schedule_inactive \
-    as deployment_set_schedule_inactive
+# from prefect.server.api.deployments import set_schedule_inactive \
+#     as deployment_set_schedule_inactive
 from prefect.deployments import Deployment
 from prefect.server.schemas.filters import FlowRunFilter, FlowRunFilterState, \
     FlowRunFilterStateName
@@ -15,7 +15,6 @@ from prefect.server.schemas.filters import FlowFilter, DeploymentFilter
 
 
 from RAMSIS.db import app_settings
-from RAMSIS.flows.forecast import scheduled_ramsis_flow
 
 # All hyd, seismic data is expected in this projection
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -219,23 +218,6 @@ async def bulk_delete_flow_runs(states: list):
         print("Done.")
     else:
         print("Aborting...")
-
-
-async def get_deployment(client, deployment_name):
-    try:
-        deployment = await client.read_deployment_by_name(
-            f"{scheduled_ramsis_flow.name}/{deployment_name}")
-    except Exception as err:
-        print(f"Deployment {deployment_name!r} not found!, {err}")
-        raise
-    return deployment
-
-
-async def set_schedule_inactive(forecastseries_id):
-    async with get_client() as client:
-        deployment_name = get_deployment_name(forecastseries_id)
-        deployment = await get_deployment(client, deployment_name)
-        await deployment_set_schedule_inactive(deployment.id)
 
 
 async def limit_model_runs(concurrency_limit):

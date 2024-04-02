@@ -13,7 +13,6 @@ from RAMSIS.cli.utils import flow_deployment_rerun_forecast, \
     add_new_scheduled_run_rerun_forecast
 from RAMSIS.utils import reset_forecast
 from RAMSIS.flows.forecast import ramsis_flow
-from RAMSIS.db import db_url
 
 
 app = typer.Typer()
@@ -93,8 +92,8 @@ def delete(forecast_ids: List[int],
 
 
 @app.command()
-def ls(status: bool = typer.Option(
-        False, help="Only give id's and status."),
+def ls(full: bool = typer.Option(
+        False, help="Give all info on forecasts."),
         help="Outputs list of forecasts"):
     with session_handler(db_url) as session:
         forecasts = session.execute(
@@ -109,6 +108,9 @@ def ls(status: bool = typer.Option(
             table.add_column("value")
             for attr in Forecast.__table__.columns:
                 if str(attr.name) not in ['seismiccatalog', 'injectionwell']:
+                    if not full and str(attr.name) not in \
+                            ['id', 'status', 'starttime', 'endtime']:
+                        continue
                     table.add_row(str(attr.name),
                                   str(getattr(forecast, attr.name)))
 

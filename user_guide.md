@@ -8,15 +8,23 @@ A number of work flows are described to cover the main eventualities.
 
 All forecasts made in a particular project will share the same data. This includes data sources and window of data capture. If different data is required for different forecasts, they will have to be created in a different project.
 
+`ramsis project ls` to see what projects exist
+
 #### Model
 
-Model configuration contains variables that will be sent to the forecast model, and describes the model location and url it is available at.
+Each model configuration contains variables that will be sent to the forecast model, and describes the model location and url it is available at.
+
+`ramsis model ls` to see what model configs exist
 
 #### Forecast Series
 
 A forecast series describes what times forecasts will be run, and what model configuration (and injection plans if applicable) will be used.
 
+`ramsis forecastseries ls` to see what forecast series exist
 
+Once a forecast series has been scheduled, forecasts will be created when they are due to run.
+
+`ramsis forecast ls` to see what forecasts exist
 
 
 
@@ -40,11 +48,11 @@ In the case when there is already be projects, forecast series and models, the f
 
 The ramsis create-all command runs the following commands in order, with inputs from a configuration file, default named config.json:
 
-​	ramsis project create
+​	`ramsis project create`
 
-​	ramsis model load
+​	`ramsis model load`
 
-​	ramsis forecastseries create
+​	`ramsis forecastseries creat`e
 
 
 
@@ -52,7 +60,13 @@ The ramsis create-all command runs the following commands in order, with inputs 
 
 To start the forecast series running you must schedule it. This command determines if there is a finite range of times for a forecast to be started, or if it is ongoing occurrence. Forecasts where the start time as passed are scheduled where the first overdue forecast will be executed immediately, and after a break, the next will be run, and so on. This break length is the '--overdue-interval'.  A longer interval may be preferable in cases where model runs take a long time to complete, or where you want to stagger the load to minimize  risk of overloading the model worker.
 
-ramsis forecastseries schedule 25 --overdue-interval 30
+`ramsis forecastseries schedule 25 --overdue-interval 30`
+
+This command also works when the schedule has been interrupted, and you would like to resume the schedule. The most recent forecast on the forecast series will be found, and the forecasts due after this will be scheduled. instances where this may happen:
+
+- The prefect agent/server has been restarted and doesn't show scheduled runs with `ramsis list-scheduled-forecasts`
+- The computer needed to be restarted
+- You accidentally deleted the most recent forecasts and you would like to run the forecast series again. In this case you will have to delete anything in progress first with `ramsis delete-scheduled-flow-runs` so that ramsis does not run multiple forecasts for the same times. 
 
 
 
@@ -96,17 +110,25 @@ Or for replay cases, when the data is not changing in time, data can be attached
 
 The main way of controlling the number of model runs at a time,  is to run **ramsis update-model-run-concurrency**. The number of model runs you should allow at one time should not exceed the number of models that can comfortably run at the same time with the most memory intensive configuration that you want to use.
 
-ramsis update-model-run-concurrency 3
+`ramsis update-model-run-concurrency 3`
 
-ramsis read-model-run-concurrency
+`ramsis read-model-run-concurrency`
 
-ramsis remove-model-run-concurrency
+`ramsis remove-model-run-concurrency`
 
 If there is no limit set on model run concurrency, every model run created will immediately be sent to the model worker, and run.
 
 
 
+#### In case of major crashes or laptop failing
 
+In the case where everything needs restarting, restart the prefect agent, the prefect server and the model worker. 
+
+If a forecast series was in progress and it is not finished, check to see if there are any forecasts scheduled: `ramsis list-scheduled-forecasts`
+
+if there are, then it looks like the server has resumed processing of the forecast series and nothing further should be done.
+
+In the case where there are no scheduled runs, you can reschedule the forecast series with the `ramsis forecastseries schedule` command. This will restart the forecast series scheduling from the last run forecast.
 
 
 
@@ -118,7 +140,7 @@ A model config cannot be deleted after a model run is associated with it. This i
 
 #### Rerunning Forecasts
 
-In the case of an error on a forecast,
+In the case of an error on a forecast, don't delete the forecast, you can just rerun it.
 
 The command
 
@@ -134,7 +156,15 @@ In the case where the model run/ forecast status are wrong (for instance, a cras
 
 
 
+### Checking status of forecasts
 
+`ramsis list-scheduled-forecasts`
+
+This command shows the user what forecasts are scheduled
+
+`ramsis forecast ls`
+
+This prints a table including all the information on the forecasts. If the  `--full` option is used, all the information is given on the forecast, including some log information. The log for each forecast will contain the status of the model runs that have been run for the forecast.
 
 
 
@@ -151,15 +181,7 @@ A project contains:
 
 
 
-
-
 `ramsis create-all --directory forge_2022 --config config.json --delete-existing`
-
-
-
-
-
-
 
 
 
@@ -186,7 +208,5 @@ If that doesn't work, you can do a full prefect database reset:
 `prefect server database reset -y`
 
 don't forget to set the concurrency limit again after this.
-
-
 
 The only other thing that might need to be done if you are doing a hard reset of prefect, is deleting the ~/.prefect folder as this contains all configuration and might not be updated correctly.

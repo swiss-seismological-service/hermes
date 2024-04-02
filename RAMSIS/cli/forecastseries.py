@@ -9,33 +9,17 @@ from prefect.server.schemas.schedules import RRuleSchedule
 from marshmallow import EXCLUDE
 from datetime import timedelta, datetime
 from sqlalchemy import select
-from ramsis.datamodel import ForecastSeries, Project
+from ramsis.datamodel import ForecastSeries, Project, Forecast
 from ramsis.io.configuration import ForecastSeriesConfigurationSchema
 from RAMSIS.db import db_url, session_handler
 from RAMSIS.cli.utils import flow_deployment, add_new_scheduled_run, \
-    get_deployment_name, set_schedule_inactive
+    get_deployment_name
 
 from pathlib import Path
 from RAMSIS.flows.forecast import scheduled_ramsis_flow
 
 
 app = typer.Typer()
-
-
-@app.command()
-def disable_schedule(forecastseries_id: int):
-    with session_handler(db_url) as session:
-        forecastseries = session.execute(
-            select(ForecastSeries).filter_by(id=forecastseries_id)).\
-            scalar_one_or_none()
-        if not forecastseries:
-            print("The forecastseries id does not exist")
-            raise typer.Exit()
-        asyncio.run(set_schedule_inactive(forecastseries.id))
-        forecastseries.active = False
-        msg = "Forecast series is set to inactive"
-        forecastseries.add_log(msg)
-        session.commit()
 
 
 @app.command()
@@ -73,10 +57,21 @@ def schedule(forecastseries_id: int,
 
         datetime_now = datetime.utcnow()
         forecasts = forecastseries.forecasts
+        dtstart = forecastseries.starttime
         if forecasts:
-            print("Forecasts exist, please reset forecastseries or "
-                  "create a new one.")
-            raise typer.Exit()
+            reschedule = typer.confirm(
+                "Forecast exist, are you sure you want to "
+                "run a new schedule to continue from the last "
+                "forecast?")
+            if not reschedule:
+                print("Not rescheduling")
+                raise typer.Abort()
+            else:
+                dtstart = max(f.starttime for f in forecasts)
+                if forecastseries.forecastinterval:
+                    dtstart += timedelta(
+                        seconds=forecastseries.forecastinterval)
+                print(f"The schedule will resume from {dtstart}")
         deployment_name = get_deployment_name(forecastseries_id)
         if forecastseries.forecastinterval:
             rrule_obj = rrule(
@@ -107,7 +102,7 @@ def schedule(forecastseries_id: int,
 
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
-                dtstart=forecastseries.starttime, until=overdue_limit)
+                dtstart=dtstart, until=overdue_limit)
             print(list(overdue_rrule_obj))
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
@@ -139,6 +134,32 @@ def schedule(forecastseries_id: int,
         forecastseries.active = True
         forecastseries.add_log("The forecast series is active.")
         session.commit()
+
+
+@app.command()
+def reset(forecastseries_id: int,
+          force: bool = typer.Option(
+              False, help="Force the reset without asking")):
+    with session_handler(db_url) as session:
+        forecastseries = session.execute(
+            select(ForecastSeries).filter_by(id=forecastseries_id)).\
+            scalar_one_or_none()
+        if not forecastseries:
+            print("The forecastseries does not exist")
+            raise typer.Exit()
+        if not force:
+            reset = typer.confirm(
+                "Are you sure you want to reset the "
+                f"forecastseries with id: {forecastseries_id}? "
+                "This will delete all the existing forecasts.")
+            if not reset:
+                print("Not resetting")
+                raise typer.Abort()
+
+        session.query(Forecast).filter(
+            Forecast.forecastseries_id == forecastseries_id).delete()
+        session.commit()
+        print(f"Finished resetting forecastseries {forecastseries_id}")
 
 
 @app.command()

@@ -24,7 +24,7 @@ ramsis_app.add_typer(project.app, name="project")
 
 
 @ramsis_app.command()
-def list_scheduled_flow_runs():
+def list_scheduled_forecasts():
     runs = asyncio.run(list_flow_runs_with_states(["Scheduled"]))
     if not runs:
         print("No scheduled runs")
