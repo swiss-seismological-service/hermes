@@ -247,7 +247,7 @@ class RemoteSeismicityWorkerHandle:
                 format(url, t))
 
             req = functools.partial(
-                get, url, timeout=(5, 30))
+                get, url, timeout=self._timeout)
 
             response = self._handle_exceptions(req)
 
