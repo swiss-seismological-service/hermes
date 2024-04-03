@@ -3,15 +3,20 @@
         {
             "name": "Forecast Forge April 2024",
             "description": "Forecasting for forge 2024",
-            "starttime": "2024-04-02T14:00:00",
-            "endtime": "2024-04-04T16:00:00",
-            "forecastinterval": 1800,
+            "starttime": "2024-04-03T18:00:00",
+            "endtime": "2024-04-04T01:00:00",
+            "forecastinterval": 600,
             "tags": [
                 "INDUCED",
                 "FORGE"
             ],
-            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024",
-            "injectionplan_filenames": [],
+            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024/plans",
+            "injectionplan_filenames": [
+                "double.json",
+                "half.json",
+                "planned.json",
+                "shut-in.json"
+            ],
             "altitudemin": -150.0,
             "altitudemax": 150.0,
             "boundingbox": {
