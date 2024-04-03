@@ -3,8 +3,8 @@
         {
             "name": "Forecast Forge April 2024",
             "description": "Forecasting for forge 2024",
-            "starttime": "2024-04-03T18:00:00",
-            "endtime": "2024-04-04T01:00:00",
+            "starttime": "2024-04-03T16:15:00",
+            "endtime": "2024-04-03T21:15:00",
             "forecastinterval": 600,
             "tags": [
                 "INDUCED",
