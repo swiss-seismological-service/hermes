@@ -24,7 +24,7 @@
                 "Nsim": 150,
                 "Delta_tau": 600,
                 "Pmodel": "FlowModels0-1",
-                "well_section_publicid": "61ba3dbb-68b7-47c0-aa91-578d16c651f2",
+                "well_section_publicid": "37801a57-90b9-4fb5-83d7-506ee9166acf",
                 "local_proj_string": "epsg:26912",
                 "reference_point": [
                     334641.1891010533,
