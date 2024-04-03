@@ -10,10 +10,12 @@
                 "FORGE",
                 "INDUCED"
             ],
-            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2022",
+            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2022/plans",
             "injectionplan_filenames": [
-                "plan_150Lm.json",
-                "plan_200Lm.json"
+                "plan_double.json",
+                "plan_half.json",
+                "plan_planned.json",
+                "plan_shut-in.json"
             ],
             "altitudemin": -150.0,
             "altitudemax": 150.0,
