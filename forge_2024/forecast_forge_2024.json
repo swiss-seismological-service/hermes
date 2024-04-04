@@ -1,16 +1,16 @@
 {
     "forecastseries_configs": [
         {
-            "name": "Forecast Forge April 2024",
-            "description": "Forecasting for forge 2024",
-            "starttime": "2024-04-03T16:15:00",
-            "endtime": "2024-04-03T21:15:00",
+            "name": "Forge April 24 Stage 4",
+            "description": "Forecasts Stage 4 of the April 2024 FORGE experiment",
+            "starttime": "2024-04-04T00:00:00",
+            "endtime": "2024-04-04T05:00:00",
             "forecastinterval": 600,
             "tags": [
                 "INDUCED",
                 "FORGE"
             ],
-            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024/plans",
+            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024/plans_4",
             "injectionplan_filenames": [
                 "double.json",
                 "half.json",
