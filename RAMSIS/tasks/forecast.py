@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from marshmallow import EXCLUDE
@@ -67,13 +67,16 @@ def update_fdsn(forecast_id: int, dttime: datetime,
     a catalog is optional/required
     """
     def fetch_fdsn(url: str, project: Project,
-                   forecast: Forecast) -> bytes:
+                   forecast: Forecast,
+                   forecastseries) -> bytes:
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
         seismics_data_source = FDSNWSDataSource(
             url, timeout=700)
 
-        starttime = datetime.strftime(project.starttime, datetime_format)
+        starttime = datetime.strftime(
+            forecastseries.starttime, datetime_format)
+        # starttime = starttime - timedelta(hours=1)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         cat = seismics_data_source.fetch(
@@ -109,7 +112,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
             if existing_catalog:
                 logger.info("updating seismic catalog on forecast")
 
-            cat = fetch_fdsn(fdsnws_url, project, forecast)
+            cat = fetch_fdsn(fdsnws_url, project, forecast, forecastseries)
             if not cat:
                 cat = bytes("", "utf-8")
                 logger.warning(
@@ -142,13 +145,16 @@ def update_hyd(forecast_id: int, dttime: datetime,
     a hydraulics are optional/required
     """
     def fetch_hyd(url: str, project: Project,
-                  forecast: Forecast) -> dict:
+                  forecast: Forecast,
+                  forecastseries) -> dict:
         logger = get_run_logger()
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
             url, timeout=300)
 
-        starttime = datetime.strftime(project.starttime, datetime_format)
+        starttime = datetime.strftime(
+            forecastseries.starttime, datetime_format)
+        # starttime = starttime - timedelta(hours=1)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         well = hydraulics_data_source.fetch(
@@ -181,7 +187,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
             if forecast.injectionwell:
                 logger.debug("modifying injection well on forecast")
 
-            well = fetch_hyd(hydws_url, project, forecast)
+            well = fetch_hyd(hydws_url, project, forecast, forecastseries)
             # We expect wells to be stored within lists by default
             forecast.injectionwell = json.dumps([well], ensure_ascii=False).\
                 encode('utf-8')
