@@ -1,0 +1,36 @@
+{
+    "model_configs": [
+        {
+            "name": "ML2",
+            "url": "http://localhost:5007",
+            "sfm_module": "ml1.ramsis",
+            "sfm_function": "run_ml1_validated",
+            "enabled": true,
+            "description": "Standard config for ML1 model to be used with dynamic injection plans",
+            "tags": [
+                "DYNAMIC"
+            ],
+            "result_type": "GRID",
+            "config": {
+                "afb": -2,
+                "M_decimals": 2,
+                "dM": 0.05,
+                "Mc": null,
+                "LASSO_m": 10,
+                "LASSO_penalty": 1,
+                "LASSO_Nmin_fit": 5,
+                "Nsim": 150,
+                "Delta_tau": 600,
+                "Pmodel": "FlowModels0-1",
+                "well_section_publicid": "37801a57-90b9-4fb5-83d7-506ee9166acf",
+                "local_proj_string": "epsg:26912",
+                "reference_point": [
+                    334641.1891010533,
+                    4263443.693111669,
+                    0.0
+                ],
+                "epoch_duration": 600
+            }
+        }
+    ]
+}

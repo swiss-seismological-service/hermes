@@ -1,21 +1,19 @@
 {
     "forecastseries_configs": [
         {
-            "name": "Forge April 24 Stage 6 2nd Retry",
-            "description": "2nd Retry of Forecasts Stage 6 of the April 2024 FORGE experiment",
-            "starttime": "2024-04-04T19:40:00",
-            "endtime": "2024-04-05T00:40:00",
-            "forecastinterval": 600,
+            "name": "Forge April 24 Stage 10 dynamic",
+            "description": "Forecasts Stage 10 of the April 2024 FORGE experiment with a dynamic injection plan",
+            "starttime": "2024-04-06T21:00:00",
+            "endtime": "2024-04-07T09:00:00",
+            "forecastinterval": 1200,
             "tags": [
-                "INDUCED",
-                "FORGE"
+                "DYNAMIC"
             ],
-            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024/plans_6",
+            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024/plans_10_dynamic",
             "injectionplan_filenames": [
                 "double.json",
                 "half.json",
-                "planned.json",
-                "shut-in.json"
+                "same.json"
             ],
             "altitudemin": -150.0,
             "altitudemax": 150.0,
