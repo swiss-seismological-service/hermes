@@ -1,0 +1,15 @@
+{
+    "project_configs": [
+        {
+            "name": "Forge Stimulation 2024",
+            "description": "Stimulation April 2024",
+            "starttime": "2024-04-01T12:00:00",
+            "endtime": "2024-05-01T19:00:00",
+            "hydws_url": "http://localhost:8000/hydws/v1/boreholes/caf65646-8093-4aaf-989c-1c837f497667?level=hydraulic",
+            "fdsnws_url": "http://192.168.1.217:8080/fdsnws/event/1/query",
+            "seismiccatalog_required": "REQUIRED",
+            "injectionwell_required": "REQUIRED",
+            "injectionplan_required": "REQUIRED"
+        }
+    ]
+}

@@ -1,24 +1,22 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
-from sqlalchemy.orm.session import Session
 from marshmallow import EXCLUDE
-from prefect import task, get_run_logger
-from prefect.tasks import exponential_backoff
 from prefect.server.schemas.states import Failed
-from ramsis.datamodel import EInput, EStatus, \
-    Forecast, Project
+from prefect.tasks import exponential_backoff
+from ramsis.datamodel import EInput, EStatus, Forecast, Project
 from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
+from sqlalchemy.orm.session import Session
 
-from RAMSIS.db import session_handler
+from prefect import get_run_logger, task
 from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
 from RAMSIS.clients.sfm import RemoteSeismicityWorkerHandle
+from RAMSIS.db import session_handler
 from RAMSIS.db_utils import get_forecast, get_model_run
 from RAMSIS.tasks.utils import fork_log
-
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 
@@ -69,13 +67,16 @@ def update_fdsn(forecast_id: int, dttime: datetime,
     a catalog is optional/required
     """
     def fetch_fdsn(url: str, project: Project,
-                   forecast: Forecast) -> bytes:
+                   forecast: Forecast,
+                   forecastseries) -> bytes:
         logger = get_run_logger()
         logger.info("Fetch fdsn called")
         seismics_data_source = FDSNWSDataSource(
             url, timeout=700)
 
-        starttime = datetime.strftime(project.starttime, datetime_format)
+        starttime = datetime.strftime(
+            forecastseries.starttime, datetime_format)
+        # starttime = starttime - timedelta(hours=1)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         cat = seismics_data_source.fetch(
@@ -111,7 +112,7 @@ def update_fdsn(forecast_id: int, dttime: datetime,
             if existing_catalog:
                 logger.info("updating seismic catalog on forecast")
 
-            cat = fetch_fdsn(fdsnws_url, project, forecast)
+            cat = fetch_fdsn(fdsnws_url, project, forecast, forecastseries)
             if not cat:
                 cat = bytes("", "utf-8")
                 logger.warning(
@@ -144,13 +145,16 @@ def update_hyd(forecast_id: int, dttime: datetime,
     a hydraulics are optional/required
     """
     def fetch_hyd(url: str, project: Project,
-                  forecast: Forecast) -> dict:
+                  forecast: Forecast,
+                  forecastseries) -> dict:
         logger = get_run_logger()
         logger.info("Fetch hydws called")
         hydraulics_data_source = HYDWSDataSource(
             url, timeout=300)
 
-        starttime = datetime.strftime(project.starttime, datetime_format)
+        starttime = datetime.strftime(
+            forecastseries.starttime, datetime_format)
+        # starttime = starttime - timedelta(hours=1)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         well = hydraulics_data_source.fetch(
@@ -183,7 +187,7 @@ def update_hyd(forecast_id: int, dttime: datetime,
             if forecast.injectionwell:
                 logger.debug("modifying injection well on forecast")
 
-            well = fetch_hyd(hydws_url, project, forecast)
+            well = fetch_hyd(hydws_url, project, forecast, forecastseries)
             # We expect wells to be stored within lists by default
             forecast.injectionwell = json.dumps([well], ensure_ascii=False).\
                 encode('utf-8')
@@ -250,7 +254,7 @@ def model_run_executor(forecast_id: int,
                     'model_parameters': model_config.config}}}
 
         _worker_handle = RemoteSeismicityWorkerHandle(
-            model_run.modelconfig.url)
+            model_run.modelconfig.url, timeout=300)
         try:
             resp = _worker_handle.compute(
                 payload,
@@ -289,7 +293,8 @@ def model_run_executor(forecast_id: int,
         finally:
             return int(model_run.id)
 
-@task(task_run_name="check_model_run_not_complete(model_run{model_run_id})") # noqa
+
+@task(task_run_name="check_model_run_not_complete(model_run{model_run_id})")  # noqa
 def check_model_run_not_complete(
         model_run_id: int,
         connection_string: str) -> Optional[int]:
@@ -324,7 +329,8 @@ def waiting_task(
         else:
             pass
 
-@task(task_run_name="check_model_runs_running(forecast_{forecast_id})") # noqa
+
+@task(task_run_name="check_model_runs_running(forecast_{forecast_id})")  # noqa
 def check_model_runs_running(
         forecast_id: int,
         connection_string: str) -> bool:
@@ -343,12 +349,12 @@ def check_model_runs_running(
 
 
 @task(tags=["model_run"],
-      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})", # noqa
+      task_run_name="poll_model_run(forecast{forecast_id}_model_run{model_run_id})",  # noqa
       retries=3,
       retry_delay_seconds=exponential_backoff(backoff_factor=10),
       retry_jitter_factor=1,
       timeout_seconds=100
-      ) # noqa
+      )  # noqa
 def poll_model_run(forecast_id: int, model_run_id: int,
                    connection_string: str) -> None:
     """
@@ -374,7 +380,7 @@ def poll_model_run(forecast_id: int, model_run_id: int,
                  logger, propagate=False)
 
         _worker_handle = RemoteSeismicityWorkerHandle(
-            model_run.modelconfig.url)
+            model_run.modelconfig.url, timeout=300)
 
         deserializer = SFMWorkerOMessageDeserializer(
             many=True)

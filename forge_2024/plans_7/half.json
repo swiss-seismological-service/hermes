@@ -1,0 +1,121 @@
+{
+    "publicid": "caf65646-8093-4aaf-989c-1c837f497667",
+    "name": "16A-32",
+    "measureddepth": {
+        "value": 3000
+    },
+    "bedrockaltitude": {},
+    "altitude": {
+        "value": 0.038027779
+    },
+    "latitude": {
+        "value": 38.50402239072762
+    },
+    "longitude": {
+        "value": -112.89638854692598
+    },
+    "sections": [
+        {
+            "publicid": "37801a57-90b9-4fb5-83d7-506ee9166acf",
+            "name": "16A-32/section_03",
+            "topclosed": true,
+            "bottomclosed": true,
+            "casingdiameter": {},
+            "holediameter": {},
+            "bottommeasureddepth": {},
+            "topmeasureddepth": {},
+            "bottomaltitude": {
+                "value": 2513
+            },
+            "bottomlatitude": {
+                "value": 38.5018
+            },
+            "bottomlongitude": {
+                "value": -112.8853
+            },
+            "topaltitude": {
+                "value": 2507
+            },
+            "toplatitude": {
+                "value": 38.5018
+            },
+            "toplongitude": {
+                "value": -112.8853
+            },
+            "hydraulics": [
+                {
+                    "datetime": {
+                        "value": "2024-04-05T03:00:00"
+                    },
+                    "topflow": {
+                        "value": 0
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T04:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T05:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T06:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T07:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T08:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T09:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T10:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-04-05T11:00:00"
+                    },
+                    "topflow": {
+                        "value": 1.7295597484
+                    }
+                }
+            ]
+        }
+    ]
+}

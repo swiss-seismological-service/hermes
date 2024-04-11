@@ -2,20 +2,18 @@
 Seismicity forecast model (SFM) worker related facilities.
 """
 
-import json
 import enum
 import functools
+import json
 import uuid
-
 from urllib.parse import urlparse
 
 import marshmallow
-from requests import get, post, delete, exceptions
-from prefect import get_run_logger
 from marshmallow import Schema, fields, validate
+from requests import delete, exceptions, get, post
 
-from RAMSIS.error import Error
-
+from prefect import get_run_logger
+from RAMSIS.error import Error, RequestsError
 
 KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'
@@ -249,7 +247,7 @@ class RemoteSeismicityWorkerHandle:
                 format(url, t))
 
             req = functools.partial(
-                get, url, timeout=(5, 30))
+                get, url, timeout=self._timeout)
 
             response = self._handle_exceptions(req)
 
@@ -367,7 +365,7 @@ class RemoteSeismicityWorkerHandle:
                               f" {self._url_base}. Please check if the "
                               "connection is accepting requests")
             raise self.ConnectionError(self.url, err)
-        except exceptions.RequestsError as err:
+        except RequestsError as err:
             self.logger.error(f"The request has an error {self.url}")
             raise self.RemoteWorkerError(err)
         except exceptions.Timeout:
