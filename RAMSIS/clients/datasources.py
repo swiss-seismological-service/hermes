@@ -111,6 +111,11 @@ class FDSNWSDataSource:
     Fetches seismic event data from a web service.
     """
 
+    EMPTY_CATALOG = b"""<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+  <eventParameters publicID="smi:local/7d206afa-3ec1-493a-8d09-0173d2583c64"/>
+</q:quakeml>""" # noqa
+
     def __init__(self, url, timeout=None):
         self.url = url
         self._timeout = timeout
@@ -137,9 +142,12 @@ class FDSNWSDataSource:
                 get, self.url, self._args, self._timeout,
                     nocontent_codes=FDSNWS_NOCONTENT_CODES) as ifd:
                 cat = ifd.read()
+                print('cat', cat[0:100], type(cat))
         except NoContent:
-            self.logger.info(f'No data received from {self.url}')
-            raise
+            self.logger.info(f'No data received from {self.url}, '
+                             'replacing with empty catalog')
+            cat = self.EMPTY_CATALOG
+            print('cat', cat, type(cat))
         except RequestsError as err:
             self.logger.error(
                 f"Error while fetching data from {self.url} ({err}).")
