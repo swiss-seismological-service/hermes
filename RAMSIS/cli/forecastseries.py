@@ -9,17 +9,33 @@ from prefect.server.schemas.schedules import RRuleSchedule
 from marshmallow import EXCLUDE
 from datetime import timedelta, datetime
 from sqlalchemy import select
-from ramsis.datamodel import ForecastSeries, Project, Forecast
+from ramsis.datamodel import ForecastSeries, Project, Forecast, EStatus
 from ramsis.io.configuration import ForecastSeriesConfigurationSchema
 from RAMSIS.db import db_url, session_handler
 from RAMSIS.cli.utils import flow_deployment, add_new_scheduled_run, \
-    get_deployment_name
+    get_deployment_name, delete_flow_runs, list_flow_runs_with_states
 
 from pathlib import Path
 from RAMSIS.flows.forecast import scheduled_ramsis_flow
 
 
 app = typer.Typer()
+
+
+@app.command()
+def stop(forecastseries_id: int):
+    runs = asyncio.run(list_flow_runs_with_states(
+        ["Scheduled", "Running", "Pending", "Retrying"]))
+
+    fs_runs = []
+    if not runs:
+        print("No forecasts scheduled/in progress for this forecast series")
+    for run in runs:
+        if run.parameters['forecastseries_id'] == forecastseries_id:
+            fs_runs.append(run)
+    asyncio.run(delete_flow_runs(fs_runs))
+    print("Deleted scheduled forecast with parameters: "
+          f"{[run.parameters for run in fs_runs]}")
 
 
 @app.command()
@@ -59,19 +75,23 @@ def schedule(forecastseries_id: int,
         forecasts = forecastseries.forecasts
         dtstart = forecastseries.starttime
         if forecasts:
-            reschedule = typer.confirm(
-                "Forecast exist, are you sure you want to "
-                "run a new schedule to continue from the last "
-                "forecast?")
-            if not reschedule:
-                print("Not rescheduling")
-                raise typer.Abort()
+            dtstart = max(f.starttime for f in forecasts)
+            if forecastseries.forecastinterval:
+                dtstart += timedelta(
+                    seconds=forecastseries.forecastinterval)
+            if dtstart == forecastseries.endtime:
+                print("Forecast Series completed. Please reset forecast "
+                      "series and then schedule again.")
             else:
-                dtstart = max(f.starttime for f in forecasts)
-                if forecastseries.forecastinterval:
-                    dtstart += timedelta(
-                        seconds=forecastseries.forecastinterval)
-                print(f"The schedule will resume from {dtstart}")
+                reschedule = typer.confirm(
+                    "Forecast exist, are you sure you want to "
+                    "run a new schedule to continue from the last "
+                    "forecast?")
+                if not reschedule:
+                    print("Not rescheduling")
+                    raise typer.Abort()
+                else:
+                    print(f"The schedule will resume from {dtstart}")
         deployment_name = get_deployment_name(forecastseries_id)
         if forecastseries.forecastinterval:
             rrule_obj = rrule(
@@ -108,8 +128,8 @@ def schedule(forecastseries_id: int,
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)
                 msg = ("scheduling overdue forecast with starttime: "
-                       f"{forecast_starttime} to be run at: "
-                       f"{scheduled_wait_time}.")
+                       f"{forecast_starttime} to be run in: "
+                       f"{scheduled_wait_time} seconds.")
                 print(msg)
                 forecastseries.add_log(msg)
                 session.commit()
@@ -158,6 +178,8 @@ def reset(forecastseries_id: int,
 
         session.query(Forecast).filter(
             Forecast.forecastseries_id == forecastseries_id).delete()
+        forecastseries.status = EStatus.PENDING
+        forecastseries.log = []
         session.commit()
         print(f"Finished resetting forecastseries {forecastseries_id}")
 

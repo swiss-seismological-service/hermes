@@ -29,6 +29,7 @@ def list_scheduled_forecasts():
     if not runs:
         print("No scheduled runs")
     else:
+        print(runs[0].parameters)
         table = Table(show_footer=False,
                       title="Scheduled forecast runs",
                       title_justify="left")
