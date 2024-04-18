@@ -10,7 +10,7 @@
                 "INDUCED",
                 "FORGE"
             ],
-            "injectionplan_dir": "/home/indu/workspaces/rt-ramsis/forge_2024/plans_9",
+            "injectionplan_dir": "plans_9",
             "injectionplan_filenames": [
                 "double.json",
                 "half.json",
