@@ -8,6 +8,7 @@
 	    "tags": ["ETAS", "RISE", "mc_2.3"],
 	    "sfm_module": "runnable_code.run_model",
 	    "sfm_function": "main",
+	    "result_type": "CATALOG", 
 	    "config":{
                 "auxiliary_start": "1992-01-01 00:00:00",
 	        "timewindow_start": "1997-01-01 00:00:00",

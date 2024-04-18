@@ -1,6 +1,5 @@
 import typer
 from prefect.client import get_client
-import logging
 from datetime import datetime
 from prefect.deployments import run_deployment
 # from prefect.server.api.deployments import set_schedule_inactive \
@@ -151,37 +150,6 @@ async def add_new_scheduled_run(
                    f"parameters: {parameters}")
 
 
-# To add
-def configure_logging(verbosity):
-    """
-    Configures and the root logger.
-
-    All loggers in submodules will automatically become children of the root
-    logger and inherit some of the properties.
-    parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2],
-                        default=1, help="output verbosity (0-2, default 0)")
-
-    """
-    lvl_lookup = {
-        0: logging.WARN,
-        1: logging.INFO,
-        2: logging.DEBUG
-    }
-    root_logger = logging.getLogger()
-    root_logger.setLevel(lvl_lookup[verbosity])
-    formatter = logging.Formatter('%(asctime)s %(levelname)s: '
-                                  '[%(name)s] %(message)s')
-    # ...handlers from 3rd party modules - we don't like your kind here
-    for h in list(root_logger.handlers):
-        root_logger.removeHandler(h)
-    # ...setup console logging
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    root_logger.addHandler(console_handler)
-    # Transitions is a bit noisy on the INFO level
-    logging.getLogger('transitions').setLevel(logging.WARNING)
-
-
 async def list_flow_runs_with_states(states: list):
     async with get_client() as client:
         flow_runs = await client.read_flow_runs(
@@ -224,6 +192,8 @@ async def limit_model_runs(concurrency_limit):
     async with get_client() as client:
         # set a concurrency limit of 10 on the 'small_instance' tag
         _ = await client.create_concurrency_limit(
+            # This tag is set within the task definitions at
+            # RAMSIS/tasks/forecast.py
             tag="model_run",
             concurrency_limit=concurrency_limit)
 

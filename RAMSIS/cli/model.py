@@ -34,7 +34,9 @@ def ls(help="Outputs list of models"):
 
 @app.command()
 def disable(
-        model_name: str):
+        model_name: str,
+        help="Set enabled=False. This model will not run, even if the same "
+        "tags are set on the forecast series."):
     with session_handler(db_url) as session:
         model_config = session.execute(
             select(ModelConfig).filter_by(
@@ -49,7 +51,9 @@ def disable(
 
 @app.command()
 def enable(
-        model_name: str):
+        model_name: str,
+        help="Set enabled=True. This model will run if the same tags are set"
+        "on the forecast series."):
     with session_handler(db_url) as session:
         model_config = session.execute(
             select(ModelConfig).filter_by(
@@ -63,12 +67,37 @@ def enable(
 
 
 @app.command()
+def archive(
+        model_name: str,
+        force: bool = typer.Option(
+            False, help="Force the deletes without asking")):
+    """Appends timestamp to the name of model and enabled=False.
+    For use in cases when you change the model config/code and want to
+    archive the results. This model will no longer be run if not enabled.
+    """
+    with session_handler(db_url) as session:
+        model_config = session.execute(
+            select(ModelConfig).filter_by(
+                name=model_name)).\
+            scalar_one_or_none()
+        if not model_config:
+            print("Model does not exist")
+            raise typer.Exit()
+        if 'ARCHIVED' not in model_config.name:
+            model_config.name = (f"{model_config.name}-ARCHIVED-"
+                                 f"{datetime.now().strftime('%Y-%m-%d')}")
+            model_config.enabled = False
+        session.commit()
+        print(f"Model successfully archived: {model_config.name}")
+
+
+@app.command()
 def archive_all(
         force: bool = typer.Option(
             False, help="Force the deletes without asking")):
-    """Appends timestamp to the name of all models. For use
-    in cases when you change the model config/code and want to
-    archive the results.
+    """Appends timestamp to the name of all models and enabled=False.
+    For use in cases when you change the model config/code and want to
+    archive the results. This model will no longer be run if not enabled.
     """
     with session_handler(db_url) as session:
         model_configs = session.execute(

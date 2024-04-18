@@ -1,4 +1,5 @@
 from typing import List
+from os.path import join, isabs, dirname, abspath
 from rich import print
 from rich.table import Table
 import asyncio
@@ -23,7 +24,8 @@ app = typer.Typer()
 
 
 @app.command()
-def stop(forecastseries_id: int):
+def stop(forecastseries_id: int,
+         help="Stops all flow runs that have this forecastseries id"):
     runs = asyncio.run(list_flow_runs_with_states(
         ["Scheduled", "Running", "Pending", "Retrying"]))
 
@@ -39,7 +41,9 @@ def stop(forecastseries_id: int):
 
 
 @app.command()
-def ls():
+def ls(full: bool = typer.Option(
+        False, help="Give all info on forecast series."),
+        help="Outputs list of forecast series"):
     with session_handler(db_url) as session:
         forecastseries_list = session.execute(
             select(ForecastSeries)).\
@@ -52,6 +56,10 @@ def ls():
             table.add_column("value")
             for attr in ForecastSeries.__table__.columns:
                 if str(attr.name) not in ['injectionplans']:
+                    if not full and str(attr.name) not in \
+                            ['id', 'status', 'starttime', 'endtime',
+                             'forecastinterval', 'forecastduration']:
+                        continue
                     table.add_row(str(attr.name), str(
                         getattr(series, attr.name)))
 
@@ -61,7 +69,14 @@ def ls():
 @app.command()
 def schedule(forecastseries_id: int,
              overdue_interval: int = typer.Option(
-                 60, help="Interval to run overdue forecasts at")):
+                 60, help="Interval to run overdue forecasts at"),
+             help="""Tells the prefect server to schedule forecasts
+             to run for the parameters set on the forecast series.
+             Forecasts that have a starttime in the past will be
+             be run with a spacing of --overdue-interval, and these
+             are scheduled in parallel to future forecasts. Future
+             forecasts are always scheduled to start at the forecast
+             starttime."""):
     flow_to_schedule = scheduled_ramsis_flow
     with session_handler(db_url) as session:
         forecastseries = session.execute(
@@ -93,6 +108,8 @@ def schedule(forecastseries_id: int,
                 else:
                     print(f"The schedule will resume from {dtstart}")
         deployment_name = get_deployment_name(forecastseries_id)
+
+        # If there is a forecast interval, then we run multiple forecasts
         if forecastseries.forecastinterval:
             rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
@@ -123,7 +140,6 @@ def schedule(forecastseries_id: int,
             overdue_rrule_obj = rrule(
                 freq=SECONDLY, interval=forecastseries.forecastinterval,
                 dtstart=dtstart, until=overdue_limit)
-            print(list(overdue_rrule_obj))
             for forecast_starttime in list(overdue_rrule_obj):
                 scheduled_start_time = datetime_now + timedelta(
                     seconds=scheduled_wait_time)
@@ -159,7 +175,9 @@ def schedule(forecastseries_id: int,
 @app.command()
 def reset(forecastseries_id: int,
           force: bool = typer.Option(
-              False, help="Force the reset without asking")):
+              False, help="Force the reset without asking"),
+          help="Resets the status to PENDING and deletes existing, "
+          "so that the forecast can be rerun in full."):
     with session_handler(db_url) as session:
         forecastseries = session.execute(
             select(ForecastSeries).filter_by(id=forecastseries_id)).\
@@ -187,7 +205,8 @@ def reset(forecastseries_id: int,
 @app.command()
 def delete(forecastseries_ids: List[int],
            force: bool = typer.Option(
-               False, help="Force the deletes without asking")):
+               False, help="Force the deletes without asking"),
+           help="Delete forecast series from the database."):
     with session_handler(db_url) as session:
         for forecastseries_id in forecastseries_ids:
             forecastseries = session.execute(
@@ -214,7 +233,8 @@ def create(
         config: Path = typer.Option(
         ...,
         exists=True,
-        readable=True),
+        readable=True,
+        help="Can be absolute or relative"),
         project_id: int = typer.Option(
             None,
             help="Project id to associate the forecast series to. If not"
@@ -235,8 +255,16 @@ def create(
 
         with open(config, "r") as forecastseries_json:
             config_dict = json.load(forecastseries_json)
+
         new_forecastseries = []
         for forecastseries_config in config_dict["forecastseries_configs"]:
+            # Make sure the directory location is absolute
+            if "injectionplan_dir" in forecastseries_config.keys():
+                inj_dir = forecastseries_config["injectionplan_dir"]
+                if not isabs(inj_dir):
+                    forecastseries_config["injectionplan_dir"] = join(
+                        abspath(dirname(config)), inj_dir)
+
             forecastseries = ForecastSeriesConfigurationSchema(
                 unknown=EXCLUDE, context={"session": session}).\
                 load(forecastseries_config)

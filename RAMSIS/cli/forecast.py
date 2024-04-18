@@ -110,7 +110,6 @@ def ls(forecast_id: int = typer.Option(
                     Forecast.forecastseries_id)).scalars().all()
         for forecast in forecasts:
             table = Table(show_footer=False,
-                          title=f"Forecast {forecast.name}",
                           title_justify="left")
             table.add_column("attribute")
             table.add_column("value")

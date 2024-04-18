@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
 from marshmallow import EXCLUDE
@@ -76,7 +76,6 @@ def update_fdsn(forecast_id: int, dttime: datetime,
 
         starttime = datetime.strftime(
             forecastseries.starttime, datetime_format)
-        # starttime = starttime - timedelta(hours=1)
         endtime = datetime.strftime(forecast.starttime, datetime_format)
 
         cat = seismics_data_source.fetch(
@@ -106,21 +105,15 @@ def update_fdsn(forecast_id: int, dttime: datetime,
                 return
             logger.info("A catalog is required and a url is specified: "
                         f"{fdsnws_url}")
-            # Delete existing seismic catalog if it exsits, so that the most
+            # Delete existing seismic catalog if it exists, so that the most
             # up to date one is used
             existing_catalog = forecast.seismiccatalog
             if existing_catalog:
                 logger.info("updating seismic catalog on forecast")
 
             cat = fetch_fdsn(fdsnws_url, project, forecast, forecastseries)
-            if not cat:
-                cat = bytes("", "utf-8")
-                logger.warning(
-                    "An empty catalog has been created as no "
-                    "catalog has been returned from the FDSN web service.")
-            else:
-                logger.info("A catalog has been returned with "
-                            f"character length: {len(cat)}")
+            logger.info("A catalog has been returned with "
+                        f"character length: {len(cat)}")
 
             forecast.seismiccatalog = cat
             session.commit()
@@ -231,6 +224,8 @@ def model_run_executor(forecast_id: int,
         model_run = get_model_run(model_run_id, session)
         model_config = model_run.modelconfig
         injection_plan = model_run.injectionplan
+        if injection_plan:
+            injection_plan = injection_plan.data
         forecast = model_run.forecast
         forecastseries = forecast.forecastseries
 
@@ -250,7 +245,7 @@ def model_run_executor(forecast_id: int,
                     'injection_well': forecast.injectionwell,
                     'forecast_start': forecast.starttime,
                     'forecast_end': forecast.endtime,
-                    'injection_plan': injection_plan.data,
+                    'injection_plan': injection_plan,
                     'model_parameters': model_config.config}}}
 
         _worker_handle = RemoteSeismicityWorkerHandle(
