@@ -1,4 +1,6 @@
+#### Repo Guide
 
+General guide to repo and some ideas for changes.
 
 ##### RAMSIS/cli
 
@@ -79,6 +81,14 @@ I usually run the tests:
 pytest -k etas --capture=tee-sys
 
 pytest -k forge --capture=tee-sys
+
+
+
+##### Updating Injection plan on Forecast Series
+
+In the case that you do want to add this feature, I think the best course would be to implement a new command: **ramsis forecastseries update-plan**, and even if the forecast series is already in progress, as the injection plan only gets copied over when a new model run is created, so all new forecasts will use the new plan. You have to look at the model run rather than the forecast series to find which plan is associated.
+
+In the datamodel, you would want to remove the delete behavior of the forecast series of a detached plan, which means that there may end up being detached plans floating around unless some trigger for deletion is created. 
 
 
 
