@@ -10,10 +10,10 @@ from urllib.parse import urlparse
 
 import marshmallow
 from marshmallow import Schema, fields, validate
+from prefect import get_run_logger
 from requests import delete, exceptions, get, post
 
-from prefect import get_run_logger
-from RAMSIS.error import Error, RequestsError
+from hermes.error import Error, RequestsError
 
 KEY_DATA = 'data'
 KEY_ATTRIBUTES = 'attributes'

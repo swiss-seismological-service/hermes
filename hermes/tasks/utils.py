@@ -1,11 +1,13 @@
-from prefect import task, get_run_logger, runtime
-from sqlalchemy.orm.session import Session
-from datetime import timedelta, datetime
-from ramsis.datamodel import EStatus, ModelRun, EInput, Forecast, \
-    ForecastSeries
+from datetime import datetime, timedelta
 from typing import Union
-from RAMSIS.db_utils import set_statuses_db, get_forecast, get_forecastseries
-from RAMSIS.db import session_handler
+
+from prefect import get_run_logger, runtime, task
+from ramsis.datamodel import (EInput, EStatus, Forecast, ForecastSeries,
+                              ModelRun)
+from sqlalchemy.orm.session import Session
+
+from hermes.db import session_handler
+from hermes.db_utils import get_forecast, get_forecastseries, set_statuses_db
 
 forecast_context_format = "forecast_id: {forecast_id} |"
 model_run_context_format = "forecast_id: {forecast_id} " \
@@ -63,7 +65,7 @@ def new_forecast_from_series(forecastseries_id: int,
     logger = get_run_logger()
     if not start_time:
         start_time = runtime.flow_run.scheduled_start_time
-    elif type(start_time) == str: # noqa
+    elif type(start_time) == str:  # noqa
         start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
     with session_handler(connection_string) as session:
         forecastseries = get_forecastseries(

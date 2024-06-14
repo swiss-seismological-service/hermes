@@ -1,12 +1,11 @@
 """
 Testing utilities for setting up a ramsis forecast ready to run.
 """
-from typer.testing import CliRunner
+from os.path import abspath, dirname
+
+from ramsis.datamodel import ForecastSeries, ModelConfig
 from sqlalchemy import select
-
-from os.path import dirname, abspath
-
-from ramsis.datamodel import ModelConfig, ForecastSeries
+from typer.testing import CliRunner
 
 runner = CliRunner()
 dirpath = dirname(abspath(__file__))
@@ -20,7 +19,7 @@ def check_one_model_in_db(session):
 
 
 def load_model(model_config):
-    from RAMSIS.cli import ramsis_app as app
+    from hermes.cli import ramsis_app as app
     options = ["model", "load",
                "--model-config",
                model_config]
@@ -30,7 +29,7 @@ def load_model(model_config):
 
 
 def delete_model(model_name):
-    from RAMSIS.cli import ramsis_app as app
+    from hermes.cli import ramsis_app as app
     options = ["model", "delete",
                model_name,
                "--force"]
@@ -55,7 +54,7 @@ def check_updated_model(session, enabled_model_config, disabled_model_config):
 
 
 def create_project(project_config, catalog_data=None, well_data=None):
-    from RAMSIS.cli import ramsis_app as app
+    from hermes.cli import ramsis_app as app
     options = ["project", "create",
                "--config",
                project_config]
@@ -69,7 +68,7 @@ def create_project(project_config, catalog_data=None, well_data=None):
 
 
 def create_forecastseries(forecastseries_config, project_id):
-    from RAMSIS.cli import ramsis_app as app
+    from hermes.cli import ramsis_app as app
     options = ["forecastseries", "create",
                "--project-id", project_id,
                "--config",

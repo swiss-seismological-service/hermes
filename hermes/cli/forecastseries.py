@@ -1,24 +1,25 @@
+import asyncio
+import json
+from datetime import datetime, timedelta
+from os.path import abspath, dirname, isabs, join
+from pathlib import Path
 from typing import List
-from os.path import join, isabs, dirname, abspath
+
+import typer
+from dateutil.rrule import SECONDLY, rrule
+from marshmallow import EXCLUDE
+from prefect.server.schemas.schedules import RRuleSchedule
+from ramsis.datamodel import EStatus, Forecast, ForecastSeries, Project
+from ramsis.io.configuration import ForecastSeriesConfigurationSchema
 from rich import print
 from rich.table import Table
-import asyncio
-import typer
-import json
-from dateutil.rrule import rrule, SECONDLY
-from prefect.server.schemas.schedules import RRuleSchedule
-from marshmallow import EXCLUDE
-from datetime import timedelta, datetime
 from sqlalchemy import select
-from ramsis.datamodel import ForecastSeries, Project, Forecast, EStatus
-from ramsis.io.configuration import ForecastSeriesConfigurationSchema
-from RAMSIS.db import db_url, session_handler
-from RAMSIS.cli.utils import flow_deployment, add_new_scheduled_run, \
-    get_deployment_name, delete_flow_runs, list_flow_runs_with_states
 
-from pathlib import Path
-from RAMSIS.flows.forecast import scheduled_ramsis_flow
-
+from hermes.cli.utils import (add_new_scheduled_run, delete_flow_runs,
+                              flow_deployment, get_deployment_name,
+                              list_flow_runs_with_states)
+from hermes.db import db_url, session_handler
+from hermes.flows.forecast import scheduled_ramsis_flow
 
 app = typer.Typer()
 

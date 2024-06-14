@@ -2,17 +2,18 @@
 """
 Data fetching facilities.
 """
-import json
 import contextlib
-import requests
 import io
+import json
 import logging
-from requests import get, exceptions
+
+import requests
 from prefect import get_run_logger
 from prefect.exceptions import MissingContextError
+from requests import exceptions, get
 
-from RAMSIS.config import FDSNWS_NOCONTENT_CODES
-from RAMSIS.error import RequestsError, NoContent, ClientError
+from hermes.config import FDSNWS_NOCONTENT_CODES
+from hermes.error import ClientError, NoContent, RequestsError
 
 
 @contextlib.contextmanager

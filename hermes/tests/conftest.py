@@ -1,6 +1,7 @@
-import pytest
 from os import environ
+
 import psycopg2
+import pytest
 
 testing_environment_variable = "RAMSIS_TESTING_MODE"
 
@@ -29,7 +30,7 @@ def use_data_ws(pytestconfig):
 def env():
     old_environ = dict(environ)
     environ.update(TEMP_ENV_VARS)
-    from RAMSIS.db import env as environment
+    from hermes.db import env as environment
     yield environment
     environ.clear()
     environ.update(old_environ)
@@ -37,7 +38,7 @@ def env():
 
 @pytest.fixture(scope='function')
 def session():
-    from RAMSIS.db import connect_to_db, db_url
+    from hermes.db import connect_to_db, db_url
     session = connect_to_db(db_url)
     yield session
     session.rollback()

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from marshmallow import EXCLUDE
+from prefect import get_run_logger, task
 from prefect.server.schemas.states import Failed
 from prefect.tasks import exponential_backoff
 from ramsis.datamodel import EInput, EStatus, Forecast, Project
@@ -11,12 +12,11 @@ from ramsis.io.sfm import (SFMWorkerIMessageSerializer,
                            SFMWorkerOMessageDeserializer)
 from sqlalchemy.orm.session import Session
 
-from prefect import get_run_logger, task
-from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
-from RAMSIS.clients.sfm import RemoteSeismicityWorkerHandle
-from RAMSIS.db import session_handler
-from RAMSIS.db_utils import get_forecast, get_model_run
-from RAMSIS.tasks.utils import fork_log
+from hermes.clients.datasources import FDSNWSDataSource, HYDWSDataSource
+from hermes.clients.sfm import RemoteSeismicityWorkerHandle
+from hermes.db import session_handler
+from hermes.db_utils import get_forecast, get_model_run
+from hermes.tasks.utils import fork_log
 
 datetime_format = '%Y-%m-%dT%H:%M:%S.%f'
 

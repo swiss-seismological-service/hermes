@@ -1,18 +1,19 @@
+import asyncio
+from datetime import datetime, timedelta
 from typing import List
+
+import typer
+from ramsis.datamodel import EStatus, Forecast
 from rich import print
 from rich.table import Table
-import asyncio
-import typer
-from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import defer
-from ramsis.datamodel import Forecast, EStatus
-from RAMSIS.db import db_url, session_handler
-from RAMSIS.cli.utils import flow_deployment_rerun_forecast, \
-    add_new_scheduled_run_rerun_forecast
-from RAMSIS.utils import reset_forecast
-from RAMSIS.flows.forecast import ramsis_flow
 
+from hermes.cli.utils import (add_new_scheduled_run_rerun_forecast,
+                              flow_deployment_rerun_forecast)
+from hermes.db import db_url, session_handler
+from hermes.flows.forecast import ramsis_flow
+from hermes.utils import reset_forecast
 
 app = typer.Typer()
 

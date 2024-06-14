@@ -1,20 +1,24 @@
-import typer
-import json
 import asyncio
+import json
+from os.path import join
+from pathlib import Path
+
+import typer
+from prefect.exceptions import ObjectNotFound
+from ramsis.datamodel import Project
+from ramsis.io.configuration import (MasterConfigurationSchema,
+                                     ProjectConfigurationSchema)
 from rich import print
 from rich.table import Table
-from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.exc import ProgrammingError
-from prefect.exceptions import ObjectNotFound
-from os.path import join
-from RAMSIS.cli import project, model, forecastseries, forecast as _forecast
-from RAMSIS.cli.utils import bulk_delete_flow_runs, limit_model_runs, \
-    remove_limit_model_runs, read_limit_model_runs, list_flow_runs_with_states
-from ramsis.datamodel import Project
-from RAMSIS.db import db_url, session_handler
-from ramsis.io.configuration import MasterConfigurationSchema, \
-    ProjectConfigurationSchema
+
+from hermes.cli import forecast as _forecast
+from hermes.cli import forecastseries, model, project
+from hermes.cli.utils import (bulk_delete_flow_runs, limit_model_runs,
+                              list_flow_runs_with_states,
+                              read_limit_model_runs, remove_limit_model_runs)
+from hermes.db import db_url, session_handler
 
 ramsis_app = typer.Typer()
 ramsis_app.add_typer(_forecast.app, name="forecast")

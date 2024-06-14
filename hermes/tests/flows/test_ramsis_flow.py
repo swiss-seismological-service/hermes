@@ -1,16 +1,15 @@
 # For giving traceback from typer results:
 # traceback.print_exception(*result.exc_info)
-from sqlalchemy import select
-from typer.testing import CliRunner
 import json
 import logging
+from os.path import abspath, dirname, join
 
-from ramsis.datamodel import ForecastSeries, Project, ModelConfig, \
-    Forecast
-from os.path import dirname, abspath, join
+from ramsis.datamodel import Forecast, ForecastSeries, ModelConfig, Project
+from sqlalchemy import select
+from typer.testing import CliRunner
 
-from RAMSIS.tests.utils import load_model, \
-    create_project, create_forecastseries, MockResponse
+from hermes.tests.utils import (MockResponse, create_forecastseries,
+                                create_project, load_model)
 
 logger = logging.getLogger(__name__)
 
@@ -108,8 +107,8 @@ class TestMultiForgeCase:
         assert len(forecastseries) == 1
         # -------------------
 
-        from RAMSIS.db import db_url
-        from RAMSIS.flows.forecast import scheduled_ramsis_flow
+        from hermes.db import db_url
+        from hermes.flows.forecast import scheduled_ramsis_flow
         if not use_data_ws:
             mock_get_data = mocker.patch('RAMSIS.clients.datasources.get')
             mock_get_data.side_effect = self.mocked_datasources_get
@@ -144,7 +143,7 @@ class TestETASCase:
     """ End to end test for the forecast flow with forge data.
     """
     #  URLs are same as in bedretto project config
-    FDSNWS_URL = "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=1.75" # noqa
+    FDSNWS_URL = "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=1.75"  # noqa
 
     model_requests_path = join(dirpath, 'model_requests')
 
@@ -211,8 +210,8 @@ class TestETASCase:
         assert len(forecastseries) == 1
         # -------------------
 
-        from RAMSIS.db import db_url
-        from RAMSIS.flows.forecast import scheduled_ramsis_flow
+        from hermes.db import db_url
+        from hermes.flows.forecast import scheduled_ramsis_flow
         if not use_data_ws:
             mock_get_data = mocker.patch('RAMSIS.clients.datasources.get')
             mock_get_data.side_effect = self.mocked_datasources_get

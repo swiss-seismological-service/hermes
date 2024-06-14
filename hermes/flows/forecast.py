@@ -1,16 +1,14 @@
 import time
-from prefect import flow, unmapped, get_run_logger
+
+from prefect import flow, get_run_logger, unmapped
 from ramsis.datamodel import EStatus
 
-from RAMSIS.tasks.utils import new_forecast_from_series, \
-    set_statuses
-from RAMSIS.tasks.forecast import \
-    update_fdsn, update_hyd, \
-    model_run_executor, poll_model_run, \
-    update_running, model_runs, \
-    check_model_run_not_complete, \
-    check_model_runs_running, \
-    forecast_status, waiting_task
+from hermes.tasks.forecast import (check_model_run_not_complete,
+                                   check_model_runs_running, forecast_status,
+                                   model_run_executor, model_runs,
+                                   poll_model_run, update_fdsn, update_hyd,
+                                   update_running, waiting_task)
+from hermes.tasks.utils import new_forecast_from_series, set_statuses
 
 
 @flow(name="polling_flow")

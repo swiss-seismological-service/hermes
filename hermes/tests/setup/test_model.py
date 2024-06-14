@@ -1,17 +1,17 @@
 # For giving traceback from typer results:
 # traceback.print_exception(*result.exc_info)
-from sqlalchemy import select
 import json
-from typer.testing import CliRunner
-from datetime import datetime
 import logging
+from datetime import datetime
+from os.path import abspath, dirname, join
 
-from ramsis.datamodel import ForecastSeries, Project, ModelConfig, \
-    Forecast, ModelRun
-from os.path import dirname, abspath, join
+from ramsis.datamodel import (Forecast, ForecastSeries, ModelConfig, ModelRun,
+                              Project)
+from sqlalchemy import select
+from typer.testing import CliRunner
 
-from RAMSIS.tests.utils import load_model, \
-    create_project, create_forecastseries, delete_model
+from hermes.tests.utils import (create_forecastseries, create_project,
+                                delete_model, load_model)
 
 logger = logging.getLogger(__name__)
 

@@ -1,17 +1,18 @@
+import json
+from datetime import datetime
+from pathlib import Path
+
 import typer
+from ramsis.datamodel import Project
+from ramsis.io.configuration import ProjectConfigurationSchema
 from rich import print
 from rich.pretty import pprint
 from rich.table import Table
-import json
-from datetime import datetime
 from sqlalchemy import select
-from ramsis.datamodel import Project
-from pathlib import Path
 from sqlalchemy.orm import defer
-from RAMSIS.clients.datasources import FDSNWSDataSource, HYDWSDataSource
-from RAMSIS.db import db_url, session_handler, init_db
-from ramsis.io.configuration import ProjectConfigurationSchema
 
+from hermes.clients.datasources import FDSNWSDataSource, HYDWSDataSource
+from hermes.db import db_url, init_db, session_handler
 
 app = typer.Typer()
 

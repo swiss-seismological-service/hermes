@@ -1,19 +1,16 @@
+from datetime import datetime
+
 import typer
 from prefect.client import get_client
-from datetime import datetime
-from prefect.deployments import run_deployment
 # from prefect.server.api.deployments import set_schedule_inactive \
 #     as deployment_set_schedule_inactive
-from prefect.deployments import Deployment
-from prefect.server.schemas.filters import FlowRunFilter, FlowRunFilterState, \
-    FlowRunFilterStateName
-
-
+from prefect.deployments import Deployment, run_deployment
+from prefect.server.schemas.filters import (DeploymentFilter, FlowFilter,
+                                            FlowRunFilter, FlowRunFilterState,
+                                            FlowRunFilterStateName)
 from prefect.server.schemas.states import Scheduled
-from prefect.server.schemas.filters import FlowFilter, DeploymentFilter
 
-
-from RAMSIS.db import app_settings
+from hermes.db import app_settings
 
 # All hyd, seismic data is expected in this projection
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'

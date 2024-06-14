@@ -1,19 +1,19 @@
-import os
-from os.path import abspath, dirname
-from os import getenv
-from dotenv import dotenv_values
+import contextlib
 import logging
-import ramsis.datamodel
-from ramsis.datamodel.base import ORMBase
+import os
 import pkgutil
+import sys
+from os import getenv
+from os.path import abspath, dirname
+
+import ramsis.datamodel
+from dotenv import dotenv_values
+from ramsis.datamodel.base import ORMBase
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-import contextlib
-import sys
 
-from RAMSIS.config import Settings
-
+from hermes.config import Settings
 
 logger = logging.getLogger(__name__)
 

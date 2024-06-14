@@ -1,16 +1,16 @@
-import typer
-from datetime import datetime
-from rich import print
-from rich.table import Table
-from marshmallow import EXCLUDE
-from RAMSIS.db import db_url, session_handler, init_db
-from ramsis.datamodel import ModelConfig
 import json
-from ramsis.io.configuration import ModelConfigurationSchema
+from datetime import datetime
 from pathlib import Path
 
+import typer
+from marshmallow import EXCLUDE
+from ramsis.datamodel import ModelConfig
+from ramsis.io.configuration import ModelConfigurationSchema
+from rich import print
+from rich.table import Table
 from sqlalchemy import select
 
+from hermes.db import db_url, init_db, session_handler
 
 app = typer.Typer()
 
