@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=70.0.0", "wheel>=0.43.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "HERMES"
+version = "0.1.0"
+description = "Hub for Earthquake foRecasts ManagEment and Scheduling "
+readme = "README.md"
+authors = [
+    { name = "Laura Sarson" },
+    { name = "Nicolas Schmid", email = "nicolas.schmid@sed.ethz.ch" },
+]
+license = { file = "LICENSE" }
+
+dependencies = [
+    "prefect",
+    "ramsis.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+
+# [project.scripts]
+# hermes = "RAMSIS.cli:main"
