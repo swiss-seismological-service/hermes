@@ -1,4 +1,0 @@
-recursive-include RAMSIS/ui/views *
-recursive-include resources *
-recursive-include config *
-include LICENSE Makefile
