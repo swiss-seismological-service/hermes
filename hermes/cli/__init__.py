@@ -20,14 +20,14 @@ from hermes.cli.utils import (bulk_delete_flow_runs, limit_model_runs,
                               read_limit_model_runs, remove_limit_model_runs)
 from hermes.db import db_url, session_handler
 
-ramsis_app = typer.Typer()
-ramsis_app.add_typer(_forecast.app, name="forecast")
-ramsis_app.add_typer(forecastseries.app, name="forecastseries")
-ramsis_app.add_typer(model.app, name="model")
-ramsis_app.add_typer(project.app, name="project")
+hermes_app = typer.Typer()
+hermes_app.add_typer(_forecast.app, name="forecast")
+hermes_app.add_typer(forecastseries.app, name="forecastseries")
+hermes_app.add_typer(model.app, name="model")
+hermes_app.add_typer(project.app, name="project")
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def list_scheduled_forecasts():
     runs = asyncio.run(list_flow_runs_with_states(["Scheduled"]))
     if not runs:
@@ -47,12 +47,12 @@ def list_scheduled_forecasts():
         print(table)
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def delete_scheduled_flow_runs():
     asyncio.run(bulk_delete_flow_runs(states=["Scheduled"]))
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def delete_incomplete_flow_runs():
     # all states except for Scheduled and Completed
     states = ['Late',
@@ -67,7 +67,7 @@ def delete_incomplete_flow_runs():
     asyncio.run(bulk_delete_flow_runs(states=states))
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def delete_all_flow_runs():
     # all states
     states = ['Scheduled',
@@ -84,7 +84,7 @@ def delete_all_flow_runs():
     asyncio.run(bulk_delete_flow_runs(states=states))
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def create_all(
         directory: Path = typer.Option(
             ...,
@@ -165,7 +165,7 @@ def create_all(
     print("Complete")
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def update_model_run_concurrency(
         concurrency_limit: int,
         help=(
@@ -177,7 +177,7 @@ def update_model_run_concurrency(
     asyncio.run(limit_model_runs(concurrency_limit))
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def remove_model_run_concurrency(
         help=(
         "Remove concurrency limit for the number of model runs "
@@ -185,7 +185,7 @@ def remove_model_run_concurrency(
     asyncio.run(remove_limit_model_runs())
 
 
-@ramsis_app.command()
+@hermes_app.command()
 def read_model_run_concurrency(
         help=(
         "Return concurrency limit for the number of model runs "
@@ -198,4 +198,4 @@ def read_model_run_concurrency(
 
 
 def main():
-    ramsis_app()
+    hermes_app()
