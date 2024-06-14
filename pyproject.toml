@@ -2,6 +2,9 @@
 requires = ["setuptools>=70.0.0", "wheel>=0.43.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = ["hermes"]
+
 [project]
 name = "HERMES"
 version = "0.1.0"
@@ -14,14 +17,20 @@ authors = [
 license = { file = "LICENSE" }
 
 dependencies = [
+    "marshmallow",
     "prefect",
+    "python-dateutil",
+    "python-dotenv",
     "ramsis.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git",
+    "requests",
+    "rich",
+    "sqlalchemy",
+    "typer",
 ]
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = ["pytest"]
 
-
-# [project.scripts]
-# hermes = "RAMSIS.cli:main"
+[project.scripts]
+hermes = "hermes.cli:main"
