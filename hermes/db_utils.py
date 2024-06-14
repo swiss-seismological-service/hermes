@@ -1,6 +1,5 @@
-from ramsis.datamodel import Forecast, \
-    ForecastSeries, ModelRun
 from prefect import get_run_logger
+from ramsis.datamodel import Forecast, ForecastSeries, ModelRun
 from sqlalchemy import select
 
 

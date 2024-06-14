@@ -1,10 +1,12 @@
 # Copyright 2019, ETH Zurich - Swiss Seismological Service SED
 
 import collections
-import operator
 import logging
-import yaml
+import operator
 from functools import reduce
+
+import yaml
+
 """
 RT-RAMSIS settings and defaults.
 """
