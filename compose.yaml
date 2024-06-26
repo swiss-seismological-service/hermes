@@ -1,0 +1,24 @@
+services:
+  prefect-server:
+    image: prefecthq/prefect:3.0.0rc9-python3.12
+    command: prefect server start
+    ports:
+      - "4200:4200"
+    environment:
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_UI_API_URL=http://localhost:4200/api
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:yourTopSecretPassword@postgres:5432/prefect
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=yourTopSecretPassword
+      - POSTGRES_DB=prefect
+    volumes:
+      - prefectdb:/var/lib/postgresql/data
+
+volumes:
+  prefectdb:
