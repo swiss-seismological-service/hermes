@@ -1,6 +1,7 @@
 ## Derived Files
 
 # Python
+_old/
 *.py[cod]
 *.egg-info
 .eggs/
