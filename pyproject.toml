@@ -17,16 +17,15 @@ authors = [
 license = { file = "LICENSE" }
 
 dependencies = [
-    "marshmallow",
-    "prefect",
-    "python-dateutil",
+    "prefect>=3.0.0rc9",
+    "pydantic",
     "python-dotenv",
     "ramsis.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git",
     "requests",
-    "rich",
     "sqlalchemy",
     "typer",
 ]
+
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
