@@ -7,18 +7,34 @@ services:
     environment:
       - PREFECT_SERVER_API_HOST=0.0.0.0
       - PREFECT_UI_API_URL=http://localhost:4200/api
-      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:yourTopSecretPassword@postgres:5432/prefect
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:password@prefect-postgres:5433/prefect
     depends_on:
-      - postgres
+      - prefect-postgres
 
-  postgres:
+  prefect-postgres:
     image: postgres:latest
+    ports:
+      - "5433:5433"
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=yourTopSecretPassword
+      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=prefect
+      - PGPORT=5433
     volumes:
       - prefectdb:/var/lib/postgresql/data
 
+  hermes-postgres:
+    image: postgres:latest
+    ports:
+      - "5434:5434"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=hermes
+      - PGPORT=5434
+    volumes:
+      - hermesdb:/var/lib/postgresql/data
+
 volumes:
   prefectdb:
+  hermesdb:
