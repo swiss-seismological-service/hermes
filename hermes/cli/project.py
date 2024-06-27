@@ -1,24 +1,31 @@
-from pathlib import Path
-
 import typer
+
+from hermes.db import Session
+from hermes.repositories import ProjectRepository
+from hermes.schemas import Project
 
 app = typer.Typer()
 
 
 @app.command()
 def create(
-        config: Path = typer.Option(
-        ...,
-        exists=True,
-        readable=True,
-        help="Path to json project config."),
-        catalog_data: typer.FileText = typer.Option(
-        None, help="Path of file containing the "
-        "catalog for forecasts without using fdsnws, e.g. for replays."),
-        well_data: typer.FileText = typer.Option(
-        None, help="Path of file containing inj data for replays ")):
+        # config: Path = typer.Option(
+        # ...,
+        # exists=True,
+        # readable=True,
+        # help="Path to json project config."),
+        # catalog_data: typer.FileText = typer.Option(
+        # None, help="Path of file containing the "
+        # "catalog for forecasts without using fdsnws, e.g. for replays."),
+        # well_data: typer.FileText = typer.Option(
+        # None, help="Path of file containing inj data for replays ")
+):
 
-    pass
+    project = Project(name="test")
+    with Session() as session:
+        project_in = ProjectRepository.create(session, project)
+        project_out = ProjectRepository.get_one_by_id(session, project_in.oid)
+        print(type(project_out))
     # success = init_db(db_url)
 
     # if success:
@@ -53,7 +60,8 @@ def create(
     #                 encoding='utf-8')
     #         if well_data:
     #             project.injectionwell = json.dumps(
-    #                 [json.loads(well_data.read())], ensure_ascii=False).encode(
+    #                 [json.loads(well_data.read())],
+    #                 ensure_ascii=False).encode(
     #                 encoding='utf-8')
     #         session.commit()
 
