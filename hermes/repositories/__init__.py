@@ -28,6 +28,12 @@ def repository_factory(model: Model, orm_model: ORMBase):
             result = session.execute(q).unique().scalar_one_or_none()
             return cls.model.model_validate(result) if result else None
 
+        @classmethod
+        def get_all(cls, session: Session) -> list[Model]:
+            q = select(cls.orm_model)
+            result = session.execute(q).scalars().all()
+            return [cls.model.model_validate(row) for row in result]
+
     RepositoryBase.model = model
     RepositoryBase.orm_model = orm_model
 

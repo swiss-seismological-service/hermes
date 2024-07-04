@@ -1,10 +1,29 @@
 import typer
+from rich.console import Console
+from rich.table import Table
 
 from hermes.db import Session
 from hermes.repositories import ProjectRepository
 from hermes.schemas import Project
 
 app = typer.Typer()
+console = Console()
+
+
+@app.command()
+def list(help="Outputs list of projects"):
+    with Session() as session:
+        projects = ProjectRepository.get_all(session)
+    for project in projects:
+        table = Table(show_footer=False,
+                      title=f"Project {project.name}",
+                      title_justify="left")
+        table.add_column("attribute")
+        table.add_column("value")
+        for attr in ['oid', 'name', 'starttime']:
+            table.add_row(attr, str(getattr(
+                project, attr)))
+    console.print(table)
 
 
 @app.command()
