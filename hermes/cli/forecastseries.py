@@ -1,7 +1,7 @@
 import typer
 
 from hermes.db import Session
-from hermes.repositories import ForecastSeriesRepository
+from hermes.repositories.forecastseries import ForecastSeriesRepository
 from hermes.schemas import ForecastSeries
 
 app = typer.Typer()
@@ -10,7 +10,7 @@ app = typer.Typer()
 @app.command()
 def create():
     forecast_series = ForecastSeries(
-        name="test", project_oid="03cfee0f-db5e-4b14-9bda-1e5efede78fa")
+        name="test", project_oid="0cc02b40-8255-4aba-ad31-f8ba11b353ec")
 
     with Session() as session:
         forecast_series_in = ForecastSeriesRepository.create(
