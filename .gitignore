@@ -2,6 +2,7 @@
 
 # Python
 _old/
+project_files/
 *.py[cod]
 *.egg-info
 .eggs/

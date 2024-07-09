@@ -18,6 +18,7 @@ license = { file = "LICENSE" }
 
 dependencies = [
     "prefect>=3.0.0rc9",
+    "psycopg2",
     "pydantic",
     "python-dotenv",
     "ramsis.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git@hermes",
