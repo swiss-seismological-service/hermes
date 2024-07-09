@@ -3,8 +3,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from hermes.datamodel import ForecastSeriesTable, ORMBase, ProjectTable
-from hermes.schemas import ForecastSeries, Model, Project
+from hermes.datamodel import ORMBase
+from hermes.schemas import Model
 
 
 def repository_factory(model: Model, orm_model: ORMBase):
@@ -38,8 +38,3 @@ def repository_factory(model: Model, orm_model: ORMBase):
     RepositoryBase.orm_model = orm_model
 
     return RepositoryBase
-
-
-ProjectRepository = repository_factory(Project, ProjectTable)
-ForecastSeriesRepository = repository_factory(
-    ForecastSeries, ForecastSeriesTable)
