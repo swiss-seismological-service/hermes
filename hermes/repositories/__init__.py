@@ -22,7 +22,7 @@ def repository_factory(model: Model, orm_model: ORMBase):
             return cls.model.model_validate(db_model)
 
         @classmethod
-        def get_one_by_id(cls, session: Session, oid: str | UUID) -> Model:
+        def get_by_id(cls, session: Session, oid: str | UUID) -> Model:
             q = select(cls.orm_model).where(
                 getattr(cls.orm_model, 'oid') == oid)
             result = session.execute(q).unique().scalar_one_or_none()
