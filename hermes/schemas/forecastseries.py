@@ -24,3 +24,5 @@ class ForecastSeries(CreationInfoMixin):
     bounding_polygon: str | None = None
     altitude_min: float | None = None
     altitude_max: float | None = None
+
+    tags: list[str] = []
