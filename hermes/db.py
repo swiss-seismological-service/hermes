@@ -24,12 +24,11 @@ engine = create_engine(settings.SQLALCHEMY_DATABASE_URL)
 Session = sessionmaker(engine, expire_on_commit=True)
 
 
-async def _create_db():
+def _create_tables():
     ORMBase.metadata.create_all(engine)
 
 
-async def _drop_db():
-    """Drops all database Tables but leaves the DB itself in place"""
+def _drop_tables():
     m = MetaData()
     m.reflect(engine)
     m.drop_all(engine)
