@@ -1,8 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from hermes.datamodel import EResultType
-from hermes.schemas.base import Model
+from hermes.schemas.base import EResultType, Model
 
 
 class ModelConfig(Model):

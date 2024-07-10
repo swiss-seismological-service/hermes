@@ -8,9 +8,8 @@ import numpy as np
 from pydantic import field_validator
 from shapely import Polygon, from_geojson, from_wkt
 
-from hermes.datamodel import EStatus
 from hermes.repositories.shapes import PolygonType, polygon_converter
-from hermes.schemas.base import CreationInfoMixin
+from hermes.schemas.base import CreationInfoMixin, EStatus
 
 
 class ForecastSeries(CreationInfoMixin):

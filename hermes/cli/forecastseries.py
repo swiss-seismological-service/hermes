@@ -7,11 +7,10 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.cli.utils import row_table
-from hermes.datamodel import EStatus
 from hermes.db import Session
 from hermes.repositories.forecastseries import ForecastSeriesRepository
 from hermes.repositories.project import ProjectRepository
-from hermes.schemas import ForecastSeries
+from hermes.schemas import EStatus, ForecastSeries
 
 app = typer.Typer()
 console = Console()
@@ -25,7 +24,7 @@ def list():
         console.print("No ForecastSeries found")
         return
 
-    table = row_table(fseries, ['oid', 'name', 'forecast_starttime'])
+    table = row_table(fseries, ['oid', 'name', 'forecast_starttime', 'status'])
 
     console.print(table)
 

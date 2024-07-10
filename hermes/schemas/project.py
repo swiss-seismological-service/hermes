@@ -1,8 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from hermes.datamodel.project import EInput
-from hermes.schemas.base import CreationInfoMixin
+from hermes.schemas.base import CreationInfoMixin, EInput
 
 
 class Project(CreationInfoMixin):
