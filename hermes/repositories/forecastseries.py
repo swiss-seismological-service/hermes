@@ -23,7 +23,8 @@ class ForecastSeriesRepository(repository_factory(
                 tags.append(TagTable(name=tag))
 
         db_model = ForecastSeriesTable(
-            _tags=tags, **data.model_dump(exclude=['tags']))
+            _tags=tags, **data.model_dump(exclude_unset=True,
+                                          exclude=['tags']))
         session.add(db_model)
         session.commit()
         session.refresh(db_model)

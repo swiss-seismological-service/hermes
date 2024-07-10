@@ -1,19 +1,19 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from hermes.datamodel import EStatus
 from hermes.schemas.base import CreationInfoMixin
 
 
 class ForecastSeries(CreationInfoMixin):
-    oid: UUID = uuid4()
-    project_oid: UUID
-    name: str
+    oid: UUID | None = None
+    project_oid: UUID | None = None
+    name: str | None = None
 
     active: bool = True
     status: EStatus = EStatus.PENDING
 
-    forecast_starttime: datetime
+    forecast_starttime: datetime | None = None
     forecast_endtime: datetime | None = None
     forecast_interval: int | None = None
     forecast_duration: int | None = None

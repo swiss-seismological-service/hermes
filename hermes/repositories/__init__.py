@@ -15,7 +15,7 @@ def repository_factory(model: Model, orm_model: ORMBase):
 
         @classmethod
         def create(cls, session: Session, data: Model) -> Model:
-            db_model = cls.orm_model(**data.model_dump())
+            db_model = cls.orm_model(**data.model_dump(exclude_unset=True))
             session.add(db_model)
             session.commit()
             session.refresh(db_model)
