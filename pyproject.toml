@@ -23,6 +23,7 @@ dependencies = [
     "python-dotenv",
     "ramsis.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git@hermes",
     "requests",
+    "seismostats @ git+https://github.com/swiss-seismological-service/SeismoStats.git",
     "sqlalchemy",
     "typer",
 ]
