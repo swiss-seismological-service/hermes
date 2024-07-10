@@ -3,7 +3,6 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
-from sqlalchemy.exc import IntegrityError
 from typing_extensions import Annotated
 
 from hermes.cli.utils import row_table
@@ -43,12 +42,6 @@ def create(
 
     project = Project(name=name, **project_config_dict)
 
-    try:
-        with Session() as session:
-            project_out = ProjectRepository.create(session, project)
-            console.print(f'Successfully created new Project {project_out}.')
-
-    except IntegrityError as e:
-        print('Error encountered, probably due to duplicate project name.')
-        console.print(e.orig)
-        raise typer.Exit()
+    with Session() as session:
+        project_out = ProjectRepository.create(session, project)
+    console.print(f'Successfully created new Project {project_out.name}.')

@@ -62,5 +62,5 @@ def create(name: Annotated[str,
     with Session() as session:
         forecast_series_out = ForecastSeriesRepository.create(
             session, forecast_series)
-
-    print(forecast_series_out)
+    console.print(
+        f'Successfully created new ForecastSeries {forecast_series_out.name}.')
