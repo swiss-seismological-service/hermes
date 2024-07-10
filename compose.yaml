@@ -24,14 +24,10 @@ services:
       - prefectdb:/var/lib/postgresql/data
 
   hermes-postgres:
-    image: postgres:latest
+    image: kartoza/postgis:latest
     ports:
-      - "5434:5434"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=hermes
-      - PGPORT=5434
+      - "5434:5432"
+    env_file: .env
     volumes:
       - hermesdb:/var/lib/postgresql/data
 

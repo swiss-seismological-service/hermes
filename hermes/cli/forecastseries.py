@@ -7,6 +7,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.cli.utils import row_table
+from hermes.datamodel import EStatus
 from hermes.db import Session
 from hermes.repositories.forecastseries import ForecastSeriesRepository
 from hermes.repositories.project import ProjectRepository
@@ -17,7 +18,7 @@ console = Console()
 
 
 @app.command(help="Outputs list of ForecastSeries")
-def list(help="List all ForecastSeries."):
+def list():
     with Session() as session:
         fseries = ForecastSeriesRepository.get_all(session)
     if not fseries:
@@ -56,6 +57,8 @@ def create(name: Annotated[str,
         raise typer.Exit()
 
     forecast_series = ForecastSeries(name=name,
+                                     active=True,
+                                     status=EStatus.PENDING,
                                      project_oid=project_oid,
                                      **fseries_config_dict)
 

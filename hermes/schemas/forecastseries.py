@@ -1,7 +1,15 @@
+import json
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 from uuid import UUID
 
+import numpy as np
+from pydantic import field_validator
+from shapely import Polygon, from_geojson, from_wkt
+
 from hermes.datamodel import EStatus
+from hermes.repositories.shapes import PolygonType, polygon_converter
 from hermes.schemas.base import CreationInfoMixin
 
 
@@ -21,8 +29,44 @@ class ForecastSeries(CreationInfoMixin):
     observation_starttime: datetime | None = None
     observation_endtime: datetime | None = None
 
-    bounding_polygon: str | None = None
+    bounding_polygon: Polygon | None = None
     altitude_min: float | None = None
     altitude_max: float | None = None
 
     tags: list[str] = []
+
+    @field_validator('bounding_polygon', mode='before')
+    @classmethod
+    def validate_bounding_polygon(cls, value: Any):
+        if isinstance(value, dict):
+            value = json.dumps(value)
+
+        if isinstance(value, PolygonType):
+            return polygon_converter(value)
+
+        if isinstance(value, str):
+            if Path(value).exists():
+                try:
+                    if value.endswith('.npy'):
+                        fl = np.load(value, mmap_mode='r')
+                        return Polygon(fl)
+                    if value.endswith('.npz'):
+                        with np.load(value, mmap_mode='r') as arr:
+                            if hasattr(arr, 'files'):
+                                data = arr[arr.files[0]]
+                        return Polygon(data)
+                    if value.endswith('.json'):
+                        with open(value, 'r') as f:
+                            data = json.load(f)
+                        return from_geojson(json.dumps(data))
+                except Exception:
+                    pass
+            try:
+                return from_wkt(value)
+            except Exception:
+                try:
+                    return from_geojson(value)
+                except Exception:
+                    pass
+
+        return value
