@@ -17,7 +17,6 @@ class ForecastSeries(CreationInfoMixin):
     project_oid: UUID | None = None
     name: str | None = None
 
-    active: bool = True
     status: EStatus = EStatus.PENDING
 
     forecast_starttime: datetime | None = None

@@ -49,14 +49,15 @@ def create(name: Annotated[str,
         project_oid = uuid.UUID(project, version=4)
     except ValueError:
         with Session() as session:
-            project_oid = ProjectRepository.get_by_name(session, project).oid
+            project_db = ProjectRepository.get_by_name(session, project)
 
-    if not project_oid:
-        console.print(f'Project {project} not found.')
-        raise typer.Exit()
+        if not project_db:
+            console.print(f'Project "{project}" not found.')
+            raise typer.Exit()
+
+        project_oid = project_db.oid
 
     forecast_series = ForecastSeries(name=name,
-                                     active=True,
                                      status=EStatus.PENDING,
                                      project_oid=project_oid,
                                      **fseries_config_dict)
