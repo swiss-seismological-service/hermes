@@ -17,6 +17,7 @@ def create_extensions(engine):
         for extension in EXTENSIONS:
             conn.execute(
                 text(f'CREATE EXTENSION IF NOT EXISTS "{extension}"'))
+            conn.commit()
 
 
 def create_engine(url: URL, **kwargs) -> Engine:
