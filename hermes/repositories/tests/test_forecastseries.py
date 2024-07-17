@@ -5,6 +5,7 @@ from shapely.geometry import Polygon
 from sqlalchemy import text
 
 from hermes.repositories.forecastseries import ForecastSeriesRepository
+from hermes.repositories.project import ProjectRepository
 from hermes.repositories.tests.conftest import MODULE_LOCATION
 from hermes.schemas.forecastseries import ForecastSeries
 
@@ -31,3 +32,9 @@ class TestForecastseries:
         assert "INDUCED" in tags
 
         assert isinstance(forecastseries.bounding_polygon, Polygon)
+
+    def test_delete(self, session, forecastseries):
+        ProjectRepository.delete(session, forecastseries.project_oid)
+
+        assert ForecastSeriesRepository.get_by_id(
+            session, forecastseries.oid) is None
