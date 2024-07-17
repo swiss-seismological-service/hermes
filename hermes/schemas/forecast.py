@@ -8,7 +8,7 @@ class Forecast(CreationInfoMixin):
     oid: UUID | None = None
     name: str | None = None
 
-    status: EStatus = EStatus.PENDING
+    status: EStatus | None = None
 
     starttime: datetime | None = None
     endtime: datetime | None = None
