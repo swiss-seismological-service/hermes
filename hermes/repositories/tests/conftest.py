@@ -1,3 +1,6 @@
+import os
+from datetime import datetime
+
 import pytest
 from sqlalchemy import Connection, event, text
 from sqlalchemy.engine import URL
@@ -7,8 +10,15 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from config import get_settings
 from hermes.datamodel import ORMBase
 from hermes.db import create_engine, create_extensions
+from hermes.repositories.forecastseries import ForecastSeriesRepository
+from hermes.repositories.project import ProjectRepository
+from hermes.schemas.base import EStatus
+from hermes.schemas.forecastseries import ForecastSeries
+from hermes.schemas.project import Project
 
 settings = get_settings()
+MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'data')
 
 
 def delete_database(connection: Connection, db_name: str):
@@ -86,7 +96,7 @@ def setup_db(connection, request: pytest.FixtureRequest) -> None:
     return None
 
 
-@ pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def session(connection, request: pytest.FixtureRequest):
     transaction = connection.begin()
     session = scoped_session(sessionmaker(
@@ -103,7 +113,29 @@ def session(connection, request: pytest.FixtureRequest):
 
     def teardown():
         session.remove()
-        transaction.rollback()
+        if transaction.is_active:
+            transaction.rollback()
 
     request.addfinalizer(teardown)
     return session
+
+
+@pytest.fixture()
+def project(session):
+    project = Project(name='test_project', starttime=datetime(2021, 1, 1))
+    project = ProjectRepository.create(session, project)
+
+    return project
+
+
+@pytest.fixture()
+def forecastseries(session, project):
+    forecastseries = ForecastSeries(
+        name='test_forecastseries',
+        forecast_starttime=datetime(2021, 1, 1),
+        project_oid=project.oid,
+        status=EStatus.PENDING)
+
+    forecastseries = ForecastSeriesRepository.create(session, forecastseries)
+
+    return forecastseries
