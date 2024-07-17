@@ -16,7 +16,7 @@ class ForecastSeries(CreationInfoMixin):
     oid: UUID | None = None
     project_oid: UUID | None = None
     name: str | None = None
-
+    description: str | None = None
     status: EStatus = EStatus.PENDING
 
     forecast_starttime: datetime | None = None
@@ -28,8 +28,8 @@ class ForecastSeries(CreationInfoMixin):
     observation_endtime: datetime | None = None
 
     bounding_polygon: Polygon | None = None
-    altitude_min: float | None = None
-    altitude_max: float | None = None
+    depth_min: float | None = None
+    depth_max: float | None = None
 
     tags: list[str] = []
 
@@ -57,14 +57,14 @@ class ForecastSeries(CreationInfoMixin):
                         with open(value, 'r') as f:
                             data = json.load(f)
                         return from_geojson(json.dumps(data))
-                except Exception:
-                    pass
+                except Exception as e:
+                    raise e
             try:
                 return from_wkt(value)
             except Exception:
                 try:
                     return from_geojson(value)
-                except Exception:
-                    pass
+                except Exception as e:
+                    raise e
 
         return value
