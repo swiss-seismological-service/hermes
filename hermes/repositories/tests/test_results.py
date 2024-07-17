@@ -10,9 +10,10 @@ from hermes.repositories.forecastseries import ForecastSeriesRepository
 from hermes.repositories.modelrun import ModelRunRepository
 from hermes.repositories.results import (GridCellRepository,
                                          ModelResultRepository,
+                                         SeismicEventRepository,
                                          TimeStepRepository)
 from hermes.schemas import (Forecast, ForecastSeries, GridCell, ModelResult,
-                            ModelRun, TimeStep)
+                            ModelRun, SeismicEvent, TimeStep)
 from hermes.schemas.base import EResultType
 
 
@@ -156,3 +157,13 @@ class TestModelResult:
         ForecastSeriesRepository.delete(session, self.forecastseries_oid)
         assert GridCellRepository.get_by_id(session, self.cell.oid) is None
         assert TimeStepRepository.get_by_id(session, self.timestep.oid) is None
+
+
+class TestSeismicEvent:
+    def test_create(self, session):
+        event = SeismicEvent(longitude_value=1,
+                             latitude=2,
+                             depth=3,
+                             magnitude=4,
+                             datetime=datetime(2021, 1, 1))
+        pass

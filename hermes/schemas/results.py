@@ -7,6 +7,7 @@ from shapely import Polygon
 
 from hermes.repositories.shapes import PolygonType, polygon_converter
 from hermes.schemas.base import EResultType, Model
+from hermes.schemas.realvalues import real_value_mixin
 
 
 class ModelResult(Model):
@@ -39,5 +40,10 @@ class GridCell(Model):
         return value
 
 
-class SeismicEvent(Model):
-    pass
+class SeismicEvent(real_value_mixin('longitude', float),
+                   real_value_mixin('latitude', float),
+                   real_value_mixin('depth', float),
+                   real_value_mixin('magnitude', float),
+                   real_value_mixin('datetime', datetime)
+                   ):
+    modelresult_oid: UUID | None = None

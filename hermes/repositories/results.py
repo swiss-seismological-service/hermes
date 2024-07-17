@@ -1,9 +1,10 @@
 from geoalchemy2.shape import from_shape
 from sqlalchemy.orm import Session
 
-from hermes.datamodel import GridCellTable, ModelResultTable, TimeStepTable
+from hermes.datamodel import (GridCellTable, ModelResultTable,
+                              SeismicEventTable, TimeStepTable)
 from hermes.repositories import repository_factory
-from hermes.schemas import ModelResult
+from hermes.schemas import ModelResult, SeismicEvent
 from hermes.schemas.results import GridCell
 
 
@@ -40,4 +41,10 @@ class GridCellRepository(
 class TimeStepRepository(
     repository_factory(GridCell,
                        TimeStepTable)):
+    pass
+
+
+class SeismicEventRepository(
+    repository_factory(SeismicEvent,
+                       SeismicEventTable)):
     pass
