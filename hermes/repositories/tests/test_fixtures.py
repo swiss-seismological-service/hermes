@@ -6,16 +6,17 @@ from hermes.repositories.project import ProjectRepository
 from hermes.schemas.project import Project
 
 
-class TestProject:
+class TestFixtures:
 
-    def test_create(self, session, connection):
-        project = Project(name='test_project', starttime=datetime.now())
-        ProjectRepository.create(session, project)
+    def test_fixture_forecastseries(self, connection, forecastseries):
         project_db = connection.execute(text('SELECT * FROM project'))
         assert len(project_db.all()) == 1
+        forecastseries_db = connection.execute(
+            text('SELECT * FROM forecastseries'))
+        assert len(forecastseries_db.all()) == 1
 
-    def test_create2(self, session, connection):
-        project = Project(name='test_project', starttime=datetime.now())
+    def test_fixture_rollback(self, session, connection):
+        project = Project(name='test_project2', starttime=datetime.now())
         ProjectRepository.create(session, project)
         project_db = connection.execute(text('SELECT * FROM project'))
         assert len(project_db.all()) == 1
