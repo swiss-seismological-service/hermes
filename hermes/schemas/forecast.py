@@ -1,7 +1,8 @@
 from datetime import datetime
 from uuid import UUID
 
-from hermes.schemas.base import CreationInfoMixin, EStatus
+from hermes.schemas.base import EStatus
+from hermes.schemas.mixins import CreationInfoMixin
 
 
 class Forecast(CreationInfoMixin):

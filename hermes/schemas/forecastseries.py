@@ -9,7 +9,8 @@ from pydantic import field_validator
 from shapely import Polygon, from_geojson, from_wkt
 
 from hermes.repositories.shapes import PolygonType, polygon_converter
-from hermes.schemas.base import CreationInfoMixin, EStatus
+from hermes.schemas.base import EStatus
+from hermes.schemas.mixins import CreationInfoMixin
 
 
 class ForecastSeries(CreationInfoMixin):
