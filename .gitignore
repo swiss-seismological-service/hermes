@@ -9,6 +9,7 @@ project_files/
 .eggs/
 .pytest_cache/
 .tox
+.vscode
 
 # Other
 images_rc.py
