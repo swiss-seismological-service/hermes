@@ -5,9 +5,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Model(BaseModel):
-    model_config = ConfigDict(extra='allow',
-                              arbitrary_types_allowed=True,
-                              from_attributes=True)
+    model_config = ConfigDict(
+        extra='forbid',
+        arbitrary_types_allowed=True,
+        from_attributes=True)
 
 
 class CreationInfoMixin(Model):

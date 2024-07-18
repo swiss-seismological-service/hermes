@@ -162,8 +162,10 @@ class TestModelResult:
 class TestSeismicEvent:
     def test_create(self, session):
         event = SeismicEvent(longitude_value=1,
-                             latitude=2,
-                             depth=3,
-                             magnitude=4,
-                             datetime=datetime(2021, 1, 1))
-        pass
+                             latitude_value=2,
+                             depth_value=3,
+                             magnitude_value=4,
+                             datetime_value=datetime(2021, 1, 1))
+
+        event = SeismicEventRepository.create(session, event)
+        assert event.oid is not None
