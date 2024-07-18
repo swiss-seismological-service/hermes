@@ -44,7 +44,7 @@ class SeismicEvent(real_value_mixin('longitude', float),
                    real_value_mixin('latitude', float),
                    real_value_mixin('depth', float),
                    real_value_mixin('magnitude', float),
-                   real_value_mixin('datetime', datetime)
+                   real_value_mixin('time', datetime)
                    ):
     oid: UUID | None = None
     modelresult_oid: UUID | None = None

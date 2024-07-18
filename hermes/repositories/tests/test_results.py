@@ -165,7 +165,7 @@ class TestSeismicEvent:
                              latitude_value=2,
                              depth_value=3,
                              magnitude_value=4,
-                             datetime_value=datetime(2021, 1, 1))
+                             time_value=datetime(2021, 1, 1))
 
         event = SeismicEventRepository.create(session, event)
         assert event.oid is not None
