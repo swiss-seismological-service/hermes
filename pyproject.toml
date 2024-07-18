@@ -17,6 +17,7 @@ authors = [
 license = { file = "LICENSE" }
 
 dependencies = [
+    "geoalchemy2",
     "prefect>=3.0.0rc9",
     "psycopg2",
     "pydantic",

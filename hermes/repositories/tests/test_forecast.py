@@ -17,6 +17,6 @@ class TestForecast:
         forecast = ForecastRepository.create(session, forecast)
         assert forecast.oid is not None
 
-        ProjectRepository.delete(session, forecast.project_oid)
+        ProjectRepository.delete(session, forecastseries.project_oid)
 
         assert ForecastRepository.get_by_id(session, forecast.oid) is None
