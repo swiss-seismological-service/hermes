@@ -1,4 +1,5 @@
 
+import pandas as pd
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.orm import sessionmaker
@@ -48,3 +49,10 @@ def _drop_tables():
         table for table in m.sorted_tables if table.name not in
         ['spatial_ref_sys']]
     m.drop_all(engine, tables=tables)
+
+
+def pandas_read_sql(stmt, session):
+    with session.connection() as conn:
+        df = pd.read_sql_query(stmt, conn)
+
+    return df

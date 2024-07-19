@@ -191,3 +191,19 @@ class TestSeismicEvent:
 
         assert count is not None
         assert count[0] == catalog_length
+
+    def test_get_catalog(self, session):
+        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
+        catalog = Catalog(pd.read_parquet(catalog_path))
+
+        modelresult = ModelResult(result_type=EResultType.CATALOG)
+        modelresult_oid = ModelResultRepository.create(
+            session, modelresult).oid
+
+        SeismicEventRepository.create_from_catalog(
+            session, catalog, modelresult_oid)
+
+        catalog2 = SeismicEventRepository.get_catalog(session, modelresult_oid)
+
+        assert len(catalog) == len(catalog2)
+        assert isinstance(catalog2, Catalog)

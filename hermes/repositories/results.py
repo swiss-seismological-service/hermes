@@ -2,11 +2,12 @@ from uuid import UUID
 
 from geoalchemy2.shape import from_shape
 from seismostats import Catalog
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from hermes.datamodel import (GridCellTable, ModelResultTable,
                               SeismicEventTable, TimeStepTable)
+from hermes.db import pandas_read_sql
 from hermes.io.catalog import serialize_seismostats_catalog
 from hermes.repositories import repository_factory
 from hermes.schemas import ModelResult, SeismicEvent
@@ -64,3 +65,12 @@ class SeismicEventRepository(
                         .values(modelresult_oid=modelresult_oid),
                         events)
         session.commit()
+
+    @classmethod
+    def get_catalog(cls, session: Session, modelresult_oid: UUID) -> Catalog:
+        q = select(SeismicEventTable).where(
+            SeismicEventTable.modelresult_oid == modelresult_oid)
+
+        df = pandas_read_sql(q, session)
+
+        return Catalog(df)
