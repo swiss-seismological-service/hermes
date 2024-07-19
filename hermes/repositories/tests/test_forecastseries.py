@@ -6,8 +6,10 @@ from sqlalchemy import text
 
 from hermes.repositories.forecastseries import ForecastSeriesRepository
 from hermes.repositories.project import ProjectRepository
-from hermes.repositories.tests.conftest import MODULE_LOCATION
 from hermes.schemas.forecastseries import ForecastSeries
+
+MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'data')
 
 
 class TestForecastseries:

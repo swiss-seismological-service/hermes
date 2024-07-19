@@ -1,8 +1,12 @@
+import os
 import uuid
 from datetime import datetime
 
+import pandas as pd
 import pytest
+from seismostats import Catalog
 from shapely import Polygon
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from hermes.repositories.forecast import ForecastRepository
@@ -15,6 +19,9 @@ from hermes.repositories.results import (GridCellRepository,
 from hermes.schemas import (Forecast, ForecastSeries, GridCell, ModelResult,
                             ModelRun, SeismicEvent, TimeStep)
 from hermes.schemas.base import EResultType
+
+MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'data')
 
 
 class TestGridCells:
@@ -169,3 +176,18 @@ class TestSeismicEvent:
 
         event = SeismicEventRepository.create(session, event)
         assert event.oid is not None
+
+    def test_create_from_catalog(self, session, connection):
+        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
+
+        catalog = Catalog(pd.read_parquet(catalog_path))
+
+        catalog_length = len(catalog)
+        SeismicEventRepository.create_from_catalog(session, catalog, None)
+
+        count = connection.execute(
+            text('SELECT COUNT(seismicevent.oid) FROM seismicevent;'))\
+            .one_or_none()
+
+        assert count is not None
+        assert count[0] == catalog_length

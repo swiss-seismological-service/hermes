@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 import pytest
@@ -17,8 +16,6 @@ from hermes.schemas.forecastseries import ForecastSeries
 from hermes.schemas.project import Project
 
 settings = get_settings()
-MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               'data')
 
 
 def delete_database(connection: Connection, db_name: str):
