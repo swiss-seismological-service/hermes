@@ -2,8 +2,9 @@
 requires = ["setuptools>=70.0.0", "wheel>=0.43.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["hermes", "config"]
+[tool.setuptools.packages.find]
+where = [""]
+include = ["hermes.*", "config"]
 
 [project]
 name = "HERMES"
@@ -22,7 +23,7 @@ dependencies = [
     "psycopg2",
     "pydantic",
     "python-dotenv",
-    "ramsis.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git@hermes",
+    "hermes.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git@hermes",
     "requests",
     "seismostats @ git+https://github.com/swiss-seismological-service/SeismoStats.git",
     "sqlalchemy",
@@ -32,7 +33,10 @@ dependencies = [
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-dev = ["pytest", "pyarrow"]
+dev = ["pytest", "pyarrow", "isort", "pytest-cov", "tox", "flake8"]
 
 [project.scripts]
 hermes = "hermes.cli:app"
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
