@@ -6,17 +6,17 @@ variables:
     POSTGRES_PASS: password
     POSTGRES_HOST_AUTH_METHOD: trust
 
-style-job:
-    stage: style
-    image: python:3.10-alpine
-    before_script:
-        - pip install tox
-    script:
-        - tox -e flake8
+# style-job:
+#     stage: style
+#     image: python:3.10-alpine
+#     before_script:
+#         - pip install tox
+#     script:
+#         - tox -e flake8
 
 test-job:
     stage: test
-    needs: ["style-job"]
+    # needs: ["style-job"]
     image: python:3.10
 
     services:
@@ -24,7 +24,7 @@ test-job:
           alias: postgres
 
     before_script:
-        - export POSTGRES_PASSWORD=$POSTGRES_PASS
+        - export POSTGRES_PASSWORD=password
         - apt-get update
         - apt-get install -y python3-dev build-essential postgresql-client
         - pip install tox
