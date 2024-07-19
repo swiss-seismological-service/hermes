@@ -55,6 +55,18 @@
                     <value>1181.640625</value>
                     <uncertainty>274.9552879</uncertainty>
                 </depth>
+                <quality>
+                    <associatedPhaseCount>90</associatedPhaseCount>
+                    <usedPhaseCount>77</usedPhaseCount>
+                    <usedStationCount>46</usedStationCount>
+                    <standardError>0.1050176803</standardError>
+                    <azimuthalGap>94.07142612</azimuthalGap>
+                    <secondaryAzimuthalGap>110.6864591</secondaryAzimuthalGap>
+                    <maximumDistance>0.6359060797</maximumDistance>
+                    <minimumDistance>0.0329221581</minimumDistance>
+                    <medianDistance>0.2980450328</medianDistance>
+                    <groundTruthLevel>-</groundTruthLevel>
+                </quality>
             </origin>
 
             <preferredOriginID>smi:ch.ethz.sed/sc20ag/Origin/NLL.20220103070248.816904.80080</preferredOriginID>
