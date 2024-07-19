@@ -24,7 +24,7 @@ test-job:
         POSTGRES_HOST: postgres
     services:
         - name: kartoza/postgis:latest
-        - alias: postgres
+          alias: postgres
 
     before_script:
         - apt-get update
