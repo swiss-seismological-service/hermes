@@ -6,7 +6,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.cli.utils import row_table
-from hermes.db import Session
+from hermes.repositories.db import Session
 from hermes.repositories.model import ModelConfigRepository
 from hermes.schemas import ModelConfig
 

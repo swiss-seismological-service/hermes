@@ -1,15 +1,15 @@
 from uuid import UUID
 
 from geoalchemy2.shape import from_shape
+from hermes.datamodel import (GridCellTable, ModelResultTable,
+                              SeismicEventTable, TimeStepTable)
 from seismostats import Catalog
 from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
-from hermes.datamodel import (GridCellTable, ModelResultTable,
-                              SeismicEventTable, TimeStepTable)
-from hermes.db import pandas_read_sql
 from hermes.io.catalog import serialize_seismostats_catalog
 from hermes.repositories import repository_factory
+from hermes.repositories.db import pandas_read_sql
 from hermes.schemas import ModelResult, SeismicEvent
 from hermes.schemas.results import GridCell
 
