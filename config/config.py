@@ -7,11 +7,11 @@ from sqlalchemy.engine import URL
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-    POSTGRES_HOST: str
-    POSTGRES_PORT: str
-    POSTGRES_USER: str
+    POSTGRES_HOST: str = 'postgres'
+    POSTGRES_PORT: str = '5432'
+    POSTGRES_USER: str = 'postgres'
     POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    POSTGRES_DB: str = 'postgres'
 
     POSTGRES_POOL_SIZE: int = 5
     POSTGRES_MAX_OVERFLOW: int = 10

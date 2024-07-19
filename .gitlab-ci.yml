@@ -2,6 +2,10 @@ stages:
     - style
     - test
 
+variables:
+    POSTGRES_PASS: password
+    POSTGRES_HOST_AUTH_METHOD: trust
+
 style-job:
     stage: style
     image: python:3.10-alpine
@@ -14,24 +18,20 @@ test-job:
     stage: test
     needs: ["style-job"]
     image: python:3.10
-    variables:
-        POSTGRES_DB: postgres
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: password
-        POSTGRES_PASS: password
-        POSTGRES_PORT: 5432
-        POSTGRES_HOST_AUTH_METHOD: trust
-        POSTGRES_HOST: postgres
+
     services:
         - name: kartoza/postgis:latest
           alias: postgres
 
     before_script:
+        - export POSTGRES_PASSWORD=$POSTGRES_PASS
         - apt-get update
         - apt-get install -y python3-dev build-essential postgresql-client
         - pip install tox
+
     script:
         - tox -e py310-tests
+
     artifacts:
         reports:
             coverage_report:
