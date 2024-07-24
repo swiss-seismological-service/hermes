@@ -1,8 +1,8 @@
 from datetime import datetime
 
-import requests
 from prefect import flow, get_run_logger, task
 
+from hermes.io.catalog import CatalogDataSource
 from hermes.schemas.types import DatetimeString
 from hermes.utils.url import add_query_params
 
@@ -12,14 +12,13 @@ def get_catalog_fdsnws(url: str) -> str:
     logger = get_run_logger()
 
     logger.info(f'Requesting seismic catalog from fdsnws-event (url={url}).')
-    response = requests.get(url, timeout=60)
 
-    response.raise_for_status()
+    response = CatalogDataSource.request_text(url)
 
     logger.info(f'Received response from {url} '
                 f'with status code {response.status_code}.')
 
-    return response.text
+    return response
 
 
 @task
