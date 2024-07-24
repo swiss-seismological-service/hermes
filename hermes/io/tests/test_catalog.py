@@ -52,21 +52,17 @@ class TestCatalog:
     def test_get_catalog_from_file(self):
         qml_path = os.path.join(MODULE_LOCATION, 'quakeml.xml')
 
-        starttime = '2021-12-27T00:00:00'
-        endtime = '2021-12-31T00:00:00'
-        starttime_dt = datetime.fromisoformat(starttime)
-        endtime_dt = datetime.fromisoformat(endtime)
+        starttime = datetime.fromisoformat('2021-12-25T00:00:00')
+        endtime = datetime.fromisoformat('2021-12-30T12:00:00')
 
-        catalog = CatalogDataSource.from_file(qml_path)
+        catalog = CatalogDataSource.from_file(qml_path, starttime, endtime)
+
         assert len(catalog.catalog) == 2
 
-        assert catalog.get_catalog(starttime_dt, endtime_dt).equals(
-            catalog.get_catalog(starttime, endtime))
+        assert len(catalog.get_catalog(starttime
+                   + timedelta(days=1), endtime)) == 1
 
-        assert len(catalog.get_catalog(starttime_dt
-                   + timedelta(days=1), endtime_dt)) == 1
-
-        assert len(catalog.get_catalog(endtime=endtime_dt
+        assert len(catalog.get_catalog(endtime=endtime
                    - timedelta(days=1))) == 1
 
         assert catalog.get_quakeml() == catalog.catalog.to_quakeml()

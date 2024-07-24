@@ -1,7 +1,6 @@
 
 import logging
 from datetime import datetime
-from typing import TypeVar
 
 import requests
 from seismostats import Catalog
@@ -49,9 +48,6 @@ def deserialize_catalog(events: list[dict]) -> list[SeismicEvent]:
     return events
 
 
-T = TypeVar('T', bound='CatalogDataSource')
-
-
 class CatalogDataSource:
     def __init__(self,
                  catalog: Catalog | None = None,
@@ -82,7 +78,7 @@ class CatalogDataSource:
                   file_path: str,
                   starttime: datetime | None = None,
                   endtime: datetime | None = None,
-                  format: str = 'quakeml') -> T:
+                  format: str = 'quakeml') -> 'CatalogDataSource':
         """
         Initialize a CatalogDataSource from a file.
 
@@ -117,7 +113,7 @@ class CatalogDataSource:
     def from_fdsnws(cls,
                     url: str,
                     starttime: datetime,
-                    endtime: datetime) -> T:
+                    endtime: datetime) -> 'CatalogDataSource':
         """
         Initialize a CatalogDataSource from a FDSNWS URL.
 
@@ -134,7 +130,7 @@ class CatalogDataSource:
             starttime=starttime.strftime('%Y-%m-%dT%H:%M:%S'),
             endtime=endtime.strftime('%Y-%m-%dT%H:%M:%S'))
 
-        response = cls.request_text(url)
+        response, _ = cls.request_text(url)
         catalog = Catalog.from_quakeml(response.text,
                                        include_uncertainties=True,
                                        include_ids=True,
@@ -142,8 +138,8 @@ class CatalogDataSource:
         return cls(catalog=catalog, starttime=starttime, endtime=endtime)
 
     def get_quakeml(self,
-                    starttime: str | datetime | None = None,
-                    endtime: str | datetime | None = None) -> Catalog:
+                    starttime: datetime | None = None,
+                    endtime: datetime | None = None) -> Catalog:
         """
         Get the catalog in QuakeML format.
 
@@ -159,32 +155,33 @@ class CatalogDataSource:
         return cat.to_quakeml()
 
     def get_catalog(self,
-                    starttime: str | datetime | None = None,
-                    endtime: str | datetime | None = None) -> Catalog:
+                    starttime: datetime | None = None,
+                    endtime: datetime | None = None) -> Catalog:
         """
         Get the catalog, optionally filtered by start and end time.
 
         Args:
-            starttime: Start time of the catalog.
-            endtime: End time of the catalog.
+            starttime: Filter by starttime.
+            endtime: Filter by endtime.
 
         Returns:
             Catalog object
         """
+        starttime = starttime or self.starttime
+        endtime = endtime or self.endtime
+
         if starttime < self.starttime or endtime > self.endtime:
             raise ValueError(
-                'Requested time range is outside of the catalog time range.')
+                'Requested time range is outside of '
+                'the catalog time range.')
 
-        if starttime or endtime:
-            return self.catalog.loc[
-                (self.catalog['time'] >= starttime if starttime else True)
-                & (self.catalog['time'] <= endtime if endtime else True)
-            ]
-
-        return self.catalog
+        return self.catalog.loc[
+            (self.catalog['time'] >= starttime)
+            & (self.catalog['time'] <= endtime)
+        ]
 
     @classmethod
-    def request_text(cls, url: str, timeout: int = 60) -> str:
+    def request_text(cls, url: str, timeout: int = 60, **kwargs) -> str:
         """
         Request text from a URL and raise for status.
 
@@ -195,6 +192,13 @@ class CatalogDataSource:
         Returns:
             Text from the URL.
         """
+
+        for key, value in kwargs.items():
+            if isinstance(value, datetime):
+                kwargs[key] = value.strftime('%Y-%m-%dT%H:%M:%S')
+
+        url = add_query_params(url, **kwargs)
+
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
-        return response.text
+        return response.text, response.status_code
