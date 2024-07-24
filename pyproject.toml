@@ -23,7 +23,6 @@ dependencies = [
     "psycopg2",
     "pydantic",
     "python-dotenv",
-    "hermes.datamodel @ git+https://gitlab.seismo.ethz.ch/indu/ramsis.datamodel.git@hermes",
     "requests",
     "seismostats @ git+https://github.com/swiss-seismological-service/SeismoStats.git",
     "sqlalchemy",
