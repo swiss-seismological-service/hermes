@@ -2,6 +2,8 @@
 from hermes.schemas.base import EInput, EResultType, EStatus, Model
 from hermes.schemas.forecast import Forecast
 from hermes.schemas.forecastseries import ForecastSeries
+from hermes.schemas.input import (InjectionObservation, InjectionPlan,
+                                  SeismicityObservation)
 from hermes.schemas.modelconfig import ModelConfig
 from hermes.schemas.modelrun import ModelRun
 from hermes.schemas.project import Project

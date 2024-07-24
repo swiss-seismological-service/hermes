@@ -2,7 +2,8 @@
 from hermes.datamodel.base import ORMBase
 from hermes.datamodel.forecast import ForecastTable
 from hermes.datamodel.forecastseries import ForecastSeriesTable
-from hermes.datamodel.input import (InjectionObservationTable,
+from hermes.datamodel.input import (EventObservationTable,
+                                    InjectionObservationTable,
                                     InjectionPlanTable,
                                     SeismicityObservationTable)
 from hermes.datamodel.modelconfig import ModelConfigTable
