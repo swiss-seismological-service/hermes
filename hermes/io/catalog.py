@@ -57,13 +57,44 @@ class CatalogDataSource:
                  catalog: Catalog | None = None,
                  starttime: datetime | None = None,
                  endtime: datetime | None = None) -> None:
+        """
+        Provides a common interface to access seismic event
+        data from different sources.
+
+        Should in most cases be initialized using class methods
+        according to the source of the data.
+
+        Args:
+            catalog: Catalog object.
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog
+
+        Returns:
+            CatalogDataSource object
+        """
         self._logger = logging.getLogger(__name__)
         self.catalog = catalog
         self.starttime = starttime
         self.endtime = endtime
 
     @classmethod
-    def from_file(cls, file_path: str, format: str = 'quakeml') -> T:
+    def from_file(cls,
+                  file_path: str,
+                  starttime: datetime | None = None,
+                  endtime: datetime | None = None,
+                  format: str = 'quakeml') -> T:
+        """
+        Initialize a CatalogDataSource from a file.
+
+        Args:
+            file_path: Path to the file.
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog.
+            format: Format of the file.
+
+        Returns:
+            CatalogDataSource object
+        """
         if format == 'quakeml':
             catalog = Catalog.from_quakeml(file_path,
                                            include_uncertainties=True,
@@ -72,15 +103,32 @@ class CatalogDataSource:
         else:
             raise NotImplementedError(f'Format {format} not supported.')
 
+        if starttime or endtime:
+            catalog = catalog.loc[
+                (catalog['time'] >= starttime if starttime else True)
+                & (catalog['time'] <= endtime if endtime else True)
+            ]
+
         return cls(catalog=catalog,
-                   starttime=catalog['time'].min(),
-                   endtime=catalog['time'].max())
+                   starttime=starttime or catalog['time'].min(),
+                   endtime=endtime or catalog['time'].max())
 
     @classmethod
     def from_fdsnws(cls,
                     url: str,
                     starttime: datetime,
                     endtime: datetime) -> T:
+        """
+        Initialize a CatalogDataSource from a FDSNWS URL.
+
+        Args:
+            url: FDSNWS URL.
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog.
+
+        Returns:
+            CatalogDataSource object
+        """
         url = add_query_params(
             url,
             starttime=starttime.strftime('%Y-%m-%dT%H:%M:%S'),
@@ -96,7 +144,16 @@ class CatalogDataSource:
     def get_quakeml(self,
                     starttime: str | datetime | None = None,
                     endtime: str | datetime | None = None) -> Catalog:
+        """
+        Get the catalog in QuakeML format.
 
+        Args:
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog.
+
+        Returns:
+            Catalog in QuakeML format
+        """
         cat = self.get_catalog(starttime=starttime, endtime=endtime)
 
         return cat.to_quakeml()
@@ -104,6 +161,19 @@ class CatalogDataSource:
     def get_catalog(self,
                     starttime: str | datetime | None = None,
                     endtime: str | datetime | None = None) -> Catalog:
+        """
+        Get the catalog, optionally filtered by start and end time.
+
+        Args:
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog.
+
+        Returns:
+            Catalog object
+        """
+        if starttime < self.starttime or endtime > self.endtime:
+            raise ValueError(
+                'Requested time range is outside of the catalog time range.')
 
         if starttime or endtime:
             return self.catalog.loc[
@@ -115,6 +185,16 @@ class CatalogDataSource:
 
     @classmethod
     def request_text(cls, url: str, timeout: int = 60) -> str:
+        """
+        Request text from a URL and raise for status.
+
+        Args:
+            url: URL to request.
+            timeout: Timeout for the request.
+
+        Returns:
+            Text from the URL.
+        """
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response.text
