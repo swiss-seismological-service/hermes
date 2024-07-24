@@ -44,7 +44,7 @@ greenlet==3.0.3
 griffe==0.47.0
 h11==0.14.0
 h2==4.1.0
--e git+ssh://git@gitlab.seismo.ethz.ch/indu/rt-ramsis.git@a117ea580067a408ae51bab53b44fe6cca32f785#egg=HERMES
+-e git+ssh://git@github.com/swiss-seismological-service/hermes.git@81de1939e929075de4c36003ef2d829a457ea4e9#egg=HERMES
 hpack==4.0.0
 httpcore==1.0.5
 httptools==0.6.1
