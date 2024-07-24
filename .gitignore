@@ -10,6 +10,7 @@ project_files/
 .pytest_cache/
 .tox
 .vscode
+.coverage
 
 # Other
 images_rc.py
