@@ -44,14 +44,3 @@ def get_catalog(url: str, starttime: datetime, endtime: datetime):
     catalog = get_catalog_fdsnws(url, starttime, endtime)
 
     return catalog
-
-
-if __name__ == "__main__":
-
-    url = "http://arclink.ethz.ch/fdsnws/event/1/query?minmagnitude=2"
-
-    starttime = datetime(2024, 7, 1)
-
-    endtime = datetime.now()
-
-    catalog = get_catalog(url, starttime, endtime)
