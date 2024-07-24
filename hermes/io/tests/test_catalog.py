@@ -1,10 +1,11 @@
 import json
 import os
+from datetime import datetime, timedelta
 
 import pandas as pd
 from seismostats import Catalog
 
-from hermes.io.catalog import (deserialize_catalog,
+from hermes.io.catalog import (CatalogDataSource, deserialize_catalog,
                                serialize_seismostats_catalog)
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -47,3 +48,25 @@ class TestCatalog:
         deserialized = deserialize_catalog(events)
 
         assert deserialized[0].magnitude_value == 2.510115344
+
+    def test_get_catalog_from_file(self):
+        qml_path = os.path.join(MODULE_LOCATION, 'quakeml.xml')
+
+        starttime = '2021-12-27T00:00:00'
+        endtime = '2021-12-31T00:00:00'
+        starttime_dt = datetime.fromisoformat(starttime)
+        endtime_dt = datetime.fromisoformat(endtime)
+
+        catalog = CatalogDataSource.from_file(qml_path)
+        assert len(catalog.catalog) == 2
+
+        assert catalog.get_catalog(starttime_dt, endtime_dt).equals(
+            catalog.get_catalog(starttime, endtime))
+
+        assert len(catalog.get_catalog(starttime_dt
+                   + timedelta(days=1), endtime_dt)) == 1
+
+        assert len(catalog.get_catalog(endtime=endtime_dt
+                   - timedelta(days=1))) == 1
+
+        assert catalog.get_quakeml() == catalog.catalog.to_quakeml()
