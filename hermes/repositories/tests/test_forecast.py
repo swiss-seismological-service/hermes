@@ -1,9 +1,8 @@
 from datetime import datetime
 
-from hermes.repositories.forecast import ForecastRepository
-from hermes.repositories.project import ProjectRepository
+from hermes.repositories.project import ForecastRepository, ProjectRepository
 from hermes.schemas.base import EStatus
-from hermes.schemas.forecast import Forecast
+from hermes.schemas.project_schemas import Forecast
 
 
 class TestForecast:

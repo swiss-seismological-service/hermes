@@ -5,9 +5,17 @@ from uuid import UUID
 from pydantic import field_validator
 from shapely import Polygon
 
-from hermes.repositories.shapes import PolygonType, polygon_converter
-from hermes.schemas.base import EResultType, Model
-from hermes.schemas.mixins import real_value_mixin
+from hermes.repositories.types import PolygonType, polygon_converter
+from hermes.schemas.base import EResultType, EStatus, Model, real_value_mixin
+
+
+class ModelRun(Model):
+    oid: UUID | None = None
+    status: EStatus | None = None
+
+    modelconfig_oid: UUID | None = None
+    forecast_oid: UUID | None = None
+    injectionplan_oid: UUID | None = None
 
 
 class ModelResult(Model):

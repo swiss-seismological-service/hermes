@@ -5,8 +5,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from hermes.repositories.model import ModelConfigRepository
-from hermes.schemas import ModelConfig
+from hermes.repositories.project import ModelConfigRepository
+from hermes.schemas.project_schemas import ModelConfig
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')

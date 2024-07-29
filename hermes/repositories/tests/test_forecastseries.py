@@ -4,9 +4,9 @@ import os
 from shapely.geometry import Polygon
 from sqlalchemy import text
 
-from hermes.repositories.forecastseries import ForecastSeriesRepository
-from hermes.repositories.project import ProjectRepository
-from hermes.schemas.forecastseries import ForecastSeries
+from hermes.repositories.project import (ForecastSeriesRepository,
+                                         ProjectRepository)
+from hermes.schemas.project_schemas import ForecastSeries
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')

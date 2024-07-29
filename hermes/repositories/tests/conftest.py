@@ -1,19 +1,18 @@
 from datetime import datetime
 
 import pytest
-from hermes.datamodel import ORMBase
 from sqlalchemy import Connection, event, text
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from config import get_settings
-from hermes.repositories.db import create_engine, create_extensions
-from hermes.repositories.forecastseries import ForecastSeriesRepository
-from hermes.repositories.project import ProjectRepository
+from hermes.datamodel.base import ORMBase
+from hermes.repositories.database import create_engine, create_extensions
+from hermes.repositories.project import (ForecastSeriesRepository,
+                                         ProjectRepository)
 from hermes.schemas.base import EStatus
-from hermes.schemas.forecastseries import ForecastSeries
-from hermes.schemas.project import Project
+from hermes.schemas.project_schemas import ForecastSeries, Project
 
 settings = get_settings()
 

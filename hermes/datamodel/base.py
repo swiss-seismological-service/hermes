@@ -237,3 +237,9 @@ IntegerQuantityMixin = functools.partial(QuantityMixin,
                                          quantity_type='int')
 TimeQuantityMixin = functools.partial(QuantityMixin,
                                       quantity_type='time')
+ForecastEpochMixin = EpochMixin(name='forecast',
+                                column_prefix='forecast',
+                                epoch_type='default')
+ObservationEpochMixin = EpochMixin(name='observation',
+                                   column_prefix='observation',
+                                   epoch_type='open')

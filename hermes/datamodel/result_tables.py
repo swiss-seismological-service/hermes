@@ -94,3 +94,31 @@ class SeismicEventTable(TimeQuantityMixin('time'),
     modelresult = relationship(
         'ModelResultTable',
         back_populates='seismicevents')
+
+
+class ModelRunTable(ORMBase):
+
+    status = Column(String(25), default='PENDING')
+
+    modelconfig_oid = Column(UUID,
+                             ForeignKey('modelconfig.oid',
+                                        ondelete="RESTRICT"))
+    modelconfig = relationship('ModelConfigTable',
+                               back_populates='modelruns')
+
+    forecast_oid = Column(UUID,
+                          ForeignKey('forecast.oid',
+                                     ondelete="CASCADE"))
+    forecast = relationship('ForecastTable',
+                            back_populates='modelruns')
+
+    injectionplan_oid = Column(UUID,
+                               ForeignKey('injectionplan.oid',
+                                          ondelete='SET NULL'))
+    injectionplan = relationship('InjectionPlanTable',
+                                 back_populates='modelruns')
+
+    modelresults = relationship('ModelResultTable',
+                                back_populates='modelrun',
+                                cascade='all, delete-orphan',
+                                passive_deletes=True)

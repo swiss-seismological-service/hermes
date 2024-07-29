@@ -6,8 +6,8 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.cli.utils import row_table
-from hermes.repositories.db import Session
-from hermes.repositories.model import ModelConfigRepository
+from hermes.repositories.database import Session
+from hermes.repositories.project import ModelConfigRepository
 from hermes.schemas import ModelConfig
 
 app = typer.Typer()

@@ -1,9 +1,14 @@
+from geoalchemy2.shape import from_shape
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from hermes.datamodel import ProjectTable
-from hermes.repositories import repository_factory
-from hermes.schemas import Project
+from hermes.datamodel.project_tables import (ForecastSeriesTable,
+                                             ForecastTable, ModelConfigTable,
+                                             ProjectTable, TagTable)
+from hermes.repositories.base import repository_factory
+from hermes.schemas.project_schemas import (Forecast, ForecastSeries,
+                                            ModelConfig, Project, Tag)
 
 
 class ProjectRepository(repository_factory(Project, ProjectTable)):
@@ -13,3 +18,95 @@ class ProjectRepository(repository_factory(Project, ProjectTable)):
         q = select(ProjectTable).where(ProjectTable.name == name)
         result = session.execute(q).unique().scalar_one_or_none()
         return cls.model.model_validate(result) if result else None
+
+
+class TagRepository(repository_factory(
+        Tag, TagTable)):
+
+    @classmethod
+    def _get_by_name(cls, session: Session, name: str) -> TagTable:
+        q = select(TagTable).where(TagTable.name == name)
+        result = session.execute(q).unique().scalar_one_or_none()
+        return result
+
+    @classmethod
+    def get_by_name(cls, session: Session, name: str) -> Tag:
+        result = cls._get_by_name(session, name)
+        return cls.model.model_validate(result) if result else None
+
+    @classmethod
+    def _get_or_create(cls, session: Session, name: str) -> TagTable:
+        q = select(TagTable).where(TagTable.name == name)
+        result = session.execute(q).unique().scalar_one_or_none()
+        if not result:
+            try:
+                result = TagTable(name=name)
+                session.add(result)
+                session.commit()
+                session.refresh(result)
+            except IntegrityError as e:
+                session.rollback()
+                result = cls._get_by_name(session, name)
+                if not result:
+                    raise e
+        return result
+
+    @classmethod
+    def get_or_create(cls, session: Session, name: str) -> Tag:
+        result = cls._get_or_create(session, name)
+        return cls.model.model_validate(result) if result else None
+
+
+class ForecastSeriesRepository(repository_factory(
+        ForecastSeries, ForecastSeriesTable)):
+
+    @classmethod
+    def create(cls, session: Session, data: ForecastSeries) -> ForecastSeries:
+
+        # Check if tags exist in the database, if not create them.
+        tags = []
+        for tag in data.tags:
+            tags.append(TagRepository._get_or_create(session, tag))
+
+        # Convert the bounding polygon to a geoalchemy2 shape.
+        bounding_polygon = None
+        if data.bounding_polygon:
+            bounding_polygon = from_shape(data.bounding_polygon)
+
+        # Create the database model and commit it to the database.
+        db_model = ForecastSeriesTable(
+            _tags=tags,
+            bounding_polygon=bounding_polygon,
+            **data.model_dump(exclude_unset=True,
+                              exclude=['tags', 'bounding_polygon']))
+
+        session.add(db_model)
+        session.commit()
+        session.refresh(db_model)
+
+        return cls.model.model_validate(db_model)
+
+
+class ForecastRepository(repository_factory(Forecast, ForecastTable)):
+    pass
+
+
+class ModelConfigRepository(repository_factory(
+        ModelConfig, ModelConfigTable)):
+
+    @classmethod
+    def create(cls, session: Session, data: ModelConfig) -> ModelConfig:
+
+        # Check if tags exist in the database, if not create them.
+        tags = []
+        for tag in data.tags:
+            tags.append(TagRepository._get_or_create(session, tag))
+
+        # Create the database model and commit it to the database.
+        db_model = ModelConfigTable(
+            _tags=tags, **data.model_dump(exclude_unset=True,
+                                          exclude=['tags']))
+        session.add(db_model)
+        session.commit()
+        session.refresh(db_model)
+        return cls.model.model_validate(db_model)

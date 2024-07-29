@@ -6,9 +6,9 @@ import pandas as pd
 from seismostats import Catalog
 from sqlalchemy import text
 
-from hermes.repositories.forecast import ForecastRepository
-from hermes.repositories.input import SeismicityObservationRepository
-from hermes.schemas import Forecast
+from hermes.repositories.data import SeismicityObservationRepository
+from hermes.repositories.project import ForecastRepository
+from hermes.schemas.project_schemas import Forecast
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')

@@ -1,0 +1,147 @@
+from datetime import datetime, timezone
+
+from geoalchemy2 import Geometry
+from sqlalchemy import (JSON, Boolean, Column, Float, ForeignKey, Integer,
+                        String)
+from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
+
+from hermes.datamodel.base import (CreationInfoMixin, DefaultEpochMixin,
+                                   FiniteEpochMixin, ForecastEpochMixin,
+                                   NameMixin, ObservationEpochMixin, ORMBase)
+from hermes.datamodel.data_tables import (tag_forecast_series_association,
+                                          tag_model_config_association)
+
+
+class ProjectTable(CreationInfoMixin,
+                   NameMixin,
+                   DefaultEpochMixin,
+                   ORMBase):
+
+    description = Column(String)
+
+    forecastseries = relationship(
+        'ForecastSeriesTable',
+        back_populates='project',
+        cascade='all, delete-orphan',
+        passive_deletes=True)
+
+    fdsnws_url = Column(String)
+    hydws_url = Column(String)
+
+    seismicityobservation_required = Column(String(15), default='REQUIRED')
+    injectionobservation_required = Column(String(15), default='REQUIRED')
+    injectionplan_required = Column(String(15), default='REQUIRED')
+
+
+class ForecastTable(CreationInfoMixin,
+                    FiniteEpochMixin,
+                    ORMBase):
+
+    status = Column(String(25), default='PENDING')
+    name = Column(String)
+
+    forecastseries_oid = Column(UUID,
+                                ForeignKey('forecastseries.oid',
+                                           ondelete="CASCADE"))
+    forecastseries = relationship('ForecastSeriesTable',
+                                  back_populates='forecasts')
+
+    modelruns = relationship('ModelRunTable',
+                             back_populates='forecast',
+                             cascade='all, delete-orphan',
+                             passive_deletes=True)
+
+    injectionobservation = relationship('InjectionObservationTable',
+                                        back_populates='forecast',
+                                        cascade='all, delete-orphan',
+                                        passive_deletes=True)
+
+    seismicityobservation = relationship('SeismicityObservationTable',
+                                         back_populates='forecast',
+                                         cascade='all, delete-orphan',
+                                         passive_deletes=True)
+
+
+class ForecastSeriesTable(CreationInfoMixin,
+                          ForecastEpochMixin,
+                          ObservationEpochMixin,
+                          NameMixin,
+                          ORMBase):
+
+    status = Column(String(25))
+    description = Column(String)
+    project_oid = Column(UUID,
+                         ForeignKey('project.oid', ondelete="CASCADE"))
+    project = relationship('ProjectTable',
+                           back_populates='forecastseries')
+
+    # Interval in seconds to place forecasts apart in time.
+    forecast_interval = Column(Integer)
+    forecast_duration = Column(Integer)
+
+    # Spatial dimensions of the area considered.
+    bounding_polygon = Column(Geometry('POLYGON', srid=4326))
+    depth_min = Column(Float)
+    depth_max = Column(Float)
+
+    forecasts = relationship('ForecastTable',
+                             back_populates='forecastseries',
+                             cascade='all, delete-orphan',
+                             passive_deletes=True)
+    _tags = relationship('TagTable',
+                         back_populates='forecastseries',
+                         secondary=tag_forecast_series_association)
+
+    @hybrid_property
+    def tags(self):
+        t = [tag.name for tag in self._tags]
+        return t
+
+    injectionplans = relationship('InjectionPlanTable',
+                                  back_populates='forecastseries',
+                                  cascade='all, delete-orphan',
+                                  passive_deletes=True)
+
+
+class ModelConfigTable(ORMBase, NameMixin):
+
+    description = Column(String)
+    enabled = Column(Boolean, default=True)
+    result_type = Column(String(15), nullable=False)
+
+    # The model should be called by sfm_module.sfm_function(*args)
+    sfm_module = Column(String)
+    sfm_function = Column(String)
+
+    last_modified = Column(TIMESTAMP(precision=0),
+                           default=datetime.now(timezone.utc),
+                           onupdate=datetime.now(timezone.utc))
+
+    config = Column(JSON, nullable=False)
+
+    modelruns = relationship('ModelRunTable',
+                             back_populates='modelconfig')
+
+    _tags = relationship('TagTable',
+                         back_populates='modelconfigs',
+                         secondary=tag_model_config_association)
+
+    @hybrid_property
+    def tags(self):
+        t = [tag.name for tag in self._tags]
+        return t
+
+
+class TagTable(ORMBase, NameMixin):
+
+    modelconfigs = relationship(
+        'ModelConfigTable',
+        back_populates='_tags',
+        secondary=tag_model_config_association)
+
+    forecastseries = relationship(
+        'ForecastSeriesTable',
+        back_populates='_tags',
+        secondary=tag_forecast_series_association)

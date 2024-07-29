@@ -3,10 +3,9 @@ from uuid import UUID
 from seismostats import Catalog
 from sqlalchemy.orm import Session
 
-from hermes.datamodel import EventObservationTable  # noqa
-from hermes.datamodel import SeismicityObservationTable
-from hermes.repositories import repository_factory
-from hermes.schemas import SeismicityObservation
+from hermes.datamodel.data_tables import SeismicityObservationTable
+from hermes.repositories.base import repository_factory
+from hermes.schemas.data_schemas import SeismicityObservation
 
 
 class SeismicityObservationRepository(repository_factory(

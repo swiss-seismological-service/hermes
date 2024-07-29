@@ -1,6 +1,6 @@
-from hermes.repositories.modelrun import ModelRunRepository
+from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.base import EStatus
-from hermes.schemas.modelrun import ModelRun
+from hermes.schemas.result_schemas import ModelRun
 
 
 class TestModelRun:

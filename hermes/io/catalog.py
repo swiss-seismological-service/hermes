@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 from seismostats import Catalog
 
-from hermes.schemas import SeismicEvent
+from hermes.schemas.result_schemas import SeismicEvent
 from hermes.utils.url import add_query_params
 
 

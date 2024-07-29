@@ -2,7 +2,7 @@ import os
 
 from shapely import Polygon
 
-from hermes.schemas import ForecastSeries
+from hermes.schemas.project_schemas import ForecastSeries
 
 PATH_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'data')

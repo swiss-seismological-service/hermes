@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import text
 
 from hermes.repositories.project import ProjectRepository
-from hermes.schemas.project import Project
+from hermes.schemas.project_schemas import Project
 
 
 class TestFixtures:

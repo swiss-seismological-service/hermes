@@ -9,16 +9,17 @@ from shapely import Polygon
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from hermes.repositories.forecast import ForecastRepository
-from hermes.repositories.forecastseries import ForecastSeriesRepository
-from hermes.repositories.modelrun import ModelRunRepository
+from hermes.repositories.project import (ForecastRepository,
+                                         ForecastSeriesRepository)
 from hermes.repositories.results import (GridCellRepository,
                                          ModelResultRepository,
+                                         ModelRunRepository,
                                          SeismicEventRepository,
                                          TimeStepRepository)
-from hermes.schemas import (Forecast, ForecastSeries, GridCell, ModelResult,
-                            ModelRun, SeismicEvent, TimeStep)
 from hermes.schemas.base import EResultType
+from hermes.schemas.project_schemas import Forecast, ForecastSeries
+from hermes.schemas.result_schemas import (GridCell, ModelResult, ModelRun,
+                                           SeismicEvent, TimeStep)
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
