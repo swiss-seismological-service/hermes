@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+from shapely import Polygon
 from sqlalchemy import Connection, event, text
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -9,10 +10,13 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from config import get_settings
 from hermes.datamodel.base import ORMBase
 from hermes.repositories.database import create_engine, create_extensions
-from hermes.repositories.project import (ForecastSeriesRepository,
+from hermes.repositories.project import (ForecastRepository,
+                                         ForecastSeriesRepository,
+                                         ModelConfigRepository,
                                          ProjectRepository)
-from hermes.schemas.base import EStatus
-from hermes.schemas.project_schemas import ForecastSeries, Project
+from hermes.schemas import (EInput, EStatus, Forecast, ForecastSeries,
+                            ModelConfig, Project)
+from hermes.schemas.base import EResultType
 
 settings = get_settings()
 
@@ -117,8 +121,18 @@ def session(connection, request: pytest.FixtureRequest):
 
 
 @pytest.fixture()
-def project(session):
-    project = Project(name='test_project', starttime=datetime(2021, 1, 1))
+def project(session) -> Project:
+    project = Project(
+        name='test_project',
+        description='test_description',
+        starttime=datetime(2024, 1, 1, 0, 0, 0),
+        endtime=datetime(2024, 2, 1, 0, 0, 0),
+        seismicityobservation_required=EInput.REQUIRED,
+        injectionobservation_required=EInput.NOT_ALLOWED,
+        injectionplan_required=EInput.NOT_ALLOWED,
+        fdsnws_url='https://'
+    )
+
     project = ProjectRepository.create(session, project)
 
     return project
@@ -128,10 +142,50 @@ def project(session):
 def forecastseries(session, project):
     forecastseries = ForecastSeries(
         name='test_forecastseries',
-        forecast_starttime=datetime(2021, 1, 1),
+        forecast_starttime=datetime(2021, 1, 2, 0, 0, 0),
+        forecast_endtime=datetime(2021, 1, 4, 0, 0, 0),
+        observation_starttime=datetime(2021, 1, 1, 0, 0, 0),
         project_oid=project.oid,
-        status=EStatus.PENDING)
+        status=EStatus.PENDING,
+        forecast_interval=1800,
+        bounding_polygon=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
+        depth_min=0,
+        depth_max=1,
+        tags=['tag1']
+    )
 
     forecastseries = ForecastSeriesRepository.create(session, forecastseries)
 
     return forecastseries
+
+
+@pytest.fixture()
+def forecast(session, forecastseries):
+    forecast = Forecast(
+        name='test_forecast',
+        forecastseries_oid=forecastseries.oid,
+        status=EStatus.PENDING,
+        starttime=datetime(2021, 1, 2, 0, 30, 0),
+        endtime=datetime(2021, 1, 4, 0, 0, 0),
+    )
+
+    forecast = ForecastRepository.create(session, forecast)
+
+    return forecast
+
+
+@pytest.fixture()
+def model_config(session):
+    model_config = ModelConfig(
+        name='test_model',
+        description='test_description',
+        tags=['tag1'],
+        result_type=EResultType.CATALOG,
+        enabled=True,
+        sfm_module='test_module',
+        sfm_function='test_function',
+        config={'setting1': 'value1',
+                'setting2': 'value2'}
+    )
+    model_config = ModelConfigRepository.create(session, model_config)
+    return model_config
