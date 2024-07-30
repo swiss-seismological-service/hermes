@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from shapely import Polygon
 
 from hermes.repositories.types import PolygonType, polygon_converter
@@ -46,6 +46,8 @@ class ForecastSeries(CreationInfoMixin):
     depth_min: float | None = None
     depth_max: float | None = None
 
+    injection_plan: dict | None = Field(None, exclude=True)
+
     tags: list[str] = []
 
     @field_validator('bounding_polygon', mode='before')
@@ -73,8 +75,9 @@ class Forecast(CreationInfoMixin):
     endtime: datetime | None = None
 
     forecastseries_oid: UUID | None = None
-    seismicityobservation_oid: UUID | None = None
-    injectionobservation_oid: UUID | None = None
+
+    seismicity_observation: str | None = Field(None, exclude=True)
+    injection_observation: list[dict] | None = Field(None, exclude=True)
 
 
 class ModelConfig(Model):
