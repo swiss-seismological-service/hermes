@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
+from seismostats import Catalog
 
 from hermes.io.catalog import CatalogDataSource
 
@@ -13,8 +14,10 @@ def get_catalog_fdsnws(url: str,
 
     logger.info(f'Requesting seismic catalog from fdsnws-event (url={url}).')
 
-    response, status_code = CatalogDataSource.request_text(
-        url, starttime=starttime, endtime=endtime)
+    source, status_code = CatalogDataSource.from_fdsnws(
+        url, starttime, endtime)
+
+    response = source.get_catalog()
 
     logger.info(f'Received response from {url} '
                 f'with status code {status_code}.')
@@ -30,17 +33,24 @@ def get_catalog_file(file_path: str,
 
     logger.info(f'Loading seismic catalog from file (file_path={file_path}).')
 
-    source = CatalogDataSource.from_file(file_path, starttime, endtime)
-    catalog = source.get_catalog()
+    source = CatalogDataSource.from_file(file_path)
+    catalog = source.get_catalog(starttime, endtime)
 
     logger.info(f'Loaded seismic catalog from file (file_path={file_path}).')
 
     return catalog
 
 
-@flow(name="Get Seismicity Observation")
-def get_catalog(url: str, starttime: datetime, endtime: datetime):
+@task
+def get_catalog(url: str, starttime: datetime, endtime: datetime) -> Catalog:
 
     catalog = get_catalog_fdsnws(url, starttime, endtime)
 
     return catalog
+
+
+if __name__ == '__main__':
+    # make a request to the usgs service
+    get_catalog(url='https://earthquake.usgs.gov/fdsnws/event/1/query',
+                starttime=datetime(2021, 1, 1),
+                endtime=datetime(2021, 1, 2))
