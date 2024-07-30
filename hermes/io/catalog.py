@@ -113,7 +113,7 @@ class CatalogDataSource:
     def from_fdsnws(cls,
                     url: str,
                     starttime: datetime,
-                    endtime: datetime) -> 'CatalogDataSource':
+                    endtime: datetime) -> tuple['CatalogDataSource', int]:
         """
         Initialize a CatalogDataSource from a FDSNWS URL.
 
@@ -123,19 +123,21 @@ class CatalogDataSource:
             endtime: End time of the catalog.
 
         Returns:
-            CatalogDataSource object
+            CatalogDataSource object, status code.
         """
         url = add_query_params(
             url,
             starttime=starttime.strftime('%Y-%m-%dT%H:%M:%S'),
             endtime=endtime.strftime('%Y-%m-%dT%H:%M:%S'))
 
-        response, _ = cls.request_text(url)
-        catalog = Catalog.from_quakeml(response.text,
+        response, status_code = cls._request_text(url)
+        catalog = Catalog.from_quakeml(response,
                                        include_uncertainties=True,
                                        include_ids=True,
                                        include_quality=True)
-        return cls(catalog=catalog, starttime=starttime, endtime=endtime)
+        return cls(catalog=catalog,
+                   starttime=starttime,
+                   endtime=endtime), status_code
 
     def get_quakeml(self,
                     starttime: datetime | None = None,
@@ -181,7 +183,8 @@ class CatalogDataSource:
         ]
 
     @classmethod
-    def request_text(cls, url: str, timeout: int = 60, **kwargs) -> str:
+    def _request_text(cls, url: str, timeout: int = 60, **kwargs) \
+            -> tuple[str, int]:
         """
         Request text from a URL and raise for status.
 
@@ -190,7 +193,7 @@ class CatalogDataSource:
             timeout: Timeout for the request.
 
         Returns:
-            Text from the URL.
+            response text, status code.
         """
 
         for key, value in kwargs.items():
