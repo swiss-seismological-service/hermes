@@ -40,3 +40,24 @@ class TestForecastseries:
 
         assert ForecastSeriesRepository.get_by_id(
             session, forecastseries.oid) is None
+
+    def test_get_by_name(self, session, forecastseries):
+        result = ForecastSeriesRepository.get_by_name(
+            session, forecastseries.name)
+
+        assert result.name == forecastseries.name
+
+    def test_get_tags(self, session, forecastseries, model_config):
+        tags = ForecastSeriesRepository.get_tags(
+            session, forecastseries.oid)
+
+        assert len(tags) == 2
+        assert 'tag1' in [t.name for t in tags]
+        assert 'tag3' not in [t.name for t in tags]
+
+    def test_get_model_configs(self, session, forecastseries, model_config):
+        model_configs = ForecastSeriesRepository.get_model_configs(
+            session, forecastseries.oid)
+
+        assert len(model_configs) == 1
+        assert model_configs[0].name == model_config.name

@@ -61,6 +61,12 @@ class ForecastSeriesRepository(repository_factory(
         ForecastSeries, ForecastSeriesTable)):
 
     @classmethod
+    def get_by_name(cls, session: Session, name: str) -> ForecastSeries:
+        q = select(ForecastSeriesTable).where(ForecastSeriesTable.name == name)
+        result = session.execute(q).unique().scalar_one_or_none()
+        return cls.model.model_validate(result) if result else None
+
+    @classmethod
     def create(cls, session: Session, data: ForecastSeries) -> ForecastSeries:
 
         # Check if tags exist in the database, if not create them.
@@ -85,6 +91,29 @@ class ForecastSeriesRepository(repository_factory(
         session.refresh(db_model)
 
         return cls.model.model_validate(db_model)
+
+    @classmethod
+    def get_tags(cls, session: Session, forecastseries_oid: str) -> list[Tag]:
+        q = select(TagTable).join(ForecastSeriesTable._tags).where(
+            ForecastSeriesTable.oid == forecastseries_oid)
+        result = session.execute(q).scalars().all()
+        return [TagRepository.model.model_validate(tag) for tag in result]
+
+    @classmethod
+    def get_model_configs(cls,
+                          session: Session,
+                          forecastseries_oid: str) -> list[ModelConfig]:
+
+        # Subquery to get tags of the given forecast series
+        subquery = select(TagTable.oid).join(ForecastSeriesTable._tags).where(
+            ForecastSeriesTable.oid == forecastseries_oid)
+
+        # Query to get model configs with the same tags
+        q = select(ModelConfigTable).join(
+            ModelConfigTable._tags).where(TagTable.oid.in_(subquery))
+        result = session.execute(q).scalars().all()
+
+        return [ModelConfig.model_validate(m) for m in result]
 
 
 class ForecastRepository(repository_factory(Forecast, ForecastTable)):

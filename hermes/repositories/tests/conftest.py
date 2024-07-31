@@ -151,7 +151,7 @@ def forecastseries(session, project):
         bounding_polygon=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
         depth_min=0,
         depth_max=1,
-        tags=['tag1']
+        tags=['tag1', 'tag2']
     )
 
     forecastseries = ForecastSeriesRepository.create(session, forecastseries)
@@ -179,7 +179,7 @@ def model_config(session):
     model_config = ModelConfig(
         name='test_model',
         description='test_description',
-        tags=['tag1'],
+        tags=['tag1', 'tag3'],
         result_type=EResultType.CATALOG,
         enabled=True,
         sfm_module='test_module',
