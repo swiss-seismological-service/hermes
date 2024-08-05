@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from prefect import flow, runtime, task
 
@@ -8,8 +8,8 @@ from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ProjectRepository)
 from hermes.repositories.types import SessionType
-from hermes.schemas import (EInput, Forecast, ForecastSeries, ModelInput,
-                            ModelRunInfo, SeismicityObservation)
+from hermes.schemas import (EInput, Forecast, ForecastSeries, ModelConfig,
+                            ModelInput, ModelRunInfo, SeismicityObservation)
 
 
 class ForecastExecutor:
@@ -17,7 +17,9 @@ class ForecastExecutor:
     def __init__(self,
                  session: SessionType,
                  forecastseries: ForecastSeries,
-                 starttime: datetime | None = None):
+                 starttime: datetime | None = None,
+                 endtime: datetime | None = None,
+                 modelconfigs: ModelConfig | None = None):
 
         self.session = session
         self.project = ProjectRepository.get_by_id(session,
@@ -26,14 +28,18 @@ class ForecastExecutor:
         self.forecast = None
         self.model_run_infos = []
 
-        self._create_forecast(starttime)
+        self._create_forecast(starttime, endtime)
         self._create_seismicityobservation()
-        self._prepare_model_run_infos()
+        self._prepare_model_run_infos(modelconfigs)
 
     @task
-    def _create_forecast(self, starttime):
+    def _create_forecast(self, starttime, endtime):
         if not starttime:
             starttime = runtime.flow_run.scheduled_start_time
+
+        if not endtime:
+            endtime = starttime + timedelta(
+                seconds=self.forecastseries.forecast_duration)
 
         # create Forecast and store to database
         forecast = Forecast(
@@ -41,7 +47,7 @@ class ForecastExecutor:
             forecastseries_oid=self.forecastseries.oid,
             status='PENDING',
             starttime=starttime,
-            endtime=self.forecastseries.forecast_endtime
+            endtime=endtime,
         )
         self.forecast = ForecastRepository.create(self.session, forecast)
 
@@ -64,11 +70,12 @@ class ForecastExecutor:
             )
 
     @task
-    def _prepare_model_run_infos(self):
-        model_configs = ForecastSeriesRepository.get_model_configs(
-            self.session, self.forecast.forecastseries_oid)
+    def _prepare_model_run_infos(self, modelconfigs=None):
+        if not modelconfigs:
+            modelconfigs = ForecastSeriesRepository.get_model_configs(
+                self.session, self.forecast.forecastseries_oid)
 
-        for config in model_configs:
+        for config in modelconfigs:
             model = ModelInput(
                 forecast_start=self.forecast.starttime,
                 forecast_end=self.forecast.endtime,
@@ -88,6 +95,10 @@ class ForecastExecutor:
                 )
             )
 
+    @flow
+    def run(self):
+        raise NotImplementedError
+
 
 if __name__ == '__main__':
 
@@ -95,10 +106,11 @@ if __name__ == '__main__':
 
     with Session() as session:
         forecastseries = ForecastSeriesRepository.get_by_name(
-            session, 'test_series')
+            session, 'test_forecastseries')
 
         fex = ForecastExecutor(session, forecastseries,
-                               datetime(2021, 1, 1, 13))
+                               datetime(2021, 1, 1, 13),
+                               datetime(2021, 1, 1, 14))
 
         print(type(fex.model_run_infos[0]))
         print(len(fex.model_run_infos))
