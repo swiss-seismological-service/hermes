@@ -7,6 +7,7 @@ from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              ProjectTable, TagTable)
 from hermes.repositories.base import repository_factory
+from hermes.schemas.base import EStatus
 from hermes.schemas.project_schemas import (Forecast, ForecastSeries,
                                             ModelConfig, Project, Tag)
 
@@ -117,7 +118,19 @@ class ForecastSeriesRepository(repository_factory(
 
 
 class ForecastRepository(repository_factory(Forecast, ForecastTable)):
-    pass
+    @classmethod
+    def update_status(cls,
+                      session: Session,
+                      forecast_oid: str,
+                      status: EStatus) -> Forecast:
+        q = select(ForecastTable).where(ForecastTable.oid == forecast_oid)
+        result = session.execute(q).unique().scalar_one_or_none()
+        if result:
+            result.status = status
+            session.commit()
+            session.refresh(result)
+            return cls.model.model_validate(result)
+        return None
 
 
 class ModelConfigRepository(repository_factory(
