@@ -1,36 +1,64 @@
 from datetime import datetime, timedelta
+from uuid import UUID
 
-from prefect import flow, runtime, task
+from prefect import flow, get_run_logger, runtime, task
 
 from hermes.flows.get_catalog import get_catalog
+from hermes.flows.model_runner import ModelRunner
 from hermes.repositories.data import SeismicityObservationRepository
+from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ProjectRepository)
-from hermes.repositories.types import SessionType
-from hermes.schemas import (EInput, Forecast, ForecastSeries, ModelConfig,
-                            ModelInput, ModelRunInfo, SeismicityObservation)
+from hermes.schemas import (EInput, Forecast, ModelConfig, ModelInput,
+                            ModelRunInfo, SeismicityObservation)
+from hermes.schemas.base import EStatus
 
 
-class ForecastExecutor:
-    @flow(name='ForecastExecutor')
+@flow(name='ForecastRunner')
+def factory(
+    forecastseries: UUID,
+    starttime: datetime | None = None,
+    endtime: datetime | None = None,
+    modelconfigs: ModelConfig | None = None
+) -> None:
+    return ForecastRunner(forecastseries, starttime, endtime, modelconfigs)
+
+
+class ForecastRunner:
+    @task(name="ForecastRunner")
     def __init__(self,
-                 session: SessionType,
-                 forecastseries: ForecastSeries,
+                 forecastseries_oid: UUID,
                  starttime: datetime | None = None,
                  endtime: datetime | None = None,
                  modelconfigs: ModelConfig | None = None):
 
-        self.session = session
-        self.project = ProjectRepository.get_by_id(session,
-                                                   forecastseries.project_oid)
-        self.forecastseries = forecastseries
+        self.logger = get_run_logger()
+        self.session = Session()
+        self.forecastseries = ForecastSeriesRepository.get_by_id(
+            self.session, forecastseries_oid)
+        self.project = \
+            ProjectRepository.get_by_id(self.session,
+                                        self.forecastseries.project_oid)
         self.forecast = None
         self.model_run_infos = []
 
-        self._create_forecast(starttime, endtime)
-        self._create_seismicityobservation()
-        self._prepare_model_run_infos(modelconfigs)
+        try:
+            self._create_forecast(starttime, endtime)
+            self._create_seismicityobservation()
+            self._prepare_model_run_infos(modelconfigs)
+            self.run()
+        except BaseException as e:
+            self.update_status(EStatus.FAILED)
+            raise e
+
+    def __del__(self):
+        self.logger.info('Closing session')
+        self.session.close()
+
+    def update_status(self, status: EStatus):
+        self.forecast = ForecastRepository.update_status(
+            self.session, self.forecast.oid, status)
 
     @task
     def _create_forecast(self, starttime, endtime):
@@ -95,22 +123,13 @@ class ForecastExecutor:
                 )
             )
 
-    @flow
+    @task(name='RunForecast')
     def run(self):
-        raise NotImplementedError
+        for run_info in self.model_run_infos:
+            model_runner = ModelRunner(
+                self.session, run_info, self.forecast)
+            model_runner.run()
 
 
 if __name__ == '__main__':
-
-    from hermes.repositories.database import Session
-
-    with Session() as session:
-        forecastseries = ForecastSeriesRepository.get_by_name(
-            session, 'test_forecastseries')
-
-        fex = ForecastExecutor(session, forecastseries,
-                               datetime(2021, 1, 1, 13),
-                               datetime(2021, 1, 1, 14))
-
-        print(type(fex.model_run_infos[0]))
-        print(len(fex.model_run_infos))
+    factory.serve()

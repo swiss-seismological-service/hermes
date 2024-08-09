@@ -3,10 +3,10 @@ from datetime import datetime
 from typing import Optional
 
 import typer
+from prefect.deployments import run_deployment
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.flows.create_forecast import ForecastExecutor
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
 
@@ -39,14 +39,17 @@ def run(
             forecastseries_db = ForecastSeriesRepository.get_by_name(
                 session, forecastseries)
 
-        if not forecastseries_db:
-            console.print(f'ForecastSeries "{forecastseries}" not found.')
-            raise typer.Exit()
+    if not forecastseries_db:
+        console.print(f'ForecastSeries "{forecastseries}" not found.')
+        raise typer.Exit()
 
     # Run the forecast
-    with Session() as session:
-        forecast = ForecastExecutor(
-            session, forecastseries_db, start, end)
-        forecast.run()
+    run_deployment(
+        name="ForecastRunner/ForecastRunner",
+        parameters={"forecastseries": forecastseries_db.oid,
+                    "starttime": start,
+                    "endtime": end},
+        timeout=0,  # don't wait for the run to finish
+    )
 
-    console.print(f'Forecast "{forecast.forecast.name}" dispatched.')
+    console.print('Forecast dispatched.')
