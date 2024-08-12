@@ -46,7 +46,7 @@ class ForecastSeries(CreationInfoMixin):
     depth_min: float | None = None
     depth_max: float | None = None
 
-    injection_plan: dict | None = Field(None, exclude=True)
+    injection_plans: list[dict] | None = Field(None, exclude=True)
 
     tags: list[str] = []
 
