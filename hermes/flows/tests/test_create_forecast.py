@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from hermes.flows.forecast_runner import factory
+from hermes.flows.forecast_runner import forecast_flow_runner
 from hermes.repositories.types import SessionType
 from hermes.schemas import SeismicityObservation
 
@@ -33,8 +33,8 @@ class TestModels:
 
         starttime = datetime(2021, 1, 2, 0, 30, 0)
 
-        executor = factory(forecastseries.oid,
-                           starttime)
+        executor = forecast_flow_runner(forecastseries.oid,
+                                        starttime)
 
         assert executor.model_run_infos[0].config == model_config
         assert len(executor.model_run_infos) == 1

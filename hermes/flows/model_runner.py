@@ -1,21 +1,61 @@
-from prefect import flow
+from abc import abstractmethod
 
-from hermes.repositories.types import SessionType
+from prefect import flow, task
+
+from hermes.repositories.database import Session
 from hermes.schemas.model_schemas import ModelRunInfo
-from hermes.schemas.project_schemas import Forecast
 
 
-class ModelRunner:
-    def __init__(self,
-                 session: SessionType,
-                 modelrun_info: ModelRunInfo,
-                 forecast: Forecast) -> None:
-        self.session = session
-        self.model_input = modelrun_info.input
+class ModelRunHandlerInterface:
+    def __init__(self, modelrun_info: ModelRunInfo) -> None:
+        self.modelrun_info = modelrun_info
         self.model_config = modelrun_info.config
-        self.forecast = forecast
+        self.injection_plan = self._fetch_injection_plan()
+        self.injection_observation = self._fetch_injection_observation()
+        self.seismicity_observation = self._fetch_seismicity_observation()
 
-    @flow(name='RunModel')
+    @abstractmethod
     def run(self) -> None:
-        # print(self.model_input)
-        print(self.model_config)
+        raise NotImplementedError
+
+    @abstractmethod
+    def _fetch_injection_observation(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _fetch_injection_plan(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _fetch_seismicity_observation(self) -> None:
+        raise NotImplementedError
+
+
+class DefaultModelRunHandler(ModelRunHandlerInterface):
+
+    def __init__(self, modelrun_info: ModelRunInfo) -> None:
+        super().__init__(modelrun_info)
+        self.session = Session()
+
+    def __del__(self):
+        print('Closing session')
+        self.session.close()
+
+    def _fetch_injection_observation(self) -> None:
+        pass
+
+    def _fetch_injection_plan(self) -> None:
+        pass
+
+    def _fetch_seismicity_observation(self) -> None:
+        pass
+
+    @task(name='RunModel')
+    def run(self) -> None:
+        print(self.modelrun_info)
+
+
+@flow(name='DefaultModelRunner')
+def model_flow_runner(modelrun_info: ModelRunInfo) -> None:
+    runner = DefaultModelRunHandler(modelrun_info)
+    runner.run()
