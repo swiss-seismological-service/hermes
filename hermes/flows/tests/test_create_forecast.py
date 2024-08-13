@@ -18,26 +18,25 @@ from hermes.schemas import SeismicityObservation
 @patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id')
 class TestModels:
     def test_import(self,
-                    mock_fs_g, mock_p_c, mock_f_c, mock_obs_c, mock_conf_g,
-                    mock_cat_c, mock_ssn,
+                    mock_fs_g, mock_p_g, mock_f_c, mock_obs_c, mock_conf_g,
+                    mock_cat_g, mock_ssn,
                     project, forecastseries, forecast, model_config):
 
         # mock all repository calls
         mock_ssn.return_value = MagicMock(spec=SessionType)
-        mock_cat_c().to_quakeml.return_value = 'data'
+        mock_cat_g().to_quakeml.return_value = 'data'
         mock_fs_g.return_value = forecastseries
-        mock_p_c.return_value = project
+        mock_p_g.return_value = project
         mock_f_c.return_value = forecast
         mock_obs_c.return_value = SeismicityObservation(data='data')
         mock_conf_g.return_value = [model_config]
 
         starttime = datetime(2021, 1, 2, 0, 30, 0)
 
-        executor = forecast_flow_runner(forecastseries.oid,
-                                        starttime)
-
-        assert executor.model_run_infos[0].config == model_config
-        assert len(executor.model_run_infos) == 1
+        runs = forecast_flow_runner(forecastseries.oid,
+                                    starttime)
+        assert len(runs) == 1
+        assert runs[0].modelconfig == model_config
 
         forecast_arg = mock_f_c.call_args[0][1]
         assert forecast_arg.starttime == starttime

@@ -26,6 +26,7 @@ def forecast_flow_runner(forecastseries: UUID,
     runs = builder.build_runs()
     for run in runs:
         default_model_flow_runner(run)
+    return runs
 
 
 class ForecastBuilder:
