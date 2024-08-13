@@ -8,7 +8,7 @@
         "INDUCED"
     ],
     "result_type": "GRID",
-    "config": {
+    "model_parameters": {
         "b_value": 1,
         "afb": -2,
         "Tau": 60,
