@@ -184,8 +184,8 @@ def model_config(session):
         enabled=True,
         sfm_module='test_module',
         sfm_function='test_function',
-        config={'setting1': 'value1',
-                'setting2': 'value2'}
+        model_parameters={'setting1': 'value1',
+                          'setting2': 'value2'}
     )
     model_config = ModelConfigRepository.create(session, model_config)
     return model_config

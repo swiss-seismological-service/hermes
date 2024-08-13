@@ -17,7 +17,7 @@ class ModelRunHandlerInterface:
     def __init__(self, modelrun_info: DBModelRunInfo, **kwargs) -> None:
         super().__init__(**kwargs)
         self.modelrun_info = modelrun_info
-        self.model_config = modelrun_info.config
+        self.model_config = modelrun_info.modelconfig
         self.injection_plan = self._fetch_injection_plan()
         self.injection_observation = self._fetch_injection_observation()
         self.seismicity_observation = self._fetch_seismicity_observation()

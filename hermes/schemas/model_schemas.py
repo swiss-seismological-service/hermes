@@ -46,7 +46,7 @@ class BaseModelRunInfo(Model):
     depth_min: float | None = None
     depth_max: float | None = None
 
-    config: ModelConfig
+    modelconfig: ModelConfig
 
     @field_validator('bounding_polygon', mode='before')
     @classmethod

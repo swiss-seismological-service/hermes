@@ -161,7 +161,7 @@ class ForecastBuilder:
             depth_max=self.forecastseries.depth_max,
 
             injection_plan_oid=getattr(injectionplan, 'oid', None),
-            config=modelconfig
+            modelconfig=modelconfig
         )
 
     @task(name='Build Model Runs')
