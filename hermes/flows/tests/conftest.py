@@ -1,6 +1,8 @@
+import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
+import numpy as np
 import pytest
 from prefect.logging import disable_run_logger
 from prefect.testing.utilities import prefect_test_harness
@@ -8,10 +10,15 @@ from shapely import Polygon
 
 from hermes.schemas import (EInput, EResultType, EStatus, Forecast,
                             ForecastSeries, ModelConfig, Project)
+from hermes.schemas.data_schemas import SeismicityObservation
+from hermes.schemas.model_schemas import DBModelRunInfo
+
+MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'data')
 
 
-@pytest.fixture(autouse=True, scope="class")
-def prefect_test_fixture():
+@pytest.fixture(scope="class")
+def prefect():
     with prefect_test_harness():
         with disable_run_logger():
             yield
@@ -83,3 +90,51 @@ def model_config():
     )
 
     return model_config
+
+
+@pytest.fixture()
+def modelrun_info():
+    modelconfig = ModelConfig(
+        oid=uuid.uuid4(),
+        name='test',
+        result_type=EResultType.CATALOG,
+        sfm_module='etas.entrypoint',
+        sfm_function='entrypoint',
+        model_parameters={
+            "theta_0": {
+                "log10_mu": -6.21,
+                "log10_k0": -2.75,
+                "a": 1.13,
+                "log10_c": -2.85,
+                "omega": -0.13,
+                "log10_tau": 3.57,
+                "log10_d": -0.51,
+                "gamma": 0.15,
+                "rho": 0.63
+            },
+            "mc": 2.3,
+            "delta_m": 0.1,
+            "coppersmith_multiplier": 100,
+            "earth_radius": 6.3781e3,
+            "auxiliary_start": datetime(1992, 1, 1),
+            "timewindow_start": datetime(1997, 1, 1),
+            "n_simulations": 100
+        }
+    )
+
+    return DBModelRunInfo(
+        modelconfig=modelconfig,
+        forecast_start=datetime(2000, 1, 1),
+        forecast_end=datetime(2000, 1, 1) + timedelta(days=30),
+        bounding_polygon=Polygon(
+            np.load(os.path.join(MODULE_LOCATION, 'ch_rect.npy'))),
+        depth_min=0,
+        depth_max=1
+    )
+
+
+@pytest.fixture()
+def seismicity_observation():
+    with open(os.path.join(MODULE_LOCATION, 'catalog.xml')) as f:
+        catalog = f.read()
+    return SeismicityObservation(data=catalog)
