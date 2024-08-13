@@ -1,0 +1,38 @@
+{
+    "description": "This is a test forecast series",
+    "tags": [
+        "test"
+    ],
+    "forecast_starttime": "2021-01-01T12:00:00",
+    "forecast_endtime": "2021-01-02T00:00:00",
+    "observation_starttime": "2021-01-01T00:00:00",
+    "bounding_polygon": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    -125,
+                    35
+                ],
+                [
+                    -115,
+                    35
+                ],
+                [
+                    -115,
+                    40
+                ],
+                [
+                    -125,
+                    40
+                ],
+                [
+                    -125,
+                    35
+                ]
+            ]
+        ]
+    },
+    "depth_min": 0,
+    "depth_max": 10
+}
