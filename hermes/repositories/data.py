@@ -3,9 +3,12 @@ from uuid import UUID
 from seismostats import Catalog
 from sqlalchemy.orm import Session
 
-from hermes.datamodel.data_tables import SeismicityObservationTable
+from hermes.datamodel.data_tables import (InjectionObservationTable,
+                                          InjectionPlanTable,
+                                          SeismicityObservationTable)
 from hermes.repositories.base import repository_factory
-from hermes.schemas.data_schemas import SeismicityObservation
+from hermes.schemas.data_schemas import (InjectionObservation, InjectionPlan,
+                                         SeismicityObservation)
 
 
 class SeismicityObservationRepository(repository_factory(
@@ -37,3 +40,13 @@ class SeismicityObservationRepository(repository_factory(
         )
         object_db = cls.create(session, object_db)
         return object_db.oid
+
+
+class InjectionObservationRepository(repository_factory(
+        InjectionObservation, InjectionObservationTable)):
+    pass
+
+
+class InjectionPlanRepository(repository_factory(
+        InjectionPlan, InjectionPlanTable)):
+    pass
