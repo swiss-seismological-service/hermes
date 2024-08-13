@@ -3,11 +3,16 @@ from abc import abstractmethod
 from prefect import flow, task
 
 from hermes.repositories.database import Session
-from hermes.schemas.model_schemas import ModelRunInfo
+from hermes.schemas.model_schemas import DBModelRunInfo, ModelInput
 
 
 class ModelRunHandlerInterface:
-    def __init__(self, modelrun_info: ModelRunInfo) -> None:
+    """
+    General Interface for a model run handler.
+    """
+
+    def __init__(self, modelrun_info: DBModelRunInfo, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.modelrun_info = modelrun_info
         self.model_config = modelrun_info.config
         self.injection_plan = self._fetch_injection_plan()
@@ -56,6 +61,6 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
 
 
 @flow(name='DefaultModelRunner')
-def model_flow_runner(modelrun_info: ModelRunInfo) -> None:
+def default_model_flow_runner(modelrun_info: DBModelRunInfo) -> None:
     runner = DefaultModelRunHandler(modelrun_info)
     runner.run()

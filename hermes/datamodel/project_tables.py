@@ -119,7 +119,7 @@ class ModelConfigTable(ORMBase, NameMixin):
                            default=datetime.now(timezone.utc),
                            onupdate=datetime.now(timezone.utc))
 
-    config = Column(JSON, nullable=False)
+    model_parameters = Column(JSON, nullable=False)
 
     modelruns = relationship('ModelRunTable',
                              back_populates='modelconfig')

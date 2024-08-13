@@ -7,7 +7,7 @@
     "result_type": "CATALOG",
     "sfm_module": "somemodule",
     "sfm_function": "somefunction",
-    "config": {
+    "model_parameters": {
         "somekey": "somevalue"
     }
 }

@@ -90,7 +90,7 @@ class ModelConfig(Model):
     sfm_function: str | None = None
     last_modified: datetime | None = None
 
-    config: dict = {}
+    model_parameters: dict = {}
 
     tags: list[str] = []
 

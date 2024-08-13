@@ -11,7 +11,8 @@ class Model(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
         arbitrary_types_allowed=True,
-        from_attributes=True)
+        from_attributes=True,
+        protected_namespaces=())
 
 
 class EInput(str, enum.Enum):

@@ -4,13 +4,13 @@ from uuid import UUID
 from prefect import flow, get_run_logger, runtime, task
 
 from hermes.flows.get_catalog import get_catalog
-from hermes.flows.model_runner import model_flow_runner
+from hermes.flows.model_runner import default_model_flow_runner
 from hermes.repositories.data import SeismicityObservationRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ProjectRepository)
-from hermes.schemas import (EInput, Forecast, ModelRunInfo,
+from hermes.schemas import (DBModelRunInfo, EInput, Forecast,
                             SeismicityObservation)
 from hermes.schemas.base import EStatus
 from hermes.schemas.data_schemas import InjectionPlan
@@ -25,7 +25,7 @@ def forecast_flow_runner(forecastseries: UUID,
     builder = ForecastBuilder(forecastseries, starttime, endtime)
     runs = builder.build_runs()
     for run in runs:
-        model_flow_runner(run)
+        default_model_flow_runner(run)
 
 
 class ForecastBuilder:
@@ -131,7 +131,7 @@ class ForecastBuilder:
 
     def _modelrun_info(self,
                        modelconfig: ModelConfig,
-                       injectionplan: InjectionPlan) -> ModelRunInfo:
+                       injectionplan: InjectionPlan) -> DBModelRunInfo:
         """
         Assembles the information required to run the model from the
         various sources.
@@ -146,7 +146,7 @@ class ForecastBuilder:
         Returns:
             ModelRunInfo: The information required to run the model.
         """
-        return ModelRunInfo(
+        return DBModelRunInfo(
             forecast_oid=self.forecast.oid,
             forecast_start=self.forecast.starttime,
             forecast_end=self.forecast.endtime,
@@ -165,7 +165,7 @@ class ForecastBuilder:
         )
 
     @task(name='Build Model Runs')
-    def build_runs(self) -> list[ModelRunInfo]:
+    def build_runs(self) -> list[DBModelRunInfo]:
         runs = []
         for modelconfig in self.modelconfigs:
             if self.forecastseries.injection_plans:
