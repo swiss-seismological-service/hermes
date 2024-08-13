@@ -8,6 +8,7 @@ from hermes.schemas import SeismicityObservation
 
 # too many mocks, however this function binds together the whole flow
 # of the forecast logic.
+@patch('hermes.flows.forecast_runner.default_model_flow_runner')
 @patch('hermes.flows.forecast_runner.Session',)
 @patch('hermes.flows.forecast_runner.get_catalog')
 @patch('hermes.repositories.project.'
@@ -19,7 +20,7 @@ from hermes.schemas import SeismicityObservation
 class TestModels:
     def test_import(self,
                     mock_fs_g, mock_p_g, mock_f_c, mock_obs_c, mock_conf_g,
-                    mock_cat_g, mock_ssn,
+                    mock_cat_g, mock_ssn, mock_f_r,
                     project, forecastseries, forecast, model_config):
 
         # mock all repository calls

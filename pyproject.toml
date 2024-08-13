@@ -19,7 +19,8 @@ license = { file = "LICENSE" }
 
 dependencies = [
     "geoalchemy2",
-    "prefect>=3.0.0rc9",
+    "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/ramsis-model.git",
+    "prefect>=3.0.0rc16",
     "psycopg2",
     "pydantic",
     "python-dotenv",

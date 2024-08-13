@@ -1,12 +1,13 @@
 from abc import abstractmethod
 
+from hermes_model import ModelInput
 from prefect import flow, task
 
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
                                       SeismicityObservationRepository)
 from hermes.repositories.database import Session
-from hermes.schemas.model_schemas import DBModelRunInfo, ModelInput
+from hermes.schemas.model_schemas import DBModelRunInfo
 
 
 class ModelRunHandlerInterface:
