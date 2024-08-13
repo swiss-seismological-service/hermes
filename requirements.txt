@@ -44,7 +44,7 @@ greenlet==3.0.3
 griffe==0.47.0
 h11==0.14.0
 h2==4.1.0
--e git+ssh://git@github.com/swiss-seismological-service/hermes.git@81de1939e929075de4c36003ef2d829a457ea4e9#egg=HERMES
+-e git+ssh://git@github.com/swiss-seismological-service/hermes.git
 hpack==4.0.0
 httpcore==1.0.5
 httptools==0.6.1
@@ -79,7 +79,8 @@ pendulum==3.0.0
 pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
-prefect==3.0.0rc11
+prefect==3.0.0rc16
+prometheus_client==0.20.0
 psycopg2==2.9.9
 pyarrow==17.0.0
 pycodestyle==2.12.0
@@ -114,7 +115,7 @@ rpds-py==0.19.0
 ruamel.yaml==0.18.6
 ruamel.yaml.clib==0.2.8
 scipy==1.14.0
-SeismoStats @ git+https://github.com/swiss-seismological-service/SeismoStats.git@a01054852798dbffc8b2a685eb9163bc579cf1bb
+SeismoStats @ git+https://github.com/swiss-seismological-service/SeismoStats.git
 shapely==2.0.5
 shellingham==1.5.4
 six==1.16.0
