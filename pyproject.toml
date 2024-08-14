@@ -40,3 +40,4 @@ hermes = "hermes.cli:app"
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
+filterwarnings = ["ignore:divide by zero"]

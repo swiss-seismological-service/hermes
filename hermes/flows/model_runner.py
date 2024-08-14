@@ -1,3 +1,4 @@
+import importlib
 from abc import abstractmethod
 
 from hermes_model import ModelInput
@@ -47,10 +48,14 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
         super().__init__(*args, **kwargs)
 
         self.model_input = self._model_input()
+        self.model_config = self.modelrun_info.modelconfig
 
     @task(name='RunModel')
     def run(self) -> None:
-        print(self.model_input)
+        model_module = importlib.import_module(self.model_config.sfm_module)
+        model_function = getattr(model_module, self.model_config.sfm_function)
+
+        results = model_function(self.model_input.model_dump())
 
     def _model_input(self) -> ModelInput:
         return ModelInput(

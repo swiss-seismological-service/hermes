@@ -123,8 +123,8 @@ def modelrun_info():
 
     return DBModelRunInfo(
         modelconfig=modelconfig,
-        forecast_start=datetime(2000, 1, 1),
-        forecast_end=datetime(2000, 1, 1) + timedelta(days=30),
+        forecast_start=datetime(2022, 1, 1),
+        forecast_end=datetime(2022, 1, 1) + timedelta(days=30),
         bounding_polygon=Polygon(
             np.load(os.path.join(MODULE_LOCATION, 'ch_rect.npy'))),
         depth_min=0,
