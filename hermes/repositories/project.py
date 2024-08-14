@@ -7,9 +7,8 @@ from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              ProjectTable, TagTable)
 from hermes.repositories.base import repository_factory
-from hermes.schemas.base import EStatus
-from hermes.schemas.project_schemas import (Forecast, ForecastSeries,
-                                            ModelConfig, Project, Tag)
+from hermes.schemas import (EStatus, Forecast, ForecastSeries, ModelConfig,
+                            Project, Tag)
 
 
 class ProjectRepository(repository_factory(Project, ProjectTable)):

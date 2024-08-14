@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ModelConfigRepository
-from hermes.schemas import ModelConfig
+from hermes.schemas.model_schemas import ModelConfig
 
 app = typer.Typer()
 console = Console()

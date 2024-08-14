@@ -5,8 +5,22 @@ from uuid import UUID
 from pydantic import field_validator
 from shapely import Polygon
 
-from hermes.schemas.base import Model
-from hermes.schemas.project_schemas import ModelConfig
+from hermes.schemas.base import EResultType, Model
+
+
+class ModelConfig(Model):
+    oid: UUID | None = None
+    name: str | None = None
+    enabled: bool = True
+    description: str | None = None
+    result_type: EResultType | None = None
+    sfm_module: str | None = None
+    sfm_function: str | None = None
+    last_modified: datetime | None = None
+
+    model_parameters: dict = {}
+
+    tags: list[str] = []
 
 
 class BaseModelRunInfo(Model):

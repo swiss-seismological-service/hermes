@@ -7,8 +7,7 @@ from pydantic import Field, field_validator
 from shapely import Polygon
 
 from hermes.repositories.types import PolygonType, polygon_converter
-from hermes.schemas.base import (CreationInfoMixin, EInput, EResultType,
-                                 EStatus, Model)
+from hermes.schemas.base import CreationInfoMixin, EInput, EStatus, Model
 from hermes.utils.geometry import convert_input_to_polygon
 
 
@@ -78,21 +77,6 @@ class Forecast(CreationInfoMixin):
 
     seismicity_observation: str | None = Field(None, exclude=True)
     injection_observation: list[dict] | None = Field(None, exclude=True)
-
-
-class ModelConfig(Model):
-    oid: UUID | None = None
-    name: str | None = None
-    enabled: bool = True
-    description: str | None = None
-    result_type: EResultType | None = None
-    sfm_module: str | None = None
-    sfm_function: str | None = None
-    last_modified: datetime | None = None
-
-    model_parameters: dict = {}
-
-    tags: list[str] = []
 
 
 class Tag(Model):

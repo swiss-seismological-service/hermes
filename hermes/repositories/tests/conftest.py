@@ -14,9 +14,8 @@ from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)
-from hermes.schemas import (EInput, EStatus, Forecast, ForecastSeries,
-                            ModelConfig, Project)
-from hermes.schemas.base import EResultType
+from hermes.schemas import (EInput, EResultType, EStatus, Forecast,
+                            ForecastSeries, ModelConfig, Project)
 
 settings = get_settings()
 

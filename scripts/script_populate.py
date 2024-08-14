@@ -8,7 +8,8 @@ from hermes.repositories.project import (ForecastRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)
 from hermes.schemas import (EInput, EResultType, EStatus, Forecast,
-                            ForecastSeries, ModelConfig, Project)
+                            ForecastSeries, Project)
+from hermes.schemas.model_schemas import ModelConfig
 
 
 def project() -> Project:

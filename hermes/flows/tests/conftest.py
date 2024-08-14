@@ -8,10 +8,9 @@ from prefect.logging import disable_run_logger
 from prefect.testing.utilities import prefect_test_harness
 from shapely import Polygon
 
-from hermes.schemas import (EInput, EResultType, EStatus, Forecast,
-                            ForecastSeries, ModelConfig, Project)
-from hermes.schemas.data_schemas import SeismicityObservation
-from hermes.schemas.model_schemas import DBModelRunInfo
+from hermes.schemas import (DBModelRunInfo, EInput, EResultType, EStatus,
+                            Forecast, ForecastSeries, ModelConfig, Project,
+                            SeismicityObservation)
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')

@@ -10,11 +10,8 @@ from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ProjectRepository)
-from hermes.schemas import (DBModelRunInfo, EInput, Forecast,
-                            SeismicityObservation)
-from hermes.schemas.base import EStatus
-from hermes.schemas.data_schemas import InjectionPlan
-from hermes.schemas.project_schemas import ModelConfig
+from hermes.schemas import (DBModelRunInfo, EInput, EStatus, Forecast,
+                            InjectionPlan, ModelConfig, SeismicityObservation)
 from hermes.utils.prefect import futures_wait
 
 
