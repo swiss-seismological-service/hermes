@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from geoalchemy2.shape import from_shape
-from seismostats import Catalog
+from seismostats import Catalog, ForecastCatalog
 from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
@@ -54,6 +54,12 @@ class TimeStepRepository(
 class SeismicEventRepository(
     repository_factory(SeismicEvent,
                        SeismicEventTable)):
+
+    @classmethod
+    def create_from_forecast_catalog(cls,
+                                     session,
+                                     catalog: ForecastCatalog):
+        pass
 
     @classmethod
     def create_from_catalog(cls,

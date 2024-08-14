@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-from seismostats import Catalog
+from seismostats import Catalog, ForecastCatalog
 from shapely import Polygon
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -208,3 +208,13 @@ class TestSeismicEvent:
 
         assert len(catalog) == len(catalog2)
         assert isinstance(catalog2, Catalog)
+
+    def test_create_from_forecast_catalog(self, session):
+        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
+        catalog = ForecastCatalog(pd.read_parquet(catalog_path))
+
+        catalog_length = len(catalog)
+        result_length = catalog.n_catalogs
+
+        # TODO: SeismicEventRepository\
+        #   .create_from_forecast_catalog(session, catalog)

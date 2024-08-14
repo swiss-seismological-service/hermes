@@ -1,13 +1,17 @@
 import importlib
 from abc import abstractmethod
+from typing import Any
 
 from hermes_model import ModelInput
 from prefect import flow, task
+from seismostats import ForecastCatalog, ForecastGRRateGrid
 
+from hermes.io.model_results import save_forecast_catalog_to_repositories
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
                                       SeismicityObservationRepository)
 from hermes.repositories.database import Session
+from hermes.schemas.base import EResultType
 from hermes.schemas.model_schemas import DBModelRunInfo
 
 
@@ -23,6 +27,9 @@ class ModelRunHandlerInterface:
         self.injection_plan = self._fetch_injection_plan()
         self.injection_observation = self._fetch_injection_observation()
         self.seismicity_observation = self._fetch_seismicity_observation()
+        self.save_results = {EResultType.CATALOG: self._save_catalog,
+                             EResultType.BINS: self._save_bins,
+                             EResultType.GRID: self._save_grid, }
 
     @abstractmethod
     def run(self) -> None:
@@ -38,6 +45,18 @@ class ModelRunHandlerInterface:
 
     @abstractmethod
     def _fetch_seismicity_observation(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _save_catalog(self, results: list[ForecastCatalog]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _save_bins(self, results: Any) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _save_grid(self, results: list[ForecastGRRateGrid]) -> None:
         raise NotImplementedError
 
 
@@ -56,6 +75,7 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
         model_function = getattr(model_module, self.model_config.sfm_function)
 
         results = model_function(self.model_input.model_dump())
+        self.save_results[self.model_config.result_type](results)
 
     def _model_input(self) -> ModelInput:
         return ModelInput(
@@ -94,6 +114,16 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
             return None
         return SeismicityObservationRepository.get_by_id(
             self.session, self.modelrun_info.seismicity_observation_oid).data
+
+    def _save_catalog(self, results: list[ForecastCatalog]) -> None:
+        for catalog in results:
+            save_forecast_catalog_to_repositories(self.session, catalog)
+
+    def _save_bins(self, results: Any) -> None:
+        raise NotImplementedError
+
+    def _save_grid(self, results: list[ForecastGRRateGrid]) -> None:
+        raise NotImplementedError
 
 
 @flow(name='DefaultModelRunner')
