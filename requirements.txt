@@ -115,7 +115,7 @@ rpds-py==0.19.0
 ruamel.yaml==0.18.6
 ruamel.yaml.clib==0.2.8
 scipy==1.14.0
-SeismoStats @ git+https://github.com/swiss-seismological-service/SeismoStats.git@a01054852798dbffc8b2a685eb9163bc579cf1bb
+SeismoStats @ git+https://github.com/swiss-seismological-service/SeismoStats.git
 shapely==2.0.5
 shellingham==1.5.4
 six==1.16.0
