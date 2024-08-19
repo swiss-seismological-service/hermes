@@ -194,6 +194,22 @@ class TestModelResult:
         assert GridCellRepository.get_by_id(session, self.cell.oid) is None
         assert TimeStepRepository.get_by_id(session, self.timestep.oid) is None
 
+    def test_batch_create(self, session):
+        ids = ModelResultRepository.batch_create(session,
+                                                 10,
+                                                 EResultType.CATALOG,
+                                                 None,
+                                                 None,
+                                                 None)
+
+        count = session.execute(
+            text('SELECT COUNT(modelresult.oid) FROM modelresult;')
+        ).one_or_none()
+
+        assert count is not None
+        assert count[0] == 11
+        assert len(ids) == 10
+
 
 class TestSeismicEvent:
     def test_create(self, session):

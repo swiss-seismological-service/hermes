@@ -142,7 +142,10 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
     def _save_catalog(self, results: list[ForecastCatalog]) -> None:
         for catalog in results:
             save_forecast_catalog_to_repositories(
-                self.session, self.modelrun_info.forecast_oid, catalog)
+                self.session,
+                self.modelrun_info.forecast_oid,
+                self.modelrun.oid,
+                catalog)
 
     def _save_bins(self, results: Any) -> None:
         raise NotImplementedError

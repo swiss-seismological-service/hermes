@@ -24,10 +24,20 @@ class ModelResultRepository(
     def batch_create(cls,
                      session: Session,
                      number: int,
+                     result_type: str,
                      timestep_oid: UUID | None = None,
                      gridcell_oid: UUID | None = None,
                      modelrun_oid: UUID | None = None) -> list[UUID]:
-        pass
+        data = [{'timestep_oid': timestep_oid,
+                 'gridcell_oid': gridcell_oid,
+                 'modelrun_oid': modelrun_oid,
+                 'result_type': result_type} for _ in range(number)]
+
+        q = insert(ModelResultTable).returning(ModelResultTable.oid)
+
+        result = session.execute(q, data).fetchall()
+        session.commit()
+        return [row[0] for row in result]
 
 
 class GridCellRepository(
