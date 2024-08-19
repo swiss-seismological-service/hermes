@@ -22,7 +22,7 @@ def forecast_flow_runner(forecastseries: UUID,
     builder = ForecastBuilder(forecastseries, starttime, endtime)
     runs = builder.build_runs()
     for run in runs:
-        default_model_flow_runner(run)
+        default_model_flow_runner(*run)
     return runs
 
 
@@ -128,8 +128,8 @@ class ForecastBuilder:
             raise NotImplementedError
 
     def _modelrun_info(self,
-                       modelconfig: ModelConfig,
-                       injectionplan: InjectionPlan) -> DBModelRunInfo:
+                       injectionplan: InjectionPlan | None = None) \
+            -> DBModelRunInfo:
         """
         Assembles the information required to run the model from the
         various sources.
@@ -145,6 +145,7 @@ class ForecastBuilder:
             ModelRunInfo: The information required to run the model.
         """
         return DBModelRunInfo(
+            forecastseries_oid=self.forecastseries.oid,
             forecast_oid=self.forecast.oid,
             forecast_start=self.forecast.starttime,
             forecast_end=self.forecast.endtime,
@@ -158,20 +159,19 @@ class ForecastBuilder:
             depth_min=self.forecastseries.depth_min,
             depth_max=self.forecastseries.depth_max,
 
-            injection_plan_oid=getattr(injectionplan, 'oid', None),
-            modelconfig=modelconfig
+            injection_plan_oid=getattr(injectionplan, 'oid', None)
         )
 
     @task(name='Build Model Runs')
-    def build_runs(self) -> list[DBModelRunInfo]:
+    def build_runs(self) -> list[tuple[DBModelRunInfo, ModelConfig]]:
         runs = []
         for modelconfig in self.modelconfigs:
             if self.forecastseries.injection_plans:
                 for injection_plan in self.forecastseries.injection_plans:
-                    runs.append(self._modelrun_info(
-                        modelconfig, injection_plan))
+                    runs.append(
+                        (self._modelrun_info(injection_plan), modelconfig))
             else:
-                runs.append(self._modelrun_info(modelconfig, None))
+                runs.append((self._modelrun_info(), modelconfig))
 
         return runs
 

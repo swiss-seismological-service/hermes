@@ -1,15 +1,25 @@
+from uuid import UUID
+
 from seismostats import ForecastCatalog
 
+from hermes.repositories.results import GridCellRepository, TimeStepRepository
 from hermes.schemas import GridCell, TimeStep
 
 
 def save_forecast_catalog_to_repositories(
         session,
+        forecastseries_oid: UUID,
         forecast_catalog: ForecastCatalog) -> None:
     # create the timestep and gridcell objects
     timestep = TimeStep(starttime=forecast_catalog.starttime,
-                        endtime=forecast_catalog.endtime)
-    griddcell = GridCell(geom=forecast_catalog.bounding_polygon)
+                        endtime=forecast_catalog.endtime,
+                        forecastseries_oid=forecastseries_oid)
+    griddcell = GridCell(geom=forecast_catalog.bounding_polygon,
+                         forecastseries_oid=forecastseries_oid)
+
+    # save the timestep and gridcell objects to the database
+    timestep = TimeStepRepository.get_or_create(session, timestep)
+    griddcell = GridCellRepository.get_or_create(session, griddcell)
 
     # create n_catalogs number of ModelResults
     # replace the catalog_id column with the modelresult_oids

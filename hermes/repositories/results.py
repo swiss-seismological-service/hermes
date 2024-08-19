@@ -18,7 +18,14 @@ from hermes.schemas.result_schemas import (GridCell, ModelResult, ModelRun,
 class ModelResultRepository(
     repository_factory(ModelResult,
                        ModelResultTable)):
-    pass
+    @classmethod
+    def batch_create(cls,
+                     session: Session,
+                     number: int,
+                     timestep_oid: UUID | None = None,
+                     gridcell_oid: UUID | None = None,
+                     modelrun_oid: UUID | None = None) -> list[UUID]:
+        pass
 
 
 class GridCellRepository(
@@ -72,6 +79,13 @@ class SeismicEventRepository(
                         .values(modelresult_oid=modelresult_oid),
                         events)
         session.commit()
+
+    @classmethod
+    def create_from_forecastcatalog(cls,
+                                    session: Session,
+                                    catalog: ForecastCatalog,
+                                    modelresult_oids: list[UUID]) -> None:
+        pass
 
     @classmethod
     def get_catalog(cls, session: Session, modelresult_oid: UUID) -> Catalog:

@@ -35,8 +35,6 @@ class BaseModelRunInfo(Model):
     depth_min: float | None = None
     depth_max: float | None = None
 
-    modelconfig: ModelConfig
-
     @field_validator('bounding_polygon', mode='before')
     @classmethod
     def validate_bounding_polygon(cls, value: Any):
@@ -52,6 +50,7 @@ class DBModelRunInfo(BaseModelRunInfo):
     """
 
     forecast_oid: UUID | None = None
+    forecastseries_oid: UUID | None = None
     injection_observation_oid: UUID | None = None
     injection_plan_oid: UUID | None = None
     seismicity_observation_oid: UUID | None = None
