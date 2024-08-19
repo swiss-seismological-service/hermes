@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import numpy as np
 from seismostats import ForecastCatalog
 
 from hermes.repositories.results import (GridCellRepository,
@@ -36,6 +37,7 @@ def save_forecast_catalog_to_repositories(
     )
 
     # replace the catalog_id column with the modelresult_oids
+    forecast_catalog.catalog_id = np.array(ids)[forecast_catalog.catalog_id]
 
 
 def serialize_seismostats_forecastcatalog(
