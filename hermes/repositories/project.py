@@ -36,8 +36,7 @@ class TagRepository(repository_factory(
 
     @classmethod
     def _get_or_create(cls, session: Session, name: str) -> TagTable:
-        q = select(TagTable).where(TagTable.name == name)
-        result = session.execute(q).unique().scalar_one_or_none()
+        result = cls._get_by_name(session, name)
         if not result:
             try:
                 result = TagTable(name=name)

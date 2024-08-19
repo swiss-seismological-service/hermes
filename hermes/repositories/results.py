@@ -1,8 +1,10 @@
 from uuid import UUID
 
+from geoalchemy2.functions import ST_Envelope, ST_Equals, ST_SetSRID
 from geoalchemy2.shape import from_shape
 from seismostats import Catalog, ForecastCatalog
 from sqlalchemy import insert, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from hermes.datamodel.result_tables import (GridCellTable, ModelResultTable,
@@ -12,7 +14,7 @@ from hermes.io.catalog import serialize_seismostats_catalog
 from hermes.repositories.base import repository_factory
 from hermes.repositories.database import pandas_read_sql
 from hermes.schemas.result_schemas import (GridCell, ModelResult, ModelRun,
-                                           SeismicEvent)
+                                           SeismicEvent, TimeStep)
 
 
 class ModelResultRepository(
@@ -51,11 +53,51 @@ class GridCellRepository(
 
         return cls.model.model_validate(db_model)
 
+    @classmethod
+    def get_or_create(cls,
+                      session: Session,
+                      gridcell: GridCell) -> GridCell:
+        q = select(GridCellTable).where(
+            GridCellTable.forecastseries_oid == gridcell.forecastseries_oid,
+            # TODO: Improve SRID handling
+            ST_Equals(ST_Envelope(GridCellTable.unique_geom),
+                      ST_SetSRID(ST_Envelope(gridcell.geom.wkt), 4326)),
+            GridCellTable.depth_min == gridcell.depth_min,
+            GridCellTable.depth_max == gridcell.depth_max)
+        result = session.execute(q).unique().scalar_one_or_none()
+
+        if not result:
+            try:
+                result = cls.create(session, gridcell)
+            except IntegrityError as e:
+                session.rollback()
+                result = session.execute(q).unique().scalar_one_or_none()
+                if not result:
+                    raise e
+        return result
+
 
 class TimeStepRepository(
     repository_factory(GridCell,
                        TimeStepTable)):
-    pass
+    @classmethod
+    def get_or_create(cls,
+                      session: Session,
+                      timestep: TimeStep) -> TimeStep:
+        q = select(TimeStepTable).where(
+            TimeStepTable.starttime == timestep.starttime,
+            TimeStepTable.endtime == timestep.endtime,
+            TimeStepTable.forecastseries_oid == timestep.forecastseries_oid)
+        result = session.execute(q).unique().scalar_one_or_none()
+        if not result:
+            try:
+                result = cls.create(session, timestep)
+            except IntegrityError as e:
+                session.rollback()
+                result = session.execute(q).unique().scalar_one_or_none()
+                if not result:
+                    raise e
+        return result
 
 
 class SeismicEventRepository(

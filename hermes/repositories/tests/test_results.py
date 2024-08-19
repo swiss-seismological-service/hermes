@@ -34,6 +34,21 @@ class TestGridCells:
         cell1 = GridCellRepository.create(session, cell1)
         assert cell1.oid is not None
 
+    def test_get_or_create(self, session, forecastseries):
+        cell1 = GridCell(geom=Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]),
+                         depth_max=10,
+                         depth_min=5,
+                         forecastseries_oid=forecastseries.oid)
+        cell1 = GridCellRepository.get_or_create(session, cell1)
+        assert cell1.oid is not None
+
+        cell2 = GridCell(geom=Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]),
+                         depth_max=10,
+                         depth_min=5,
+                         forecastseries_oid=forecastseries.oid)
+        cell2 = GridCellRepository.get_or_create(session, cell2)
+        assert cell1.oid == cell2.oid
+
     def test_get_by_id(self, session, forecastseries):
         cell1 = GridCell(geom=Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]),
                          depth_max=10,
@@ -80,6 +95,19 @@ class TestTimeStep:
                             forecastseries_oid=forecastseries.oid)
         timestep = TimeStepRepository.create(session, timestep)
         assert timestep.oid is not None
+
+    def test_get_or_create(self, session, forecastseries):
+        timestep = TimeStep(starttime=datetime(2021, 1, 1),
+                            endtime=datetime(2021, 1, 2),
+                            forecastseries_oid=forecastseries.oid)
+        timestep = TimeStepRepository.get_or_create(session, timestep)
+        assert timestep.oid is not None
+
+        timestep2 = TimeStep(starttime=datetime(2021, 1, 1),
+                             endtime=datetime(2021, 1, 2),
+                             forecastseries_oid=forecastseries.oid)
+        timestep2 = TimeStepRepository.get_or_create(session, timestep2)
+        assert timestep.oid == timestep2.oid
 
     def test_get_by_id(self, session, forecastseries):
         timestep = TimeStep(starttime=datetime(2021, 1, 1),
