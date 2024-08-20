@@ -52,7 +52,8 @@ def _drop_tables():
 
 
 def pandas_read_sql(stmt, session):
-    with session.connection() as conn:
-        df = pd.read_sql_query(stmt, conn)
+    df = pd.read_sql_query(stmt, session.connection())
+    # with session.connection() as conn:
+    #     df = pd.read_sql_query(stmt, conn)
 
     return df

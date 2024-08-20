@@ -37,7 +37,7 @@ class TestModels:
         runs = forecast_flow_runner(forecastseries.oid,
                                     starttime)
         assert len(runs) == 1
-        assert runs[0].modelconfig == model_config
+        assert runs[0][1] == model_config
 
         forecast_arg = mock_f_c.call_args[0][1]
         assert forecast_arg.starttime == starttime

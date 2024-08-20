@@ -93,7 +93,18 @@ def model_config():
 
 @pytest.fixture()
 def modelrun_info():
-    modelconfig = ModelConfig(
+    return DBModelRunInfo(
+        forecast_start=datetime(2022, 1, 1),
+        forecast_end=datetime(2022, 1, 1) + timedelta(days=30),
+        bounding_polygon=Polygon(
+            np.load(os.path.join(MODULE_LOCATION, 'ch_rect.npy'))),
+        depth_min=0,
+        depth_max=1)
+
+
+@pytest.fixture()
+def modelconfig():
+    return ModelConfig(
         oid=uuid.uuid4(),
         name='test',
         result_type=EResultType.CATALOG,
@@ -119,16 +130,6 @@ def modelrun_info():
             "timewindow_start": datetime(1997, 1, 1),
             "n_simulations": 100
         }
-    )
-
-    return DBModelRunInfo(
-        modelconfig=modelconfig,
-        forecast_start=datetime(2022, 1, 1),
-        forecast_end=datetime(2022, 1, 1) + timedelta(days=30),
-        bounding_polygon=Polygon(
-            np.load(os.path.join(MODULE_LOCATION, 'ch_rect.npy'))),
-        depth_min=0,
-        depth_max=1
     )
 
 
