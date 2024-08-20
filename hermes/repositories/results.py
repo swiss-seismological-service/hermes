@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import numpy as np
 from geoalchemy2.functions import ST_Envelope, ST_Equals, ST_SetSRID
 from geoalchemy2.shape import from_shape
 from seismostats import Catalog, ForecastCatalog
@@ -115,12 +116,6 @@ class SeismicEventRepository(
                        SeismicEventTable)):
 
     @classmethod
-    def create_from_forecast_catalog(cls,
-                                     session,
-                                     catalog: ForecastCatalog):
-        pass
-
-    @classmethod
     def create_from_catalog(cls,
                             session: Session,
                             catalog: Catalog,
@@ -133,11 +128,18 @@ class SeismicEventRepository(
         session.commit()
 
     @classmethod
-    def create_from_forecastcatalog(cls,
-                                    session: Session,
-                                    catalog: ForecastCatalog,
-                                    modelresult_oids: list[UUID]) -> None:
-        pass
+    def create_from_forecast_catalog(cls,
+                                     session: Session,
+                                     catalog: ForecastCatalog,
+                                     modelresult_oids: list[UUID]) -> None:
+
+        # replace the catalog_id column with the modelresult_oids
+        catalog.catalog_id = np.array(modelresult_oids)[catalog.catalog_id]
+        catalog = catalog.rename(columns={'catalog_id': 'modelresult_oid'})
+        events = serialize_seismostats_catalog(catalog)
+
+        session.execute(insert(SeismicEventTable), events)
+        session.commit()
 
     @classmethod
     def get_catalog(cls, session: Session, modelresult_oid: UUID) -> Catalog:

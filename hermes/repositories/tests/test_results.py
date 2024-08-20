@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pytest
 from seismostats import Catalog, ForecastCatalog
@@ -222,21 +223,6 @@ class TestSeismicEvent:
         event = SeismicEventRepository.create(session, event)
         assert event.oid is not None
 
-    def test_create_from_catalog(self, session, connection):
-        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
-
-        catalog = Catalog(pd.read_parquet(catalog_path))
-
-        catalog_length = len(catalog)
-        SeismicEventRepository.create_from_catalog(session, catalog, None)
-
-        count = connection.execute(
-            text('SELECT COUNT(seismicevent.oid) FROM seismicevent;'))\
-            .one_or_none()
-
-        assert count is not None
-        assert count[0] == catalog_length
-
     def test_get_catalog(self, session):
         catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
         catalog = Catalog(pd.read_parquet(catalog_path))
@@ -253,12 +239,48 @@ class TestSeismicEvent:
         assert len(catalog) == len(catalog2)
         assert isinstance(catalog2, Catalog)
 
-    def test_create_from_forecast_catalog(self, session):
+    def test_create_from_catalog(self, session, connection):
         catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
-        catalog = ForecastCatalog(pd.read_parquet(catalog_path))
+
+        catalog = Catalog(pd.read_parquet(catalog_path))
 
         catalog_length = len(catalog)
-        result_length = catalog.n_catalogs
+        SeismicEventRepository.create_from_catalog(session, catalog, None)
 
-        # TODO: SeismicEventRepository\
-        #   .create_from_forecast_catalog(session, catalog)
+        count = connection.execute(
+            text('SELECT COUNT(seismicevent.oid) FROM seismicevent;'))\
+            .one_or_none()
+
+        assert count is not None
+        assert count[0] == catalog_length
+
+    def test_create_from_forecast_catalog(self, session):
+        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
+
+        catalog = ForecastCatalog(pd.read_parquet(catalog_path))
+        catalog.n_catalogs = 5
+        catalog['catalog_id'] = np.random.randint(0, catalog.n_catalogs,
+                                                  catalog.shape[0])
+
+        len_cat0 = len(catalog[catalog['catalog_id'] == 0])
+        len_fc = len(catalog)
+
+        modelresult_oids = ModelResultRepository.batch_create(
+            session, catalog.n_catalogs, EResultType.CATALOG, None, None, None)
+
+        SeismicEventRepository \
+            .create_from_forecast_catalog(session, catalog, modelresult_oids)
+
+        count = session.execute(
+            text('SELECT COUNT(seismicevent.oid) FROM seismicevent;'))\
+            .one_or_none()
+        assert count is not None
+        assert count[0] == len_fc
+
+        count = session.execute(
+            text('SELECT COUNT(seismicevent.oid) FROM seismicevent '
+                 'WHERE modelresult_oid = :modelresult_oid;'),
+            {'modelresult_oid': modelresult_oids[0]}
+        ).one_or_none()
+        assert count is not None
+        assert count[0] == len_cat0

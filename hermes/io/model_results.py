@@ -1,10 +1,10 @@
 from uuid import UUID
 
-import numpy as np
 from seismostats import ForecastCatalog
 
 from hermes.repositories.results import (GridCellRepository,
                                          ModelResultRepository,
+                                         SeismicEventRepository,
                                          TimeStepRepository)
 from hermes.schemas import GridCell, TimeStep
 from hermes.schemas.base import EResultType
@@ -36,10 +36,5 @@ def save_forecast_catalog_to_repositories(
         modelrun_oid
     )
 
-    # replace the catalog_id column with the modelresult_oids
-    forecast_catalog.catalog_id = np.array(ids)[forecast_catalog.catalog_id]
-
-
-def serialize_seismostats_forecastcatalog(
-        forecast_catalog: ForecastCatalog) -> list[dict]:
-    pass
+    SeismicEventRepository.create_from_forecast_catalog(
+        session, forecast_catalog, ids)
