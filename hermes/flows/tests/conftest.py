@@ -108,8 +108,8 @@ def modelconfig():
         oid=uuid.uuid4(),
         name='test',
         result_type=EResultType.CATALOG,
-        sfm_module='etas.entrypoint',
-        sfm_function='entrypoint',
+        sfm_module='hermes.flows.tests.test_model_runner',
+        sfm_function='mock_function',
         model_parameters={
             "theta_0": {
                 "log10_mu": -6.21,

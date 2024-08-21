@@ -117,9 +117,8 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
             injectionplan_oid=self.modelrun_info.injection_plan_oid
         )
 
-        return ModelRunRepository.create(
-            self.session,
-            modelrun)
+        return ModelRunRepository.create(self.session,
+                                         modelrun)
 
     def _fetch_injection_observation(self) -> None:
         if not self.modelrun_info.injection_observation_oid:
