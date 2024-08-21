@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -7,6 +8,7 @@ from shapely import Polygon
 
 from hermes.repositories.types import PolygonType, polygon_converter
 from hermes.schemas.base import EResultType, EStatus, Model, real_value_mixin
+from hermes.utils.geometry import convert_input_to_polygon
 
 
 class ModelRun(Model):
@@ -43,8 +45,15 @@ class GridCell(Model):
     @field_validator('geom', mode='before')
     @classmethod
     def validate_geom(cls, value: Any):
+        if isinstance(value, dict):
+            value = json.dumps(value)
+
         if isinstance(value, PolygonType):
             return polygon_converter(value)
+
+        if isinstance(value, str):
+            return convert_input_to_polygon(value)
+
         return value
 
 

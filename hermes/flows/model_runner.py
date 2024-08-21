@@ -101,7 +101,6 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
     def run(self) -> None:
         model_module = importlib.import_module(self.modelconfig.sfm_module)
         model_function = getattr(model_module, self.modelconfig.sfm_function)
-
         results = model_function(self.model_input.model_dump())
         self.save_results[self.modelconfig.result_type](results)
 
@@ -142,7 +141,7 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
         for catalog in results:
             save_forecast_catalog_to_repositories(
                 self.session,
-                self.modelrun_info.forecast_oid,
+                self.modelrun_info.forecastseries_oid,
                 self.modelrun.oid,
                 catalog)
 

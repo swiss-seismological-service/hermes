@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+  <eventParameters publicID="smi:org.gfz-potsdam.de/geofon/EventParameters">
+    <event publicID="smi:ch.ethz.sed/sc20a/Event/2021zqxyri">
+      <preferredOriginID>smi:ch.ethz.sed/sc20ag/Origin/NLL.20220103070248.816904.80080</preferredOriginID>
+      <preferredMagnitudeID>smi:ch.ethz.sed/sc20ag/Magnitude/20220103070310.700951.80206</preferredMagnitudeID>
+      <preferredFocalMechanismID>smi:ch.ethz.sed/sc20ag/FocalMechanism/20220102195509.556351.79058</preferredFocalMechanismID>
+      <type>earthquake</type>
+      <description>
+        <text>Arolla VS</text>
+        <type>region name</type>
+      </description>
+      <creationInfo>
+        <agencyID>SED</agencyID>
+        <author>scevent@sc20a</author>
+        <creationTime>2021-12-30T07:43:23.504774Z</creationTime>
+      </creationInfo>
+      <origin publicID="smi:ch.ethz.sed/sc20ag/Origin/NLL.20220103070248.816904.80080">
+        <time>
+          <value>2021-12-30T07:43:14.681975Z</value>
+        </time>
+        <latitude>
+          <value>46.05144527</value>
+          <uncertainty>0.1222628824</uncertainty>
+        </latitude>
+        <longitude>
+          <value>7.388024848</value>
+          <uncertainty>0.1007121534</uncertainty>
+        </longitude>
+        <depth>
+          <value>1181.640625</value>
+          <uncertainty>274.9552879</uncertainty>
+        </depth>
+        <methodID>smi:org.gfz-potsdam.de/geofon/NonLinLoc(L2)</methodID>
+        <earthModelID>smi:org.gfz-potsdam.de/geofon/Central_Alps_3D_PgSg_(Diehl_2020)</earthModelID>
+        <quality>
+          <associatedPhaseCount>90</associatedPhaseCount>
+          <usedPhaseCount>77</usedPhaseCount>
+          <usedStationCount>46</usedStationCount>
+          <standardError>0.1050176803</standardError>
+          <azimuthalGap>94.07142612</azimuthalGap>
+          <secondaryAzimuthalGap>110.6864591</secondaryAzimuthalGap>
+          <groundTruthLevel>-</groundTruthLevel>
+          <minimumDistance>0.0329221581</minimumDistance>
+          <maximumDistance>0.6359060797</maximumDistance>
+          <medianDistance>0.2980450328</medianDistance>
+        </quality>
+        <evaluationMode>manual</evaluationMode>
+        <evaluationStatus>confirmed</evaluationStatus>
+        <creationInfo>
+          <agencyID>SED</agencyID>
+          <author>tdiehl@sc20ag</author>
+          <creationTime>2022-01-03T07:03:04.911337Z</creationTime>
+        </creationInfo>
+        <originUncertainty>
+          <horizontalUncertainty>185.4987677</horizontalUncertainty>
+          <minHorizontalUncertainty>152.642893</minHorizontalUncertainty>
+          <maxHorizontalUncertainty>185.4987677</maxHorizontalUncertainty>
+          <azimuthMaxHorizontalUncertainty>2.923723175</azimuthMaxHorizontalUncertainty>
+          <confidenceEllipsoid>
+            <semiMajorAxisLength>527963.9682</semiMajorAxisLength>
+            <semiMinorAxisLength>154558.6453</semiMinorAxisLength>
+            <semiIntermediateAxisLength>229797.4813</semiIntermediateAxisLength>
+            <majorAxisPlunge>12.46685531</majorAxisPlunge>
+            <majorAxisAzimuth>-1.389172207</majorAxisAzimuth>
+            <majorAxisRotation>102.4651996</majorAxisRotation>
+          </confidenceEllipsoid>
+        </originUncertainty>
+      </origin>
+      <magnitude publicID="smi:ch.ethz.sed/sc20ag/Magnitude/20220103070310.700951.80206">
+        <mag>
+          <value>2.510115344</value>
+          <uncertainty>0.23854491</uncertainty>
+        </mag>
+        <type>MLhc</type>
+        <originID>smi:ch.ethz.sed/sc20ag/Origin/NLL.20220103070248.816904.80080</originID>
+        <methodID>smi:org.gfz-potsdam.de/geofon/median</methodID>
+        <stationCount>72</stationCount>
+        <evaluationStatus>confirmed</evaluationStatus>
+        <creationInfo>
+          <agencyID>SED</agencyID>
+          <author>tdiehl@sc20ag</author>
+          <creationTime>2022-01-03T07:10:12.952868Z</creationTime>
+        </creationInfo>
+      </magnitude>
+    </event>
+  </eventParameters>
+</q:quakeml>
