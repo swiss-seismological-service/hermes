@@ -27,6 +27,17 @@ class Settings(BaseSettings):
             database=self.POSTGRES_DB
         )
 
+    @property
+    def ASYNC_SQLALCHEMY_DATABASE_URL(self) -> URL:
+        return URL.create(
+            drivername='postgresql+asyncpg',
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DB
+        )
+
 
 @lru_cache()
 def get_settings():
