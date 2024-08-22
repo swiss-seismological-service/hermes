@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from prefect import flow, get_run_logger, runtime, task
+from prefect import get_run_logger, runtime, task
 
-from hermes.flows.get_catalog import get_catalog
-from hermes.flows.model_runner import default_model_flow_runner
+from hermes.flows.catalog_readers import get_catalog
 from hermes.repositories.data import SeismicityObservationRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
@@ -13,17 +12,6 @@ from hermes.repositories.project import (ForecastRepository,
 from hermes.schemas import (DBModelRunInfo, EInput, EStatus, Forecast,
                             InjectionPlan, ModelConfig, SeismicityObservation)
 from hermes.utils.prefect import futures_wait
-
-
-@flow(name='ForecastRunner')
-def forecast_flow_runner(forecastseries: UUID,
-                         starttime: datetime | None = None,
-                         endtime: datetime | None = None) -> None:
-    builder = ForecastBuilder(forecastseries, starttime, endtime)
-    runs = builder.build_runs()
-    for run in runs:
-        default_model_flow_runner(*run)
-    return runs
 
 
 class ForecastBuilder:
@@ -181,7 +169,3 @@ class ForecastBuilder:
         TODO: The idea is to build the input arguments for a
         `prefect.deployment.run_deployment`call.
         """
-
-
-if __name__ == '__main__':
-    forecast_flow_runner.serve()

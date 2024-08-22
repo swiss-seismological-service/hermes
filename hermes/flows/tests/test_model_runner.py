@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, call, patch
 
-from hermes.flows.model_runner import DefaultModelRunHandler
+from hermes.flows.modelrun_handler import DefaultModelRunHandler
 from hermes.schemas import DBModelRunInfo, ModelConfig
 
 
@@ -9,9 +9,9 @@ def mock_function(results):
 
 
 class TestModelRunner:
-    @patch('hermes.flows.model_runner.DefaultModelRunHandler'
+    @patch('hermes.flows.modelrun_handler.DefaultModelRunHandler'
            '._save_catalog', autocast=True)
-    @patch('hermes.flows.model_runner.ModelRunRepository'
+    @patch('hermes.flows.modelrun_handler.ModelRunRepository'
            '.create', autocast=True)
     @patch('hermes.flows.tests.test_model_runner.mock_function',
            autocast=True)

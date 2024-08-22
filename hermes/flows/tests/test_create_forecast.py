@@ -1,16 +1,16 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from hermes.flows.forecast_runner import forecast_flow_runner
+from hermes.flows import forecast_flow_runner
 from hermes.repositories.types import SessionType
 from hermes.schemas import SeismicityObservation
 
 
 # too many mocks, however this function binds together the whole flow
 # of the forecast logic.
-@patch('hermes.flows.forecast_runner.default_model_flow_runner')
-@patch('hermes.flows.forecast_runner.Session',)
-@patch('hermes.flows.forecast_runner.get_catalog')
+@patch('hermes.flows.default_model_flow_runner')
+@patch('hermes.flows.forecast_builder.Session',)
+@patch('hermes.flows.catalog_readers.get_catalog')
 @patch('hermes.repositories.project.'
        'ForecastSeriesRepository.get_model_configs')
 @patch('hermes.repositories.data.SeismicityObservationRepository.create')
