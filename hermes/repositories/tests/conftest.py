@@ -34,7 +34,7 @@ def delete_database(connection: Connection, db_name: str):
         connection.execute(text("ROLLBACK"))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="class")
 def connection(request: pytest.FixtureRequest) -> object:
     test_db_name = f"{settings.POSTGRES_DB}_test"
 
@@ -76,7 +76,7 @@ def connection(request: pytest.FixtureRequest) -> object:
     return connection
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="class", autouse=True)
 def setup_db(connection, request: pytest.FixtureRequest) -> None:
     """Setup test database.
 
