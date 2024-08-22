@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from sqlalchemy import text
 
-from hermes.flows import forecast_flow_runner
+from hermes.flows import forecast_flow_runner_local
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
@@ -27,8 +27,8 @@ class TestDefaultModelRun:
         mock_session_m.return_value = session
         mock_get_catalog().to_quakeml.return_value = catalog
 
-        forecast_flow_runner(forecastseries.oid,
-                             starttime=datetime(2022, 1, 1, 0, 0, 0))
+        forecast_flow_runner_local(forecastseries.oid,
+                                   starttime=datetime(2022, 1, 1, 0, 0, 0))
 
         n_modelresult = session.execute(
             text('SELECT COUNT(*) FROM modelresult'))
