@@ -4,18 +4,22 @@ from datetime import datetime
 
 import requests
 from seismostats import Catalog
+from shapely import Point
 
-from hermes.schemas.result_schemas import SeismicEvent
+from hermes.repositories.types import shapely_to_db
+from hermes.schemas import SeismicEvent
+from hermes.schemas.base import Model
 from hermes.utils.url import add_query_params
 
 
-def serialize_seismostats_catalog(catalog: Catalog) -> list[dict]:
+def serialize_seismostats_catalog(catalog: Catalog,
+                                  model: Model = SeismicEvent) -> list[dict]:
     """
     Serialize a Seismostats Catalog object to a list of dictionaries.
 
     Args:
         catalog: Catalog object with the events.
-
+        model: Model object to serialize the events to.
     Returns:
         List of dictionaries, each dictionary representing an event.
     """
@@ -23,9 +27,16 @@ def serialize_seismostats_catalog(catalog: Catalog) -> list[dict]:
     column_renames = {col: f'{col}_value' for col in Catalog._required_cols}
     catalog = catalog.rename(columns=column_renames)
 
-    # only keep columns that are in the SeismicEvent model
+    if 'longitude_value' in catalog.columns and \
+            'latitude_value' in catalog.columns:
+        catalog['coordinates'] = catalog.apply(
+            lambda row: shapely_to_db(
+                Point(row['longitude_value'], row['latitude_value'])),
+            axis=1)
+
+    # only keep columns that are in the model
     catalog = catalog[[c for c in catalog.columns if c in list(
-        SeismicEvent.model_fields)]]
+        model.model_fields)]]
 
     # pandas to_dict method for very fast serialization
     events = catalog.to_dict(orient='records')

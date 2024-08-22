@@ -4,9 +4,9 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import field_validator
-from shapely import Polygon
+from shapely import Point, Polygon
 
-from hermes.repositories.types import PolygonType, polygon_converter
+from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas.base import EResultType, EStatus, Model, real_value_mixin
 from hermes.utils.geometry import convert_input_to_polygon
 
@@ -49,7 +49,7 @@ class GridCell(Model):
             value = json.dumps(value)
 
         if isinstance(value, PolygonType):
-            return polygon_converter(value)
+            return db_to_shapely(value)
 
         if isinstance(value, str):
             return convert_input_to_polygon(value)
@@ -66,3 +66,4 @@ class SeismicEvent(real_value_mixin('longitude', float),
     oid: UUID | None = None
     magnitude_type: str | None = None
     modelresult_oid: UUID | None = None
+    coordinates: Point | None = None

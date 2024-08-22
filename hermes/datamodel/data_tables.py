@@ -1,5 +1,6 @@
 
-from sqlalchemy import Column, ForeignKey, LargeBinary, String, Table
+from geoalchemy2 import Geometry
+from sqlalchemy import Column, ForeignKey, Integer, LargeBinary, String, Table
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -51,6 +52,8 @@ class EventObservationTable(TimeQuantityMixin('time'),
         'seismicityobservation.oid', ondelete="CASCADE"))
     seismicityobservation = relationship('SeismicityObservationTable',
                                          back_populates='events')
+    associated_phasecount = Column(Integer)
+    coordinates = Column(Geometry('POINT', srid=4326))
 
 
 tag_forecast_series_association = Table(
