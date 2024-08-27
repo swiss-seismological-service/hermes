@@ -1,4 +1,4 @@
-# Conepts
+# Concepts
 
 The general concepts of the software's domain are described here.
 
