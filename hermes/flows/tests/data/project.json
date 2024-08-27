@@ -1,9 +1,5 @@
 {
     "starttime": "2021-01-01T00:00:00",
     "endtime": "2021-01-02T00:00:00",
-    "description": "This is a test project",
-    "seismicityobservation_required": "REQUIRED",
-    "injectionobservation_required": "NOT_ALLOWED",
-    "injectionplan_required": "NOT_ALLOWED",
-    "fdsnws_url": "https://earthquake.usgs.gov/fdsnws/event/1/query"
+    "description": "This is a test project"
 }

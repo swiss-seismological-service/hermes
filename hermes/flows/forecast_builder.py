@@ -77,13 +77,14 @@ class ForecastBuilder:
         Gets the seismicity observation data and stores it to the database.
         """
 
-        if self.project.seismicityobservation_required == EInput.NOT_ALLOWED:
+        if self.forecastseries.seismicityobservation_required == \
+                EInput.NOT_ALLOWED:
             self.forecast.seismicity_observation = None
             return None
 
         seismicity = SeismicityObservation(
             forecast_oid=self.forecast.oid,
-            data=get_catalog(self.project.fdsnws_url,
+            data=get_catalog(self.forecastseries.fdsnws_url,
                              self.forecastseries.observation_starttime,
                              self.forecast.starttime).to_quakeml()
         )
@@ -99,7 +100,8 @@ class ForecastBuilder:
         """
         Gets the injection observation data and stores it to the database.
         """
-        if self.project.injectionobservation_required == EInput.NOT_ALLOWED:
+        if self.forecastseries.injectionobservation_required == \
+                EInput.NOT_ALLOWED:
             self.forecast.injection_observation = None
         else:
             raise NotImplementedError
@@ -110,7 +112,7 @@ class ForecastBuilder:
         Reads the injection plans of the respective ForecastSeries
         from the database.
         """
-        if self.project.injectionplan_required == EInput.NOT_ALLOWED:
+        if self.forecastseries.injectionplan_required == EInput.NOT_ALLOWED:
             self.forecastseries.injection_plans = None
         else:
             raise NotImplementedError

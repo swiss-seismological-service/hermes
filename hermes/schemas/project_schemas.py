@@ -17,13 +17,7 @@ class Project(CreationInfoMixin):
     starttime: datetime | None = None
     endtime: datetime | None = None
 
-    seismicityobservation_required: EInput = EInput.REQUIRED
-    injectionobservation_required: EInput = EInput.REQUIRED
-    injectionplan_required: EInput = EInput.REQUIRED
-
     description: str | None = None
-    fdsnws_url: str | None = None
-    hydws_url: str | None = None
 
 
 class ForecastSeries(CreationInfoMixin):
@@ -48,6 +42,13 @@ class ForecastSeries(CreationInfoMixin):
     injection_plans: list[dict] | None = Field(None, exclude=True)
 
     tags: list[str] = []
+
+    seismicityobservation_required: EInput = EInput.REQUIRED
+    injectionobservation_required: EInput = EInput.REQUIRED
+    injectionplan_required: EInput = EInput.REQUIRED
+
+    fdsnws_url: str | None = None
+    hydws_url: str | None = None
 
     @field_validator('bounding_polygon', mode='before')
     @classmethod

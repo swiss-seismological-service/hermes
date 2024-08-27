@@ -27,13 +27,6 @@ class ProjectTable(CreationInfoMixin,
         cascade='all, delete-orphan',
         passive_deletes=True)
 
-    fdsnws_url = Column(String)
-    hydws_url = Column(String)
-
-    seismicityobservation_required = Column(String(15), default='REQUIRED')
-    injectionobservation_required = Column(String(15), default='REQUIRED')
-    injectionplan_required = Column(String(15), default='REQUIRED')
-
 
 class ForecastTable(CreationInfoMixin,
                     FiniteEpochMixin,
@@ -93,6 +86,13 @@ class ForecastSeriesTable(CreationInfoMixin,
     _tags = relationship('TagTable',
                          back_populates='forecastseries',
                          secondary=tag_forecast_series_association)
+
+    fdsnws_url = Column(String)
+    hydws_url = Column(String)
+
+    seismicityobservation_required = Column(String(15), default='REQUIRED')
+    injectionobservation_required = Column(String(15), default='REQUIRED')
+    injectionplan_required = Column(String(15), default='REQUIRED')
 
     @hybrid_property
     def tags(self):

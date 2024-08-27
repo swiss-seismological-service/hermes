@@ -35,11 +35,7 @@ def project(session) -> Project:
         name='test_project',
         description='test_description',
         starttime=datetime(2022, 1, 1, 0, 0, 0),
-        endtime=datetime(2022, 3, 1, 0, 0, 0),
-        seismicityobservation_required=EInput.REQUIRED,
-        injectionobservation_required=EInput.NOT_ALLOWED,
-        injectionplan_required=EInput.NOT_ALLOWED,
-        fdsnws_url='https://'
+        endtime=datetime(2022, 3, 1, 0, 0, 0)
     )
 
     project = ProjectRepository.create(session, project)
@@ -60,7 +56,11 @@ def forecastseries(session, project):
             np.load(os.path.join(MODULE_LOCATION, 'ch_rect.npy'))),
         depth_min=0,
         depth_max=1,
-        tags=['tag1', 'tag2']
+        tags=['tag1', 'tag2'],
+        seismicityobservation_required=EInput.REQUIRED,
+        injectionobservation_required=EInput.NOT_ALLOWED,
+        injectionplan_required=EInput.NOT_ALLOWED,
+        fdsnws_url='https://'
     )
 
     forecastseries = ForecastSeriesRepository.create(session, forecastseries)

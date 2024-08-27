@@ -30,11 +30,7 @@ def project():
         oid=uuid.uuid4(),
         description='test_description',
         starttime=datetime(2024, 1, 1, 0, 0, 0),
-        endtime=datetime(2024, 2, 1, 0, 0, 0),
-        seismicityobservation_required=EInput.REQUIRED,
-        injectionobservation_required=EInput.NOT_ALLOWED,
-        injectionplan_required=EInput.NOT_ALLOWED,
-        fdsnws_url='https://'
+        endtime=datetime(2024, 2, 1, 0, 0, 0)
     )
     return project
 
@@ -54,7 +50,11 @@ def forecastseries(project):
         bounding_polygon=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
         depth_min=0,
         depth_max=1,
-        tags=['tag1']
+        tags=['tag1'],
+        seismicityobservation_required=EInput.REQUIRED,
+        injectionobservation_required=EInput.NOT_ALLOWED,
+        injectionplan_required=EInput.NOT_ALLOWED,
+        fdsnws_url='https://'
     )
 
     return forecastseries
