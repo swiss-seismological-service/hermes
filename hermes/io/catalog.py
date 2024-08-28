@@ -2,13 +2,16 @@
 import logging
 from datetime import datetime
 
+import pandas as pd
 import requests
+from prefect import flow, task
 from seismostats import Catalog
 from shapely import Point
 
 from hermes.repositories.types import shapely_to_db
 from hermes.schemas import SeismicEvent
 from hermes.schemas.base import Model
+from hermes.utils.dateutils import generate_date_ranges
 from hermes.utils.url import add_query_params
 
 
@@ -121,6 +124,7 @@ class CatalogDataSource:
                    endtime=endtime or catalog['time'].max())
 
     @classmethod
+    @flow
     def from_fdsnws(cls,
                     url: str,
                     starttime: datetime,
@@ -136,16 +140,36 @@ class CatalogDataSource:
         Returns:
             CatalogDataSource object, status code.
         """
-        url = add_query_params(
-            url,
-            starttime=starttime.strftime('%Y-%m-%dT%H:%M:%S'),
-            endtime=endtime.strftime('%Y-%m-%dT%H:%M:%S'))
 
-        response, status_code = cls._request_text(url)
-        catalog = Catalog.from_quakeml(response,
-                                       include_uncertainties=True,
-                                       include_ids=True,
-                                       include_quality=True)
+        date_ranges = generate_date_ranges(starttime, endtime)
+
+        urls = [add_query_params(url,
+                                 starttime=start.strftime('%Y-%m-%dT%H:%M:%S'),
+                                 endtime=end.strftime('%Y-%m-%dT%H:%M:%S'))
+                for start, end in date_ranges]
+
+        tasks = [cls._request_text.submit(url) for url in urls]
+        parts = [task.result() for task in tasks]
+
+        catalog = Catalog()
+        status_code = 200
+
+        for part in parts:
+            if 200 < part[1] <= 299:
+                status_code = part[1]
+                continue
+
+            catalog = pd.concat([
+                catalog if not catalog.empty else None,
+                Catalog.from_quakeml(part[0],
+                                     include_uncertainties=True,
+                                     include_ids=True,
+                                     include_quality=True)],
+                                ignore_index=True,
+                                axis=0).reset_index(drop=True)
+
+        catalog = catalog.sort_values('time')
+
         return cls(catalog=catalog,
                    starttime=starttime,
                    endtime=endtime), status_code
@@ -194,6 +218,7 @@ class CatalogDataSource:
         ]
 
     @classmethod
+    @task
     def _request_text(cls, url: str, timeout: int = 60, **kwargs) \
             -> tuple[str, int]:
         """
@@ -214,5 +239,7 @@ class CatalogDataSource:
         url = add_query_params(url, **kwargs)
 
         response = requests.get(url, timeout=timeout)
+
         response.raise_for_status()
+
         return response.text, response.status_code
