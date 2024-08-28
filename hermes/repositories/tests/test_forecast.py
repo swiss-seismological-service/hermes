@@ -9,7 +9,6 @@ class TestForecast:
     def test_create(self, session, forecastseries):
         forecast = Forecast(starttime=datetime(2021, 1, 1, 0, 0, 0),
                             endtime=datetime(2021, 1, 2, 0, 0, 0),
-                            name='forecast',
                             status=EStatus.PENDING,
                             forecastseries_oid=forecastseries.oid)
 

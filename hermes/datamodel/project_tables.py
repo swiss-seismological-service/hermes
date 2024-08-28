@@ -33,7 +33,6 @@ class ForecastTable(CreationInfoMixin,
                     ORMBase):
 
     status = Column(String(25), default='PENDING')
-    name = Column(String)
 
     forecastseries_oid = Column(UUID,
                                 ForeignKey('forecastseries.oid',

@@ -67,7 +67,6 @@ class ForecastSeries(CreationInfoMixin):
 
 class Forecast(CreationInfoMixin):
     oid: UUID | None = None
-    name: str | None = None
 
     status: EStatus | None = None
 

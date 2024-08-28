@@ -161,7 +161,6 @@ def forecastseries(session, project):
 @pytest.fixture()
 def forecast(session, forecastseries):
     forecast = Forecast(
-        name='test_forecast',
         forecastseries_oid=forecastseries.oid,
         status=EStatus.PENDING,
         starttime=datetime(2021, 1, 2, 0, 30, 0),

@@ -63,7 +63,6 @@ def forecastseries(project):
 @pytest.fixture()
 def forecast(forecastseries):
     forecast = Forecast(
-        name='test_forecast',
         oid=uuid.uuid4(),
         forecastseries_oid=forecastseries.oid,
         status=EStatus.PENDING,

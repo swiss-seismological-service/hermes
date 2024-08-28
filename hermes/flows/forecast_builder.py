@@ -63,7 +63,6 @@ class ForecastBuilder:
             seconds=self.forecastseries.forecast_duration)
 
         forecast = Forecast(
-            name=f'forecast_{starttime.strftime("%Y-%m-%dT%H:%M:%S")}',
             forecastseries_oid=self.forecastseries.oid,
             status='PENDING',
             starttime=starttime,
