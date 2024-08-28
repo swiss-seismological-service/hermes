@@ -1,15 +1,18 @@
+import os
 from datetime import datetime
 
+import numpy as np
 from shapely.geometry import Polygon
 
 from hermes.repositories.database import Session
-from hermes.repositories.project import (ForecastRepository,
-                                         ForecastSeriesRepository,
+from hermes.repositories.project import (ForecastSeriesRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)
-from hermes.schemas import (EInput, EResultType, EStatus, Forecast,
-                            ForecastSeries, Project)
+from hermes.schemas import (EInput, EResultType, EStatus, ForecastSeries,
+                            Project)
 from hermes.schemas.model_schemas import ModelConfig
+
+MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
 def project() -> Project:
@@ -17,43 +20,32 @@ def project() -> Project:
         project = Project(
             name='test_project',
             description='test_description',
-            starttime=datetime(2024, 1, 1, 0, 0, 0),
-            endtime=datetime(2024, 2, 1, 0, 0, 0)
+            starttime=datetime(2022, 1, 1, 0, 0, 0),
+            endtime=datetime(2022, 3, 1, 0, 0, 0)
         )
 
         project = ProjectRepository.create(session, project)
 
         forecastseries = ForecastSeries(
             name='test_forecastseries',
-            forecast_starttime=datetime(2021, 1, 2, 0, 0, 0),
-            forecast_endtime=datetime(2021, 1, 4, 0, 0, 0),
-            forecast_duration=3600,
-            forecast_interval=1800,
-            observation_starttime=datetime(2021, 1, 1, 0, 0, 0),
+            forecast_starttime=datetime(2022, 1, 1, 0, 0, 0),
+            forecast_duration=30 * 24 * 3600,
+            observation_starttime=datetime(1992, 1, 1),
             project_oid=project.oid,
             status=EStatus.PENDING,
-            bounding_polygon=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
+            bounding_polygon=Polygon(
+                np.load(os.path.join(MODULE_LOCATION, 'ch_rect.npy'))),
             depth_min=0,
             depth_max=1,
             tags=['tag1', 'tag2'],
             seismicityobservation_required=EInput.REQUIRED,
             injectionobservation_required=EInput.NOT_ALLOWED,
             injectionplan_required=EInput.NOT_ALLOWED,
-            fdsnws_url='https://earthquake.usgs.gov/fdsnws/event/1/query',
+            fdsnws_url='http://eida.ethz.ch/fdsnws/event/1/query'
         )
 
         forecastseries = ForecastSeriesRepository.create(
             session, forecastseries)
-
-        forecast = Forecast(
-            name='test_forecast',
-            forecastseries_oid=forecastseries.oid,
-            status=EStatus.PENDING,
-            starttime=datetime(2021, 1, 2, 0, 30, 0),
-            endtime=datetime(2021, 1, 4, 0, 0, 0),
-        )
-
-        forecast = ForecastRepository.create(session, forecast)
 
         model_config = ModelConfig(
             name='test_model',
@@ -61,10 +53,27 @@ def project() -> Project:
             tags=['tag1', 'tag3'],
             result_type=EResultType.CATALOG,
             enabled=True,
-            sfm_module='test_module',
-            sfm_function='test_function',
-            model_parameters={'setting1': 'value1',
-                              'setting2': 'value2'}
+            sfm_module='etas.entrypoint',
+            sfm_function='entrypoint',
+            model_parameters={
+                "theta_0": {
+                    "log10_mu": -6.21,
+                    "log10_k0": -2.75,
+                    "a": 1.13,
+                    "log10_c": -2.85,
+                    "omega": -0.13,
+                    "log10_tau": 3.57,
+                    "log10_d": -0.51,
+                    "gamma": 0.15,
+                    "rho": 0.63
+                },
+                "mc": 2.3,
+                "delta_m": 0.1,
+                "coppersmith_multiplier": 100,
+                "earth_radius": 6.3781e3,
+                "auxiliary_start": "1992-01-01T00:00:00",
+                "timewindow_start": "1997-01-01T00:00:00",
+                "n_simulations": 10}
         )
         model_config = ModelConfigRepository.create(session, model_config)
 
