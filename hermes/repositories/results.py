@@ -1,7 +1,8 @@
 from uuid import UUID
 
 import numpy as np
-from geoalchemy2.functions import ST_Envelope, ST_Equals, ST_SetSRID
+from geoalchemy2.functions import (ST_Envelope, ST_Equals, ST_GeomFromText,
+                                   ST_SetSRID)
 from geoalchemy2.shape import from_shape
 from seismostats import Catalog, ForecastCatalog
 from sqlalchemy import insert, select
@@ -71,10 +72,16 @@ class GridCellRepository(
         q = select(GridCellTable).where(
             GridCellTable.forecastseries_oid == gridcell.forecastseries_oid,
             # TODO: Improve SRID handling
-            ST_Equals(ST_Envelope(GridCellTable.unique_geom),
-                      ST_SetSRID(ST_Envelope(gridcell.geom.wkt), 4326)),
-            GridCellTable.depth_min == gridcell.depth_min,
-            GridCellTable.depth_max == gridcell.depth_max)
+            ST_Equals(
+                ST_Envelope(GridCellTable.unique_geom),
+                ST_Envelope(
+                    ST_SetSRID(
+                        ST_GeomFromText(gridcell.geom.wkt),
+                        4326
+                    )
+                )
+            )
+        )
         result = session.execute(q).unique().scalar_one_or_none()
 
         if not result:
