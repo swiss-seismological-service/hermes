@@ -218,7 +218,9 @@ class CatalogDataSource:
         ]
 
     @classmethod
-    @task
+    @task(retries=3,
+          retry_delay_seconds=5,
+          retry_jitter_factor=1)
     def _request_text(cls, url: str, timeout: int = 60, **kwargs) \
             -> tuple[str, int]:
         """
