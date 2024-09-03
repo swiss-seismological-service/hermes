@@ -1,5 +1,6 @@
 
 import logging
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -148,7 +149,11 @@ class CatalogDataSource:
                                  endtime=end.strftime('%Y-%m-%dT%H:%M:%S'))
                 for start, end in date_ranges]
 
-        tasks = [cls._request_text.submit(url) for url in urls]
+        tasks = []
+        for url in urls:
+            tasks.append(cls._request_text.submit(url))
+            time.sleep(0.5)
+
         parts = [task.result() for task in tasks]
 
         catalog = Catalog()
