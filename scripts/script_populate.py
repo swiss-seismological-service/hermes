@@ -53,8 +53,8 @@ def project() -> Project:
             tags=['tag1', 'tag3'],
             result_type=EResultType.CATALOG,
             enabled=True,
-            sfm_module='etas.entrypoint',
-            sfm_function='entrypoint',
+            sfm_module='etas.oef',
+            sfm_function='entrypoint_suiETAS',
             model_parameters={
                 "theta_0": {
                     "log10_mu": -6.21,
@@ -67,14 +67,16 @@ def project() -> Project:
                     "gamma": 0.15,
                     "rho": 0.63
                 },
-                "mc": 2.3,
+                "mc": 2.2,
+                "m_ref": 2.2,
                 "delta_m": 0.1,
                 "coppersmith_multiplier": 100,
                 "earth_radius": 6.3781e3,
                 "auxiliary_start": "1992-01-01T00:00:00",
                 "timewindow_start": "1997-01-01T00:00:00",
-                "n_simulations": 10}
-        )
+                "m_thr": 2.5,
+                "n_simulations": 100
+            })
         model_config = ModelConfigRepository.create(session, model_config)
 
 
