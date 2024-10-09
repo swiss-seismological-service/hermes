@@ -61,10 +61,8 @@ def get_catalog(url: str, starttime: datetime, endtime: datetime) -> Catalog:
     return catalog
 
 
-if __name__ == '__main__':
-    # make a request to the usgs service
-    cat = get_catalog(url='https://earthquake.usgs.gov/fdsnws/event/1/query',
-                      starttime=datetime(2021, 1, 1),
-                      endtime=datetime(2021, 1, 1))
-    print(cat)
-    print(type(cat))
+# if __name__ == '__main__':
+#     # make a request to the usgs service
+#     cat = get_catalog(url='https://earthquake.usgs.gov/fdsnws/event/1/query',
+#                       starttime=datetime(2021, 1, 1),
+#                       endtime=datetime(2021, 1, 1))

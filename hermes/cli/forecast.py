@@ -46,7 +46,7 @@ def run(
 
     # Run the forecast
     run_deployment(
-        name="ForecastRunner/ForecastRunner",
+        name="ForecastFlowRunner/ForecastFlowRunner",
         parameters={"forecastseries": forecastseries_db.oid,
                     "starttime": start,
                     "endtime": end},
