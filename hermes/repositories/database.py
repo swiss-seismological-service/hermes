@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import text
 
-from config import get_settings
+from hermes.config import get_settings
 from hermes.datamodel.base import ORMBase
 
 settings = get_settings()

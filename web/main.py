@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-# from config import get_settings
+# from hermes.config import get_settings
 from web.database import sessionmanager
 from web.routers import project
 

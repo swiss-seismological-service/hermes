@@ -7,7 +7,7 @@ from prefect.logging import disable_run_logger
 from prefect.testing.utilities import prefect_test_harness
 from shapely import Polygon
 
-from config import get_settings
+from hermes.config import get_settings
 from hermes.repositories.project import (ForecastSeriesRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)

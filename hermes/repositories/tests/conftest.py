@@ -7,7 +7,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from config import get_settings
+from hermes.config import get_settings
 from hermes.datamodel.base import ORMBase
 from hermes.repositories.database import create_engine, create_extensions
 from hermes.repositories.project import (ForecastRepository,
