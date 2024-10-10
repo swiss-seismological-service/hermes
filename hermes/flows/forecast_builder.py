@@ -59,8 +59,12 @@ class ForecastBuilder:
                          endtime: datetime | None) -> None:
 
         starttime = starttime or runtime.flow_run.scheduled_start_time
-        endtime = endtime or starttime + timedelta(
-            seconds=self.forecastseries.forecast_duration)
+
+        if not endtime and self.forecastseries.forecast_duration:
+            endtime = starttime + timedelta(
+                seconds=self.forecastseries.forecast_duration)
+        elif not endtime:
+            endtime = self.forecastseries.forecast_endtime
 
         forecast = Forecast(
             forecastseries_oid=self.forecastseries.oid,

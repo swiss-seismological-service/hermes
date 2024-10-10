@@ -1,10 +1,11 @@
 # import asyncio
 from datetime import datetime, timedelta
 
-from hermes.schemas import ForecastSeries
+from dateutil.rrule import SECONDLY, rrule
+from prefect.client.orchestration import get_client
+from prefect.client.schemas.schedules import RRuleSchedule
 
-# from prefect.client.orchestration import get_client
-# from prefect.client.schemas.schedules import RRuleSchedule
+from hermes.schemas import ForecastSeries
 
 
 class ForecastSeriesScheduler:
@@ -22,42 +23,51 @@ class ForecastSeriesScheduler:
         self.now = datetime.now()
 
         self.past_forecasts = []
-        self.set_past_forecasts()
+        self._set_past_forecasts()
 
-    def set_past_forecasts(self):
+        self._create_schedule()
+
+    def _set_past_forecasts(self):
+        """
+        If the forecast has a start time in the past, calculate the past
+        forecast start and endtimes.
+        """
         # If the start time is in the future, we don't have any past forecasts
         if self.start > self.now:
             return None
 
-        # the overall end for past forecasts
+        # if the endtime lies in the past, we only want to calculate
+        # past forecasts up to the endtime
         if self.end is not None and self.end < self.now:
             past_end = self.end
+        # otherwise we calculate past forecasts up to the current time
         else:
             past_end = self.now
 
-        # calculate the intervals for past forecasts
-        total_seconds = int((past_end - self.start).total_seconds())
-        intervals = range(0, total_seconds + 1, self.interval)
+        # if no duration is specified, we want to avoid creating a forecast
+        # which starts at the same time as the endtime
+        if self.duration is None:
+            past_end -= timedelta(seconds=1)
 
-        for i in intervals:
-            interval_start = self.start + timedelta(seconds=i)
+        rrule_past = rrule(freq=SECONDLY, interval=self.interval,
+                           dtstart=self.start, until=past_end)
 
-            # if the forecast has a duration, calculate the end times
-            if self.duration:
-                interval_end = interval_start + \
-                    timedelta(seconds=self.duration)
-            # if no duration is specified, use the overall end time
-            else:
-                interval_end = self.end
+        self.past_forecasts = list(rrule_past)
 
-            if not interval_end == interval_start:
-                self.past_forecasts.append((interval_start, interval_end))
+    def _create_schedule(self):
 
-        next_start = self.past_forecasts[-1][0] + \
-            timedelta(seconds=self.interval)
+        if self.end is not None and self.end < self.now:
+            return None
 
-        if self.end is None or next_start < self.end:
-            self.start = next_start
+        if self.start < self.now:
+            rrule_full = rrule(freq=SECONDLY, interval=self.interval,
+                               dtstart=self.start, until=self.end)
+            self.start = rrule_full.after(self.now, inc=False)
+
+        rrule_future = rrule(freq=SECONDLY, interval=self.interval,
+                             dtstart=self.start, until=self.end)
+
+        self.schedule = RRuleSchedule(rrule=str(rrule_future))
 
     def run(self):
         pass
@@ -87,12 +97,14 @@ class ForecastSeriesScheduler:
 #         end_time = end_time.replace(hour=17, minute=0, second=0, microsecond=0)
 
 #         # Create RRule schedule
-#         rrule = f"FREQ=MINUTELY;INTERVAL=30;DTSTART={start_time.isoformat()}" \
-#                 f";UNTIL={end_time.isoformat()}"
-#         new_schedule = RRuleSchedule(rrule=rrule)
+#         rrule = rrulestr('FREQ=WEEKLY;BYDAY=MO,WE,FR;UNTIL=20240730T040000Z')
+#         # rrule = f"FREQ=MINUTELY;INTERVAL=30;DTSTART={start_time.isoformat()}" \
+#         #         f";UNTIL={end_time.isoformat()}"
+#         # new_schedule = RRuleSchedule(rrule=rrule)
+#         new_schedule = construct_schedule(rrule=rrule)
 
 #         # Add the new schedule to the deployment
-#         await client.create_deployment_schedule(
+#         await client.create_deployment_schedules(
 #             deployment_id=deployment.id,
 #             schedule=new_schedule
 #         )

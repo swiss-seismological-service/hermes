@@ -42,15 +42,9 @@ class TestForecastSeriesScheduler:
 
         scheduler = ForecastSeriesScheduler(forecastseries)
         assert len(scheduler.past_forecasts) == 25
-        assert scheduler.past_forecasts[0] == (
-            datetime(2021, 1, 2, 0, 0, 0),
-            datetime(2021, 1, 2, 0, 30, 0)
-        )
+        assert scheduler.past_forecasts[0] == datetime(2021, 1, 2, 0, 0, 0)
 
-        assert scheduler.past_forecasts[-1] == (
-            datetime(2021, 1, 2, 12, 0, 0),
-            datetime(2021, 1, 2, 12, 30, 0)
-        )
+        assert scheduler.past_forecasts[-1] == datetime(2021, 1, 2, 12, 0, 0)
 
     def test_past_future_end(self):
 
@@ -88,12 +82,6 @@ class TestForecastSeriesScheduler:
 
         scheduler = ForecastSeriesScheduler(forecastseries)
         assert len(scheduler.past_forecasts) == 24
-        assert scheduler.past_forecasts[0] == (
-            datetime(2021, 1, 2, 0, 0, 0),
-            datetime(2021, 1, 2, 12, 0, 0)
-        )
 
-        assert scheduler.past_forecasts[-1] == (
-            datetime(2021, 1, 2, 11, 30, 0),
-            datetime(2021, 1, 2, 12, 0, 0)
-        )
+        assert scheduler.past_forecasts[0] == datetime(2021, 1, 2, 0, 0, 0)
+        assert scheduler.past_forecasts[-1] == datetime(2021, 1, 2, 11, 30, 0)
