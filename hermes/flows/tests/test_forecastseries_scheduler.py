@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import pytest
+from dateutil.rrule import SECONDLY, rrule
 
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.schemas import ForecastSeries
@@ -41,13 +42,13 @@ class TestForecastSeriesScheduler:
         )
 
         scheduler = ForecastSeriesScheduler(forecastseries)
+
         assert len(scheduler.past_forecasts) == 25
         assert scheduler.past_forecasts[0] == datetime(2021, 1, 2, 0, 0, 0)
-
         assert scheduler.past_forecasts[-1] == datetime(2021, 1, 2, 12, 0, 0)
+        assert scheduler.schedule is None
 
     def test_past_future_end(self):
-
         # Test the past forecast times generation with a future end time.
         now = datetime.now()
         before = now - timedelta(hours=2)
@@ -64,6 +65,10 @@ class TestForecastSeriesScheduler:
         scheduler = ForecastSeriesScheduler(forecastseries)
         assert len(scheduler.past_forecasts) == 5
         assert abs(scheduler.start - next) < timedelta(seconds=1)
+
+        schedule = rrule(freq=SECONDLY, interval=1800,
+                         dtstart=next, until=after)
+        assert str(schedule) == str(scheduler.schedule)
 
         # Test with no end time
         forecastseries.forecast_endtime = None
@@ -85,3 +90,25 @@ class TestForecastSeriesScheduler:
 
         assert scheduler.past_forecasts[0] == datetime(2021, 1, 2, 0, 0, 0)
         assert scheduler.past_forecasts[-1] == datetime(2021, 1, 2, 11, 30, 0)
+
+    def test_no_end(self):
+        now = datetime.now()
+        before = now - timedelta(hours=2)
+        next = now + timedelta(minutes=30)
+
+        forecastseries = ForecastSeries(
+            forecast_starttime=before,
+            forecast_endtime=None,
+            forecast_duration=1800,
+            forecast_interval=1800
+        )
+
+        scheduler = ForecastSeriesScheduler(forecastseries)
+
+        assert len(scheduler.past_forecasts) == 5
+        assert abs(scheduler.start - next) < timedelta(seconds=1)
+
+        schedule = rrule(freq=SECONDLY, interval=1800,
+                         dtstart=next)
+
+        assert str(schedule) == str(scheduler.schedule)

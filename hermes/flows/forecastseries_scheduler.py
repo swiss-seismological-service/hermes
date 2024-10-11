@@ -1,4 +1,4 @@
-# import asyncio
+import asyncio
 from datetime import datetime, timedelta
 
 from dateutil.rrule import SECONDLY, rrule
@@ -25,6 +25,7 @@ class ForecastSeriesScheduler:
         self.past_forecasts = []
         self._set_past_forecasts()
 
+        self.schedule = None
         self._create_schedule()
 
     def _set_past_forecasts(self):
@@ -64,51 +65,21 @@ class ForecastSeriesScheduler:
                                dtstart=self.start, until=self.end)
             self.start = rrule_full.after(self.now, inc=False)
 
-        rrule_future = rrule(freq=SECONDLY, interval=self.interval,
-                             dtstart=self.start, until=self.end)
-
-        self.schedule = RRuleSchedule(rrule=str(rrule_future))
+        self.schedule = rrule(freq=SECONDLY, interval=self.interval,
+                              dtstart=self.start, until=self.end)
 
     def run(self):
-        pass
+        # asyncio.run(add_schedule_to_deployment())
+        return None
 
 
-# input to forecastflowrunner:
-# forecastseries: UUID,
-# starttime: datetime | None = None,
-# endtime: datetime | None = None
+async def add_schedule_to_deployment(deployment_name: str, schedule: rrule):
+    async with get_client() as client:
+        schedule = RRuleSchedule(rrule=str(schedule))
+        deployment = await client.read_deployment(deployment_name)
 
-# 1. get start and endtime for each forecast in the past
-# 2. get the next starttime in the future
-# 3. schedule ForecastFlowRunner with the next starttime
-#    and according to the parameters from the forecastseries
-
-
-# async def add_schedule_to_deployment():
-#     async with get_client() as client:
-#         deployment = await client.read_deployment(
-#             "your-flow-name/your-deployment-name")
-
-#         # Calculate start and end times
-#         start_time = datetime.now().replace(hour=16, minute=0, second=0,
-#                                             microsecond=0) + timedelta(days=1)
-#         end_time = start_time + \
-#             timedelta(days=(4 - start_time.weekday() + 7) % 7)  # Next Friday
-#         end_time = end_time.replace(hour=17, minute=0, second=0, microsecond=0)
-
-#         # Create RRule schedule
-#         rrule = rrulestr('FREQ=WEEKLY;BYDAY=MO,WE,FR;UNTIL=20240730T040000Z')
-#         # rrule = f"FREQ=MINUTELY;INTERVAL=30;DTSTART={start_time.isoformat()}" \
-#         #         f";UNTIL={end_time.isoformat()}"
-#         # new_schedule = RRuleSchedule(rrule=rrule)
-#         new_schedule = construct_schedule(rrule=rrule)
-
-#         # Add the new schedule to the deployment
-#         await client.create_deployment_schedules(
-#             deployment_id=deployment.id,
-#             schedule=new_schedule
-#         )
-
-# Run the async function
-
-# asyncio.run(add_schedule_to_deployment())
+        # Add the new schedule to the deployment
+        await client.create_deployment_schedules(
+            deployment_id=deployment.id,
+            schedule=schedule
+        )
