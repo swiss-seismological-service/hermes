@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -20,17 +20,19 @@ def project() -> Project:
         project = Project(
             name='test_project',
             description='test_description',
-            starttime=datetime(2022, 1, 1, 0, 0, 0),
-            endtime=datetime(2022, 3, 1, 0, 0, 0)
+            starttime=datetime.now() - timedelta(days=7),
+            endtime=datetime.now() + timedelta(days=7),
         )
 
         project = ProjectRepository.create(session, project)
 
         forecastseries = ForecastSeries(
             name='test_forecastseries',
-            forecast_starttime=datetime(2022, 1, 1, 0, 0, 0),
-            forecast_duration=30 * 24 * 3600,
-            observation_starttime=datetime(1992, 1, 1),
+            forecast_starttime=datetime.now() - timedelta(hours=2),
+            forecast_endtime=datetime.now() + timedelta(hours=2),
+            forecast_duration=30 * 60,
+            forecast_interval=30 * 60,
+            observation_starttime=datetime.now() - timedelta(days=365),
             project_oid=project.oid,
             status=EStatus.PENDING,
             bounding_polygon=Polygon(
