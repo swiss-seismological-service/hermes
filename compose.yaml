@@ -1,6 +1,6 @@
 services:
   prefect-server:
-    image: prefecthq/prefect:3.0.0rc9-python3.12
+    image: prefecthq/prefect:3-latest
     command: prefect server start
     ports:
       - "4200:4200"
