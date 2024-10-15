@@ -160,4 +160,17 @@ class SeismicEventRepository(
 
 class ModelRunRepository(repository_factory(
         ModelRun, ModelRunTable)):
-    pass
+    @classmethod
+    def update_status(cls,
+                      session: Session,
+                      modelrun_oid: UUID,
+                      status: str) -> ModelRun:
+        q = select(ModelRunTable).where(ModelRunTable.oid == modelrun_oid)
+        result = session.execute(q).unique().scalar_one_or_none()
+
+        if result:
+            result.status = status
+            session.commit()
+            session.refresh(result)
+            return cls.model.model_validate(result)
+        return None

@@ -99,10 +99,19 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
 
     @task(name='RunModel')
     def run(self) -> None:
-        model_module = importlib.import_module(self.modelconfig.sfm_module)
-        model_function = getattr(model_module, self.modelconfig.sfm_function)
-        results = model_function(self.model_input.model_dump())
-        self.save_results[self.modelconfig.result_type](results)
+        try:
+            model_module = importlib.import_module(self.modelconfig.sfm_module)
+            model_function = getattr(
+                model_module, self.modelconfig.sfm_function)
+            results = model_function(self.model_input.model_dump())
+            self.save_results[self.modelconfig.result_type](results)
+        except BaseException as e:
+            ModelRunRepository.update_status(
+                self.session, self.modelrun.oid, EStatus.FAILED)
+            raise e
+        else:
+            ModelRunRepository.update_status(
+                self.session, self.modelrun.oid, EStatus.COMPLETED)
 
     def __del__(self):
         print('Closing session')
