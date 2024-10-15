@@ -7,6 +7,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.cli.utils import row_table
+from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastSeriesRepository,
                                          ProjectRepository)
@@ -67,3 +68,27 @@ def create(name: Annotated[str,
             session, forecast_series)
     console.print(
         f'Successfully created new ForecastSeries {forecast_series_out.name}.')
+
+
+@app.command(help="Executes past Forecasts and schedules future Forecasts.")
+def schedule(forecastseries: Annotated[str,
+                                       typer.Argument(
+                                           help="Name or UUID of "
+                                           "the ForecastSeries.")]):
+    # Get the forecastseries
+    try:
+        forecastseries_oid = uuid.UUID(forecastseries, version=4)
+        with Session() as session:
+            forecastseries_db = ForecastSeriesRepository.get_by_id(
+                session, forecastseries_oid)
+    except ValueError:
+        with Session() as session:
+            forecastseries_db = ForecastSeriesRepository.get_by_name(
+                session, forecastseries)
+
+    if not forecastseries_db:
+        console.print(f'ForecastSeries "{forecastseries}" not found.')
+        raise typer.Exit()
+
+    scheduler = ForecastSeriesScheduler(forecastseries_db)
+    # scheduler.run()

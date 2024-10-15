@@ -1,10 +1,12 @@
 import asyncio
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from dateutil.rrule import SECONDLY, rrule
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.schedules import RRuleSchedule
 
+from hermes.flows import forecast_flow_runner_local
 from hermes.schemas import ForecastSeries
 
 
@@ -21,6 +23,8 @@ class ForecastSeriesScheduler:
         self.interval = forecastseries.forecast_interval
         self.duration = forecastseries.forecast_duration
         self.now = datetime.now()
+
+        self.name = f"schedule_{self.forecastseries.oid}"
 
         self.past_forecasts = []
         self._set_past_forecasts()
@@ -69,17 +73,33 @@ class ForecastSeriesScheduler:
                               dtstart=self.start, until=self.end)
 
     def run(self):
-        # asyncio.run(add_schedule_to_deployment())
+        # asyncio.run(add_schedule_to_deployment('name/name', self.schedule))
+
+        for starttime in self.past_forecasts:
+            forecast_flow_runner_local(self.forecastseries.oid, starttime)
+
         return None
 
 
 async def add_schedule_to_deployment(deployment_name: str, schedule: rrule):
     async with get_client() as client:
         schedule = RRuleSchedule(rrule=str(schedule))
-        deployment = await client.read_deployment(deployment_name)
+        deployment = await client.read_deployment_by_name(deployment_name)
 
         # Add the new schedule to the deployment
         await client.create_deployment_schedules(
             deployment_id=deployment.id,
-            schedule=schedule
+            schedules=[(schedule, True)]
+        )
+
+
+async def update_schedule(name: str, schedule_id: UUID, new_schedule: rrule):
+
+    async with get_client() as client:
+        deployment = await client.read_deployment_by_name(name)
+
+        await client.update_deployment_schedule(
+            deployment_id=deployment.id,
+            schedule_id=schedule_id,
+            schedule=RRuleSchedule(rrule=str(new_schedule))
         )
