@@ -1,9 +1,9 @@
 {
     "description": "Forecasts Stage 9 of the April 2024 FORGE experiment",
-    "forecast_starttime": "2024-04-06T06:00:00",
+    "schedule_starttime": "2024-04-06T06:00:00",
     "forecast_endtime": "2024-04-06T17:00:00",
     "observation_starttime": "2024-04-05T06:00:00",
-    "forecast_interval": 900,
+    "schedule_interval": 900,
     "forecast_duration": 39600,
     "tags": [
         "INDUCED",

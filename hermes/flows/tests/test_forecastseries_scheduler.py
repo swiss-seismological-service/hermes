@@ -15,17 +15,17 @@ class TestForecastSeriesScheduler:
         constructor work.
         """
         forecastseries_wrong = ForecastSeries(
-            forecast_starttime=None,
+            schedule_starttime=None,
             forecast_endtime=datetime(2021, 1, 2, 12, 0, 0),
             forecast_duration=1800,
-            forecast_interval=1800
+            schedule_interval=1800
         )
 
         with pytest.raises(AssertionError):
             ForecastSeriesScheduler(forecastseries_wrong)
 
-        forecastseries_wrong.forecast_starttime = datetime(2021, 1, 2, 0, 0, 0)
-        forecastseries_wrong.forecast_interval = None
+        forecastseries_wrong.schedule_starttime = datetime(2021, 1, 2, 0, 0, 0)
+        forecastseries_wrong.schedule_interval = None
 
         with pytest.raises(AssertionError):
             ForecastSeriesScheduler(forecastseries_wrong)
@@ -35,10 +35,10 @@ class TestForecastSeriesScheduler:
         Test the past forecast times generation.
         """
         forecastseries = ForecastSeries(
-            forecast_starttime=datetime(2021, 1, 2, 0, 0, 0),
+            schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
             forecast_endtime=datetime(2021, 1, 2, 12, 0, 0),
             forecast_duration=1800,
-            forecast_interval=1800
+            schedule_interval=1800
         )
 
         scheduler = ForecastSeriesScheduler(forecastseries)
@@ -56,10 +56,10 @@ class TestForecastSeriesScheduler:
         next = now + timedelta(minutes=30)
 
         forecastseries = ForecastSeries(
-            forecast_starttime=before,
+            schedule_starttime=before,
             forecast_endtime=after,
             forecast_duration=1800,
-            forecast_interval=1800
+            schedule_interval=1800
         )
 
         scheduler = ForecastSeriesScheduler(forecastseries)
@@ -79,10 +79,10 @@ class TestForecastSeriesScheduler:
     def test_no_duration(self):
         # Test the past forecast times generation with no duration
         forecastseries = ForecastSeries(
-            forecast_starttime=datetime(2021, 1, 2, 0, 0, 0),
+            schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
             forecast_endtime=datetime(2021, 1, 2, 12, 0, 0),
             forecast_duration=None,
-            forecast_interval=1800
+            schedule_interval=1800
         )
 
         scheduler = ForecastSeriesScheduler(forecastseries)
@@ -97,10 +97,10 @@ class TestForecastSeriesScheduler:
         next = now + timedelta(minutes=30)
 
         forecastseries = ForecastSeries(
-            forecast_starttime=before,
+            schedule_starttime=before,
             forecast_endtime=None,
             forecast_duration=1800,
-            forecast_interval=1800
+            schedule_interval=1800
         )
 
         scheduler = ForecastSeriesScheduler(forecastseries)

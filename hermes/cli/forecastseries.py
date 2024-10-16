@@ -25,7 +25,7 @@ def list():
         console.print("No ForecastSeries found")
         return
 
-    table = row_table(fseries, ['oid', 'name', 'forecast_starttime', 'status'])
+    table = row_table(fseries, ['oid', 'name', 'status'])
 
     console.print(table)
 

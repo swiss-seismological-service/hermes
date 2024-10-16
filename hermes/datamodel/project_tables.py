@@ -9,7 +9,8 @@ from sqlalchemy.orm import relationship
 
 from hermes.datamodel.base import (CreationInfoMixin, DefaultEpochMixin,
                                    FiniteEpochMixin, ForecastEpochMixin,
-                                   NameMixin, ObservationEpochMixin, ORMBase)
+                                   NameMixin, ObservationEpochMixin, ORMBase,
+                                   ScheduleEpochMixin)
 from hermes.datamodel.data_tables import (tag_forecast_series_association,
                                           tag_model_config_association)
 
@@ -57,21 +58,23 @@ class ForecastTable(CreationInfoMixin,
 
 
 class ForecastSeriesTable(CreationInfoMixin,
-                          ForecastEpochMixin,
                           ObservationEpochMixin,
+                          ScheduleEpochMixin,
+                          ForecastEpochMixin,
                           NameMixin,
                           ORMBase):
 
     status = Column(String(25))
     description = Column(String)
+
     project_oid = Column(UUID,
                          ForeignKey('project.oid', ondelete="CASCADE"))
     project = relationship('ProjectTable',
                            back_populates='forecastseries')
 
-    # Interval in seconds to place forecasts apart in time.
-    forecast_interval = Column(Integer)
     forecast_duration = Column(Integer)
+    schedule_interval = Column(Integer)
+    schedule_id = Column(UUID)
 
     # Spatial dimensions of the area considered.
     bounding_polygon = Column(Geometry('POLYGON', srid=4326))

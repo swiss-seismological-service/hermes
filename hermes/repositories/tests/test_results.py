@@ -63,7 +63,7 @@ class TestGridCells:
     def test_unique_constraint(self, session, forecastseries):
         fs = ForecastSeries(oid=uuid.uuid4(),
                             name='test',
-                            forecast_starttime=datetime(2021, 1, 1))
+                            schedule_starttime=datetime(2021, 1, 1))
 
         poly1 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
         poly2 = Polygon([(0, 0), (2, 0), (1, 1), (0, 1)])
@@ -122,7 +122,7 @@ class TestTimeStep:
     def test_unique_constraint(self, session, forecastseries):
         fs = ForecastSeries(oid=uuid.uuid4(),
                             name='test',
-                            forecast_starttime=datetime(2021, 1, 1))
+                            schedule_starttime=datetime(2021, 1, 1))
 
         ts1 = TimeStep(starttime=datetime(2021, 1, 1),
                        endtime=datetime(2021, 1, 2),
@@ -150,7 +150,7 @@ class TestModelResult:
         forecastseries = ForecastSeries(
             oid=uuid.uuid4(),
             name='test',
-            forecast_starttime=datetime(2021, 1, 1))
+            schedule_starttime=datetime(2021, 1, 1))
         self.forecastseries_oid = ForecastSeriesRepository.create(
             session, forecastseries).oid
 

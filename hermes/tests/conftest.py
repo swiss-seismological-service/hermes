@@ -47,7 +47,7 @@ def project(session) -> Project:
 def forecastseries(session, project):
     forecastseries = ForecastSeries(
         name='test_forecastseries',
-        forecast_starttime=datetime(2022, 1, 1, 0, 0, 0),
+        schedule_starttime=datetime(2022, 1, 1, 0, 0, 0),
         forecast_duration=30 * 24 * 3600,
         observation_starttime=datetime(1992, 1, 1),
         project_oid=project.oid,

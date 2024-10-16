@@ -137,12 +137,12 @@ def project(session) -> Project:
 def forecastseries(session, project):
     forecastseries = ForecastSeries(
         name='test_forecastseries',
-        forecast_starttime=datetime(2021, 1, 2, 0, 0, 0),
+        schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
         forecast_endtime=datetime(2021, 1, 4, 0, 0, 0),
         observation_starttime=datetime(2021, 1, 1, 0, 0, 0),
         project_oid=project.oid,
         status=EStatus.PENDING,
-        forecast_interval=1800,
+        schedule_interval=1800,
         bounding_polygon=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
         depth_min=0,
         depth_max=1,

@@ -40,10 +40,10 @@ def forecastseries(project):
     forecastseries = ForecastSeries(
         name='test_forecastseries',
         oid=uuid.uuid4(),
-        forecast_starttime=datetime(2021, 1, 2, 0, 0, 0),
+        schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
         forecast_endtime=datetime(2021, 1, 4, 0, 0, 0),
         forecast_duration=1800,
-        forecast_interval=1800,
+        schedule_interval=1800,
         observation_starttime=datetime(2021, 1, 1, 0, 0, 0),
         project_oid=project.oid,
         status=EStatus.PENDING,

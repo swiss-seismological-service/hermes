@@ -13,42 +13,60 @@ The general concepts of the software's domain are described here.
 
 
 ## Forecast Series:
-*I'd like to do forecasts at multiple points in time, using multiple models, and be able to compare them*
+*I would like to run forecasts at different points in time, using multiple models, and be able to compare them*
 
-| Question                                                                    | field(s)                               |
-| --------------------------------------------------------------------------- | -------------------------------------- |
-| Give this series a name.                                                    | name                                   |
-| Are there any forecasts scheduled, paused, .... ?                           | status                                 |
-| What is the spatial extent for which the forecasts are made?                | bounding_polygon, depth_max, depth_min |
-| What data is needed for the models to run?                                  | seismicityobservation_required         |
-|                                                                             | injectionobservation_required          |
-|                                                                             | injectionplan_required                 |
-| Where are the data sources?                                                 | fdsnws_url, hydws_url                  |
-| From which date should we start using the input data?                       | observation_starttime                  |
-| Should we always use all available input data or only until a certain date? | observation_endtime                    |
-| **Scheduling**: From which date should we start running forecasts?          | forecast_starttime                     |
-| **Scheduling**: Until which date should we run the forecasts?               | forecast_endtime                       |
-| **Scheduling**: How often should we run the forecasts?                      | forecast_interval                      |
-| **Scheduling**: How long should each forecast be?                           | forecast_duration                      |
+| Question                                                             | field(s)                       | default                                         |
+| -------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------- |
+| Give this series a name.                                             | name                           | required                                        |
+| Are there any forecasts scheduled, paused, .... ?                    | status                         | required                                        |
+| What is the spatial extent for which the forecasts are made?         | bounding_polygon,              | None                                            |
+|                                                                      | depth_max,                     | None                                            |
+|                                                                      | depth_min                      | None                                            |
+| What data is needed for the models to run?                           | seismicityobservation_required | False                                           |
+|                                                                      | injectionobservation_required  | False                                           |
+|                                                                      | injectionplan_required         | False                                           |
+| Where are the data sources?                                          | fdsnws_url,                    | required                                        |
+|                                                                      | hydws_url                      | None                                            |
+| From which datetime should we start using the input data? (optional) | observation_starttime          | None, will use all available records            |
+| Only use input data up until this datetime.                          | observation_endtime            | None, will use all records up to forecast start |
+
+## Forecast Series Scheduling
+*I'd like to schedule those forecasts at multiple points in time, having them run automatically*
+
+| Question                                               | field(s)           | default                                       |
+| ------------------------------------------------------ | ------------------ | --------------------------------------------- |
+| How long should each forecast be? (optional*)          | forecast_duration  | None, this or `forecast_endtime` is required  |
+| All forecasts start at this datetime. (optional)       | forecast_starttime | None, forecasts will start when triggered     |
+| All forecasts end at this datetime. (optional*)        | forecast_endtime   | None, this or `forecast_duration` is required |
+| From when onwards should we trigger forecasts?         | schedule_starttime | required                                      |
+| Until when should we trigger forecasts? (optional)     | schedule_endtime   | None, forecasts will keep being triggered     |
+| Every how many seconds should a forecast be triggered? | schedule_interval  | required                                      |
 
 ### Scheduling combinations
 
-#### forecast_starttime, forecast_endtime, forecast_interval
-- start running forecasts at forecast_starttime 
-- run forecasts every forecast_interval until forecast_endtime
-- each forecast lasts from when it was started until forecast_endtime
+#### schedule_starttime, schedule_endtime, schedule_interval, forecast_endtime
+- start running forecasts at `schedule_starttime`,run them every `schedule_interval` until `schedule_endtime`.
+- each forecast begins from when it was started until `forecast_endtime`.
 
-#### forecast_starttime, forecast_endtime, forecast_interval, forecast_duration
-- start running forecasts at forecast_starttime
-- run forecasts every forecast_interval until forecast_endtime
-- each forecast lasts forecast_duration
+#### schedule_starttime, schedule_endtime, schedule_interval, forecast_duration
+- ""
+- each forecast begins from when it was started and lasts for `forecast_duration` seconds.
 
-#### forecast_starttime, forecast_interval, forecast_duration
-- start running forecasts at forecast_starttime
-- run forecasts every forecast_interval
-- each forecast lasts forecast_duration
-- run forecasts until manually stopped
+#### schedule_starttime, schedule_endtime, schedule_interval, forecast_duration, forecast_endtime (special case)
+- ""
+- each forecast begins from when it was started and lasts for `forecast_duration` seconds (duration takes precedence over endtime).
 
+#### schedule_starttime, schedule_interval, forecast_duration
+- start running forecasts at `schedule_starttime`, run them every `schedule_interval` until manually stopped.
+- each forecast begins from when it was started until `forecast_duration`.
+
+#### schedule_starttime, schedule_interval, forecast_endtime (special case)
+- start running forecasts at `schedule_starttime`,run them every `schedule_interval` until `forecast_endtime`.
+- ""
+
+#### schedule_starttime, schedule_endtime, schedule_interval, forecast_duration, forecast_fixed_starttime
+- start running forecasts at `schedule_starttime`,run them every `schedule_interval` until `schedule_endtime`.
+- each forecast begins from `forecast_fixed_starttime` and lasts for `forecast_duration` seconds.
 
 ## Forecast
 *I'd like to run a series of models, at a specific point in time, and produce results for a certain time period.*

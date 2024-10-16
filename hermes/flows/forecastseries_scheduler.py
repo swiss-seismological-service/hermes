@@ -1,4 +1,4 @@
-import asyncio
+# import asyncio
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -12,15 +12,15 @@ from hermes.schemas import ForecastSeries
 
 class ForecastSeriesScheduler:
     def __init__(self, forecastseries: ForecastSeries):
-        assert forecastseries.forecast_starttime is not None
-        assert forecastseries.forecast_interval is not None
+        assert forecastseries.schedule_starttime is not None
+        assert forecastseries.schedule_interval is not None
         assert forecastseries.forecast_endtime or \
             forecastseries.forecast_duration
 
         self.forecastseries = forecastseries
-        self.start = forecastseries.forecast_starttime
+        self.start = forecastseries.schedule_starttime
         self.end = forecastseries.forecast_endtime
-        self.interval = forecastseries.forecast_interval
+        self.interval = forecastseries.schedule_interval
         self.duration = forecastseries.forecast_duration
         self.now = datetime.now()
 

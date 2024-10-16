@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator
 from shapely import Polygon
+from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas.base import CreationInfoMixin, EInput, EStatus, Model
@@ -29,8 +30,12 @@ class ForecastSeries(CreationInfoMixin):
 
     forecast_starttime: datetime | None = None
     forecast_endtime: datetime | None = None
-    forecast_interval: int | None = None
     forecast_duration: int | None = None
+
+    schedule_starttime: datetime | None = None
+    schedule_endtime: datetime | None = None
+    schedule_interval: int | None = None
+    schedule_id: UUID | None = None
 
     observation_starttime: datetime | None = None
     observation_endtime: datetime | None = None
@@ -52,7 +57,7 @@ class ForecastSeries(CreationInfoMixin):
 
     @field_validator('bounding_polygon', mode='before')
     @classmethod
-    def validate_bounding_polygon(cls, value: Any):
+    def validate_bounding_polygon(cls, value: Any) -> Self:
         if isinstance(value, dict):
             value = json.dumps(value)
 

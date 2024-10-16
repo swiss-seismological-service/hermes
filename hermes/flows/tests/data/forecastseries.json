@@ -3,7 +3,7 @@
     "tags": [
         "test"
     ],
-    "forecast_starttime": "2021-01-01T12:00:00",
+    "schedule_starttime": "2021-01-01T12:00:00",
     "forecast_endtime": "2021-01-02T00:00:00",
     "observation_starttime": "2021-01-01T00:00:00",
     "bounding_polygon": {
