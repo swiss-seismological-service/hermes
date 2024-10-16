@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
 import typer
 from prefect.deployments import run_deployment
@@ -25,9 +24,10 @@ def run(
                      typer.Option(
                          ...,
                          help="Starttime of the Forecast.")],
-    end: Annotated[Optional[datetime],
+    end: Annotated[datetime,
                    typer.Option(
-                       help="Endtime of the Forecast.")] = None,
+                       ...,
+                       help="Endtime of the Forecast.")],
 ):
     # Get the forecastseries
     try:
@@ -66,9 +66,10 @@ def run_local(
                      typer.Option(
                          ...,
                          help="Starttime of the Forecast.")],
-    end: Annotated[Optional[datetime],
+    end: Annotated[datetime,
                    typer.Option(
-                       help="Endtime of the Forecast.")] = None,
+                       ...,
+                       help="Endtime of the Forecast.")],
 ):
     # Get the forecastseries
     try:
