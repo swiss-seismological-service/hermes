@@ -6,7 +6,7 @@ from dateutil.rrule import SECONDLY, rrule
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.schedules import RRuleSchedule
 
-from hermes.flows import forecast_flow_runner_local
+from hermes.flows import forecast_runner
 from hermes.schemas import ForecastSeries
 
 
@@ -76,7 +76,7 @@ class ForecastSeriesScheduler:
         # asyncio.run(add_schedule_to_deployment('name/name', self.schedule))
 
         for starttime in self.past_forecasts:
-            forecast_flow_runner_local(self.forecastseries.oid, starttime)
+            forecast_runner(self.forecastseries.oid, starttime)
 
         return None
 
