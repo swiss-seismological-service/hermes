@@ -1,3 +1,6 @@
+from prefect import flow
+
+from hermes.flows.modelrun_handler import DefaultModelRunHandler
 from hermes.schemas import (DBModelRunInfo, Forecast, ForecastSeries,
                             InjectionPlan, ModelConfig)
 
@@ -60,3 +63,10 @@ class ModelRunBuilder:
                 runs.append((self._modelrun_info(), modelconfig))
 
         return runs
+
+
+@flow(name='DefaultModelRunner')
+def default_model_runner(modelrun_info: DBModelRunInfo,
+                         modelconfig: ModelConfig) -> None:
+    runner = DefaultModelRunHandler(modelrun_info, modelconfig)
+    runner.run()

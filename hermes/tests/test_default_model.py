@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from sqlalchemy import text
 
-from hermes.flows import forecast_runner
+from hermes.flows.forecast_handler import forecast_runner
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
@@ -12,8 +12,8 @@ MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class TestDefaultModelRun:
 
-    @patch('hermes.flows.forecast_builder.get_catalog')
-    @patch('hermes.flows.forecast_builder.Session')
+    @patch('hermes.flows.forecast_handler.get_catalog')
+    @patch('hermes.flows.forecast_handler.Session')
     @patch('hermes.flows.modelrun_handler.Session')
     def test_full_flow(self,
                        mock_session_m, mock_session_fc, mock_get_catalog,

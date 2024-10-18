@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.flows import forecast_runner
+from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
 

@@ -2,12 +2,11 @@ from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
-from prefect import get_run_logger, runtime, task
+from prefect import flow, get_run_logger, runtime, task
 from prefect.deployments import run_deployment
 
-from hermes.flows import default_model_runner
 from hermes.flows.catalog_readers import get_catalog
-from hermes.flows.modelrun_builder import ModelRunBuilder
+from hermes.flows.modelrun_builder import ModelRunBuilder, default_model_runner
 from hermes.repositories.data import SeismicityObservationRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
@@ -131,3 +130,12 @@ class ForecastHandler:
             self.forecastseries.injection_plans = None
         else:
             raise NotImplementedError
+
+
+@flow(name='ForecastRunner')
+def forecast_runner(forecastseries_oid: UUID,
+                    starttime: datetime | None = None,
+                    endtime: datetime | None = None,
+                    mode: Literal['local', 'deploy'] = 'local') -> None:
+    forecasthandler = ForecastHandler(forecastseries_oid, starttime, endtime)
+    forecasthandler.run(mode)

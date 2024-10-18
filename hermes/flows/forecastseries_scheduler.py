@@ -6,7 +6,7 @@ from dateutil.rrule import SECONDLY, rrule
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.schedules import RRuleSchedule
 
-from hermes.flows import forecast_runner
+from hermes.flows.forecast_handler import forecast_runner
 from hermes.schemas import ForecastSeries
 
 
