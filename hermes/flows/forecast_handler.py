@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 from uuid import UUID
 
@@ -31,8 +31,6 @@ class ForecastHandler:
             self.session, forecastseries_oid)
         self.modelconfigs = ForecastSeriesRepository.get_model_configs(
             self.session, forecastseries_oid)
-        self.forecast = None
-        self._create_forecast()
 
         self.starttime = starttime or \
             self.forecastseries.forecast_starttime or \
@@ -41,6 +39,14 @@ class ForecastHandler:
             self.starttime + timedelta(
                 seconds=self.forecastseries.forecast_duration) or \
             self.forecastseries.forecast_endtime
+
+        self.starttime = self.starttime.astimezone(
+            timezone.utc).replace(tzinfo=None)
+        self.endtime = self.endtime.astimezone(
+            timezone.utc).replace(tzinfo=None)
+
+        self.forecast = None
+        self._create_forecast()
 
         try:
             # Retreive input data from various services
@@ -99,9 +105,10 @@ class ForecastHandler:
 
         seismicity = SeismicityObservation(
             forecast_oid=self.forecast.oid,
-            data=get_catalog(self.forecastseries.fdsnws_url,
-                             self.forecastseries.observation_starttime,
-                             self.forecast.starttime).to_quakeml()
+            data=get_catalog(
+                self.forecastseries.fdsnws_url,
+                self.forecastseries.observation_starttime,
+                self.starttime).to_quakeml()
         )
 
         self.forecast.seismicity_observation = \
@@ -140,3 +147,4 @@ def forecast_runner(forecastseries_oid: UUID,
                     mode: Literal['local', 'deploy'] = 'local') -> None:
     forecasthandler = ForecastHandler(forecastseries_oid, starttime, endtime)
     forecasthandler.run(mode)
+    return forecasthandler

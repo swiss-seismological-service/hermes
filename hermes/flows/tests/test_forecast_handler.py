@@ -1,0 +1,62 @@
+from unittest.mock import MagicMock, patch
+
+from hermes.flows.forecast_handler import forecast_runner
+from hermes.repositories.types import SessionType
+from hermes.schemas import SeismicityObservation
+from hermes.schemas.project_schemas import Forecast
+
+
+@patch('hermes.flows.forecast_handler.default_model_runner', autocast=True)
+@patch('hermes.repositories.data.SeismicityObservationRepository.create',
+       autocast=True,
+       return_value=SeismicityObservation(data='data'))
+@patch('hermes.flows.forecast_handler.get_catalog',
+       autocast=True)
+@patch('hermes.repositories.project.ForecastRepository.create',
+       autocast=True)
+@patch('hermes.repositories.project.'
+       'ForecastSeriesRepository.get_model_configs',
+       autocast=True)
+@patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id',
+       autocast=True)
+@patch('hermes.flows.forecast_handler.Session',
+       autocast=True,
+       return_value=MagicMock(spec=SessionType))
+class TestForecastHandler:
+    def test_full(self,
+                  session,
+                  mock_fs_get_by_id,
+                  mock_fs_get_model_configs,
+                  mock_f_create: MagicMock,
+                  mock_get_catalog,
+                  mock_so_create,
+                  mock_default_model_runner: MagicMock,
+                  forecastseries,
+                  forecast,
+                  model_config,
+                  prefect):
+
+        mock_f_create.return_value = forecast
+        mock_fs_get_by_id.return_value = forecastseries
+        mock_fs_get_model_configs.return_value = [model_config]
+
+        mock_get_catalog().to_quakeml.return_value = 'data'
+
+        forecast_handler = forecast_runner(forecastseries.oid)
+
+        # make sure times can be compared and don't have incompatible tzinfo
+        assert forecast_handler.starttime < forecast_handler.endtime
+        assert forecastseries.observation_starttime < \
+            forecast_handler.starttime
+
+        mock_f_create.assert_called_with(session(), Forecast(
+            forecastseries_oid=forecastseries.oid,
+            status='PENDING',
+            starttime=forecast_handler.starttime,
+            endtime=forecast_handler.endtime
+        ))
+
+        mock_so_create.assert_called_with(session(), SeismicityObservation(
+            data='data',
+            forecast_oid=forecast.oid))
+        assert len(mock_default_model_runner.call_args_list) == 1
