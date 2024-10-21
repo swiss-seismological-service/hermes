@@ -3,25 +3,33 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from dateutil.rrule import SECONDLY, rrule
+from prefect import get_run_logger
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.schedules import RRuleSchedule
 
 from hermes.flows.forecast_handler import forecast_runner
-from hermes.schemas import ForecastSeries
+from hermes.repositories.database import Session
+from hermes.repositories.project import ForecastSeriesRepository
+from hermes.schemas.project_schemas import ForecastSeries
 
 
 class ForecastSeriesScheduler:
-    def __init__(self, forecastseries: ForecastSeries):
-        assert forecastseries.schedule_starttime is not None
-        assert forecastseries.schedule_interval is not None
-        assert forecastseries.forecast_endtime or \
-            forecastseries.forecast_duration
+    def __init__(self, forecastseries_oid: UUID):
 
-        self.forecastseries = forecastseries
-        self.start = forecastseries.schedule_starttime
-        self.end = forecastseries.forecast_endtime
-        self.interval = forecastseries.schedule_interval
-        self.duration = forecastseries.forecast_duration
+        self.logger = get_run_logger()
+        self.session = Session()
+        self.forecastseries: ForecastSeries = \
+            ForecastSeriesRepository.get_by_id(
+                self.session, forecastseries_oid)
+
+        assert self.forecastseries.schedule_starttime is not None
+        assert self.forecastseries.schedule_interval is not None
+        assert self.forecastseries.forecast_endtime or \
+            self.forecastseries.forecast_duration
+
+        self.start = self.forecastseries.schedule_starttime
+        self.end = self.forecastseries.schedule_endtime
+        self.interval = self.forecastseries.schedule_interval
         self.now = datetime.now()
 
         self.name = f"schedule_{self.forecastseries.oid}"
@@ -31,6 +39,10 @@ class ForecastSeriesScheduler:
 
         self.schedule = None
         self._create_schedule()
+
+    def __del__(self):
+        self.logger.info('Closing session')
+        self.session.close()
 
     def _set_past_forecasts(self):
         """
@@ -51,7 +63,7 @@ class ForecastSeriesScheduler:
 
         # if no duration is specified, we want to avoid creating a forecast
         # which starts at the same time as the endtime
-        if self.duration is None:
+        if self.forecastseries.forecast_duration is None:
             past_end -= timedelta(seconds=1)
 
         rrule_past = rrule(freq=SECONDLY, interval=self.interval,
