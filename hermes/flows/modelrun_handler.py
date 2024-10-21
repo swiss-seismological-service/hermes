@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Any
 
 from hermes_model import ModelInput
-from prefect import task
+from prefect import flow, task
 from seismostats import ForecastCatalog, ForecastGRRateGrid
 
 from hermes.io.model_results import save_forecast_catalog_to_repositories
@@ -159,3 +159,10 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
 
     def _save_grid(self, results: list[ForecastGRRateGrid]) -> None:
         raise NotImplementedError
+
+
+@flow(name='DefaultModelRunner')
+def default_model_runner(modelrun_info: DBModelRunInfo,
+                         modelconfig: ModelConfig) -> None:
+    runner = DefaultModelRunHandler(modelrun_info, modelconfig)
+    runner.run()

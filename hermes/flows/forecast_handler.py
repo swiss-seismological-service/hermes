@@ -6,7 +6,8 @@ from prefect import flow, get_run_logger, runtime, task
 from prefect.deployments import run_deployment
 
 from hermes.flows.catalog_readers import get_catalog
-from hermes.flows.modelrun_builder import ModelRunBuilder, default_model_runner
+from hermes.flows.modelrun_builder import ModelRunBuilder
+from hermes.flows.modelrun_handler import default_model_runner
 from hermes.repositories.data import SeismicityObservationRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
