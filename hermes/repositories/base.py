@@ -29,6 +29,20 @@ def repository_factory(model: Model, orm_model: ORMBase):
             return cls.model.model_validate(result) if result else None
 
         @classmethod
+        def update(cls, session: Session, data: Model) -> Model:
+            q = select(cls.orm_model).where(
+                getattr(cls.orm_model, 'oid') == data.oid)
+            result = session.execute(q).unique().scalar_one_or_none()
+            if result:
+                for key, value in data.model_dump(exclude_unset=True).items():
+                    setattr(result, key, value)
+                session.commit()
+                session.refresh(result)
+                return cls.model.model_validate(result)
+            else:
+                raise ValueError(f'No object with id {data.oid} found')
+
+        @classmethod
         def get_all(cls, session: Session) -> list:
             q = select(cls.orm_model)
             result = session.execute(q).scalars().all()

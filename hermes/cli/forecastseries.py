@@ -1,17 +1,16 @@
 import json
-import uuid
 from pathlib import Path
 
 import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from hermes.actions.crud import (create_forecastseries,
+                                 read_forecastseries_oid, read_project_oid,
+                                 update_forecastseries)
 from hermes.cli.utils import row_table
-from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
-from hermes.repositories.project import (ForecastSeriesRepository,
-                                         ProjectRepository)
-from hermes.schemas import EStatus, ForecastSeries
+from hermes.repositories.project import ForecastSeriesRepository
 
 app = typer.Typer()
 console = Console()
@@ -47,48 +46,41 @@ def create(name: Annotated[str,
         fseries_config_dict = json.load(project_file)
 
     try:
-        project_oid = uuid.UUID(project, version=4)
-    except ValueError:
-        with Session() as session:
-            project_db = ProjectRepository.get_by_name(session, project)
+        project_oid = read_project_oid(project)
 
-        if not project_db:
-            console.print(f'Project "{project}" not found.')
-            raise typer.Exit()
+        forecast_series_out = create_forecastseries(
+            name, fseries_config_dict, project_oid)
 
-        project_oid = project_db.oid
-
-    forecast_series = ForecastSeries(name=name,
-                                     status=EStatus.PENDING,
-                                     project_oid=project_oid,
-                                     **fseries_config_dict)
-
-    with Session() as session:
-        forecast_series_out = ForecastSeriesRepository.create(
-            session, forecast_series)
-    console.print(
-        f'Successfully created new ForecastSeries {forecast_series_out.name}.')
+        console.print('Successfully created new ForecastSeries '
+                      f'{forecast_series_out.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
-@app.command(help="Executes past Forecasts and schedules future Forecasts.")
-def schedule(forecastseries: Annotated[str,
-                                       typer.Argument(
-                                           help="Name or UUID of "
-                                           "the ForecastSeries.")]):
-    # Get the forecastseries
+@app.command(help="Updates a ForecastSeries.")
+def update(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of the ForecastSeries.")],
+    config: Annotated[Path,
+                      typer.Option(
+                          ..., resolve_path=True, readable=True,
+                          help="Path to json Forecastseries "
+                          "configuration file.")],
+    force: Annotated[bool,
+                     typer.Option("--force")] = False):
+
+    with open(config, "r") as project_file:
+        fseries_config_dict = json.load(project_file)
     try:
-        forecastseries_oid = uuid.UUID(forecastseries, version=4)
-        with Session() as session:
-            forecastseries_db = ForecastSeriesRepository.get_by_id(
-                session, forecastseries_oid)
-    except ValueError:
-        with Session() as session:
-            forecastseries_db = ForecastSeriesRepository.get_by_name(
-                session, forecastseries)
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
 
-    if not forecastseries_db:
-        console.print(f'ForecastSeries "{forecastseries}" not found.')
-        raise typer.Exit()
+        forecast_series_out = update_forecastseries(
+            fseries_config_dict, forecastseries_oid, force)
 
-    scheduler = ForecastSeriesScheduler(forecastseries_db)
-    # scheduler.run()
+        console.print(
+            f'Successfully updated ForecastSeries {forecast_series_out.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)

@@ -92,6 +92,30 @@ class ForecastSeriesRepository(repository_factory(
         return cls.model.model_validate(db_model)
 
     @classmethod
+    def update(cls, session: Session, data: ForecastSeries) -> ForecastSeries:
+        q = select(ForecastSeriesTable).where(
+            ForecastSeriesTable.oid == data.oid)
+
+        result = session.execute(q).unique().scalar_one_or_none()
+
+        if result:
+            if data.tags:
+                result._tags = [TagRepository._get_or_create(session, tag)
+                                for tag in data.tags]
+            if data.bounding_polygon:
+                result.bounding_polygon = from_shape(data.bounding_polygon)
+
+            for key, value in data.model_dump(
+                    exclude_unset=True,
+                    exclude=['tags', 'bounding_polygon']).items():
+                setattr(result, key, value)
+
+            session.commit()
+            session.refresh(result)
+            return cls.model.model_validate(result)
+        return
+
+    @classmethod
     def get_tags(cls, session: Session, forecastseries_oid: str) -> list[Tag]:
         q = select(TagTable).join(ForecastSeriesTable._tags).where(
             ForecastSeriesTable.oid == forecastseries_oid)

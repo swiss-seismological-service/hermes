@@ -4,7 +4,9 @@ from hermes.schemas.data_schemas import (EventObservation,
                                          InjectionObservation, InjectionPlan,
                                          SeismicityObservation)
 from hermes.schemas.model_schemas import DBModelRunInfo, ModelConfig
-from hermes.schemas.project_schemas import (Forecast, ForecastSeries, Project,
+from hermes.schemas.project_schemas import (Forecast, ForecastSeries,
+                                            ForecastSeriesConfig,
+                                            ForecastSeriesSchedule, Project,
                                             Tag)
 from hermes.schemas.result_schemas import (GridCell, ModelResult, ModelRun,
                                            SeismicEvent, TimeStep)

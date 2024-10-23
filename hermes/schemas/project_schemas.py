@@ -21,21 +21,23 @@ class Project(CreationInfoMixin):
     description: str | None = None
 
 
-class ForecastSeries(CreationInfoMixin):
-    oid: UUID | None = None
-    project_oid: UUID | None = None
-    name: str | None = None
-    description: str | None = None
-    status: EStatus | None = None
+class ForecastSeriesSchedule(Model):
+    schedule_starttime: datetime | None = None
+    schedule_interval: int | None = None
+    schedule_endtime: datetime | None = None
+    schedule_id: UUID | None = None
 
     forecast_starttime: datetime | None = None
     forecast_endtime: datetime | None = None
     forecast_duration: int | None = None
 
-    schedule_starttime: datetime | None = None
-    schedule_endtime: datetime | None = None
-    schedule_interval: int | None = None
-    schedule_id: UUID | None = None
+
+class ForecastSeriesConfig(CreationInfoMixin):
+    oid: UUID | None = None
+    project_oid: UUID | None = None
+    name: str | None = None
+    description: str | None = None
+    status: EStatus | None = None
 
     observation_starttime: datetime | None = None
     observation_endtime: datetime | None = None
@@ -68,6 +70,10 @@ class ForecastSeries(CreationInfoMixin):
             return convert_input_to_polygon(value)
 
         return value
+
+
+class ForecastSeries(ForecastSeriesConfig, ForecastSeriesSchedule):
+    pass
 
 
 class Forecast(CreationInfoMixin):
