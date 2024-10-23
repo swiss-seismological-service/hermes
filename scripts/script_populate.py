@@ -28,11 +28,15 @@ def project() -> Project:
 
         forecastseries = ForecastSeries(
             name='test_forecastseries',
-            schedule_starttime=datetime.now() - timedelta(hours=2),
-            forecast_endtime=datetime.now() + timedelta(hours=2),
-            forecast_duration=30 * 60,
+            schedule_starttime=datetime.now() + timedelta(hours=2),
             schedule_interval=30 * 60,
+            schedule_endtime=datetime.now() + timedelta(hours=3),
+
+            forecast_endtime=datetime.now() + timedelta(hours=4),
+            forecast_duration=30 * 60,
+
             observation_starttime=datetime.now() - timedelta(days=365),
+
             project_oid=project.oid,
             status=EStatus.PENDING,
             bounding_polygon=Polygon(

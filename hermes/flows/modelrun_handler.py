@@ -163,6 +163,7 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
 
 @flow(name='DefaultModelRunner')
 def default_model_runner(modelrun_info: DBModelRunInfo,
-                         modelconfig: ModelConfig) -> None:
+                         modelconfig: ModelConfig) -> DefaultModelRunHandler:
     runner = DefaultModelRunHandler(modelrun_info, modelconfig)
     runner.run()
+    return runner

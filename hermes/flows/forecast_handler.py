@@ -194,7 +194,8 @@ class ForecastHandler:
 def forecast_runner(forecastseries_oid: UUID,
                     starttime: datetime | None = None,
                     endtime: datetime | None = None,
-                    mode: Literal['local', 'deploy'] = 'local') -> None:
+                    mode: Literal['local', 'deploy'] = 'local') \
+        -> ForecastHandler:
     forecasthandler = ForecastHandler(forecastseries_oid, starttime, endtime)
     forecasthandler.run(mode)
     return forecasthandler
