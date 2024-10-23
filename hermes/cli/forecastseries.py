@@ -43,13 +43,13 @@ def create(name: Annotated[str,
                                  "configuration file.")]):
 
     with open(config, "r") as project_file:
-        fseries_config_dict = json.load(project_file)
+        fseries_config = json.load(project_file)
 
     try:
         project_oid = read_project_oid(project)
 
         forecast_series_out = create_forecastseries(
-            name, fseries_config_dict, project_oid)
+            name, fseries_config, project_oid)
 
         console.print('Successfully created new ForecastSeries '
                       f'{forecast_series_out.name}.')
@@ -72,12 +72,13 @@ def update(
                      typer.Option("--force")] = False):
 
     with open(config, "r") as project_file:
-        fseries_config_dict = json.load(project_file)
+        fseries_config = json.load(project_file)
+
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
 
         forecast_series_out = update_forecastseries(
-            fseries_config_dict, forecastseries_oid, force)
+            fseries_config, forecastseries_oid, force)
 
         console.print(
             f'Successfully updated ForecastSeries {forecast_series_out.name}.')
