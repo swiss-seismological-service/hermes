@@ -47,6 +47,7 @@ class ForecastSeriesScheduler:
         self.forecastseries: ForecastSeries = \
             ForecastSeriesRepository.get_by_id(
                 self.session, forecastseries_oid)
+
         self.deployment_name = 'ForecastRunner/ForecastRunner'
 
         self.now = datetime.now()
@@ -110,8 +111,13 @@ class ForecastSeriesScheduler:
         # update the ForecastSeries with the new schedule configuration
         self.update(schedule_config)
 
-        # add the new schedule and save the schedule id to the ForecastSeries
         self._build_rrule()
+
+        if self.rrule is None:
+            raise ValueError('Scheduled times are all in the past, '
+                             'no schedule will be created.')
+
+        # add the new schedule and save the schedule id to the ForecastSeries
         prefect_schedule = asyncio.run(add_deployment_schedule(
             self.deployment_name, self.rrule))
         self.schedule_id = prefect_schedule.id
