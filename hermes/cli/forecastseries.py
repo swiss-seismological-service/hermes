@@ -11,6 +11,7 @@ from hermes.actions.crud import (create_forecastseries,
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
+from hermes.utils.dateutils import local_to_utc_dict
 
 app = typer.Typer()
 console = Console()
@@ -45,6 +46,8 @@ def create(name: Annotated[str,
     with open(config, "r") as project_file:
         fseries_config = json.load(project_file)
 
+    fseries_config = local_to_utc_dict(fseries_config)
+
     try:
         project_oid = read_project_oid(project)
 
@@ -73,6 +76,8 @@ def update(
 
     with open(config, "r") as project_file:
         fseries_config = json.load(project_file)
+
+    fseries_config = local_to_utc_dict(fseries_config)
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)

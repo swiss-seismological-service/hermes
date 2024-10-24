@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
+from hermes.utils.dateutils import local_to_utc
 
 app = typer.Typer()
 console = Console()
@@ -42,5 +43,8 @@ def run(
     if not forecastseries_db:
         console.print(f'ForecastSeries "{forecastseries}" not found.')
         raise typer.Exit()
+
+    start = local_to_utc(start)
+    end = local_to_utc(end)
 
     forecast_runner(forecastseries_db.oid, start, end, mode='local')
