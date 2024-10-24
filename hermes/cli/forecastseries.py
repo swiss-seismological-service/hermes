@@ -90,3 +90,8 @@ def update(
     except Exception as e:
         console.print(str(e))
         typer.Exit(code=1)
+
+
+@app.command(help="Deletes a ForecastSeries.")
+def delete():
+    raise NotImplementedError

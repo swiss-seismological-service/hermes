@@ -48,3 +48,13 @@ def create(
     with Session() as session:
         project_out = ProjectRepository.create(session, project)
     console.print(f'Successfully created new Project {project_out.name}.')
+
+
+@app.command(help="Updates an existing project.")
+def update():
+    raise NotImplementedError
+
+
+@app.command(help="Deletes a project.")
+def delete():
+    raise NotImplementedError

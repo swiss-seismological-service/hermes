@@ -13,6 +13,11 @@ app = typer.Typer()
 console = Console()
 
 
+@app.command(help="Lists existing schedules.")
+def list():
+    raise NotImplementedError
+
+
 @app.command(help="Schedules future Forecasts.")
 def create(
     forecastseries: Annotated[str,

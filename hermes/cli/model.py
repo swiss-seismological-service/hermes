@@ -43,3 +43,34 @@ def create(
         model_config = ModelConfigRepository.create(session, model_config)
 
     console.print(f'Successfully created new ModelConfig {model_config.name}.')
+
+
+@app.command(help="Update an existing ModelConfig.")
+def update():
+    """
+    Only possible if no ModelRun exists for the ModelConfig.
+    """
+    raise NotImplementedError
+
+
+@app.command(help="Delete a ModelConfig.")
+def delete():
+    """
+    Only possible if no ModelRun exists for the ModelConfig.
+    """
+    raise NotImplementedError
+
+
+@app.command(help="Disable a ModelConfig.")
+def disable():
+    raise NotImplementedError
+
+
+@app.command(help="Enable a ModelConfig.")
+def enable():
+    raise NotImplementedError
+
+
+@app.command(help="Archive a ModelConfig.")
+def archive():
+    raise NotImplementedError

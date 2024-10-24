@@ -14,6 +14,12 @@ app = typer.Typer()
 console = Console()
 
 
+@app.command(help="Outputs list of Forecast "
+             "belonging to the same ForecastSeries.")
+def list():
+    raise NotImplementedError
+
+
 @app.command(help="Run a Forecast.")
 def run(
     forecastseries: Annotated[str,
@@ -48,3 +54,8 @@ def run(
     end = local_to_utc(end)
 
     forecast_runner(forecastseries_db.oid, start, end, mode='local')
+
+
+@app.command(help="Deletes a Forecast.")
+def delete():
+    raise NotImplementedError
