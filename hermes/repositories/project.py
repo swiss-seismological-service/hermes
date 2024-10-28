@@ -66,6 +66,14 @@ class ForecastSeriesRepository(repository_factory(
         return cls.model.model_validate(result) if result else None
 
     @classmethod
+    def get_by_project(cls, session: Session, project_oid: str) \
+            -> list[ForecastSeries]:
+        q = select(ForecastSeriesTable).where(
+            ForecastSeriesTable.project_oid == project_oid)
+        result = session.execute(q).scalars().all()
+        return [cls.model.model_validate(f) for f in result]
+
+    @classmethod
     def create(cls, session: Session, data: ForecastSeries) -> ForecastSeries:
 
         # Check if tags exist in the database, if not create them.

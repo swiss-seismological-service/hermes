@@ -5,6 +5,8 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from hermes.actions.crud import (delete_project, read_project_oid,
+                                 update_project)
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ProjectRepository
@@ -32,7 +34,7 @@ def list():
 def create(
     name: Annotated[str,
                     typer.Argument(
-                        help="Name of the project.")],
+                        help="Name or UUID of the project.")],
     config: Annotated[Path,
                       typer.Option(
                           ..., resolve_path=True, readable=True,
@@ -51,10 +53,37 @@ def create(
 
 
 @app.command(help="Updates an existing project.")
-def update():
-    raise NotImplementedError
+def update(
+    name: Annotated[str,
+                    typer.Argument(
+                        help="Name or UUID of the project.")],
+    config: Annotated[Path,
+                      typer.Option(
+                          ..., resolve_path=True, readable=True,
+                          help="Path to json Project config file.")]):
+    try:
+        with open(config, "r") as project_file:
+            project_config_dict = json.load(project_file)
+
+        project_config_dict = local_to_utc_dict(project_config_dict)
+
+        project_oid = read_project_oid(name)
+        update_project(project_config_dict, project_oid)
+        console.print(f'Successfully updated Project {name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Deletes a project.")
-def delete():
-    raise NotImplementedError
+def delete(
+    name: Annotated[str,
+                    typer.Argument(
+                        help="Name or UUID of the project.")]):
+    try:
+        project_oid = read_project_oid(name)
+        delete_project(project_oid)
+        console.print(f'Successfully deleted Project {name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)

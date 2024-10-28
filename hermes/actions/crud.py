@@ -12,6 +12,7 @@ from hermes.repositories.project import (ForecastRepository,
                                          ProjectRepository)
 from hermes.repositories.results import ModelRunRepository
 from hermes.schemas import EStatus, ForecastSeriesConfig, ModelConfig
+from hermes.schemas.project_schemas import Project
 
 
 def read_forecastseries_oid(name_or_id: str):
@@ -69,8 +70,6 @@ def create_forecastseries(name, fseries_config, project_oid):
     except IntegrityError:
         raise ValueError(f'ForecastSeries with name "{name}" already exists,'
                          ' please choose a different name.')
-    except Exception as e:
-        raise e
 
 
 def update_forecastseries(fseries_config: dict,
@@ -96,10 +95,13 @@ def update_forecastseries(fseries_config: dict,
 
     new_data = ForecastSeriesConfig(oid=forecastseries_oid,
                                     **fseries_config)
-
-    with Session() as session:
-        forecast_series_out = ForecastSeriesRepository.update(
-            session, new_data)
+    try:
+        with Session() as session:
+            forecast_series_out = ForecastSeriesRepository.update(
+                session, new_data)
+    except IntegrityError:
+        raise ValueError(f'ForecastSeries with name "{fseries_config["name"]}"'
+                         ' already exists, please choose a different name.')
 
     return forecast_series_out
 
@@ -119,10 +121,29 @@ def update_modelconfig(new_config: dict,
 
     new_data = ModelConfig(oid=modelconfig_oid, **new_config)
 
-    with Session() as session:
-        model_config_out = ModelConfigRepository.update(session, new_data)
+    try:
+        with Session() as session:
+            model_config_out = ModelConfigRepository.update(session, new_data)
+    except IntegrityError:
+        raise ValueError(f'ModelConfig with name "{new_config["name"]}"'
+                         ' already exists, please choose a different name.')
 
     return model_config_out
+
+
+def update_project(new_config: dict,
+                   project_oid: UUID):
+
+    new_data = Project(oid=project_oid, **new_config)
+
+    try:
+        with Session() as session:
+            project_out = ProjectRepository.update(session, new_data)
+    except IntegrityError:
+        raise ValueError(f'Project with name "{new_config["name"]}"'
+                         ' already exists, please choose a different name.')
+
+    return project_out
 
 
 def delete_modelconfig(modelconfig_oid: UUID):
@@ -189,8 +210,6 @@ def create_modelconfig(name, model_config):
         raise ValueError(f'ModelConfig with name "{name}" already exists,'
                          ' please choose a different name or archive the'
                          ' existing ModelConfig with the same name.')
-    except Exception as e:
-        raise e
 
 
 def delete_forecastseries(forecastseries_oid: UUID):
@@ -215,3 +234,18 @@ def delete_forecastseries(forecastseries_oid: UUID):
     # delete forecastseries
     with Session() as session:
         ForecastSeriesRepository.delete(session, forecastseries_oid)
+
+
+def delete_project(project_oid: UUID):
+    # delete all forecastseries separately to ensure correct deletion
+    # of associated forecasts and schedules
+    with Session() as session:
+        forecastseries = ForecastSeriesRepository.get_by_project(
+            session, project_oid)
+
+    for fseries in forecastseries:
+        delete_forecastseries(fseries.oid)
+
+    # delete project
+    with Session() as session:
+        ProjectRepository.delete(session, project_oid)

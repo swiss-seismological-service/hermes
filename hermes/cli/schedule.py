@@ -6,7 +6,10 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.actions.crud import read_forecastseries_oid
+from hermes.cli.utils import row_table
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
+from hermes.repositories.database import Session
+from hermes.repositories.project import ForecastSeriesRepository
 from hermes.utils.dateutils import local_to_utc_dict
 
 app = typer.Typer()
@@ -15,7 +18,21 @@ console = Console()
 
 @app.command(help="Lists existing schedules.")
 def list():
-    raise NotImplementedError
+    with Session() as session:
+        fseries = ForecastSeriesRepository.get_all(session)
+
+    fseries = [f for f in fseries if f.schedule_id]
+
+    if not fseries:
+        console.print("No Schedules found")
+        return
+
+    table = row_table(fseries, ['schedule_id',
+                                'schedule_starttime',
+                                'schedule_endtime',
+                                'schedule_interval'])
+
+    console.print(table)
 
 
 @app.command(help="Schedules future Forecasts.")
@@ -42,12 +59,11 @@ def create(
 
         scheduler = ForecastSeriesScheduler(forecastseries_oid)
         scheduler.create_prefect_schedule(schedule_config)
+        console.print(
+            f'Successfully created schedule for {forecastseries}.')
     except BaseException as e:
         console.print(str(e))
         typer.Exit(code=1)
-
-    console.print(
-        f'Successfully created schedule for {forecastseries}.')
 
 
 @app.command(help="Updates existing schedule.")
