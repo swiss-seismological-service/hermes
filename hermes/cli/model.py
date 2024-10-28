@@ -5,10 +5,13 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from hermes.actions.crud import (archive_modelconfig, create_modelconfig,
+                                 delete_modelconfig, disable_modelconfig,
+                                 enable_modelconfig, read_modelconfig_oid,
+                                 update_modelconfig)
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ModelConfigRepository
-from hermes.schemas.model_schemas import ModelConfig
 
 app = typer.Typer()
 console = Console()
@@ -22,7 +25,7 @@ def list():
         console.print("No ModelConfigs found")
         return
 
-    table = row_table(model_config, ['oid', 'name'])
+    table = row_table(model_config, ['oid', 'name', 'enabled'])
 
     console.print(table)
 
@@ -34,43 +37,117 @@ def create(
         ..., resolve_path=True, readable=True,
         help="Path to json ModelConfig configuration file.")]
 ):
-    with open(config, "r") as model_config_file:
-        model_config_dict = json.load(model_config_file)
+    try:
+        with open(config, "r") as model_config_file:
+            model_config_dict = json.load(model_config_file)
 
-    model_config = ModelConfig(name=name, **model_config_dict)
+        model_config = create_modelconfig(name, model_config_dict)
 
-    with Session() as session:
-        model_config = ModelConfigRepository.create(session, model_config)
+        console.print(f"Successfully created ModelConfig {model_config.name}.")
 
-    console.print(f'Successfully created new ModelConfig {model_config.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Update an existing ModelConfig.")
-def update():
+def update(
+    modelconfig: Annotated[str,
+                           typer.Argument(
+                               help="Name or UUID of the ModelConfig.")],
+    config: Annotated[Path,
+                      typer.Option(
+                          ..., resolve_path=True, readable=True,
+                          help="Path to json ModelConfig "
+                          "configuration file.")],
+    force: Annotated[bool,
+                     typer.Option("--force")] = False):
     """
     Only possible if no ModelRun exists for the ModelConfig.
     """
-    raise NotImplementedError
+
+    with open(config, "r") as project_file:
+        new_config = json.load(project_file)
+
+    try:
+        modelconfig_oid = read_modelconfig_oid(modelconfig)
+
+        model_config_out = update_modelconfig(
+            new_config, modelconfig_oid, force)
+
+        console.print(
+            f'Successfully updated ForecastSeries {model_config_out.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Delete a ModelConfig.")
-def delete():
+def delete(
+    modelconfig: Annotated[str,
+                           typer.Argument(
+                               help="Name or UUID of the ModelConfig.")]):
     """
     Only possible if no ModelRun exists for the ModelConfig.
     """
-    raise NotImplementedError
+    try:
+        modelconfig_oid = read_modelconfig_oid(modelconfig)
+
+        delete_modelconfig(modelconfig_oid)
+
+        console.print(f'Successfully deleted ModelConfig {modelconfig}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Disable a ModelConfig.")
-def disable():
-    raise NotImplementedError
+def disable(
+    modelconfig: Annotated[str,
+                           typer.Argument(
+                               help="Name or UUID of the ModelConfig.")]):
+    try:
+        modelconfig_oid = read_modelconfig_oid(modelconfig)
+
+        model_config_out = disable_modelconfig(modelconfig_oid)
+
+        console.print(
+            f'Successfully disabled ModelConfig {model_config_out.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Enable a ModelConfig.")
-def enable():
-    raise NotImplementedError
+def enable(
+    modelconfig: Annotated[str,
+                           typer.Argument(
+                               help="Name or UUID of the ModelConfig.")]):
+    try:
+        modelconfig_oid = read_modelconfig_oid(modelconfig)
+
+        model_config_out = enable_modelconfig(modelconfig_oid)
+
+        console.print(
+            f'Successfully enabled ModelConfig {model_config_out.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Archive a ModelConfig.")
-def archive():
-    raise NotImplementedError
+def archive(
+    modelconfig: Annotated[str,
+                           typer.Argument(
+                               help="Name or UUID of the ModelConfig.")]):
+
+    try:
+        modelconfig_oid = read_modelconfig_oid(modelconfig)
+
+        model_config_out = archive_modelconfig(modelconfig_oid)
+
+        console.print(
+            f'Successfully archived ModelConfig {model_config_out.name}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)

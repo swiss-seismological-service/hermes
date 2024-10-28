@@ -174,3 +174,26 @@ class ModelConfigRepository(repository_factory(
         session.commit()
         session.refresh(db_model)
         return cls.model.model_validate(db_model)
+
+    @classmethod
+    def get_by_name(cls, session: Session, name: str) -> ModelConfig:
+        q = select(ModelConfigTable).where(ModelConfigTable.name == name)
+        result = session.execute(q).unique().scalar_one_or_none()
+        return cls.model.model_validate(result) if result else None
+
+    @classmethod
+    def update(cls, session: Session, data: ModelConfig) -> ModelConfig:
+        q = select(ModelConfigTable).where(
+            ModelConfigTable.oid == data.oid)
+        result = session.execute(q).unique().scalar_one_or_none()
+        if result:
+            if data.tags:
+                result._tags = [TagRepository._get_or_create(session, tag)
+                                for tag in data.tags]
+            for key, value in data.model_dump(
+                    exclude_unset=True,
+                    exclude=['tags']).items():
+                setattr(result, key, value)
+            session.commit()
+            session.refresh(result)
+        return cls.model.model_validate(result)

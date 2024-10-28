@@ -174,3 +174,12 @@ class ModelRunRepository(repository_factory(
             session.refresh(result)
             return cls.model.model_validate(result)
         return None
+
+    @classmethod
+    def get_by_modelconfig(cls,
+                           session: Session,
+                           modelconfig_oid: UUID) -> ModelRun:
+        q = select(ModelRunTable).where(
+            ModelRunTable.modelconfig_oid == modelconfig_oid)
+        result = session.execute(q).unique().all()
+        return [cls.model.model_validate(r) for r in result]
