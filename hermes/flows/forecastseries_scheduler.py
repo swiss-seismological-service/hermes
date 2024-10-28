@@ -29,6 +29,9 @@ class ForecastSeriesAttr:
         setattr(instance.forecastseries, self._name, value)
 
 
+DEPLOYMENT_NAME = 'ForecastRunner/ForecastRunner'
+
+
 class ForecastSeriesScheduler:
 
     schedule_starttime = ForecastSeriesAttr()
@@ -48,7 +51,7 @@ class ForecastSeriesScheduler:
             ForecastSeriesRepository.get_by_id(
                 self.session, forecastseries_oid)
 
-        self.deployment_name = 'ForecastRunner/ForecastRunner'
+        self.deployment_name = DEPLOYMENT_NAME
 
         self.now = datetime.now()
 
@@ -229,7 +232,6 @@ async def delete_deployment_schedule(
 
     async with get_client() as client:
         deployment = await client.read_deployment_by_name(deployment_name)
-
         await client.delete_deployment_schedule(
             deployment_id=deployment.id,
             schedule_id=schedule_id

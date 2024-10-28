@@ -1,9 +1,13 @@
+import asyncio
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 
+from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
+                                                   delete_deployment_schedule)
 from hermes.repositories.database import Session
-from hermes.repositories.project import (ForecastSeriesRepository,
+from hermes.repositories.project import (ForecastRepository,
+                                         ForecastSeriesRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)
 from hermes.repositories.results import ModelRunRepository
@@ -56,12 +60,17 @@ def create_forecastseries(name, fseries_config, project_oid):
                                            status=EStatus.PENDING,
                                            project_oid=project_oid,
                                            **fseries_config)
+    try:
+        with Session() as session:
+            forecast_series_out = ForecastSeriesRepository.create(
+                session, forecast_series)
 
-    with Session() as session:
-        forecast_series_out = ForecastSeriesRepository.create(
-            session, forecast_series)
-
-    return forecast_series_out
+        return forecast_series_out
+    except IntegrityError:
+        raise ValueError(f'ForecastSeries with name "{name}" already exists,'
+                         ' please choose a different name.')
+    except Exception as e:
+        raise e
 
 
 def update_forecastseries(fseries_config: dict,
@@ -182,3 +191,27 @@ def create_modelconfig(name, model_config):
                          ' existing ModelConfig with the same name.')
     except Exception as e:
         raise e
+
+
+def delete_forecastseries(forecastseries_oid: UUID):
+
+    # check no forecasts are running
+    with Session() as session:
+        forecasts = ForecastRepository.get_by_forecastseries(
+            session, forecastseries_oid)
+    if any(f.status == EStatus.RUNNING for f in forecasts):
+        raise Exception(
+            'ForecastSeries cannot be deleted because it is currently running.'
+            ' Stop the forecasts first.')
+
+    # delete schedule if exists
+    with Session() as session:
+        forecastseries = ForecastSeriesRepository.get_by_id(
+            session, forecastseries_oid)
+    if forecastseries.schedule_id:
+        asyncio.run(delete_deployment_schedule(
+            DEPLOYMENT_NAME, forecastseries.schedule_id))
+
+    # delete forecastseries
+    with Session() as session:
+        ForecastSeriesRepository.delete(session, forecastseries_oid)

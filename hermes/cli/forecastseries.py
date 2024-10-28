@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud import (create_forecastseries,
+from hermes.actions.crud import (create_forecastseries, delete_forecastseries,
                                  read_forecastseries_oid, read_project_oid,
                                  update_forecastseries)
 from hermes.cli.utils import row_table
@@ -35,7 +35,8 @@ def create(name: Annotated[str,
                            typer.Argument(
                                help="Name of the ForecastSeries.")],
            project: Annotated[str,
-                              typer.Argument(
+                              typer.Option(
+                                  ...,
                                   help="Name or UUID of the parent Project.")],
            config: Annotated[Path,
                              typer.Option(
@@ -93,5 +94,17 @@ def update(
 
 
 @app.command(help="Deletes a ForecastSeries.")
-def delete():
-    raise NotImplementedError
+def delete(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of the ForecastSeries.")]
+):
+    try:
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+
+        delete_forecastseries(forecastseries_oid)
+
+        console.print(f'Successfully deleted ForecastSeries {forecastseries}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)

@@ -100,3 +100,9 @@ def delete(
 
     console.print(
         f'Successfully deleted schedule for {forecastseries}.')
+
+
+@app.command(help="Executes Forecasts for the given schedule which "
+             "have scheduled start times in the past.")
+def catchup():
+    raise NotImplementedError
