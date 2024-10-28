@@ -154,6 +154,14 @@ class ForecastRepository(repository_factory(Forecast, ForecastTable)):
             return cls.model.model_validate(result)
         return None
 
+    @classmethod
+    def get_by_forecastseries(cls, session: Session,
+                              forecastseries_oid: str) -> list[Forecast]:
+        q = select(ForecastTable).where(
+            ForecastTable.forecastseries_oid == forecastseries_oid)
+        result = session.execute(q).scalars().all()
+        return [cls.model.model_validate(f) for f in result]
+
 
 class ModelConfigRepository(repository_factory(
         ModelConfig, ModelConfigTable)):

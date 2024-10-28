@@ -5,9 +5,11 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from hermes.actions.crud import read_forecastseries_oid
+from hermes.cli.utils import row_table
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
-from hermes.repositories.project import ForecastSeriesRepository
+from hermes.repositories.project import ForecastRepository
 from hermes.utils.dateutils import local_to_utc
 
 app = typer.Typer()
@@ -17,7 +19,15 @@ console = Console()
 @app.command(help="Outputs list of Forecast "
              "belonging to the same ForecastSeries.")
 def list():
-    raise NotImplementedError
+    with Session() as session:
+        forecasts = ForecastRepository.get_all(session)
+    if not forecasts:
+        console.print("No Forecasts found")
+        return
+
+    table = row_table(forecasts, ['oid', 'starttime', 'endtime', 'status'])
+
+    console.print(table)
 
 
 @app.command(help="Run a Forecast.")
@@ -35,27 +45,29 @@ def run(
                        ...,
                        help="Endtime of the Forecast.")],
 ):
-    # Get the forecastseries
+
     try:
-        forecastseries_oid = uuid.UUID(forecastseries, version=4)
-        with Session() as session:
-            forecastseries_db = ForecastSeriesRepository.get_by_id(
-                session, forecastseries_oid)
-    except ValueError:
-        with Session() as session:
-            forecastseries_db = ForecastSeriesRepository.get_by_name(
-                session, forecastseries)
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        start = local_to_utc(start)
+        end = local_to_utc(end)
 
-    if not forecastseries_db:
-        console.print(f'ForecastSeries "{forecastseries}" not found.')
-        raise typer.Exit()
+        forecast_runner(forecastseries_oid, start, end, mode='local')
 
-    start = local_to_utc(start)
-    end = local_to_utc(end)
-
-    forecast_runner(forecastseries_db.oid, start, end, mode='local')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Deletes a Forecast.")
-def delete():
-    raise NotImplementedError
+def delete(
+    forecast_oid: Annotated[uuid.UUID,
+                            typer.Argument(
+                                help="UUID of "
+                                "the ForecastSeries.")]):
+    try:
+        with Session() as session:
+            ForecastRepository.delete(session, forecast_oid)
+        console.print(f"ForecastSeries {forecast_oid} deleted.")
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
