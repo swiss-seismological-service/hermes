@@ -26,7 +26,7 @@ class ForecastSeriesSchedule(Model):
     schedule_interval: int | None = None
     schedule_endtime: datetime | None = None
     schedule_id: UUID | None = None
-
+    schedule_active: bool | None = None
     forecast_starttime: datetime | None = None
     forecast_endtime: datetime | None = None
     forecast_duration: int | None = None

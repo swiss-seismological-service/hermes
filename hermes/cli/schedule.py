@@ -5,7 +5,8 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud import read_forecastseries_oid
+from hermes.actions.crud import (create_schedule, read_forecastseries_oid,
+                                 update_schedule)
 from hermes.cli.utils import row_table
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
@@ -27,7 +28,7 @@ def list():
         console.print("No Schedules found")
         return
 
-    table = row_table(fseries, ['schedule_id',
+    table = row_table(fseries, ['name',
                                 'schedule_starttime',
                                 'schedule_endtime',
                                 'schedule_interval'])
@@ -56,9 +57,8 @@ def create(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
+        create_schedule(forecastseries_oid, schedule_config)
 
-        scheduler = ForecastSeriesScheduler(forecastseries_oid)
-        scheduler.create_prefect_schedule(schedule_config)
         console.print(
             f'Successfully created schedule for {forecastseries}.')
     except BaseException as e:
@@ -84,18 +84,14 @@ def update(
         schedule_config = json.load(project_file)
 
     schedule_config = local_to_utc_dict(schedule_config)
-
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-
-        scheduler = ForecastSeriesScheduler(forecastseries_oid)
-        scheduler.update_prefect_schedule(schedule_config)
+        update_schedule(forecastseries_oid, schedule_config)
+        console.print(
+            f'Successfully updated schedule for {forecastseries}.')
     except BaseException as e:
         console.print(str(e))
         typer.Exit(code=1)
-
-    console.print(
-        f'Successfully updated schedule for {forecastseries}.')
 
 
 @app.command(help="Deletes existing schedule.")
@@ -110,12 +106,47 @@ def delete(
 
         scheduler = ForecastSeriesScheduler(forecastseries_oid)
         scheduler.delete_prefect_schedule()
+        console.print(
+            f'Successfully deleted schedule for {forecastseries}.')
     except BaseException as e:
         console.print(str(e))
         typer.Exit(code=1)
 
-    console.print(
-        f'Successfully deleted schedule for {forecastseries}.')
+
+@app.command(help="Activate existing schedule.")
+def activate(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of "
+                                  "the ForecastSeries.")]):
+
+    try:
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        update_schedule(forecastseries_oid, {'schedule_active': True})
+
+        console.print(
+            f'Successfully activated schedule for {forecastseries}.')
+    except BaseException as e:
+        console.print(str(e))
+        typer.Exit(code=1)
+
+
+@app.command(help="Deactivate existing schedule.")
+def deactivate(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of "
+                                  "the ForecastSeries.")]):
+
+    try:
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        update_schedule(forecastseries_oid, {'schedule_active': False})
+
+        console.print(
+            f'Successfully deactivated schedule for {forecastseries}.')
+    except BaseException as e:
+        console.print(str(e))
+        typer.Exit(code=1)
 
 
 @app.command(help="Executes Forecasts for the given schedule which "

@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 
 from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
+                                                   ForecastSeriesScheduler,
                                                    delete_deployment_schedule)
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
@@ -260,3 +261,25 @@ def delete_project(project_oid: UUID):
     # delete project
     with Session() as session:
         ProjectRepository.delete(session, project_oid)
+
+
+def create_schedule(forecastseries_oid: UUID, schedule_config: dict):
+    scheduler = ForecastSeriesScheduler(forecastseries_oid)
+
+    if 'schedule_id' in schedule_config.keys():
+        raise ValueError(
+            'Schedule ID can not be set manually.'
+        )
+
+    scheduler.create_prefect_schedule(schedule_config)
+
+
+def update_schedule(forecastseries_oid: UUID, schedule_config: dict):
+    scheduler = ForecastSeriesScheduler(forecastseries_oid)
+
+    if 'schedule_id' in schedule_config.keys():
+        raise ValueError(
+            'Schedule ID can not be set manually.'
+        )
+
+    scheduler.update_prefect_schedule(schedule_config)

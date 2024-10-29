@@ -75,6 +75,7 @@ class ForecastSeriesTable(CreationInfoMixin,
     forecast_duration = Column(Integer)
     schedule_interval = Column(Integer)
     schedule_id = Column(UUID)
+    schedule_active = Column(Boolean, default=True)
 
     # Spatial dimensions of the area considered.
     bounding_polygon = Column(Geometry('POLYGON', srid=4326))

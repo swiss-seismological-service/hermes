@@ -38,6 +38,7 @@ class ForecastSeriesScheduler:
     schedule_interval = ForecastSeriesAttr()
     schedule_endtime = ForecastSeriesAttr()
     schedule_id = ForecastSeriesAttr()
+    schedule_active = ForecastSeriesAttr()
 
     forecast_starttime = ForecastSeriesAttr()
     forecast_endtime = ForecastSeriesAttr()
@@ -56,6 +57,9 @@ class ForecastSeriesScheduler:
         self.now = datetime.now()
 
         self.rrule = None
+
+        if self.schedule_active is None:
+            self.schedule_active = True
 
     def update(self, config: dict | None = None) -> None:
 
@@ -122,7 +126,7 @@ class ForecastSeriesScheduler:
 
         # add the new schedule and save the schedule id to the ForecastSeries
         prefect_schedule = asyncio.run(add_deployment_schedule(
-            self.deployment_name, self.rrule))
+            self.deployment_name, self.rrule, self.schedule_active))
         self.schedule_id = prefect_schedule.id
         self.update()
 
@@ -137,6 +141,11 @@ class ForecastSeriesScheduler:
         # update the Scheduler and ForecastSeries with the new schedule
         self.update(schedule_config)
         self._build_rrule()
+
+        if 'schedule_active' in schedule_config:
+            asyncio.run(update_deployment_schedule_status(
+                self.deployment_name, self.schedule_id, self.schedule_active))
+
         asyncio.run(update_deployment_schedule(self.deployment_name,
                                                self.schedule_id,
                                                self.rrule))
@@ -186,7 +195,8 @@ class ForecastSeriesScheduler:
 
 async def add_deployment_schedule(
         deployment_name: str,
-        schedule: rrule) -> DeploymentSchedule:
+        schedule: rrule,
+        active: bool = True) -> DeploymentSchedule:
 
     async with get_client() as client:
         schedule = RRuleSchedule(rrule=str(schedule))
@@ -195,7 +205,7 @@ async def add_deployment_schedule(
         # Add the new schedule to the deployment
         [schedule] = await client.create_deployment_schedules(
             deployment_id=deployment.id,
-            schedules=[(schedule, True)]
+            schedules=[(schedule, active)]
         )
         return schedule
 
@@ -223,6 +233,21 @@ async def update_deployment_schedule(
             deployment_id=deployment.id,
             schedule_id=schedule_id,
             schedule=RRuleSchedule(rrule=str(new_schedule))
+        )
+
+
+async def update_deployment_schedule_status(
+        deployment_name: str,
+        schedule_id: UUID,
+        active: bool) -> None:
+
+    async with get_client() as client:
+        deployment = await client.read_deployment_by_name(deployment_name)
+
+        await client.update_deployment_schedule(
+            deployment_id=deployment.id,
+            schedule_id=schedule_id,
+            active=active
         )
 
 
