@@ -113,7 +113,8 @@ class TestForecastSeriesScheduler:
         assert scheduler.forecastseries.schedule_starttime == new_time
         assert scheduler.schedule_starttime == new_time
         new_fs = ForecastSeries(schedule_starttime=new_time,
-                                schedule_interval=1800)
+                                schedule_interval=1800,
+                                schedule_active=True)
         mock_fs_update.assert_called_once_with(scheduler.session, new_fs)
 
 
@@ -159,7 +160,8 @@ class TestSchedulerClientInteractions:
         assert scheduler.forecastseries.schedule_endtime is None
 
         mock_add.assert_called_once_with(scheduler.deployment_name,
-                                         scheduler.rrule)
+                                         scheduler.rrule,
+                                         True)
         mock_fs_update.assert_called_with(scheduler.session,
                                           scheduler.forecastseries)
 
