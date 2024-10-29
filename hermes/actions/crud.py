@@ -76,7 +76,17 @@ def update_forecastseries(fseries_config: dict,
                           forecastseries_oid: UUID,
                           force: bool = False):
 
+    new_forecastseries = ForecastSeriesConfig(oid=forecastseries_oid,
+                                              **fseries_config)
+
+    # the following fields should generally not be updated,
+    # check whether they are being updated and raise an exception
+    # if not forced
     if not force:
+        with Session() as session:
+            old_forecastseries = ForecastSeriesRepository.get_by_id(
+                session, forecastseries_oid)
+
         protected_fields = ['project_oid',
                             'status',
                             'observation_starttime',
@@ -87,18 +97,19 @@ def update_forecastseries(fseries_config: dict,
                             'seismicityobservation_required',
                             'injectionobservation_required',
                             'injectionplan_required']
+
         for field in protected_fields:
             if field in fseries_config.keys():
-                raise Exception(
-                    f'Field "{field}" should not be updated. '
-                    'Use --force to update anyway.')
+                if getattr(old_forecastseries, field) != \
+                        getattr(new_forecastseries, field):
+                    raise Exception(
+                        f'Field "{field}" should not be updated. '
+                        'Use --force to update anyway.')
 
-    new_data = ForecastSeriesConfig(oid=forecastseries_oid,
-                                    **fseries_config)
     try:
         with Session() as session:
             forecast_series_out = ForecastSeriesRepository.update(
-                session, new_data)
+                session, new_forecastseries)
     except IntegrityError:
         raise ValueError(f'ForecastSeries with name "{fseries_config["name"]}"'
                          ' already exists, please choose a different name.')
