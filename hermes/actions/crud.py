@@ -16,6 +16,49 @@ from hermes.schemas import EStatus, ForecastSeriesConfig, ModelConfig
 from hermes.schemas.project_schemas import Project
 
 
+def read_project_oid(name_or_id: str):
+    try:
+        return UUID(name_or_id, version=4)
+    except ValueError:
+        with Session() as session:
+            project_db = ProjectRepository.get_by_name(session, name_or_id)
+
+        if not project_db:
+            raise Exception(f'Project "{name_or_id}" not found.')
+
+        return project_db.oid
+
+
+def update_project(new_config: dict,
+                   project_oid: UUID):
+
+    new_data = Project(oid=project_oid, **new_config)
+
+    try:
+        with Session() as session:
+            project_out = ProjectRepository.update(session, new_data)
+    except IntegrityError:
+        raise ValueError(f'Project with name "{new_config["name"]}"'
+                         ' already exists, please choose a different name.')
+
+    return project_out
+
+
+def delete_project(project_oid: UUID):
+    # delete all forecastseries separately to ensure correct deletion
+    # of associated forecasts and schedules
+    with Session() as session:
+        forecastseries = ForecastSeriesRepository.get_by_project(
+            session, project_oid)
+
+    for fseries in forecastseries:
+        delete_forecastseries(fseries.oid)
+
+    # delete project
+    with Session() as session:
+        ProjectRepository.delete(session, project_oid)
+
+
 def read_forecastseries_oid(name_or_id: str):
     try:
         return UUID(name_or_id, version=4)
@@ -28,33 +71,6 @@ def read_forecastseries_oid(name_or_id: str):
             raise Exception(f'ForecastSeries "{name_or_id}" not found.')
 
         return forecastseries_db.oid
-
-
-def read_modelconfig_oid(name_or_id: str):
-    try:
-        return UUID(name_or_id, version=4)
-    except ValueError:
-        with Session() as session:
-            model_config_db = ModelConfigRepository.get_by_name(
-                session, name_or_id)
-
-        if not model_config_db:
-            raise Exception(f'ModelConfig "{name_or_id}" not found.')
-
-        return model_config_db.oid
-
-
-def read_project_oid(name_or_id: str):
-    try:
-        return UUID(name_or_id, version=4)
-    except ValueError:
-        with Session() as session:
-            project_db = ProjectRepository.get_by_name(session, name_or_id)
-
-        if not project_db:
-            raise Exception(f'Project "{name_or_id}" not found.')
-
-        return project_db.oid
 
 
 def create_forecastseries(name, fseries_config, project_oid):
@@ -118,6 +134,57 @@ def update_forecastseries(fseries_config: dict,
     return forecast_series_out
 
 
+def delete_forecastseries(forecastseries_oid: UUID):
+
+    # check no forecasts are running
+    with Session() as session:
+        forecasts = ForecastRepository.get_by_forecastseries(
+            session, forecastseries_oid)
+    if any(f.status == EStatus.RUNNING for f in forecasts):
+        raise Exception(
+            'ForecastSeries cannot be deleted because it is currently running.'
+            ' Stop the forecasts first.')
+
+    # delete schedule if exists
+    with Session() as session:
+        forecastseries = ForecastSeriesRepository.get_by_id(
+            session, forecastseries_oid)
+    if forecastseries.schedule_id:
+        asyncio.run(delete_deployment_schedule(
+            DEPLOYMENT_NAME, forecastseries.schedule_id))
+
+    # delete forecastseries
+    with Session() as session:
+        ForecastSeriesRepository.delete(session, forecastseries_oid)
+
+
+def create_modelconfig(name, model_config):
+    model_config = ModelConfig(name=name, **model_config)
+    try:
+        with Session() as session:
+            model_config_out = ModelConfigRepository.create(
+                session, model_config)
+        return model_config_out
+    except IntegrityError:
+        raise ValueError(f'ModelConfig with name "{name}" already exists,'
+                         ' please choose a different name or archive the'
+                         ' existing ModelConfig with the same name.')
+
+
+def read_modelconfig_oid(name_or_id: str):
+    try:
+        return UUID(name_or_id, version=4)
+    except ValueError:
+        with Session() as session:
+            model_config_db = ModelConfigRepository.get_by_name(
+                session, name_or_id)
+
+        if not model_config_db:
+            raise Exception(f'ModelConfig "{name_or_id}" not found.')
+
+        return model_config_db.oid
+
+
 def update_modelconfig(new_config: dict,
                        modelconfig_oid: UUID,
                        force: bool = False):
@@ -141,21 +208,6 @@ def update_modelconfig(new_config: dict,
                          ' already exists, please choose a different name.')
 
     return model_config_out
-
-
-def update_project(new_config: dict,
-                   project_oid: UUID):
-
-    new_data = Project(oid=project_oid, **new_config)
-
-    try:
-        with Session() as session:
-            project_out = ProjectRepository.update(session, new_data)
-    except IntegrityError:
-        raise ValueError(f'Project with name "{new_config["name"]}"'
-                         ' already exists, please choose a different name.')
-
-    return project_out
 
 
 def delete_modelconfig(modelconfig_oid: UUID):
@@ -209,58 +261,6 @@ def archive_modelconfig(modelconfig_oid: UUID):
                     return model_config
                 except IntegrityError:
                     continue
-
-
-def create_modelconfig(name, model_config):
-    model_config = ModelConfig(name=name, **model_config)
-    try:
-        with Session() as session:
-            model_config_out = ModelConfigRepository.create(
-                session, model_config)
-        return model_config_out
-    except IntegrityError:
-        raise ValueError(f'ModelConfig with name "{name}" already exists,'
-                         ' please choose a different name or archive the'
-                         ' existing ModelConfig with the same name.')
-
-
-def delete_forecastseries(forecastseries_oid: UUID):
-
-    # check no forecasts are running
-    with Session() as session:
-        forecasts = ForecastRepository.get_by_forecastseries(
-            session, forecastseries_oid)
-    if any(f.status == EStatus.RUNNING for f in forecasts):
-        raise Exception(
-            'ForecastSeries cannot be deleted because it is currently running.'
-            ' Stop the forecasts first.')
-
-    # delete schedule if exists
-    with Session() as session:
-        forecastseries = ForecastSeriesRepository.get_by_id(
-            session, forecastseries_oid)
-    if forecastseries.schedule_id:
-        asyncio.run(delete_deployment_schedule(
-            DEPLOYMENT_NAME, forecastseries.schedule_id))
-
-    # delete forecastseries
-    with Session() as session:
-        ForecastSeriesRepository.delete(session, forecastseries_oid)
-
-
-def delete_project(project_oid: UUID):
-    # delete all forecastseries separately to ensure correct deletion
-    # of associated forecasts and schedules
-    with Session() as session:
-        forecastseries = ForecastSeriesRepository.get_by_project(
-            session, project_oid)
-
-    for fseries in forecastseries:
-        delete_forecastseries(fseries.oid)
-
-    # delete project
-    with Session() as session:
-        ProjectRepository.delete(session, project_oid)
 
 
 def create_schedule(forecastseries_oid: UUID, schedule_config: dict):
