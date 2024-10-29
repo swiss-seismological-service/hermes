@@ -1,4 +1,5 @@
 import os
+import pickle
 import uuid
 from datetime import datetime
 
@@ -13,14 +14,15 @@ from sqlalchemy.exc import IntegrityError
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
 from hermes.repositories.results import (GridCellRepository,
+                                         GRParametersRepository,
                                          ModelResultRepository,
                                          ModelRunRepository,
                                          SeismicEventRepository,
                                          TimeStepRepository)
 from hermes.schemas.base import EResultType
 from hermes.schemas.project_schemas import Forecast, ForecastSeries
-from hermes.schemas.result_schemas import (GridCell, ModelResult, ModelRun,
-                                           SeismicEvent, TimeStep)
+from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
+                                           ModelRun, SeismicEvent, TimeStep)
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
@@ -226,33 +228,19 @@ class TestSeismicEvent:
     def test_get_catalog(self, session):
         catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
         catalog = Catalog(pd.read_parquet(catalog_path))
+        catalog['catalog_id'] = 0
 
         modelresult = ModelResult(result_type=EResultType.CATALOG)
         modelresult_oid = ModelResultRepository.create(
             session, modelresult).oid
 
-        SeismicEventRepository.create_from_catalog(
-            session, catalog, modelresult_oid)
+        SeismicEventRepository.create_from_forecast_catalog(
+            session, catalog, [modelresult_oid])
 
         catalog2 = SeismicEventRepository.get_catalog(session, modelresult_oid)
 
         assert len(catalog) == len(catalog2)
         assert isinstance(catalog2, Catalog)
-
-    def test_create_from_catalog(self, session, connection):
-        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
-
-        catalog = Catalog(pd.read_parquet(catalog_path))
-
-        catalog_length = len(catalog)
-        SeismicEventRepository.create_from_catalog(session, catalog, None)
-
-        count = connection.execute(
-            text('SELECT COUNT(seismicevent.oid) FROM seismicevent;'))\
-            .one_or_none()
-
-        assert count is not None
-        assert count[0] == catalog_length
 
     def test_create_from_forecast_catalog(self, session):
         catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
@@ -284,3 +272,24 @@ class TestSeismicEvent:
         ).one_or_none()
         assert count is not None
         assert count[0] == len_cat0
+
+
+class TestGRParameters:
+    def test_create(self, session):
+        gr_params = GRParameters(a_value=1, b_value=2,
+                                 mc_value=3, numberevents_value=4)
+        gr_params = GRParametersRepository.create(session, gr_params)
+        assert gr_params.oid is not None
+
+    def test_create_from_forecast_grrategrid(self, session):
+        rategrid_path = os.path.join(MODULE_LOCATION, 'forecastrategrid.pkl')
+
+        with open(rategrid_path, 'rb') as f:
+            data = pickle.load(f)
+
+        rategrid = data[0]
+
+        raise NotImplementedError
+
+    def test_get_forecast_grrategrid(self, session):
+        pass

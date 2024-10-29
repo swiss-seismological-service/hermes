@@ -67,3 +67,13 @@ class SeismicEvent(real_value_mixin('longitude', float),
     magnitude_type: str | None = None
     modelresult_oid: UUID | None = None
     coordinates: Point | None = None
+
+
+class GRParameters(real_value_mixin('numberevents', float),
+                   real_value_mixin('b', float),
+                   real_value_mixin('a', float),
+                   real_value_mixin('mc', float),
+                   real_value_mixin('alpha', float)
+                   ):
+    oid: UUID | None = None
+    modelresult_oid: UUID | None = None

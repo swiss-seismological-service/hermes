@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from seismostats import ForecastCatalog
+from seismostats import ForecastCatalog, ForecastGRRateGrid
 
 from hermes.repositories.results import (GridCellRepository,
                                          ModelResultRepository,
@@ -38,3 +38,11 @@ def save_forecast_catalog_to_repositories(
 
     SeismicEventRepository.create_from_forecast_catalog(
         session, forecast_catalog, ids)
+
+
+def save_forecast_grrategrid_to_repositories(
+        session,
+        forecastseries_oid: UUID,
+        modelrun_oid: UUID,
+        forecast_grrategrid: ForecastGRRateGrid) -> None:
+    pass

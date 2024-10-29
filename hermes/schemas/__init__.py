@@ -8,5 +8,5 @@ from hermes.schemas.project_schemas import (Forecast, ForecastSeries,
                                             ForecastSeriesConfig,
                                             ForecastSeriesSchedule, Project,
                                             Tag)
-from hermes.schemas.result_schemas import (GridCell, ModelResult, ModelRun,
-                                           SeismicEvent, TimeStep)
+from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
+                                           ModelRun, SeismicEvent, TimeStep)

@@ -80,6 +80,11 @@ class ModelResultTable(CreationInfoMixin, ORMBase):
                                  cascade='all, delete-orphan',
                                  passive_deletes=True)
 
+    grparameters = relationship('GRParametersTable',
+                                back_populates='modelresult',
+                                cascade='all, delete-orphan',
+                                passive_deletes=True)
+
 
 class SeismicEventTable(TimeQuantityMixin('time'),
                         RealQuantityMixin('latitude'),
@@ -122,3 +127,16 @@ class ModelRunTable(ORMBase):
                                 back_populates='modelrun',
                                 cascade='all, delete-orphan',
                                 passive_deletes=True)
+
+
+class GRParametersTable(RealQuantityMixin('numberevents'),
+                        RealQuantityMixin('a'),
+                        RealQuantityMixin('b'),
+                        RealQuantityMixin('mc'),
+                        RealQuantityMixin('alpha'),
+                        ORMBase):
+    modelresult_oid = Column(UUID, ForeignKey(
+        'modelresult.oid', ondelete='CASCADE'))
+    modelresult = relationship(
+        'ModelResultTable',
+        back_populates='grparameters')

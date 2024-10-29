@@ -6,14 +6,20 @@ from datetime import datetime
 import pandas as pd
 import requests
 from prefect import flow, task
-from seismostats import Catalog
+from seismostats import Catalog, ForecastGRRateGrid
 from shapely import Point
 
 from hermes.repositories.types import shapely_to_db
-from hermes.schemas import SeismicEvent
+from hermes.schemas import GRParameters, SeismicEvent
 from hermes.schemas.base import Model
 from hermes.utils.dateutils import generate_date_ranges
 from hermes.utils.url import add_query_params
+
+
+def serialize_seismostats_grrategrid(
+        rategrid: ForecastGRRateGrid,
+        model: Model = GRParameters) -> list[dict]:
+    pass
 
 
 def serialize_seismostats_catalog(catalog: Catalog,
