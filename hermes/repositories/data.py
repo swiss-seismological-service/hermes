@@ -1,5 +1,7 @@
+import json
 from uuid import UUID
 
+from hydws.parser import BoreholeHydraulics
 from seismostats import Catalog
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
@@ -83,9 +85,56 @@ class SeismicityObservationRepository(repository_factory(
 
 class InjectionObservationRepository(repository_factory(
         InjectionObservation, InjectionObservationTable)):
-    pass
+    @classmethod
+    def create_from_hydjson(cls,
+                            session: Session,
+                            data: str,
+                            forecast_oid: UUID) -> UUID:
+        object_db = InjectionObservation(
+            data=data,
+            forecast_oid=forecast_oid
+        )
+
+        object_db = cls.create(session, object_db)
+
+        return object_db.oid
+
+    @classmethod
+    def create_from_borehole_hydraulics(cls,
+                                        session: Session,
+                                        data: BoreholeHydraulics,
+                                        forecast_oid: UUID) -> UUID:
+        hydjson = json.dumps(data.to_json())
+
+        return cls.create_from_hydjson(session, hydjson, forecast_oid)
 
 
 class InjectionPlanRepository(repository_factory(
         InjectionPlan, InjectionPlanTable)):
-    pass
+    @classmethod
+    def create_from_hydjson(cls,
+                            session: Session,
+                            data: str,
+                            name: str,
+                            forecastseries_oid: UUID) -> UUID:
+
+        object_db = InjectionPlan(
+            data=data,
+            forecastseries_oid=forecastseries_oid,
+            name=name
+        )
+
+        object_db = cls.create(session, object_db)
+
+        return object_db.oid
+
+    @classmethod
+    def create_from_borehole_hydraulics(cls,
+                                        session: Session,
+                                        data: BoreholeHydraulics,
+                                        name: str,
+                                        forecastseries_oid: UUID) -> UUID:
+        hydjson = json.dumps(data.to_json())
+
+        return cls.create_from_hydjson(
+            session, hydjson, name, forecastseries_oid)

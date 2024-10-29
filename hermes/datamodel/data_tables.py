@@ -4,10 +4,11 @@ from sqlalchemy import Column, ForeignKey, Integer, LargeBinary, String, Table
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from hermes.datamodel.base import ORMBase, RealQuantityMixin, TimeQuantityMixin
+from hermes.datamodel.base import (NameMixin, ORMBase, RealQuantityMixin,
+                                   TimeQuantityMixin)
 
 
-class InjectionPlanTable(ORMBase):
+class InjectionPlanTable(ORMBase, NameMixin):
     data = Column(LargeBinary, nullable=False)
 
     forecastseries_oid = Column(UUID, ForeignKey('forecastseries.oid',

@@ -20,6 +20,7 @@ class InjectionObservation(Model):
 class InjectionPlan(Model):
     oid: UUID | None = None
     data: bytes | None = None
+    name: str | None = None
     forecastseries_oid: UUID | None = None
 
 
