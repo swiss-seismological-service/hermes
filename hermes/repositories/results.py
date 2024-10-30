@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
                                             ModelResultTable, ModelRunTable,
                                             SeismicEventTable, TimeStepTable)
-from hermes.io.catalog import serialize_seismostats_catalog
+from hermes.io.catalog import (serialize_seismostats_catalog,
+                               serialize_seismostats_grrategrid)
 from hermes.repositories.base import repository_factory
 from hermes.repositories.database import pandas_read_sql
 from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
@@ -125,9 +126,14 @@ class GRParametersRepository(
     def create_from_forecast_grrategrid(
             cls,
             session: Session,
-            forecast_grrategrid: ForecastGRRateGrid,
+            rategrid: ForecastGRRateGrid,
             modelresult_oids: list[UUID]) -> None:
-        pass
+        rategrid.grid_id = np.array(modelresult_oids)[rategrid.grid_id]
+        rategrid = rategrid.rename(columns={'grid_id': 'modelresult_oid'})
+        grparameters = serialize_seismostats_grrategrid(rategrid)
+
+        session.execute(insert(GRParametersTable), grparameters)
+        session.commit()
 
     @classmethod
     def get_forecast_grrategrid(

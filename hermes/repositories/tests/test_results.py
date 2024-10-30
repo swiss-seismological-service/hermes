@@ -277,19 +277,40 @@ class TestSeismicEvent:
 class TestGRParameters:
     def test_create(self, session):
         gr_params = GRParameters(a_value=1, b_value=2,
-                                 mc_value=3, numberevents_value=4)
+                                 mc_value=3, number_events_value=4)
         gr_params = GRParametersRepository.create(session, gr_params)
         assert gr_params.oid is not None
 
     def test_create_from_forecast_grrategrid(self, session):
-        rategrid_path = os.path.join(MODULE_LOCATION, 'forecastrategrid.pkl')
+        rategrid_path = os.path.join(MODULE_LOCATION, 'forecastgrrategrid.pkl')
 
         with open(rategrid_path, 'rb') as f:
             data = pickle.load(f)
 
-        rategrid = data[0]
+        rategrid = data[-1]
 
-        raise NotImplementedError
+        # len_cat0 = len(catalog[catalog['catalog_id'] == 0])
+        len_fc = len(rategrid)
+
+        modelresult_oids = ModelResultRepository.batch_create(
+            session, len(rategrid), EResultType.GRID, None, None, None)
+
+        GRParametersRepository.create_from_forecast_grrategrid(
+            session, rategrid, modelresult_oids)
+
+        count = session.execute(
+            text('SELECT COUNT(grparameters.oid) FROM grparameters;'))\
+            .one_or_none()
+        assert count is not None
+        assert count[0] == len_fc
+
+        count = session.execute(
+            text('SELECT COUNT(grparameters.oid) FROM grparameters '
+                 'WHERE modelresult_oid = :modelresult_oid;'),
+            {'modelresult_oid': modelresult_oids[0]}
+        ).one_or_none()
+        assert count is not None
+        assert count[0] == 1
 
     def test_get_forecast_grrategrid(self, session):
         pass

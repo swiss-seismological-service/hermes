@@ -1,17 +1,35 @@
 import json
 import os
+import pickle
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pandas as pd
+from numpy.testing import assert_almost_equal
 from prefect.testing.utilities import prefect_test_harness
 from seismostats import Catalog
 
 from hermes.io.catalog import (CatalogDataSource, deserialize_catalog,
-                               serialize_seismostats_catalog)
+                               serialize_seismostats_catalog,
+                               serialize_seismostats_grrategrid)
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
+
+
+class TestGRRategrid:
+    def test_rategrid_serialization(self):
+        rategrid_path = os.path.join(
+            MODULE_LOCATION,
+            '../../../repositories/tests/data',
+            'forecastgrrategrid.pkl')
+        with open(rategrid_path, 'rb') as f:
+            data = pickle.load(f)
+
+        rategrid = data[-1]
+
+        rategrid = serialize_seismostats_grrategrid(rategrid)
+        assert_almost_equal(rategrid[-1]['b_value'], 2.097799, 5)
 
 
 class TestCatalog:

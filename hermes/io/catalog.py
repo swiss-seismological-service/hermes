@@ -19,7 +19,17 @@ from hermes.utils.url import add_query_params
 def serialize_seismostats_grrategrid(
         rategrid: ForecastGRRateGrid,
         model: Model = GRParameters) -> list[dict]:
-    pass
+
+    required_cols = ForecastGRRateGrid._required_cols + ['number_events']
+
+    column_renames = {col: f'{col}_value' for col in required_cols}
+
+    rategrid = rategrid.rename(columns=column_renames)
+
+    rategrid = rategrid[[c for c in rategrid.columns if c in list(
+        model.model_fields)]]
+
+    return rategrid.to_dict(orient='records')
 
 
 def serialize_seismostats_catalog(catalog: Catalog,

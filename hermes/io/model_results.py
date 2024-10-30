@@ -1,8 +1,10 @@
 from uuid import UUID
 
 from seismostats import ForecastCatalog, ForecastGRRateGrid
+from shapely.geometry import box
 
 from hermes.repositories.results import (GridCellRepository,
+                                         GRParametersRepository,
                                          ModelResultRepository,
                                          SeismicEventRepository,
                                          TimeStepRepository)
@@ -48,4 +50,32 @@ def save_forecast_grrategrid_to_repositories(
         forecastseries_oid: UUID,
         modelrun_oid: UUID,
         forecast_grrategrid: ForecastGRRateGrid) -> None:
-    pass
+
+    timestep = TimeStep(starttime=forecast_grrategrid.starttime,
+                        endtime=forecast_grrategrid.endtime,
+                        forecastseries_oid=forecastseries_oid)
+    timestep = TimeStepRepository.get_or_create(session, timestep)
+
+    cells = forecast_grrategrid.groupby(['longitude_min', 'longitude_max',
+                                         'latitude_min', 'latitude_max',
+                                         'depth_min', 'depth_max'])
+
+    for cell, data in cells:
+        gridcell = GridCell(geom=box(cell[0], cell[2], cell[1], cell[3]),
+                            forecastseries_oid=forecastseries_oid,
+                            depth_min=cell[4],
+                            depth_max=cell[5])
+
+        gridcell = GridCellRepository.get_or_create(session, gridcell)
+
+        ids = ModelResultRepository.batch_create(
+            session,
+            len(data),
+            EResultType.GRID,
+            timestep.oid,
+            gridcell.oid,
+            modelrun_oid
+        )
+
+        GRParametersRepository.create_from_forecast_grrategrid(
+            session, data, ids)
