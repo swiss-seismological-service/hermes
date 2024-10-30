@@ -1,8 +1,6 @@
 import asyncio
 from uuid import UUID
 
-from sqlalchemy.exc import IntegrityError
-
 from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
                                                    ForecastSeriesScheduler,
                                                    delete_deployment_schedule)
@@ -12,6 +10,7 @@ from hermes.repositories.project import (ForecastRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)
 from hermes.repositories.results import ModelRunRepository
+from hermes.repositories.types import DuplicateError
 from hermes.schemas import EStatus, ForecastSeriesConfig, ModelConfig
 from hermes.schemas.project_schemas import Project
 
@@ -37,7 +36,7 @@ def update_project(new_config: dict,
     try:
         with Session() as session:
             project_out = ProjectRepository.update(session, new_data)
-    except IntegrityError:
+    except DuplicateError:
         raise ValueError(f'Project with name "{new_config["name"]}"'
                          ' already exists, please choose a different name.')
 
@@ -84,7 +83,7 @@ def create_forecastseries(name, fseries_config, project_oid):
                 session, forecast_series)
 
         return forecast_series_out
-    except IntegrityError:
+    except DuplicateError:
         raise ValueError(f'ForecastSeries with name "{name}" already exists,'
                          ' please choose a different name.')
 
@@ -127,7 +126,7 @@ def update_forecastseries(fseries_config: dict,
         with Session() as session:
             forecast_series_out = ForecastSeriesRepository.update(
                 session, new_forecastseries)
-    except IntegrityError:
+    except DuplicateError:
         raise ValueError(f'ForecastSeries with name "{fseries_config["name"]}"'
                          ' already exists, please choose a different name.')
 
@@ -165,7 +164,7 @@ def create_modelconfig(name, model_config):
             model_config_out = ModelConfigRepository.create(
                 session, model_config)
         return model_config_out
-    except IntegrityError:
+    except DuplicateError:
         raise ValueError(f'ModelConfig with name "{name}" already exists,'
                          ' please choose a different name or archive the'
                          ' existing ModelConfig with the same name.')
@@ -203,7 +202,7 @@ def update_modelconfig(new_config: dict,
     try:
         with Session() as session:
             model_config_out = ModelConfigRepository.update(session, new_data)
-    except IntegrityError:
+    except DuplicateError:
         raise ValueError(f'ModelConfig with name "{new_config["name"]}"'
                          ' already exists, please choose a different name.')
 
@@ -251,7 +250,7 @@ def archive_modelconfig(modelconfig_oid: UUID):
             model_config.name = f'{base_name}_archived'
             model_config = ModelConfigRepository.update(session, model_config)
             return model_config
-    except IntegrityError:
+    except DuplicateError:
         for i in range(1, 100):
             with Session() as session:
                 try:
@@ -259,7 +258,7 @@ def archive_modelconfig(modelconfig_oid: UUID):
                     model_config = ModelConfigRepository.update(
                         session, model_config)
                     return model_config
-                except IntegrityError:
+                except DuplicateError:
                     continue
 
 

@@ -6,19 +6,20 @@ import pandas as pd
 from seismostats import ForecastCatalog
 from shapely import from_wkt
 
-from hermes.io.model_results import (save_forecast_catalog_to_repositories,
-                                     save_forecast_grrategrid_to_repositories)
+from hermes.actions.save_results import (
+    save_forecast_catalog_to_repositories,
+    save_forecast_grrategrid_to_repositories)
 
 MODULE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 
 
-@patch('hermes.io.model_results.TimeStepRepository.get_or_create',
+@patch('hermes.actions.save_results.TimeStepRepository.get_or_create',
        autospec=True)
-@patch('hermes.io.model_results.GridCellRepository.get_or_create',
+@patch('hermes.actions.save_results.GridCellRepository.get_or_create',
        autospec=True)
-@patch('hermes.io.model_results.ModelResultRepository.batch_create',
+@patch('hermes.actions.save_results.ModelResultRepository.batch_create',
        autospec=True)
-@patch('hermes.io.model_results.SeismicEventRepository.'
+@patch('hermes.actions.save_results.SeismicEventRepository.'
        'create_from_forecast_catalog',
        autospec=True)
 def test_save_forecast_catalog_to_repositories(mock_seismic_event_repo,
@@ -41,13 +42,13 @@ def test_save_forecast_catalog_to_repositories(mock_seismic_event_repo,
     # TODO: Add assertions
 
 
-@patch('hermes.io.model_results.TimeStepRepository.get_or_create',
+@patch('hermes.actions.save_results.TimeStepRepository.get_or_create',
        autospec=True)
-@patch('hermes.io.model_results.GridCellRepository.get_or_create',
+@patch('hermes.actions.save_results.GridCellRepository.get_or_create',
        autospec=True)
-@patch('hermes.io.model_results.ModelResultRepository.batch_create',
+@patch('hermes.actions.save_results.ModelResultRepository.batch_create',
        autospec=True)
-@patch('hermes.io.model_results.GRParametersRepository.'
+@patch('hermes.actions.save_results.GRParametersRepository.'
        'create_from_forecast_grrategrid',
        autospec=True)
 def test_save_grrategrid_to_repositories(mock_grparameters_repo,

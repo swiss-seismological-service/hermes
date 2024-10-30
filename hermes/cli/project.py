@@ -5,8 +5,8 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud import (delete_project, read_project_oid,
-                                 update_project)
+from hermes.actions.crud_models import (delete_project, read_project_oid,
+                                        update_project)
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ProjectRepository

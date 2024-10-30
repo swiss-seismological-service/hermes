@@ -19,6 +19,16 @@ from hermes.utils.url import add_query_params
 def serialize_seismostats_grrategrid(
         rategrid: ForecastGRRateGrid,
         model: Model = GRParameters) -> list[dict]:
+    """
+    Serialize a Seismostats ForecastGRRateGrid object to a list of dicts.
+
+    Args:
+        rategrid: ForecastGRRateGrid object.
+        model: Model object to serialize the rategrid to.
+
+    Returns:
+        List of dictionaries, each dictionary representing a rategrid.
+    """
 
     required_cols = ForecastGRRateGrid._required_cols + ['number_events']
 
@@ -43,6 +53,7 @@ def serialize_seismostats_catalog(catalog: Catalog,
     Returns:
         List of dictionaries, each dictionary representing an event.
     """
+
     # rename value columns to match 'RealQuantity" fields
     column_renames = {col: f'{col}_value' for col in Catalog._required_cols}
     catalog = catalog.rename(columns=column_renames)
@@ -60,21 +71,6 @@ def serialize_seismostats_catalog(catalog: Catalog,
 
     # pandas to_dict method for very fast serialization
     events = catalog.to_dict(orient='records')
-
-    return events
-
-
-def deserialize_catalog(events: list[dict]) -> list[SeismicEvent]:
-    """
-    Deserialize a list of dictionaries to a list of SeismicEvent objects.
-
-    Args:
-        events: List of dictionaries, each dictionary representing an event.
-
-    Returns:
-        List of SeismicEvent objects.
-    """
-    events = [SeismicEvent(**c) for c in events]
 
     return events
 

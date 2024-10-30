@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 from datetime import datetime, timedelta
@@ -9,7 +8,7 @@ from numpy.testing import assert_almost_equal
 from prefect.testing.utilities import prefect_test_harness
 from seismostats import Catalog
 
-from hermes.io.catalog import (CatalogDataSource, deserialize_catalog,
+from hermes.io.catalog import (CatalogDataSource,
                                serialize_seismostats_catalog,
                                serialize_seismostats_grrategrid)
 
@@ -45,29 +44,6 @@ class TestCatalog:
         events = serialize_seismostats_catalog(catalog)
 
         assert events[0]['magnitude_value'] == 2.510115344
-
-    def test_deserialize_catalog(self):
-        events = \
-            '{"time_value": "2021-12-30T07:43:14", "latitude_value": ' \
-            '46.05144527, "latitude_uncertainty": "0.1222628824", ' \
-            '"longitude_value": 7.388024848, "longitude_uncertainty": ' \
-            '"0.1007121534", "depth_value": 1181.640625, '\
-            '"depth_uncertainty": "274.9552879", "magnitude_value": ' \
-            '2.510115344, "magnitude_uncertainty": "0.23854491", ' \
-            '"magnitude_type": "MLhc"}, {"time_value": ' \
-            '"2021-12-25T14:49:40", "latitude_value": 47.37175484, ' \
-            '"latitude_uncertainty": "0.1363265577", "longitude_value": ' \
-            '6.917056725,"longitude_uncertainty": "0.1277685645", ' \
-            '"depth_value": 3364.257812, "depth_uncertainty": ' \
-            '"1036.395075", "magnitude_value": 3.539687307, ' \
-            '"magnitude_uncertainty": "0.272435385", "magnitude_type": "MLhc"}'
-
-        events = json.loads(f'[{events}]')
-
-        # This is basically already the test for the deserialization
-        deserialized = deserialize_catalog(events)
-
-        assert deserialized[0].magnitude_value == 2.510115344
 
 
 class TestCatalogDataSource:

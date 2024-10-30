@@ -5,10 +5,12 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud import (archive_modelconfig, create_modelconfig,
-                                 delete_modelconfig, disable_modelconfig,
-                                 enable_modelconfig, read_modelconfig_oid,
-                                 update_modelconfig)
+from hermes.actions.crud_models import (archive_modelconfig,
+                                        create_modelconfig, delete_modelconfig,
+                                        disable_modelconfig,
+                                        enable_modelconfig,
+                                        read_modelconfig_oid,
+                                        update_modelconfig)
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ModelConfigRepository

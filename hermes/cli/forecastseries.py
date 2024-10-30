@@ -5,9 +5,11 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud import (create_forecastseries, delete_forecastseries,
-                                 read_forecastseries_oid, read_project_oid,
-                                 update_forecastseries)
+from hermes.actions.crud_models import (create_forecastseries,
+                                        delete_forecastseries,
+                                        read_forecastseries_oid,
+                                        read_project_oid,
+                                        update_forecastseries)
 from hermes.cli.utils import row_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository

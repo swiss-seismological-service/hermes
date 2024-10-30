@@ -6,7 +6,7 @@ from hermes_model import ModelInput
 from prefect import flow, task
 from seismostats import ForecastCatalog, ForecastGRRateGrid
 
-from hermes.io.model_results import save_forecast_catalog_to_repositories
+from hermes.actions.save_results import save_forecast_catalog_to_repositories
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
                                       SeismicityObservationRepository)

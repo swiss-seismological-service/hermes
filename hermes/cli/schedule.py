@@ -5,8 +5,9 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud import (create_schedule, read_forecastseries_oid,
-                                 update_schedule)
+from hermes.actions.crud_models import (create_schedule,
+                                        read_forecastseries_oid,
+                                        update_schedule)
 from hermes.cli.utils import row_table
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
