@@ -129,7 +129,7 @@ class ModelRunTable(ORMBase):
                                 passive_deletes=True)
 
 
-class GRParametersTable(RealQuantityMixin('numberevents'),
+class GRParametersTable(RealQuantityMixin('number_events'),
                         RealQuantityMixin('a'),
                         RealQuantityMixin('b'),
                         RealQuantityMixin('mc'),

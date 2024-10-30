@@ -69,7 +69,7 @@ class SeismicEvent(real_value_mixin('longitude', float),
     coordinates: Point | None = None
 
 
-class GRParameters(real_value_mixin('numberevents', float),
+class GRParameters(real_value_mixin('number_events', float),
                    real_value_mixin('b', float),
                    real_value_mixin('a', float),
                    real_value_mixin('mc', float),

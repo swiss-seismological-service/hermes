@@ -15,12 +15,15 @@ def save_forecast_catalog_to_repositories(
         forecastseries_oid: UUID,
         modelrun_oid: UUID,
         forecast_catalog: ForecastCatalog) -> None:
+
     # create the timestep and gridcell objects
     timestep = TimeStep(starttime=forecast_catalog.starttime,
                         endtime=forecast_catalog.endtime,
                         forecastseries_oid=forecastseries_oid)
     griddcell = GridCell(geom=forecast_catalog.bounding_polygon,
-                         forecastseries_oid=forecastseries_oid)
+                         forecastseries_oid=forecastseries_oid,
+                         depth_min=forecast_catalog.depth_min,
+                         depth_max=forecast_catalog.depth_max)
 
     # save the timestep and gridcell objects to the database
     timestep = TimeStepRepository.get_or_create(session, timestep)
