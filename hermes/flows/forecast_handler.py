@@ -5,9 +5,9 @@ from uuid import UUID
 from prefect import flow, get_run_logger, runtime, task
 from prefect.deployments import run_deployment
 
-from hermes.flows.catalog_readers import get_catalog
 from hermes.flows.modelrun_builder import ModelRunBuilder
 from hermes.flows.modelrun_handler import default_model_runner
+from hermes.io.seismicity import CatalogDataSource
 from hermes.repositories.data import SeismicityObservationRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
@@ -49,6 +49,8 @@ class ForecastHandler:
 
         self.forecast: Forecast = None
         self._create_forecast()
+
+        self.catalog_data_source: CatalogDataSource = None
 
         try:
             # Retreive input data from various services
@@ -153,12 +155,15 @@ class ForecastHandler:
             self.forecast.seismicity_observation = None
             return None
 
+        self.catalog_data_source = CatalogDataSource.from_uri(
+            self.forecastseries.fdsnws_url,
+            self.observation_starttime,
+            self.observation_endtime
+        )
+
         seismicity = SeismicityObservation(
             forecast_oid=self.forecast.oid,
-            data=get_catalog(
-                self.forecastseries.fdsnws_url,
-                self.observation_starttime,
-                self.observation_endtime).to_quakeml()
+            data=self.catalog_data_source.get_quakeml()
         )
 
         self.forecast.seismicity_observation = \

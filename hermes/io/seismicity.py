@@ -1,78 +1,16 @@
 
 import logging
 import time
+import urllib.parse
 from datetime import datetime
 
 import pandas as pd
 import requests
-from prefect import flow, task
-from seismostats import Catalog, ForecastGRRateGrid
-from shapely import Point
+from prefect import flow, get_run_logger, task
+from seismostats import Catalog
 
-from hermes.repositories.types import shapely_to_db
-from hermes.schemas import GRParameters, SeismicEvent
-from hermes.schemas.base import Model
 from hermes.utils.dateutils import generate_date_ranges
 from hermes.utils.url import add_query_params
-
-
-def serialize_seismostats_grrategrid(
-        rategrid: ForecastGRRateGrid,
-        model: Model = GRParameters) -> list[dict]:
-    """
-    Serialize a Seismostats ForecastGRRateGrid object to a list of dicts.
-
-    Args:
-        rategrid: ForecastGRRateGrid object.
-        model: Model object to serialize the rategrid to.
-
-    Returns:
-        List of dictionaries, each dictionary representing a rategrid.
-    """
-
-    required_cols = ForecastGRRateGrid._required_cols + ['number_events']
-
-    column_renames = {col: f'{col}_value' for col in required_cols}
-
-    rategrid = rategrid.rename(columns=column_renames)
-
-    rategrid = rategrid[[c for c in rategrid.columns if c in list(
-        model.model_fields)]]
-
-    return rategrid.to_dict(orient='records')
-
-
-def serialize_seismostats_catalog(catalog: Catalog,
-                                  model: Model = SeismicEvent) -> list[dict]:
-    """
-    Serialize a Seismostats Catalog object to a list of dictionaries.
-
-    Args:
-        catalog: Catalog object with the events.
-        model: Model object to serialize the events to.
-    Returns:
-        List of dictionaries, each dictionary representing an event.
-    """
-
-    # rename value columns to match 'RealQuantity" fields
-    column_renames = {col: f'{col}_value' for col in Catalog._required_cols}
-    catalog = catalog.rename(columns=column_renames)
-
-    if 'longitude_value' in catalog.columns and \
-            'latitude_value' in catalog.columns:
-        catalog['coordinates'] = catalog.apply(
-            lambda row: shapely_to_db(
-                Point(row['longitude_value'], row['latitude_value'])),
-            axis=1)
-
-    # only keep columns that are in the model
-    catalog = catalog[[c for c in catalog.columns if c in list(
-        model.model_fields)]]
-
-    # pandas to_dict method for very fast serialization
-    events = catalog.to_dict(orient='records')
-
-    return events
 
 
 class CatalogDataSource:
@@ -118,6 +56,14 @@ class CatalogDataSource:
         Returns:
             CatalogDataSource object
         """
+        logger = get_run_logger()
+
+        file_path = urllib.parse.urlparse(file_path)
+        file_path = urllib.parse.unquote(file_path.path)
+
+        logger.info(
+            f'Loading seismic catalog from file (file_path={file_path}).')
+
         if format == 'quakeml':
             catalog = Catalog.from_quakeml(file_path,
                                            include_uncertainties=True,
@@ -132,9 +78,28 @@ class CatalogDataSource:
                 & (catalog['time'] <= endtime if endtime else True)
             ]
 
+        logger.info(
+            f'Loaded seismic catalog from file (file_path={file_path}).')
+
         return cls(catalog=catalog,
                    starttime=starttime or catalog['time'].min(),
                    endtime=endtime or catalog['time'].max())
+
+    @classmethod
+    def from_uri(cls,
+                 uri,
+                 starttime: datetime | None = None,
+                 endtime: datetime | None = None) -> 'CatalogDataSource':
+
+        if uri.startswith('file://'):
+            catalog = cls.from_file(uri, starttime, endtime)
+        elif uri.startswith('http://') or uri.startswith('https://'):
+            catalog = cls.from_fdsnws(uri, starttime, endtime)
+        else:
+            raise ValueError(
+                f'URI scheme of catalog source not supported: {uri}')
+
+        return catalog
 
     @classmethod
     @flow
@@ -153,8 +118,15 @@ class CatalogDataSource:
         Returns:
             CatalogDataSource object, status code.
         """
+        logger = get_run_logger()
+        logger.info(
+            f'Requesting seismic catalog from fdsnws-event (url={url}).')
 
         date_ranges = generate_date_ranges(starttime, endtime)
+
+        if len(date_ranges) > 1:
+            logger.info(
+                f'Requesting catalog in {len(date_ranges)} parts.')
 
         urls = [add_query_params(url,
                                  starttime=start.strftime('%Y-%m-%dT%H:%M:%S'),
@@ -169,13 +141,8 @@ class CatalogDataSource:
         parts = [task.result() for task in tasks]
 
         catalog = Catalog()
-        status_code = 200
 
         for part in parts:
-            if 200 < part[1] <= 299:
-                status_code = part[1]
-                continue
-
             catalog = pd.concat([
                 catalog if not catalog.empty else None,
                 Catalog.from_quakeml(part[0],
@@ -187,9 +154,12 @@ class CatalogDataSource:
 
         catalog = catalog.sort_values('time')
 
+        logger.info(f'Received response from {url} '
+                    f'with status code {part[1]}.')
+
         return cls(catalog=catalog,
                    starttime=starttime,
-                   endtime=endtime), status_code
+                   endtime=endtime)
 
     def get_quakeml(self,
                     starttime: datetime | None = None,

@@ -10,7 +10,7 @@ from hermes.schemas.project_schemas import Forecast
 @patch('hermes.repositories.data.SeismicityObservationRepository.create',
        autocast=True,
        return_value=SeismicityObservation(data='data'))
-@patch('hermes.flows.forecast_handler.get_catalog',
+@patch('hermes.io.CatalogDataSource.from_uri',
        autocast=True)
 @patch('hermes.repositories.project.ForecastRepository.create',
        autocast=True)
@@ -40,7 +40,7 @@ class TestForecastHandler:
         mock_fs_get_by_id.return_value = forecastseries
         mock_fs_get_model_configs.return_value = [model_config]
 
-        mock_get_catalog().to_quakeml.return_value = 'data'
+        mock_get_catalog().get_quakeml.return_value = 'data'
 
         forecast_handler = forecast_runner(forecastseries.oid)
 

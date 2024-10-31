@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
                                             ModelResultTable, ModelRunTable,
                                             SeismicEventTable, TimeStepTable)
-from hermes.io.catalog import (serialize_seismostats_catalog,
-                               serialize_seismostats_grrategrid)
+from hermes.io.serialize import (serialize_seismostats_catalog,
+                                 serialize_seismostats_grrategrid)
 from hermes.repositories.base import repository_factory
 from hermes.repositories.database import pandas_read_sql
 from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,

@@ -10,7 +10,7 @@ from hermes.datamodel.data_tables import (EventObservationTable,
                                           InjectionObservationTable,
                                           InjectionPlanTable,
                                           SeismicityObservationTable)
-from hermes.io.catalog import serialize_seismostats_catalog
+from hermes.io.serialize import serialize_seismostats_catalog
 from hermes.repositories.base import repository_factory
 from hermes.schemas.data_schemas import (EventObservation,
                                          InjectionObservation, InjectionPlan,

@@ -11,8 +11,7 @@ MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 class TestDefaultModelRun:
-
-    @patch('hermes.flows.forecast_handler.get_catalog')
+    @patch('hermes.io.seismicity.CatalogDataSource.from_uri')
     @patch('hermes.flows.forecast_handler.Session')
     @patch('hermes.flows.modelrun_handler.Session')
     def test_full_flow(self,
@@ -25,7 +24,7 @@ class TestDefaultModelRun:
 
         mock_session_fc.return_value = session
         mock_session_m.return_value = session
-        mock_get_catalog().to_quakeml.return_value = catalog
+        mock_get_catalog().get_quakeml.return_value = catalog
 
         forecast_runner(forecastseries.oid,
                         starttime=datetime(2022, 1, 1, 0, 0, 0))
