@@ -1,5 +1,3 @@
-
-import logging
 import time
 import urllib.parse
 from datetime import datetime
@@ -14,10 +12,9 @@ from hermes.utils.url import add_query_params
 
 
 class CatalogDataSource:
+    @task
     def __init__(self,
-                 catalog: Catalog | None = None,
-                 starttime: datetime | None = None,
-                 endtime: datetime | None = None) -> None:
+                 catalog: Catalog | None = None) -> None:
         """
         Provides a common interface to access seismic event
         data from different sources.
@@ -33,57 +30,8 @@ class CatalogDataSource:
         Returns:
             CatalogDataSource object
         """
-        self._logger = logging.getLogger(__name__)
+        self._logger = get_run_logger()
         self.catalog = catalog
-        self.starttime = starttime
-        self.endtime = endtime
-
-    @classmethod
-    def from_file(cls,
-                  file_path: str,
-                  starttime: datetime | None = None,
-                  endtime: datetime | None = None,
-                  format: str = 'quakeml') -> 'CatalogDataSource':
-        """
-        Initialize a CatalogDataSource from a file.
-
-        Args:
-            file_path: Path to the file.
-            starttime: Start time of the catalog.
-            endtime: End time of the catalog.
-            format: Format of the file.
-
-        Returns:
-            CatalogDataSource object
-        """
-        logger = get_run_logger()
-
-        file_path = urllib.parse.urlparse(file_path)
-        file_path = urllib.parse.unquote(file_path.path)
-
-        logger.info(
-            f'Loading seismic catalog from file (file_path={file_path}).')
-
-        if format == 'quakeml':
-            catalog = Catalog.from_quakeml(file_path,
-                                           include_uncertainties=True,
-                                           include_ids=True,
-                                           include_quality=True)
-        else:
-            raise NotImplementedError(f'Format {format} not supported.')
-
-        if starttime or endtime:
-            catalog = catalog.loc[
-                (catalog['time'] >= starttime if starttime else True)
-                & (catalog['time'] <= endtime if endtime else True)
-            ]
-
-        logger.info(
-            f'Loaded seismic catalog from file (file_path={file_path}).')
-
-        return cls(catalog=catalog,
-                   starttime=starttime or catalog['time'].min(),
-                   endtime=endtime or catalog['time'].max())
 
     @classmethod
     def from_uri(cls,
@@ -102,6 +50,54 @@ class CatalogDataSource:
         return catalog
 
     @classmethod
+    @task
+    def from_file(cls,
+                  file_path: str,
+                  starttime: datetime | None = None,
+                  endtime: datetime | None = None,
+                  format: str = 'quakeml') -> 'CatalogDataSource':
+        """
+        Initialize a CatalogDataSource from a file.
+
+        Args:
+            file_path: Path to the file.
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog.
+            format: Format of the file.
+
+        Returns:
+            CatalogDataSource object
+        """
+        cds = cls()
+
+        file_path = urllib.parse.urlparse(file_path)
+        file_path = urllib.parse.unquote(file_path.path)
+
+        cds._logger.info(
+            f'Loading seismic catalog from file (file_path={file_path}).')
+
+        if format == 'quakeml':
+            catalog = Catalog.from_quakeml(file_path,
+                                           include_uncertainties=True,
+                                           include_ids=True,
+                                           include_quality=True)
+        else:
+            raise NotImplementedError(f'Format {format} not supported.')
+
+        if starttime or endtime:
+            catalog = catalog.loc[
+                (catalog['time'] >= starttime if starttime else True)
+                & (catalog['time'] <= endtime if endtime else True)
+            ]
+
+        cds._logger.info(
+            f'Loaded seismic catalog from file (file_path={file_path}).')
+
+        cds.catalog = catalog
+
+        return cds
+
+    @classmethod
     @flow
     def from_fdsnws(cls,
                     url: str,
@@ -118,14 +114,14 @@ class CatalogDataSource:
         Returns:
             CatalogDataSource object, status code.
         """
-        logger = get_run_logger()
-        logger.info(
-            f'Requesting seismic catalog from fdsnws-event (url={url}).')
+        cds = cls()
+
+        cds._logger.info('Requesting seismic catalog from fdsnws-event:')
 
         date_ranges = generate_date_ranges(starttime, endtime)
 
         if len(date_ranges) > 1:
-            logger.info(
+            cds._logger.info(
                 f'Requesting catalog in {len(date_ranges)} parts.')
 
         urls = [add_query_params(url,
@@ -134,8 +130,8 @@ class CatalogDataSource:
                 for start, end in date_ranges]
 
         tasks = []
-        for url in urls:
-            tasks.append(cls._request_text.submit(url))
+        for u in urls:
+            tasks.append(cds._request_text.submit(u))
             time.sleep(0.5)
 
         parts = [task.result() for task in tasks]
@@ -154,12 +150,12 @@ class CatalogDataSource:
 
         catalog = catalog.sort_values('time')
 
-        logger.info(f'Received response from {url} '
-                    f'with status code {part[1]}.')
+        cds._logger.info(f'Received response from {url} '
+                         f'with status code {part[1]}.')
 
-        return cls(catalog=catalog,
-                   starttime=starttime,
-                   endtime=endtime)
+        cds.catalog = catalog
+
+        return cds
 
     def get_quakeml(self,
                     starttime: datetime | None = None,
@@ -191,24 +187,17 @@ class CatalogDataSource:
         Returns:
             Catalog object
         """
-        starttime = starttime or self.starttime
-        endtime = endtime or self.endtime
+        if starttime or endtime:
+            return self.catalog.loc[
+                (self.catalog['time'] >= starttime if starttime else True)
+                & (self.catalog['time'] <= endtime if endtime else True)
+            ].copy()
+        return self.catalog.copy()
 
-        if starttime < self.starttime or endtime > self.endtime:
-            raise ValueError(
-                'Requested time range is outside of '
-                'the catalog time range.')
-
-        return self.catalog.loc[
-            (self.catalog['time'] >= starttime)
-            & (self.catalog['time'] <= endtime)
-        ]
-
-    @classmethod
     @task(retries=3,
           retry_delay_seconds=5,
           retry_jitter_factor=1)
-    def _request_text(cls, url: str, timeout: int = 60, **kwargs) \
+    def _request_text(self, url: str, timeout: int = 60, **kwargs) \
             -> tuple[str, int]:
         """
         Request text from a URL and raise for status.
@@ -226,6 +215,8 @@ class CatalogDataSource:
                 kwargs[key] = value.strftime('%Y-%m-%dT%H:%M:%S')
 
         url = add_query_params(url, **kwargs)
+
+        self._logger.info(f'Requesting text from {url}.')
 
         response = requests.get(url, timeout=timeout)
 

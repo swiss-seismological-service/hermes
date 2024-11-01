@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
-from prefect.testing.utilities import prefect_test_harness
+import pytest
 
 from hermes.io.seismicity import CatalogDataSource
 
@@ -47,9 +47,8 @@ class TestCatalogDataSource:
         starttime = datetime(2021, 12, 25)
         endtime = datetime(2023, 1, 12, 12, 1, 3)
 
-        with prefect_test_harness():
-            catalog = CatalogDataSource.from_fdsnws(
-                base_url, starttime, endtime)
+        catalog = CatalogDataSource.from_fdsnws(
+            base_url, starttime, endtime)
 
         for url in urls:
             mock_get.assert_any_call(url, timeout=60)
@@ -58,24 +57,29 @@ class TestCatalogDataSource:
 
     @patch('hermes.io.seismicity.CatalogDataSource.from_file',
            autocast=True)
-    def test_get_file_catalog(self, mock_data_source: MagicMock):
+    @patch('hermes.io.seismicity.CatalogDataSource.from_fdsnws',
+           autocast=True)
+    def test_get_uri_catalog(self,
+                             mock_fdsn_source: MagicMock,
+                             mock_file_source: MagicMock):
 
         CatalogDataSource.from_uri('file:///home/user/file.txt',
                                    datetime(2021, 1, 1),
                                    datetime(2021, 1, 2))
 
-        mock_data_source.assert_called_with('file:///home/user/file.txt',
+        mock_file_source.assert_called_with('file:///home/user/file.txt',
                                             datetime(2021, 1, 1),
                                             datetime(2021, 1, 2))
-
-    @patch('hermes.io.seismicity.CatalogDataSource.from_fdsnws',
-           autocast=True)
-    def test_get_fdsnws_catalog(self, mock_data_source: MagicMock):
 
         CatalogDataSource.from_uri('http://example.com',
                                    datetime(2021, 1, 1),
                                    datetime(2021, 1, 2))
 
-        mock_data_source.assert_called_with('http://example.com',
+        mock_fdsn_source.assert_called_with('http://example.com',
                                             datetime(2021, 1, 1),
                                             datetime(2021, 1, 2))
+
+        with pytest.raises(ValueError):
+            CatalogDataSource.from_uri('ftp://example.com',
+                                       datetime(2021, 1, 1),
+                                       datetime(2021, 1, 2))
