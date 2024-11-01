@@ -16,7 +16,8 @@ from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
 from hermes.schemas import Forecast
 from hermes.schemas.base import EInput, EStatus
-from hermes.schemas.data_schemas import SeismicityObservation
+from hermes.schemas.data_schemas import (InjectionObservation,
+                                         SeismicityObservation)
 from hermes.schemas.model_schemas import ModelConfig
 from hermes.schemas.project_schemas import ForecastSeries
 from hermes.utils.prefect import futures_wait
@@ -183,8 +184,24 @@ class ForecastHandler:
         if self.forecastseries.injectionobservation_required == \
                 EInput.NOT_ALLOWED:
             self.forecast.injection_observation = None
-        else:
-            raise NotImplementedError
+            return None
+
+        self.hydraulic_data_source = HydraulicsDataSource.from_uri(
+            self.forecastseries.hydws_url,
+            self.observation_starttime,
+            self.observation_endtime
+        )
+
+        hydraulics = InjectionObservation(
+            forecast_oid=self.forecast.oid,
+            data=self.hydraulic_data_source.get_json()
+        )
+
+        self.forecast.injection_observation = \
+            InjectionObservationRepository.create(
+                self.session,
+                hydraulics
+            )
 
     @task
     def _read_injectionplans(self) -> None:
