@@ -10,7 +10,7 @@ from hermes.schemas.project_schemas import Forecast
 @patch('hermes.repositories.data.SeismicityObservationRepository.create',
        autocast=True,
        return_value=SeismicityObservation(data='data'))
-@patch('hermes.io.CatalogDataSource.from_uri',
+@patch('hermes.io.SeismicityDataSource.from_uri',
        autocast=True)
 @patch('hermes.repositories.project.ForecastRepository.create',
        autocast=True)

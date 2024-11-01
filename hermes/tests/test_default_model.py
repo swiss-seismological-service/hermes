@@ -11,7 +11,7 @@ MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 class TestDefaultModelRun:
-    @patch('hermes.io.seismicity.CatalogDataSource.from_uri')
+    @patch('hermes.io.seismicity.SeismicityDataSource.from_uri')
     @patch('hermes.flows.forecast_handler.Session')
     @patch('hermes.flows.modelrun_handler.Session')
     def test_full_flow(self,

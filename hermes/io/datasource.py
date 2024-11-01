@@ -28,7 +28,7 @@ class DataSource(ABC, Generic[T]):
             endtime: End time of the catalog
 
         Returns:
-            CatalogDataSource object
+            T object instance containing the data.
         """
         self._logger = get_run_logger()
         self.data = data

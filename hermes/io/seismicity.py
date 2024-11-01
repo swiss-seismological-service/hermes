@@ -12,7 +12,7 @@ from hermes.utils.dateutils import generate_date_ranges
 from hermes.utils.url import add_query_params
 
 
-class SeismicDataSource(DataSource[Catalog]):
+class SeismicityDataSource(DataSource[Catalog]):
     @classmethod
     @task
     def from_file(cls,
@@ -21,7 +21,7 @@ class SeismicDataSource(DataSource[Catalog]):
                   endtime: datetime | None = None,
                   format: str = 'quakeml') -> Self:
         """
-        Initialize a CatalogDataSource from a file.
+        Initialize a SeismicityDataSource from a file.
 
         Args:
             file_path: Path to the file.
@@ -30,7 +30,7 @@ class SeismicDataSource(DataSource[Catalog]):
             format: Format of the file.
 
         Returns:
-            CatalogDataSource object
+            SeismicityDataSource object
         """
         cds = cls()
 
@@ -68,7 +68,7 @@ class SeismicDataSource(DataSource[Catalog]):
                 starttime: datetime,
                 endtime: datetime) -> Self:
         """
-        Initialize a CatalogDataSource from a FDSNWS URL.
+        Initialize a SeismicityDataSource from a FDSNWS URL.
 
         Args:
             url: FDSNWS URL.
@@ -76,7 +76,7 @@ class SeismicDataSource(DataSource[Catalog]):
             endtime: End time of the catalog.
 
         Returns:
-            CatalogDataSource object, status code.
+            SeismicityDataSource object.
         """
         cds = cls()
 

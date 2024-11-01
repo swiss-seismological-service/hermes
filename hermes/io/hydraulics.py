@@ -56,7 +56,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
                   endtime: datetime | None = None,
                   format: str = 'hydjson') -> Self:
         """
-        Initialize a CatalogDataSource from a file.
+        Initialize a BoreholeHydraulics object from a file.
 
         Args:
             file_path: Path to the file.
@@ -65,7 +65,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
             format: Format of the file.
 
         Returns:
-            CatalogDataSource object
+            BoreholeHydraulics object
         """
         hds = cls()
 

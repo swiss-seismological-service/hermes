@@ -4,13 +4,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from hermes.io.seismicity import SeismicDataSource
+from hermes.io.seismicity import SeismicityDataSource
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
 
 
-class TestCatalogDataSource:
+class TestSeismicityDataSource:
 
     def test_get_catalog_from_file(self):
         qml_path = os.path.join(MODULE_LOCATION, 'quakeml.xml')
@@ -18,7 +18,7 @@ class TestCatalogDataSource:
         starttime = datetime.fromisoformat('2021-12-25T00:00:00')
         endtime = datetime.fromisoformat('2021-12-30T12:00:00')
 
-        catalog = SeismicDataSource.from_file(qml_path, starttime, endtime)
+        catalog = SeismicityDataSource.from_file(qml_path, starttime, endtime)
 
         assert len(catalog.catalog) == 2
 
@@ -47,7 +47,7 @@ class TestCatalogDataSource:
         starttime = datetime(2021, 12, 25)
         endtime = datetime(2023, 1, 12, 12, 1, 3)
 
-        catalog = SeismicDataSource.from_ws(
+        catalog = SeismicityDataSource.from_ws(
             base_url, starttime, endtime)
 
         for url in urls:
@@ -55,31 +55,31 @@ class TestCatalogDataSource:
 
         assert len(catalog.catalog) == 4
 
-    @patch('hermes.io.seismicity.SeismicDataSource.from_file',
+    @patch('hermes.io.seismicity.SeismicityDataSource.from_file',
            autocast=True)
-    @patch('hermes.io.seismicity.SeismicDataSource.from_ws',
+    @patch('hermes.io.seismicity.SeismicityDataSource.from_ws',
            autocast=True)
     def test_get_uri_catalog(self,
                              mock_fdsn_source: MagicMock,
                              mock_file_source: MagicMock):
 
-        SeismicDataSource.from_uri('file:///home/user/file.txt',
-                                   datetime(2021, 1, 1),
-                                   datetime(2021, 1, 2))
+        SeismicityDataSource.from_uri('file:///home/user/file.txt',
+                                      datetime(2021, 1, 1),
+                                      datetime(2021, 1, 2))
 
         mock_file_source.assert_called_with('file:///home/user/file.txt',
                                             datetime(2021, 1, 1),
                                             datetime(2021, 1, 2))
 
-        SeismicDataSource.from_uri('http://example.com',
-                                   datetime(2021, 1, 1),
-                                   datetime(2021, 1, 2))
+        SeismicityDataSource.from_uri('http://example.com',
+                                      datetime(2021, 1, 1),
+                                      datetime(2021, 1, 2))
 
         mock_fdsn_source.assert_called_with('http://example.com',
                                             datetime(2021, 1, 1),
                                             datetime(2021, 1, 2))
 
         with pytest.raises(ValueError):
-            SeismicDataSource.from_uri('ftp://example.com',
-                                       datetime(2021, 1, 1),
-                                       datetime(2021, 1, 2))
+            SeismicityDataSource.from_uri('ftp://example.com',
+                                          datetime(2021, 1, 1),
+                                          datetime(2021, 1, 2))
