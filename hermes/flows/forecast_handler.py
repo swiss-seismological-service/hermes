@@ -7,7 +7,7 @@ from prefect.deployments import run_deployment
 
 from hermes.flows.modelrun_builder import ModelRunBuilder
 from hermes.flows.modelrun_handler import default_model_runner
-from hermes.io.seismicity import CatalogDataSource
+from hermes.io.seismicity import SeismicDataSource
 from hermes.repositories.data import SeismicityObservationRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
@@ -50,7 +50,7 @@ class ForecastHandler:
         self.forecast: Forecast = None
         self._create_forecast()
 
-        self.catalog_data_source: CatalogDataSource = None
+        self.catalog_data_source: SeismicDataSource = None
 
         try:
             # Retreive input data from various services
@@ -155,7 +155,7 @@ class ForecastHandler:
             self.forecast.seismicity_observation = None
             return None
 
-        self.catalog_data_source = CatalogDataSource.from_uri(
+        self.catalog_data_source = SeismicDataSource.from_uri(
             self.forecastseries.fdsnws_url,
             self.observation_starttime,
             self.observation_endtime

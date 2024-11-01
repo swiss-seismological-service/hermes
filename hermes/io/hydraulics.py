@@ -3,58 +3,21 @@ import urllib.parse
 from copy import deepcopy
 from datetime import datetime
 
-import requests
 from hydws.parser import BoreholeHydraulics
-from prefect import flow, get_run_logger, task
+from prefect import flow, task
+from typing_extensions import Self
 
-from hermes.utils.url import add_query_params
+from hermes.io.datasource import DataSource
 
 
-class HydraulicsDataSource:
-    @task
-    def __init__(self,
-                 borehole_hydraulics: BoreholeHydraulics | None = None) \
-            -> None:
-        """
-        Provides a common interface to access seismic event
-        data from different sources.
-
-        Should in most cases be initialized using class methods
-        according to the source of the data.
-
-        Args:
-            catalog: Catalog object.
-            starttime: Start time of the catalog.
-            endtime: End time of the catalog
-
-        Returns:
-            CatalogDataSource object
-        """
-        self._logger = get_run_logger()
-        self.borehole_hydraulics = borehole_hydraulics
-
-    @classmethod
-    def from_uri(cls,
-                 uri,
-                 starttime: datetime | None = None,
-                 endtime: datetime | None = None) -> 'HydraulicsDataSource':
-
-        if uri.startswith('file://'):
-            catalog = cls.from_file(uri, starttime, endtime)
-        elif uri.startswith('http://') or uri.startswith('https://'):
-            catalog = cls.from_hydws(uri, starttime, endtime)
-        else:
-            raise ValueError(
-                f'URI scheme of catalog source not supported: {uri}')
-
-        return catalog
+class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
 
     @classmethod
     @flow
-    def from_hydws(cls,
-                   url: str,
-                   starttime: datetime,
-                   endtime: datetime) -> tuple['HydraulicsDataSource', int]:
+    def from_ws(cls,
+                url: str,
+                starttime: datetime,
+                endtime: datetime) -> Self:
         """
         Initialize a HydraulicsDataSource from a hydws url.
 
@@ -91,7 +54,7 @@ class HydraulicsDataSource:
                   file_path: str,
                   starttime: datetime | None = None,
                   endtime: datetime | None = None,
-                  format: str = 'hydjson') -> 'HydraulicsDataSource':
+                  format: str = 'hydjson') -> Self:
         """
         Initialize a CatalogDataSource from a file.
 
@@ -168,32 +131,3 @@ class HydraulicsDataSource:
             return json.dumps(hyd.to_json())
 
         return json.dumps(self.borehole_hydraulics.to_json())
-
-    @task(retries=3,
-          retry_delay_seconds=3)
-    def _request_text(self, url: str, timeout: int = 300, **kwargs) \
-            -> tuple[str, int]:
-        """
-        Request text from a URL and raise for status.
-
-        Args:
-            url: URL to request.
-            timeout: Timeout for the request.
-
-        Returns:
-            response text, status code.
-        """
-
-        for key, value in kwargs.items():
-            if isinstance(value, datetime):
-                kwargs[key] = value.strftime('%Y-%m-%dT%H:%M:%S')
-
-        url = add_query_params(url, **kwargs)
-
-        self._logger.info(f'Requesting text from {url}.')
-
-        response = requests.get(url, timeout=timeout)
-
-        response.raise_for_status()
-
-        return response.text, response.status_code

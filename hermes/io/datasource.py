@@ -1,0 +1,91 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
+from typing import Generic, TypeVar
+
+import requests
+from prefect import flow, get_run_logger, task
+
+from hermes.utils.url import add_query_params
+
+T = TypeVar('T')
+
+
+class DataSource(ABC, Generic[T]):
+    @task
+    def __init__(self,
+                 data: T | None = None) \
+            -> None:
+        """
+        Provides a common interface to access seismic event
+        data from different sources.
+
+        Should in most cases be initialized using class methods
+        according to the source of the data.
+
+        Args:
+            catalog: Catalog object.
+            starttime: Start time of the catalog.
+            endtime: End time of the catalog
+
+        Returns:
+            CatalogDataSource object
+        """
+        self._logger = get_run_logger()
+        self.data = data
+
+    @classmethod
+    def from_uri(cls,
+                 uri,
+                 starttime: datetime | None = None,
+                 endtime: datetime | None = None) -> 'DataSource':
+
+        if uri.startswith('file://'):
+            catalog = cls.from_file(uri, starttime, endtime)
+        elif uri.startswith('http://') or uri.startswith('https://'):
+            catalog = cls.from_ws(uri, starttime, endtime)
+        else:
+            raise ValueError(
+                f'URI scheme of catalog source not supported: {uri}')
+
+        return catalog
+
+    @classmethod
+    @abstractmethod
+    @flow
+    def from_ws(self):
+        pass
+
+    @classmethod
+    @abstractmethod
+    @task
+    def from_file(self):
+        pass
+
+    @task(retries=3,
+          retry_delay_seconds=3)
+    def _request_text(self, url: str, timeout: int = 300, **kwargs) \
+            -> tuple[str, int]:
+        """
+        Request text from a URL and raise for status.
+
+        Args:
+            url: URL to request.
+            timeout: Timeout for the request.
+
+        Returns:
+            response text, status code.
+        """
+
+        for key, value in kwargs.items():
+            if isinstance(value, datetime):
+                kwargs[key] = value.strftime('%Y-%m-%dT%H:%M:%S')
+
+        url = add_query_params(url, **kwargs)
+
+        self._logger.info(f'Requesting text from {url}.')
+
+        response = requests.get(url, timeout=timeout)
+
+        response.raise_for_status()
+
+        return response.text, response.status_code

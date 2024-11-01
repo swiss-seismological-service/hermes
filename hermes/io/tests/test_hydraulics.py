@@ -33,7 +33,7 @@ class TestHydraulicsDataSource:
 
         assert json.loads(hydraulics.get_json()) == hydjson
 
-    @patch('hermes.io.hydraulics.requests.get')
+    @patch('hermes.io.datasource.requests.get')
     def test_get_catalog_from_hydws(self, mock_get: MagicMock):
 
         with open(os.path.join(MODULE_LOCATION, 'borehole.json'), 'r') as f:
@@ -48,7 +48,7 @@ class TestHydraulicsDataSource:
         starttime = datetime(2021, 12, 25)
         endtime = datetime(2023, 12, 12, 12, 1, 3)
 
-        hydraulics = HydraulicsDataSource.from_hydws(
+        hydraulics = HydraulicsDataSource.from_ws(
             base_url, starttime, endtime)
 
         mock_get.assert_called_with(url, timeout=300)
@@ -60,7 +60,7 @@ class TestHydraulicsDataSource:
 
     @patch('hermes.io.hydraulics.HydraulicsDataSource.from_file',
            autocast=True)
-    @patch('hermes.io.hydraulics.HydraulicsDataSource.from_hydws',
+    @patch('hermes.io.hydraulics.HydraulicsDataSource.from_ws',
            autocast=True)
     def test_get_uri_catalog(self,
                              mock_hydws_source: MagicMock,

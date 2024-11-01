@@ -3,59 +3,23 @@ import urllib.parse
 from datetime import datetime
 
 import pandas as pd
-import requests
-from prefect import flow, get_run_logger, task
+from prefect import flow, task
 from seismostats import Catalog
+from typing_extensions import Self
 
+from hermes.io.datasource import DataSource
 from hermes.utils.dateutils import generate_date_ranges
 from hermes.utils.url import add_query_params
 
 
-class CatalogDataSource:
-    @task
-    def __init__(self,
-                 catalog: Catalog | None = None) -> None:
-        """
-        Provides a common interface to access seismic event
-        data from different sources.
-
-        Should in most cases be initialized using class methods
-        according to the source of the data.
-
-        Args:
-            catalog: Catalog object.
-            starttime: Start time of the catalog.
-            endtime: End time of the catalog
-
-        Returns:
-            CatalogDataSource object
-        """
-        self._logger = get_run_logger()
-        self.catalog = catalog
-
-    @classmethod
-    def from_uri(cls,
-                 uri,
-                 starttime: datetime | None = None,
-                 endtime: datetime | None = None) -> 'CatalogDataSource':
-
-        if uri.startswith('file://'):
-            catalog = cls.from_file(uri, starttime, endtime)
-        elif uri.startswith('http://') or uri.startswith('https://'):
-            catalog = cls.from_fdsnws(uri, starttime, endtime)
-        else:
-            raise ValueError(
-                f'URI scheme of catalog source not supported: {uri}')
-
-        return catalog
-
+class SeismicDataSource(DataSource[Catalog]):
     @classmethod
     @task
     def from_file(cls,
                   file_path: str,
                   starttime: datetime | None = None,
                   endtime: datetime | None = None,
-                  format: str = 'quakeml') -> 'CatalogDataSource':
+                  format: str = 'quakeml') -> Self:
         """
         Initialize a CatalogDataSource from a file.
 
@@ -99,10 +63,10 @@ class CatalogDataSource:
 
     @classmethod
     @flow
-    def from_fdsnws(cls,
-                    url: str,
-                    starttime: datetime,
-                    endtime: datetime) -> tuple['CatalogDataSource', int]:
+    def from_ws(cls,
+                url: str,
+                starttime: datetime,
+                endtime: datetime) -> Self:
         """
         Initialize a CatalogDataSource from a FDSNWS URL.
 
@@ -193,33 +157,3 @@ class CatalogDataSource:
                 & (self.catalog['time'] <= endtime if endtime else True)
             ].copy()
         return self.catalog.copy()
-
-    @task(retries=3,
-          retry_delay_seconds=5,
-          retry_jitter_factor=1)
-    def _request_text(self, url: str, timeout: int = 60, **kwargs) \
-            -> tuple[str, int]:
-        """
-        Request text from a URL and raise for status.
-
-        Args:
-            url: URL to request.
-            timeout: Timeout for the request.
-
-        Returns:
-            response text, status code.
-        """
-
-        for key, value in kwargs.items():
-            if isinstance(value, datetime):
-                kwargs[key] = value.strftime('%Y-%m-%dT%H:%M:%S')
-
-        url = add_query_params(url, **kwargs)
-
-        self._logger.info(f'Requesting text from {url}.')
-
-        response = requests.get(url, timeout=timeout)
-
-        response.raise_for_status()
-
-        return response.text, response.status_code
