@@ -1,9 +1,13 @@
 import asyncio
+import json
 from uuid import UUID
+
+from hydws.parser import BoreholeHydraulics
 
 from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
                                                    ForecastSeriesScheduler,
                                                    delete_deployment_schedule)
+from hermes.repositories.data import InjectionPlanRepository
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
@@ -12,6 +16,7 @@ from hermes.repositories.project import (ForecastRepository,
 from hermes.repositories.results import ModelRunRepository
 from hermes.repositories.types import DuplicateError
 from hermes.schemas import EStatus, ForecastSeriesConfig, ModelConfig
+from hermes.schemas.data_schemas import InjectionPlan
 from hermes.schemas.project_schemas import Project
 
 
@@ -135,19 +140,25 @@ def update_forecastseries(fseries_config: dict,
 
 def delete_forecastseries(forecastseries_oid: UUID):
 
+    with Session() as session:
+        forecastseries = ForecastSeriesRepository.get_by_id(
+            session, forecastseries_oid)
+
+    if not forecastseries:
+        raise Exception(
+            f'ForecastSeries with oid "{forecastseries_oid}" not found.')
+
     # check no forecasts are running
     with Session() as session:
         forecasts = ForecastRepository.get_by_forecastseries(
             session, forecastseries_oid)
+
     if any(f.status == EStatus.RUNNING for f in forecasts):
         raise Exception(
             'ForecastSeries cannot be deleted because it is currently running.'
             ' Stop the forecasts first.')
 
     # delete schedule if exists
-    with Session() as session:
-        forecastseries = ForecastSeriesRepository.get_by_id(
-            session, forecastseries_oid)
     if forecastseries.schedule_id:
         asyncio.run(delete_deployment_schedule(
             DEPLOYMENT_NAME, forecastseries.schedule_id))
@@ -282,3 +293,46 @@ def update_schedule(schedule_config: dict, forecastseries_oid: UUID):
         )
 
     scheduler.update_prefect_schedule(schedule_config)
+
+
+def create_injectionplan(name: str,
+                         data: dict,
+                         forecastseries_oid: UUID):
+
+    if not isinstance(data, dict):
+        raise ValueError('Injectionplan data must be a single valid '
+                         'json object.')
+
+    try:
+        borehole_hydraulics = BoreholeHydraulics(data)
+    except Exception as e:
+        raise ValueError(f'Error parsing hydjson: {str(e)}')
+
+    data = json.dumps(borehole_hydraulics.to_json()).encode()
+
+    injectionplan = InjectionPlan(name=name,
+                                  data=data,
+                                  forecastseries_oid=forecastseries_oid)
+    try:
+        with Session() as session:
+            injectionplan_out = InjectionPlanRepository.create(
+                session, injectionplan)
+        return injectionplan_out
+    except DuplicateError:
+        raise ValueError(
+            f'InjectionPlan with name "{name}" already exists'
+            ' for this ForecastSeries, please choose a different name.')
+
+
+def delete_injectionplan(injectionplan_oid: UUID):
+    with Session() as session:
+        modelruns = ModelRunRepository.get_by_injectionplan(
+            session, injectionplan_oid)
+
+    if len(modelruns) > 0:
+        raise Exception(
+            'Injectionplan cannot be deleted because it is associated with '
+            'one or more ModelRuns. Delete the ModelRuns first.')
+
+    with Session() as session:
+        InjectionPlanRepository.delete(session, injectionplan_oid)

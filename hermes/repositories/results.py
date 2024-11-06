@@ -196,3 +196,12 @@ class ModelRunRepository(repository_factory(
             ModelRunTable.modelconfig_oid == modelconfig_oid)
         result = session.execute(q).unique().all()
         return [cls.model.model_validate(r) for r in result]
+
+    @classmethod
+    def get_by_injectionplan(cls,
+                             session: Session,
+                             injectionplan_oid: UUID) -> ModelRun:
+        q = select(ModelRunTable).where(
+            ModelRunTable.injectionplan_oid == injectionplan_oid)
+        result = session.execute(q).unique().all()
+        return [cls.model.model_validate(r) for r in result]

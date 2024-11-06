@@ -3,7 +3,7 @@ from uuid import UUID
 
 from hydws.parser import BoreholeHydraulics
 from seismostats import Catalog
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from hermes.datamodel.data_tables import (EventObservationTable,
@@ -138,3 +138,13 @@ class InjectionPlanRepository(repository_factory(
 
         return cls.create_from_hydjson(
             session, hydjson, name, forecastseries_oid)
+
+    @classmethod
+    def get_by_forecastseries(cls,
+                              session: Session,
+                              forecastseries_oid: UUID) -> InjectionPlan:
+
+        stmt = select(InjectionPlanTable).where(
+            InjectionPlanTable.forecastseries_oid == forecastseries_oid)
+        result = session.execute(stmt).scalars().all()
+        return [cls.model.model_validate(f) for f in result]
