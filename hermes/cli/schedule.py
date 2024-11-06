@@ -58,7 +58,7 @@ def create(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        create_schedule(forecastseries_oid, schedule_config)
+        create_schedule(schedule_config, forecastseries_oid)
 
         console.print(
             f'Successfully created schedule for {forecastseries}.')
@@ -87,7 +87,7 @@ def update(
     schedule_config = local_to_utc_dict(schedule_config)
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule(forecastseries_oid, schedule_config)
+        update_schedule(schedule_config, forecastseries_oid)
         console.print(
             f'Successfully updated schedule for {forecastseries}.')
     except BaseException as e:
@@ -123,7 +123,7 @@ def activate(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule(forecastseries_oid, {'schedule_active': True})
+        update_schedule({'schedule_active': True}, forecastseries_oid)
 
         console.print(
             f'Successfully activated schedule for {forecastseries}.')
@@ -141,7 +141,7 @@ def deactivate(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule(forecastseries_oid, {'schedule_active': False})
+        update_schedule({'schedule_active': False}, forecastseries_oid)
 
         console.print(
             f'Successfully deactivated schedule for {forecastseries}.')

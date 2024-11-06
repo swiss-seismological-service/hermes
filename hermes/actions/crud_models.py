@@ -262,7 +262,7 @@ def archive_modelconfig(modelconfig_oid: UUID):
                     continue
 
 
-def create_schedule(forecastseries_oid: UUID, schedule_config: dict):
+def create_schedule(schedule_config: dict, forecastseries_oid: UUID):
     scheduler = ForecastSeriesScheduler(forecastseries_oid)
 
     if 'schedule_id' in schedule_config.keys():
@@ -273,7 +273,7 @@ def create_schedule(forecastseries_oid: UUID, schedule_config: dict):
     scheduler.create_prefect_schedule(schedule_config)
 
 
-def update_schedule(forecastseries_oid: UUID, schedule_config: dict):
+def update_schedule(schedule_config: dict, forecastseries_oid: UUID):
     scheduler = ForecastSeriesScheduler(forecastseries_oid)
 
     if 'schedule_id' in schedule_config.keys():
