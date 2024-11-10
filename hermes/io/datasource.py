@@ -40,14 +40,14 @@ class DataSource(ABC, Generic[T]):
                  endtime: datetime | None = None) -> 'DataSource':
 
         if uri.startswith('file://'):
-            catalog = cls.from_file(uri, starttime, endtime)
+            data = cls.from_file(uri, starttime, endtime)
         elif uri.startswith('http://') or uri.startswith('https://'):
-            catalog = cls.from_ws(uri, starttime, endtime)
+            data = cls.from_ws(uri, starttime, endtime)
         else:
             raise ValueError(
-                f'URI scheme of catalog source not supported: {uri}')
+                f'URI scheme of data source not supported: {uri}')
 
-        return catalog
+        return data
 
     @classmethod
     @abstractmethod

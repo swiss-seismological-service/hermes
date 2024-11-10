@@ -44,7 +44,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         hds._logger.info(f'Received response from {url} '
                          f'with status code {response[1]}.')
 
-        hds.borehole_hydraulics = hydraulics
+        hds.data = hydraulics
 
         return hds
 
@@ -89,7 +89,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         hds._logger.info(
             f'Loaded hydraulics from file (file_path={file_path}).')
 
-        hds.borehole_hydraulics = hydraulics
+        hds.data = hydraulics
 
         return hds
 
@@ -108,9 +108,9 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         """
 
         if starttime or endtime:
-            return self.borehole_hydraulics.query_datetime(starttime, endtime)
+            return self.data.query_datetime(starttime, endtime)
 
-        return deepcopy(self.borehole_hydraulics)
+        return deepcopy(self.data)
 
     def get_json(self,
                  starttime: datetime | None = None,
@@ -127,7 +127,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         """
 
         if starttime or endtime:
-            hyd = self.borehole_hydraulics.query_datetime(starttime, endtime)
+            hyd = self.data.query_datetime(starttime, endtime)
             return json.dumps(hyd.to_json())
 
-        return json.dumps(self.borehole_hydraulics.to_json())
+        return json.dumps(self.data.to_json())

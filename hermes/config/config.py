@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     POSTGRES_POOL_SIZE: int = 5
     POSTGRES_MAX_OVERFLOW: int = 10
 
+    # Timezone of the DATA, eg. if 'UTC', all datetime which are passed
+    # via CLI and configuration files will be converted from the operators
+    # system timezone to UTC before querying data and running forecasts.
+    # TODO: Implement for configuration files.
+    TIMEZONE: str | None = None
+
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> URL:
         return URL.create(

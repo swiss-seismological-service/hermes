@@ -57,7 +57,7 @@ class SeismicityDataSource(DataSource[Catalog]):
         cds._logger.info(
             f'Loaded seismic catalog from file (file_path={file_path}).')
 
-        cds.catalog = catalog
+        cds.data = catalog
 
         return cds
 
@@ -114,10 +114,14 @@ class SeismicityDataSource(DataSource[Catalog]):
 
         catalog = catalog.sort_values('time')
 
-        cds._logger.info(f'Received response from {url} '
-                         f'with status code {part[1]}.')
+        if parts:
+            cds._logger.info(f'Received response from {url} '
+                             f'with status code {part[1]}.')
+        else:
+            cds._logger.warning('Observed seismicity period has zero length.'
+                                ' No data was requested.')
 
-        cds.catalog = catalog
+        cds.data = catalog
 
         return cds
 
@@ -152,8 +156,8 @@ class SeismicityDataSource(DataSource[Catalog]):
             Catalog object
         """
         if starttime or endtime:
-            return self.catalog.loc[
-                (self.catalog['time'] >= starttime if starttime else True)
-                & (self.catalog['time'] <= endtime if endtime else True)
+            return self.data.loc[
+                (self.data['time'] >= starttime if starttime else True)
+                & (self.data['time'] <= endtime if endtime else True)
             ].copy()
-        return self.catalog.copy()
+        return self.data.copy()

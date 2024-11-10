@@ -10,7 +10,7 @@ from hermes.cli.utils import row_table
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastRepository
-from hermes.utils.dateutils import local_to_utc
+from hermes.utils.dateutils import local_to_timezone
 
 app = typer.Typer()
 console = Console()
@@ -48,8 +48,8 @@ def run(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        start = local_to_utc(start)
-        end = local_to_utc(end)
+        start = local_to_timezone(start)
+        end = local_to_timezone(end)
 
         forecast_runner(forecastseries_oid, start, end, mode='local')
 

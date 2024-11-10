@@ -1,6 +1,9 @@
 import time
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+from hermes.config import get_settings
 
 
 def generate_date_ranges(
@@ -41,10 +44,16 @@ def generate_date_ranges(
     return intervals
 
 
-def local_to_utc(dt: datetime) -> datetime:
-    # Check if the datetime object is naive (no timezone info)
+def local_to_timezone(dt: datetime) -> datetime:
+    tz = get_settings().TIMEZONE
+    tz = ZoneInfo(tz) if tz else None
+
+    # Check if the datetime object has a timezone info
     if dt.tzinfo is not None:
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.astimezone(tz).replace(tzinfo=None)
+    # tz is None, return the datetime object as is
+    elif tz is None:
+        return dt
 
     # Create a timezone offset object
     local_offset = timedelta(seconds=time.localtime(dt.timestamp()).tm_gmtoff)
@@ -53,7 +62,7 @@ def local_to_utc(dt: datetime) -> datetime:
     local_dt = dt.replace(tzinfo=timezone(local_offset))
 
     # Convert to UTC
-    utc_dt = local_dt.astimezone(timezone.utc)
+    utc_dt = local_dt.astimezone(tz)
 
     return utc_dt.replace(tzinfo=None)
 
@@ -63,7 +72,7 @@ def local_to_utc_dict(dic: dict) -> dict:
     for key, value in new_dict.items():
         # try converting string value to datetime object
         try:
-            dt = local_to_utc(datetime.fromisoformat(value))
+            dt = local_to_timezone(datetime.fromisoformat(value))
             new_dict[key] = dt.isoformat()
         except BaseException:
             pass

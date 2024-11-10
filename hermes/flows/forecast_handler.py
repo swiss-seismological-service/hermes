@@ -1,10 +1,12 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from prefect import flow, get_run_logger, runtime, task
 from prefect.deployments import run_deployment
 
+from hermes.config import get_settings
 from hermes.flows.modelrun_builder import ModelRunBuilder
 from hermes.flows.modelrun_handler import default_model_runner
 from hermes.io.hydraulics import HydraulicsDataSource
@@ -34,6 +36,9 @@ class ForecastHandler:
         self.logger = get_run_logger()
         self.session = Session()
 
+        tz = get_settings().TIMEZONE
+        self.timezone = ZoneInfo(tz) if tz else None
+
         self.forecastseries: ForecastSeries = \
             ForecastSeriesRepository.get_by_id(
                 self.session, forecastseries_oid)
@@ -60,8 +65,7 @@ class ForecastHandler:
             # Retreive input data from various services
             task_so = self._create_seismicityobservation.submit()
             task_io = self._create_injectionobservation.submit()
-            task_ip = self._read_injectionplans.submit()
-            futures_wait([task_so, task_io, task_ip])
+            futures_wait([task_so, task_io])
         except BaseException as e:
             ForecastRepository.update_status(self.session, self.forecast.oid,
                                              EStatus.FAILED)
@@ -103,22 +107,32 @@ class ForecastHandler:
         self.starttime = starttime or \
             self.forecastseries.forecast_starttime or \
             runtime.flow_run.scheduled_start_time
+
         self.endtime = endtime or \
-            self.starttime + \
-            timedelta(seconds=self.forecastseries.forecast_duration) \
-            if self.forecastseries.forecast_duration else None or \
+            (self.starttime
+             + timedelta(seconds=self.forecastseries.forecast_duration)
+             if self.forecastseries.forecast_duration else None) or \
             self.forecastseries.forecast_endtime
 
-        self.starttime = self.starttime.astimezone(
-            timezone.utc).replace(tzinfo=None)
-        self.endtime = self.endtime.astimezone(
-            timezone.utc).replace(tzinfo=None)
+        # TODO: Think hard and carefully about timezones
+        # and where they should be set/unset.
+        if self.starttime.tzinfo is not None:
+            self.starttime = self.starttime.replace(tzinfo=None)
+        if self.endtime.tzinfo is not None:
+            self.endtime = self.endtime.replace(tzinfo=None)
 
         self.observation_starttime = observation_starttime or \
             self.forecastseries.observation_starttime
         self.observation_endtime = observation_endtime or \
             self.forecastseries.observation_endtime or \
             self.starttime
+
+        if self.observation_starttime.tzinfo is not None:
+            self.observation_starttime = self.observation_starttime.replace(
+                tzinfo=None)
+        if self.observation_endtime.tzinfo is not None:
+            self.observation_endtime = self.observation_endtime.replace(
+                tzinfo=None)
 
     @task
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
@@ -169,12 +183,12 @@ class ForecastHandler:
             forecast_oid=self.forecast.oid,
             data=self.catalog_data_source.get_quakeml()
         )
-
-        self.forecast.seismicity_observation = \
-            SeismicityObservationRepository.create(
-                self.session,
-                seismicity
-            )
+        with Session() as session:
+            self.forecast.seismicity_observation = \
+                SeismicityObservationRepository.create(
+                    session,
+                    seismicity
+                )
 
     @task
     def _create_injectionobservation(self) -> None:
@@ -196,23 +210,12 @@ class ForecastHandler:
             forecast_oid=self.forecast.oid,
             data=self.hydraulic_data_source.get_json()
         )
-
-        self.forecast.injection_observation = \
-            InjectionObservationRepository.create(
-                self.session,
-                hydraulics
-            )
-
-    @task
-    def _read_injectionplans(self) -> None:
-        """
-        Reads the injection plans of the respective ForecastSeries
-        from the database.
-        """
-        if self.forecastseries.injectionplan_required == EInput.NOT_ALLOWED:
-            self.forecastseries.injection_plans = None
-        else:
-            raise NotImplementedError
+        with Session() as session:
+            self.forecast.injection_observation = \
+                InjectionObservationRepository.create(
+                    session,
+                    hydraulics
+                )
 
 
 @flow(name='ForecastRunner')
