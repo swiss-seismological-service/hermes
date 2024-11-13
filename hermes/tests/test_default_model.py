@@ -22,7 +22,7 @@ class TestDefaultModelRun:
         with open(MODULE_LOCATION + '/catalog.xml', 'r') as f:
             catalog = f.read()
 
-        mock_session_fc.return_value = session
+        mock_session_fc.return_value.__enter__.return_value = session
         mock_session_m.return_value = session
         mock_get_catalog().get_quakeml.return_value = catalog
 

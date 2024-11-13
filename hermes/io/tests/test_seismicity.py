@@ -20,7 +20,7 @@ class TestSeismicityDataSource:
 
         catalog = SeismicityDataSource.from_file(qml_path, starttime, endtime)
 
-        assert len(catalog.catalog) == 2
+        assert len(catalog.data) == 2
 
         assert len(catalog.get_catalog(starttime
                    + timedelta(days=1), endtime)) == 1
@@ -28,7 +28,7 @@ class TestSeismicityDataSource:
         assert len(catalog.get_catalog(endtime=endtime
                    - timedelta(days=1))) == 1
 
-        assert catalog.get_quakeml() == catalog.catalog.to_quakeml()
+        assert catalog.get_quakeml() == catalog.data.to_quakeml()
 
     @patch('hermes.io.datasource.requests.get')
     def test_get_catalog_from_fdsnws(self, mock_get):
@@ -53,7 +53,7 @@ class TestSeismicityDataSource:
         for url in urls:
             mock_get.assert_any_call(url, timeout=300)
 
-        assert len(catalog.catalog) == 4
+        assert len(catalog.data) == 4
 
     @patch('hermes.io.seismicity.SeismicityDataSource.from_file',
            autocast=True)

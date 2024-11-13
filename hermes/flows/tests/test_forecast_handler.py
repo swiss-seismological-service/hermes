@@ -1,7 +1,6 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 from hermes.flows.forecast_handler import forecast_runner
-from hermes.repositories.types import SessionType
 from hermes.schemas import SeismicityObservation
 from hermes.schemas.project_schemas import Forecast
 
@@ -19,9 +18,7 @@ from hermes.schemas.project_schemas import Forecast
        autocast=True)
 @patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id',
        autocast=True)
-@patch('hermes.flows.forecast_handler.Session',
-       autocast=True,
-       return_value=MagicMock(spec=SessionType))
+@patch('hermes.flows.forecast_handler.Session')
 class TestForecastHandler:
     def test_full(self,
                   session,
@@ -49,14 +46,14 @@ class TestForecastHandler:
         assert forecastseries.observation_starttime < \
             forecast_handler.starttime
 
-        mock_f_create.assert_called_with(session(), Forecast(
+        mock_f_create.assert_called_with(ANY, Forecast(
             forecastseries_oid=forecastseries.oid,
             status='PENDING',
             starttime=forecast_handler.starttime,
             endtime=forecast_handler.endtime
         ))
 
-        mock_so_create.assert_called_with(session(), SeismicityObservation(
+        mock_so_create.assert_called_with(ANY, SeismicityObservation(
             data='data',
             forecast_oid=forecast.oid))
         assert len(mock_default_model_runner.call_args_list) == 1

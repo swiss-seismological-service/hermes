@@ -34,17 +34,18 @@ class ForecastHandler:
                  observation_endtime: datetime | None = None) -> None:
 
         self.logger = get_run_logger()
-        self.session = Session()
+        # self.session = Session()
 
         tz = get_settings().TIMEZONE
         self.timezone = ZoneInfo(tz) if tz else None
 
-        self.forecastseries: ForecastSeries = \
-            ForecastSeriesRepository.get_by_id(
-                self.session, forecastseries_oid)
-        self.modelconfigs: list[ModelConfig] = \
-            ForecastSeriesRepository.get_model_configs(
-            self.session, forecastseries_oid)
+        with Session() as session:
+            self.forecastseries: ForecastSeries = \
+                ForecastSeriesRepository.get_by_id(
+                    session, forecastseries_oid)
+            self.modelconfigs: list[ModelConfig] = \
+                ForecastSeriesRepository.get_model_configs(
+                session, forecastseries_oid)
 
         self.starttime: datetime
         self.endtime: datetime
@@ -67,8 +68,9 @@ class ForecastHandler:
             task_io = self._create_injectionobservation.submit()
             futures_wait([task_so, task_io])
         except BaseException as e:
-            ForecastRepository.update_status(self.session, self.forecast.oid,
-                                             EStatus.FAILED)
+            with Session() as session:
+                ForecastRepository.update_status(session, self.forecast.oid,
+                                                 EStatus.FAILED)
             raise e
 
         self.builder = ModelRunBuilder(self.forecast,
@@ -77,7 +79,7 @@ class ForecastHandler:
 
     def __del__(self):
         self.logger.info('Closing session')
-        self.session.close()
+        # self.session.close()
 
     def set_forecast_timebounds(self,
                                 starttime: datetime,
@@ -159,8 +161,9 @@ class ForecastHandler:
             starttime=self.starttime,
             endtime=self.endtime,
         )
-        self.forecast: Forecast = ForecastRepository.create(
-            self.session, new_forecast)
+        with Session() as session:
+            self.forecast: Forecast = ForecastRepository.create(
+                session, new_forecast)
 
     @task
     def _create_seismicityobservation(self) -> None:
