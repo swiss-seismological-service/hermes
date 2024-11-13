@@ -25,6 +25,7 @@ class TestModelRunner:
                  mock_handler_catalog_save: MagicMock,
                  modelrun_info: DBModelRunInfo,
                  modelconfig: ModelConfig,
+                 prefect
                  ):
 
         mock_model_call.return_value = "teststring"

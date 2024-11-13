@@ -1,12 +1,15 @@
 import importlib
+import json
 from abc import abstractmethod
 from typing import Any
 
 from hermes_model import ModelInput
-from prefect import flow, task
+from prefect import flow, get_run_logger, task
 from seismostats import ForecastCatalog, ForecastGRRateGrid
 
-from hermes.actions.save_results import save_forecast_catalog_to_repositories
+from hermes.actions.save_results import (
+    save_forecast_catalog_to_repositories,
+    save_forecast_grrategrid_to_repositories)
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
                                       SeismicityObservationRepository)
@@ -27,6 +30,7 @@ class ModelRunHandlerInterface:
                  modelconfig: ModelConfig,
                  **kwargs) -> None:
         super().__init__(**kwargs)
+        self.logger = get_run_logger()
         self.modelrun_info = modelrun_info
         self.modelconfig = modelconfig
 
@@ -131,14 +135,16 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
     def _fetch_injection_observation(self) -> None:
         if not self.modelrun_info.injection_observation_oid:
             return None
-        return InjectionObservationRepository.get_by_id(
-            self.session, self.modelrun_info.injection_observation_oid).data
+        obs = InjectionObservationRepository.get_by_id(
+            self.session, self.modelrun_info.injection_observation_oid)
+        return json.loads(obs.data)
 
     def _fetch_injection_plan(self) -> None:
         if not self.modelrun_info.injection_plan_oid:
             return None
-        return InjectionPlanRepository.get_by_id(
-            self.session, self.modelrun_info.injection_plan_oid).data
+        plan = InjectionPlanRepository.get_by_id(
+            self.session, self.modelrun_info.injection_plan_oid)
+        return json.loads(plan.data)
 
     def _fetch_seismicity_observation(self) -> None:
         if not self.modelrun_info.seismicity_observation_oid:
@@ -158,7 +164,12 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
         raise NotImplementedError
 
     def _save_grid(self, results: list[ForecastGRRateGrid]) -> None:
-        raise NotImplementedError
+        for grid in results:
+            save_forecast_grrategrid_to_repositories(
+                self.session,
+                self.modelrun_info.forecastseries_oid,
+                self.modelrun.oid,
+                grid)
 
 
 @flow(name='DefaultModelRunner')

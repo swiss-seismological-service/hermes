@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
@@ -12,13 +13,14 @@ from hermes.flows.modelrun_handler import default_model_runner
 from hermes.io.hydraulics import HydraulicsDataSource
 from hermes.io.seismicity import SeismicityDataSource
 from hermes.repositories.data import (InjectionObservationRepository,
+                                      InjectionPlanRepository,
                                       SeismicityObservationRepository)
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
 from hermes.schemas import Forecast
 from hermes.schemas.base import EInput, EStatus
-from hermes.schemas.data_schemas import (InjectionObservation,
+from hermes.schemas.data_schemas import (InjectionObservation, InjectionPlan,
                                          SeismicityObservation)
 from hermes.schemas.model_schemas import ModelConfig
 from hermes.schemas.project_schemas import ForecastSeries
@@ -47,6 +49,13 @@ class ForecastHandler:
                 ForecastSeriesRepository.get_model_configs(
                 session, forecastseries_oid)
 
+        if not self.modelconfigs:
+            self.logger.warning('No ModelConfigs associated with the '
+                                'ForecastSeries. Exiting.')
+            ForecastRepository.update_status(session, self.forecast.oid,
+                                             EStatus.COMPLETED)
+            return None
+
         self.starttime: datetime
         self.endtime: datetime
         self.observation_starttime: datetime
@@ -66,7 +75,8 @@ class ForecastHandler:
             # Retreive input data from various services
             task_so = self._create_seismicityobservation.submit()
             task_io = self._create_injectionobservation.submit()
-            futures_wait([task_so, task_io])
+            task_ip = self._create_injectionplan.submit()
+            futures_wait([task_so, task_io, task_ip])
         except BaseException as e:
             with Session() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
@@ -138,6 +148,10 @@ class ForecastHandler:
 
     @task
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
+        if not self.builder.runs:
+            self.logger.warning('No modelruns to run.')
+            return None
+
         if mode == 'local':
             for run in self.builder.runs:
                 default_model_runner(*run)
@@ -219,6 +233,38 @@ class ForecastHandler:
                     session,
                     hydraulics
                 )
+
+    @task
+    def _create_injectionplan(self) -> None:
+        """
+        Gets the injection plan data and stores it to the database.
+        """
+        if self.forecastseries.injectionplan_required == \
+                EInput.NOT_ALLOWED:
+            self.forecastseries.injection_plans = None
+            return None
+
+        with Session() as session:
+            injection_plans = \
+                InjectionPlanRepository.get_by_forecastseries(
+                    session,
+                    self.forecastseries.oid
+                )
+
+            for idx, ip in enumerate(injection_plans):
+                data = HydraulicsDataSource.from_data(json.loads(ip.data),
+                                                      self.starttime,
+                                                      self.endtime)
+
+                new_ip = InjectionPlan(
+                    name=ip.name,
+                    data=data.get_json()
+                )
+
+                injection_plans[idx] = InjectionPlanRepository.create(
+                    session, new_ip)
+
+        self.forecastseries.injection_plans = injection_plans
 
 
 @flow(name='ForecastRunner')
