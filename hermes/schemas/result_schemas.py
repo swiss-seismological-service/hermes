@@ -34,6 +34,12 @@ class TimeStep(Model):
     endtime: datetime | None = None
     forecastseries_oid: UUID | None = None
 
+    @field_validator('starttime', 'endtime', mode='after')
+    @classmethod
+    def validate(cls, value: datetime):
+        value = value.replace(microsecond=0)
+        return value
+
 
 class GridCell(Model):
     oid: UUID | None = None
