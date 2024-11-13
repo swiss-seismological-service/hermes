@@ -22,8 +22,8 @@ class TestHydraulicsDataSource:
         hydraulics = HydraulicsDataSource.from_file(
             hydjson_path, starttime, endtime)
 
-        assert len(hydraulics.get_hydraulics(
-        ).nloc['16A-32/section_02'].hydraulics) == 60
+        assert len(hydraulics.get_hydraulics()[0]
+                   .nloc['16A-32/section_02'].hydraulics) == 60
 
         hydraulics = HydraulicsDataSource.from_file(
             hydjson_path)
@@ -31,7 +31,7 @@ class TestHydraulicsDataSource:
         with open(hydjson_path, 'rb') as f:
             hydjson = json.load(f)
 
-        assert json.loads(hydraulics.get_json()) == hydjson
+        assert json.loads(hydraulics.get_json()) == [hydjson]
 
     @patch('hermes.io.datasource.requests.get')
     def test_get_catalog_from_hydws(self, mock_get: MagicMock):
@@ -55,8 +55,8 @@ class TestHydraulicsDataSource:
 
         assert len(hydraulics.get_hydraulics(
             starttime=datetime(2022, 4, 19, 13, 4, 0),
-            endtime=datetime(2022, 4, 19, 13, 5, 0)
-        ).nloc['16A-32/section_02'].hydraulics) == 60
+            endtime=datetime(2022, 4, 19, 13, 5, 0))[0]
+            .nloc['16A-32/section_02'].hydraulics) == 60
 
     @patch('hermes.io.hydraulics.HydraulicsDataSource.from_file',
            autocast=True)

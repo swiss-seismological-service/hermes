@@ -39,12 +39,12 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
             starttime=starttime.strftime('%Y-%m-%dT%H:%M:%S'),
             endtime=endtime.strftime('%Y-%m-%dT%H:%M:%S'))
 
-        hydraulics = BoreholeHydraulics(json.loads(response[0]))
-
         hds._logger.info(f'Received response from {url} '
                          f'with status code {response[1]}.')
 
-        hds.data = hydraulics
+        hydraulics = BoreholeHydraulics(json.loads(response[0]))
+
+        hds.data = [hydraulics]
 
         return hds
 
@@ -81,15 +81,37 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         else:
             raise NotImplementedError(f'Format {format} not supported.')
 
-        hydraulics = BoreholeHydraulics(hydraulics)
-
-        if starttime or endtime:
-            hydraulics = hydraulics.query_datetime(starttime, endtime)
-
         hds._logger.info(
             f'Loaded hydraulics from file (file_path={file_path}).')
 
-        hds.data = hydraulics
+        return cls.from_data(hydraulics, starttime, endtime, hds)
+
+    @classmethod
+    def from_data(cls,
+                  data: dict | list,
+                  starttime: datetime | None = None,
+                  endtime: datetime | None = None,
+                  hds: Self | None = None) -> Self:
+        """
+        Initialize a BoreholeHydraulics object from text.
+
+        Args:
+            data: List or dict containing the hydraulics data.
+
+        Returns:
+            HydraulicDataSource object
+        """
+        if not hds:
+            hds = cls()
+
+        if not isinstance(data, list):
+            data = [data]
+
+        data = [BoreholeHydraulics(bh) for bh in data]
+        if starttime or endtime:
+            data = [bh.query_datetime(starttime, endtime) for bh in data]
+
+        hds.data = data
 
         return hds
 
@@ -108,7 +130,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         """
 
         if starttime or endtime:
-            return self.data.query_datetime(starttime, endtime)
+            return [hd.query_datetime(starttime, endtime) for hd in self.data]
 
         return deepcopy(self.data)
 
@@ -127,7 +149,8 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         """
 
         if starttime or endtime:
-            hyd = self.data.query_datetime(starttime, endtime)
-            return json.dumps(hyd.to_json())
+            hydraulics = [bh.query_datetime(
+                starttime, endtime) for bh in self.data]
+            return json.dumps([hd.to_json() for hd in hydraulics])
 
-        return json.dumps(self.data.to_json())
+        return json.dumps([hd.to_json() for hd in self.data])
