@@ -1,12 +1,13 @@
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 from sqlalchemy import (Column, Float, ForeignKey, Index, String,
-                        UniqueConstraint, event)
+                        UniqueConstraint, delete, event, select)
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import relationship
 
 from hermes.datamodel.base import (CreationInfoMixin, ORMBase,
                                    RealQuantityMixin, TimeQuantityMixin)
+from hermes.datamodel.data_tables import InjectionPlanTable
 
 
 class TimeStepTable(ORMBase):
@@ -127,6 +128,25 @@ class ModelRunTable(ORMBase):
                                 back_populates='modelrun',
                                 cascade='all, delete-orphan',
                                 passive_deletes=True)
+
+# TODO: This part should eventually become a database trigger!
+# Event listener for after delete
+
+
+@event.listens_for(ModelRunTable, "after_delete")
+def delete_orphaned_injectionplans(mapper, connection, target):
+    # Check if the modelrun had an injectionplan
+    if target.injectionplan_oid is None:
+        return
+    # Check if there are any remaining references
+    stmt = select(ModelRunTable) \
+        .filter_by(injectionplan_oid=target.injectionplan_oid)
+    result = connection.execute(stmt).first()
+    if result is None:
+        # No remaining references, delete the injectionplan
+        del_stmt = delete(InjectionPlanTable) \
+            .where(InjectionPlanTable.oid == target.injectionplan_oid)
+        connection.execute(del_stmt)
 
 
 class GRParametersTable(RealQuantityMixin('number_events'),

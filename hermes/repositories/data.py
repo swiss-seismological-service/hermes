@@ -116,7 +116,7 @@ class InjectionPlanRepository(repository_factory(
                             session: Session,
                             data: str,
                             name: str,
-                            forecastseries_oid: UUID) -> UUID:
+                            forecastseries_oid: UUID | None = None) -> UUID:
 
         object_db = InjectionPlan(
             data=data,
