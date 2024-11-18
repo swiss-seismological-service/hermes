@@ -1,11 +1,13 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from web import crud
 from web.database import DBSessionDep
 from web.routers import XMLResponse
-from web.schemas import ForecastDetailSchema, ForecastSchema
+from web.schemas import (ForecastDetailSchema, ForecastSchema,
+                         ModelRunRateGridSchema)
 
 router = APIRouter(tags=['forecast'])
 
@@ -87,3 +89,25 @@ async def get_forecast_seismiccatalog(db: DBSessionDep,
     return Response(
         content=db_result,
         media_type="application/xml")
+
+
+@router.get("/forecasts/{forecast_id}/rates",
+            response_model=list[ModelRunRateGridSchema],
+            response_model_exclude_none=True)
+async def get_forecast_rates(
+        db: DBSessionDep,
+        forecast_id: int,
+        modelconfigs: Annotated[list[str] | None, Query()] = None,
+        injectionplans: Annotated[list[str] | None, Query()] = None):
+    """
+    Returns a list of ForecastRateGrids
+    """
+    db_result = await crud.read_forecast_rates(db,
+                                               forecast_id,
+                                               modelconfigs,
+                                               injectionplans)
+
+    if not db_result:
+        raise HTTPException(status_code=404, detail="No forecast found.")
+
+    return db_result

@@ -182,3 +182,50 @@ async def read_injectionplan(db: AsyncSession, injectionplan_oid: UUID):
     result = await db.execute(statement)
 
     return result.scalar()
+
+
+async def read_modelrun_rates(db: AsyncSession, modelrun_id: int):
+
+    statement = select(ModelRunTable) \
+        .options(joinedload(ModelRunTable.modelconfig)
+                 .load_only(ModelConfigTable.name, ModelConfigTable.oid),
+                 joinedload(ModelRunTable.injectionplan)
+                 .load_only(InjectionPlanTable.name, InjectionPlanTable.oid),
+                 joinedload(ModelRunTable.resulttimebins)
+                 .subqueryload(ResultTimeBin.seismicforecastgrids)
+                 .subqueryload(SeismicForecastGrid.seismicrates)
+                 ) \
+        .where(ModelRunTable.id == modelrun_id)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_forecast_rates(db: AsyncSession,
+                              forecast_id: int,
+                              modelconfigs: list[str] | None = None,
+                              injectionplans: list[str] | None = None):
+
+    statement = select(ModelRunTable) \
+        .options(joinedload(ModelRunTable.modelconfig)
+                 .load_only(ModelConfigTable.name, ModelConfigTable.id),
+                 joinedload(ModelRunTable.injectionplan)
+                 .load_only(InjectionPlanTable.name, InjectionPlanTable.id),
+                 joinedload(ModelRunTable.resulttimebins)
+                 .subqueryload(ResultTimeBin.seismicforecastgrids)
+                 .subqueryload(SeismicForecastGrid.seismicrates)
+                 ) \
+        .where(ModelRunTable.forecast_id == forecast_id)
+
+    if modelconfigs:
+        statement = statement.join(ModelConfigTable).where(
+            ModelConfigTable.name.in_(modelconfigs))
+
+    if injectionplans:
+        statement = statement.join(InjectionPlanTable).where(
+            InjectionPlanTable.name.in_(injectionplans))
+
+    result = await db.execute(statement)
+
+    return result.scalars().unique()
