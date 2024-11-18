@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 
 from web import crud
 from web.database import DBSessionDep
+from web.routers import XMLResponse
 from web.schemas import ForecastDetailSchema, ForecastSchema
 
 router = APIRouter(tags=['forecast'])
@@ -41,3 +42,48 @@ async def get_forecast(db: DBSessionDep,
         raise HTTPException(status_code=404, detail="No forecast found.")
 
     return db_result
+
+
+@router.get("/forecasts/{forecast_oid}/injectionwells",
+            responses={
+                200: {
+                    "content": {"application/json": {}},
+                    "description": "Return the HYDWS JSON.",
+                }
+            })
+async def get_forecast_injectionwell(db: DBSessionDep, forecast_oid: UUID):
+
+    db_result = await crud.read_forecast_injectionwells(db, forecast_oid)
+
+    if not db_result:
+        raise HTTPException(
+            status_code=404, detail="No Forecast or InjectionWells found.")
+
+    return Response(
+        content=db_result,
+        media_type="application/json")
+
+
+@router.get("/forecasts/{forecast_oid}/seismiccatalog",
+            responses={
+                200: {
+                    "content": {"application/xml": {}},
+                    "description": "Return the seismic catalog as QML.",
+                }
+            },
+            response_class=XMLResponse)
+async def get_forecast_seismiccatalog(db: DBSessionDep,
+                                      forecast_oid: UUID):
+    """
+    Returns the seismic catalog for this project.
+    """
+    db_result = await crud.read_forecast_seismiccatalog(db, forecast_oid)
+
+    if not db_result:
+        raise HTTPException(
+            status_code=404,
+            detail="No Forecast or SeismicityObservation found.")
+
+    return Response(
+        content=db_result,
+        media_type="application/xml")

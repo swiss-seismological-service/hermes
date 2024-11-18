@@ -4,9 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
+from hermes.schemas.model_schemas import ModelConfig
 from web import crud
 from web.database import DBSessionDep
-from web.schemas import ForecastSeriesSchema, ModelConfigNameSchema
+from web.schemas import (ForecastSeriesSchema, InjectionPlanSchema,
+                         ModelConfigNameSchema)
 
 router = APIRouter(tags=['forecastseries'])
 
@@ -58,5 +60,41 @@ async def get_forecastseries(db: DBSessionDep,
         model) for model in model_configs]
 
     db_result.modelconfigs = modelconfigs
+
+    return db_result
+
+
+@router.get("/forecastseries/{forecastseries_oid}/modelconfigs",
+            response_model=list[ModelConfig],
+            response_model_exclude_none=True)
+async def get_forecastseries_modelconfigs(db: DBSessionDep,
+                                          forecastseries_oid: UUID):
+    """
+    Returns a list of ModelConfigs
+    """
+
+    db_result = await crud.read_forecastseries_modelconfigs(
+        db, forecastseries_oid)
+
+    if not db_result:
+        raise HTTPException(status_code=404, detail="No forecastseries found.")
+
+    return db_result
+
+
+@router.get("/forecastseries/{forecastseries_oid}/injectionplans",
+            response_model=list[InjectionPlanSchema],
+            response_model_exclude_none=True)
+async def get_forecastseries_injectionplans(db: DBSessionDep,
+                                            forecastseries_oid: UUID):
+    """
+    Returns a list of InjectionPlans
+    """
+
+    db_result = await crud.read_forecastseries_injectionplans(
+        db, forecastseries_oid)
+
+    if not db_result:
+        raise HTTPException(status_code=404, detail="No forecastseries found.")
 
     return db_result

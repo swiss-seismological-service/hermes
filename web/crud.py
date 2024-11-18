@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from hermes.datamodel import ProjectTable
-from hermes.datamodel.data_tables import InjectionPlanTable
+from hermes.datamodel.data_tables import (InjectionObservationTable,
+                                          InjectionPlanTable,
+                                          SeismicityObservationTable)
 from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              TagTable)
@@ -107,6 +109,75 @@ async def read_forecast_modelruns(db: AsyncSession, forecast_oid: UUID):
             .load_only(InjectionPlanTable.name, InjectionPlanTable.oid)
     ) \
         .where(ForecastTable.oid == forecast_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_forecastseries_modelconfigs(db: AsyncSession,
+                                           forecastseries_oid: UUID) \
+        -> list[ModelConfigTable]:
+
+    statement = select(ModelConfigTable) \
+        .join(ModelConfigTable._tags) \
+        .options(joinedload(ModelConfigTable._tags))\
+        .join(ForecastSeriesTable, TagTable.forecastseries) \
+        .where(ForecastSeriesTable.oid == forecastseries_oid)
+
+    results = await db.execute(statement)
+
+    return results.scalars().unique().all()
+
+
+async def read_forecastseries_injectionplans(
+        db: AsyncSession,
+        forecastseries_oid: UUID) -> list[InjectionPlanTable]:
+    statement = select(InjectionPlanTable) \
+        .where(InjectionPlanTable.forecastseries_oid == forecastseries_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalars().unique()
+
+
+async def read_forecast_injectionwells(db: AsyncSession, forecast_oid: UUID):
+
+    statement = select(InjectionObservationTable.data).where(
+        InjectionObservationTable.forecast_oid == forecast_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_forecast_seismiccatalog(db: AsyncSession, forecast_oid: UUID):
+
+    statement = select(SeismicityObservationTable.data).where(
+        SeismicityObservationTable.forecast_oid == forecast_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_modelrun_modelconfig(db: AsyncSession, modelrun_oid: UUID):
+
+    statement = select(ModelConfigTable) \
+        .join(ModelRunTable,
+              ModelRunTable.modelconfig_oid == ModelConfigTable.oid) \
+        .options(joinedload(ModelConfigTable._tags)) \
+        .where(ModelRunTable.oid == modelrun_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_injectionplan(db: AsyncSession, injectionplan_oid: UUID):
+
+    statement = select(InjectionPlanTable.data).where(
+        InjectionPlanTable.oid == injectionplan_oid)
 
     result = await db.execute(statement)
 

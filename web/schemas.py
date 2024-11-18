@@ -1,4 +1,5 @@
 
+import json
 from uuid import UUID
 
 from pydantic import Field, computed_field, field_validator
@@ -59,3 +60,12 @@ class ModelRunDetailSchema(ModelRun):
 
 class ForecastDetailSchema(ForecastSchema):
     modelruns: list[ModelRunDetailSchema] | None = None
+
+
+class InjectionPlanSchema(InjectionPlanNameSchema):
+    borehole_hydraulics: dict | None = Field(validation_alias="data")
+
+    @field_validator('borehole_hydraulics', mode='before')
+    @classmethod
+    def load_data(cls, v: str) -> dict:
+        return json.loads(v)
