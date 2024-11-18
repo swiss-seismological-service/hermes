@@ -3,9 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-# from hermes.config import get_settings
 from web.database import sessionmanager
-from web.routers import project
+from web.routers import forecastseries, project
 
 
 @asynccontextmanager
@@ -22,7 +21,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(project.router, prefix='/v1')
-
+app.include_router(forecastseries.router, prefix='/v1')
 
 app = CORSMiddleware(
     app=app,
