@@ -12,7 +12,7 @@ router = APIRouter(prefix='/projects', tags=['project'])
 
 @router.get("",
             response_model=list[ProjectSchema],
-            response_model_exclude_none=True)
+            response_model_exclude_none=False)
 async def get_all_projects(db: DBSessionDep,
                            starttime: datetime | None = None):
     """
@@ -28,7 +28,7 @@ async def get_all_projects(db: DBSessionDep,
 
 @router.get("/{project_oid}",
             response_model=ProjectSchema,
-            response_model_exclude_none=True)
+            response_model_exclude_none=False)
 async def get_project(db: DBSessionDep,
                       project_oid: UUID):
     """

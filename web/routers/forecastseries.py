@@ -13,7 +13,7 @@ router = APIRouter(tags=['forecastseries'])
 
 @router.get("/projects/{project_id}/forecastseries",
             response_model=list[ForecastSeriesSchema],
-            response_model_exclude_none=True)
+            response_model_exclude_none=False)
 async def get_all_forecastseries(db: DBSessionDep,
                                  project_id: UUID):
     """
@@ -34,5 +34,29 @@ async def get_all_forecastseries(db: DBSessionDep,
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecastseries found.")
+
+    return db_result
+
+
+@router.get("/forecastseries/{forecastseries_oid}",
+            response_model=ForecastSeriesSchema,
+            response_model_exclude_none=True)
+async def get_forecastseries(db: DBSessionDep,
+                             forecastseries_oid: UUID):
+    """
+    Returns a ForecastSeries
+    """
+
+    db_result = await crud.read_forecastseries(db, forecastseries_oid)
+
+    if not db_result:
+        raise HTTPException(status_code=404, detail="No forecastseries found.")
+
+    model_configs = await crud.read_modelconfigs(db, db_result.tags)
+
+    modelconfigs = [ModelConfigNameSchema.model_validate(
+        model) for model in model_configs]
+
+    db_result.modelconfigs = modelconfigs
 
     return db_result

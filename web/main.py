@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from web.database import sessionmanager
-from web.routers import forecastseries, project
+from web.routers import forecasts, forecastseries, projects
 
 
 @asynccontextmanager
@@ -20,8 +20,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(project.router, prefix='/v1')
+app.include_router(projects.router, prefix='/v1')
 app.include_router(forecastseries.router, prefix='/v1')
+app.include_router(forecasts.router, prefix='/v1')
 
 app = CORSMiddleware(
     app=app,
