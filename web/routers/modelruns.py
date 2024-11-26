@@ -27,10 +27,9 @@ async def get_modelrun_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
 @router.get("/modelruns/{modelrun_id}/rates",
             response_model=ModelRunRateGridSchema,
             response_model_exclude_none=True)
-async def get_modelrun_rates(db: DBSessionDep, modelrun_id: int):
+async def get_modelrun_rates(db: DBSessionDep, modelrun_id: UUID):
     db_result = await crud.read_modelrun_rates(db,
                                                modelrun_id)
-
     if not db_result:
         raise HTTPException(status_code=404, detail="No modelrun found.")
 

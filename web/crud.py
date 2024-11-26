@@ -12,7 +12,7 @@ from hermes.datamodel.data_tables import (InjectionObservationTable,
 from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              TagTable)
-from hermes.datamodel.result_tables import ModelRunTable
+from hermes.datamodel.result_tables import ModelResultTable, ModelRunTable
 
 
 async def read_all_projects(db: AsyncSession,
@@ -99,8 +99,6 @@ async def read_forecast_modelruns(db: AsyncSession, forecast_oid: UUID):
     # subqueryload modelconfig, load only name
     statement = select(ForecastTable) \
         .options(
-            # defer(ForecastTable.injectionobservation, raiseload=True),
-            # defer(ForecastTable.seismicityobservation, raiseload=True),
             joinedload(ForecastTable.modelruns)
             .subqueryload(ModelRunTable.modelconfig)
             .load_only(ModelConfigTable.name, ModelConfigTable.oid),
@@ -184,18 +182,20 @@ async def read_injectionplan(db: AsyncSession, injectionplan_oid: UUID):
     return result.scalar()
 
 
-async def read_modelrun_rates(db: AsyncSession, modelrun_id: int):
+async def read_modelrun_rates(db: AsyncSession, modelrun_id: UUID):
 
     statement = select(ModelRunTable) \
         .options(joinedload(ModelRunTable.modelconfig)
                  .load_only(ModelConfigTable.name, ModelConfigTable.oid),
                  joinedload(ModelRunTable.injectionplan)
                  .load_only(InjectionPlanTable.name, InjectionPlanTable.oid),
-                 joinedload(ModelRunTable.resulttimebins)
-                 .subqueryload(ResultTimeBin.seismicforecastgrids)
-                 .subqueryload(SeismicForecastGrid.seismicrates)
-                 ) \
-        .where(ModelRunTable.id == modelrun_id)
+                 joinedload(ModelRunTable.modelresults).options(
+            joinedload(ModelResultTable.timestep),
+            joinedload(ModelResultTable.gridcell),
+            joinedload(ModelResultTable.grparameters),
+        )
+    ) \
+        .where(ModelRunTable.oid == modelrun_id)
 
     result = await db.execute(statement)
 
@@ -203,20 +203,22 @@ async def read_modelrun_rates(db: AsyncSession, modelrun_id: int):
 
 
 async def read_forecast_rates(db: AsyncSession,
-                              forecast_id: int,
+                              forecast_id: UUID,
                               modelconfigs: list[str] | None = None,
                               injectionplans: list[str] | None = None):
 
     statement = select(ModelRunTable) \
         .options(joinedload(ModelRunTable.modelconfig)
-                 .load_only(ModelConfigTable.name, ModelConfigTable.id),
+                 .load_only(ModelConfigTable.name, ModelConfigTable.oid),
                  joinedload(ModelRunTable.injectionplan)
-                 .load_only(InjectionPlanTable.name, InjectionPlanTable.id),
-                 joinedload(ModelRunTable.resulttimebins)
-                 .subqueryload(ResultTimeBin.seismicforecastgrids)
-                 .subqueryload(SeismicForecastGrid.seismicrates)
-                 ) \
-        .where(ModelRunTable.forecast_id == forecast_id)
+                 .load_only(InjectionPlanTable.name, InjectionPlanTable.oid),
+                 joinedload(ModelRunTable.modelresults).options(
+            joinedload(ModelResultTable.timestep),
+            joinedload(ModelResultTable.gridcell),
+            joinedload(ModelResultTable.grparameters),
+        )
+    ) \
+        .where(ModelRunTable.forecast_oid == forecast_id)
 
     if modelconfigs:
         statement = statement.join(ModelConfigTable).where(

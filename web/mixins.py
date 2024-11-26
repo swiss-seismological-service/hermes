@@ -1,5 +1,5 @@
-from typing import Callable, Generic, TypeVar
 from datetime import datetime
+from typing import Callable, Generic, TypeVar
 
 from pydantic import Field, computed_field, create_model
 
@@ -53,12 +53,11 @@ class RealFloatValueSchema(Model, Generic[DataT]):
 def real_float_value_factory(name: str, real_type: TypeVar) -> Callable:
     def create_schema(obj: Model) -> RealFloatValueSchema[TypeVar]:
         return RealFloatValueSchema[real_type](
-            value=getattr(
-                obj, f'{name}_value'), uncertainty=getattr(
-                obj, f'{name}_uncertainty'), loweruncertainty=getattr(
-                obj, f'{name}_loweruncertainty'), upperuncertainty=getattr(
-                    obj, f'{name}_upperuncertainty'), confidencelevel=getattr(
-                        obj, f'{name}_confidencelevel'))
+            value=getattr(obj, f'{name}_value'),
+            uncertainty=getattr(obj, f'{name}_uncertainty'),
+            loweruncertainty=getattr(obj, f'{name}_loweruncertainty'),
+            upperuncertainty=getattr(obj, f'{name}_upperuncertainty'),
+            confidencelevel=getattr(obj, f'{name}_confidencelevel'))
     return create_schema
 
 

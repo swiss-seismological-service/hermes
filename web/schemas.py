@@ -1,4 +1,3 @@
-
 import json
 from datetime import datetime
 from uuid import UUID
@@ -9,6 +8,7 @@ from typing_extensions import Self
 from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas import Forecast, ForecastSeries, ModelRun, Project
 from hermes.schemas.base import Model
+from hermes.schemas.result_schemas import GridCell, TimeStep
 from web.mixins import CreationInfoMixin, real_float_value_mixin
 
 
@@ -77,38 +77,62 @@ class ForecastRateSchema(real_float_value_mixin('b', float),
                          real_float_value_mixin('a', float),
                          real_float_value_mixin('alpha', float),
                          real_float_value_mixin('mc', float)):
-
-    latitude_min: float | None = None
-    latitude_max: float | None = None
-    longitude_min: float | None = None
-    longitude_max: float | None = None
-    altitude_min: float | None = None
-    altitude_max: float | None = None
-
-    grid_id: int | None = Field(validation_alias="seismicforecastgrid_id")
+    pass
 
 
-class SeismicForecastGridSchema(Model):
-    resulttimebin_id: int
-    seismicrates: list[ForecastRateSchema]
+class ResultBinSchema(Model):
+    timestep: TimeStep = Field(exclude=True)
+    gridcell: GridCell = Field(exclude=True)
+    grparameters: ForecastRateSchema | None = None
 
-
-class ResultTimeBinSchema(Model):
-    starttime: datetime
-    endtime: datetime
-    seismicforecastgrids: list[SeismicForecastGridSchema] | None = Field(
-        default=None, exclude=True)
+    @field_validator('grparameters', mode='before')
+    @classmethod
+    def load_grparameters(cls, v: list) -> dict:
+        if v is None:
+            return v
+        return v[0]
 
     @computed_field
     @property
-    def rates(self) -> list[ForecastRateSchema]:
-        rates = []
-        for grid in self.seismicforecastgrids:
-            for rate in grid.seismicrates:
-                rates.append(rate)
-        return rates
+    def starttime(self) -> datetime:
+        return self.timestep.starttime
+
+    @computed_field
+    @property
+    def endtime(self) -> datetime:
+        return self.timestep.endtime
+
+    @computed_field
+    @property
+    def depth_min(self) -> float:
+        return self.gridcell.depth_min
+
+    @computed_field
+    @property
+    def depth_max(self) -> float:
+        return self.gridcell.depth_max
+
+    @computed_field
+    @property
+    def latitude_min(self) -> float:
+        return self.gridcell.geom.bounds[1]
+
+    @computed_field
+    @property
+    def latitude_max(self) -> float:
+        return self.gridcell.geom.bounds[3]
+
+    @computed_field
+    @property
+    def longitude_min(self) -> float:
+        return self.gridcell.geom.bounds[0]
+
+    @computed_field
+    @property
+    def longitude_max(self) -> float:
+        return self.gridcell.geom.bounds[2]
 
 
-class ModelRunRateGridSchema(ModelRun):
-    rateforecasts: list[ResultTimeBinSchema] | None = Field(
-        validation_alias="resulttimebins")
+class ModelRunRateGridSchema(ModelRunDetailSchema):
+    rateforecasts: list[ResultBinSchema] | None = Field(
+        validation_alias="modelresults")

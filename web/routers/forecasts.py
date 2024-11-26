@@ -39,7 +39,7 @@ async def get_forecast(db: DBSessionDep,
     """
 
     db_result = await crud.read_forecast_modelruns(db, forecast_oid)
-    print(db_result)
+
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecast found.")
 
@@ -96,7 +96,7 @@ async def get_forecast_seismiccatalog(db: DBSessionDep,
             response_model_exclude_none=True)
 async def get_forecast_rates(
         db: DBSessionDep,
-        forecast_id: int,
+        forecast_id: UUID,
         modelconfigs: Annotated[list[str] | None, Query()] = None,
         injectionplans: Annotated[list[str] | None, Query()] = None):
     """
