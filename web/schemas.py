@@ -2,14 +2,15 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import Field, computed_field, field_validator
+from pydantic import Field, computed_field, field_validator, model_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas import Forecast, ForecastSeries, ModelRun, Project
 from hermes.schemas.base import Model
 from hermes.schemas.result_schemas import GridCell, TimeStep
-from web.mixins import CreationInfoMixin, real_float_value_mixin
+from web.mixins import (CreationInfoMixin, RealFloatValueSchema,
+                        real_float_value_mixin)
 
 
 class ProjectSchema(CreationInfoMixin, Project):
@@ -81,16 +82,29 @@ class ForecastRateSchema(real_float_value_mixin('b', float),
 
 
 class ResultBinSchema(Model):
+
+    a: RealFloatValueSchema | None = None
+    b: RealFloatValueSchema | None = None
+    numberevents: RealFloatValueSchema | None = None
+    alpha: RealFloatValueSchema | None = None
+    mc: RealFloatValueSchema | None = None
+
     timestep: TimeStep = Field(exclude=True)
     gridcell: GridCell = Field(exclude=True)
-    grparameters: ForecastRateSchema | None = None
 
-    @field_validator('grparameters', mode='before')
-    @classmethod
-    def load_grparameters(cls, v: list) -> dict:
-        if v is None:
-            return v
-        return v[0]
+    @model_validator(mode='before')
+    def hoist_params(cls, data):
+        try:
+            grparams = ForecastRateSchema.model_validate(
+                data.grparameters[0])
+
+            for key in ('a', 'b', 'numberevents', 'alpha', 'mc'):
+                setattr(data, key, getattr(grparams, key))
+            # print(data.a)
+            return data
+
+        except BaseException:
+            return data
 
     @computed_field
     @property
