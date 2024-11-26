@@ -36,7 +36,6 @@ class ForecastHandler:
                  observation_endtime: datetime | None = None) -> None:
 
         self.logger = get_run_logger()
-        # self.session = Session()
 
         tz = get_settings().TIMEZONE
         self.timezone = ZoneInfo(tz) if tz else None
@@ -52,8 +51,6 @@ class ForecastHandler:
         if not self.modelconfigs:
             self.logger.warning('No ModelConfigs associated with the '
                                 'ForecastSeries. Exiting.')
-            ForecastRepository.update_status(session, self.forecast.oid,
-                                             EStatus.COMPLETED)
             return None
 
         self.starttime: datetime
@@ -77,19 +74,18 @@ class ForecastHandler:
             task_io = self._create_injectionobservation.submit()
             task_ip = self._create_injectionplan.submit()
             futures_wait([task_so, task_io, task_ip])
+
+            self.builder = ModelRunBuilder(self.forecast,
+                                           self.forecastseries,
+                                           self.modelconfigs)
         except BaseException as e:
             with Session() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.FAILED)
             raise e
 
-        self.builder = ModelRunBuilder(self.forecast,
-                                       self.forecastseries,
-                                       self.modelconfigs)
-
     def __del__(self):
         self.logger.info('Closing session')
-        # self.session.close()
 
     def set_forecast_timebounds(self,
                                 starttime: datetime,
@@ -150,19 +146,31 @@ class ForecastHandler:
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
         if not self.builder.runs:
             self.logger.warning('No modelruns to run.')
+            with Session() as session:
+                ForecastRepository.update_status(session, self.forecast.oid,
+                                                 EStatus.CANCELLED)
             return None
 
-        if mode == 'local':
-            for run in self.builder.runs:
-                default_model_runner(*run)
-        else:
-            for run in self.builder.runs:
-                run_deployment(
-                    name='DefaultModelRunner/DefaultModelRunner',
-                    parameters={'modelrun_info': run[0],
-                                'modelconfig': run[1]},
-                    timeout=0
-                )
+        try:
+            if mode == 'local':
+                for run in self.builder.runs:
+                    default_model_runner(*run)
+            else:
+                for run in self.builder.runs:
+                    run_deployment(
+                        name='DefaultModelRunner/DefaultModelRunner',
+                        parameters={'modelrun_info': run[0],
+                                    'modelconfig': run[1]},
+                        timeout=0
+                    )
+        except BaseException as e:
+            with Session() as session:
+                ForecastRepository.update_status(session, self.forecast.oid,
+                                                 EStatus.FAILED)
+            raise e
+        with Session() as session:
+            ForecastRepository.update_status(session, self.forecast.oid,
+                                             EStatus.COMPLETED)
 
     @task
     def _create_forecast(self) -> None:
