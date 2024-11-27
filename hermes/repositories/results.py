@@ -34,13 +34,20 @@ class ModelResultRepository(
         data = [{'timestep_oid': timestep_oid,
                  'gridcell_oid': gridcell_oid,
                  'modelrun_oid': modelrun_oid,
-                 'result_type': result_type} for _ in range(number)]
+                 'result_type': result_type,
+                 'realization_id': i} for i in range(number)]
 
-        q = insert(ModelResultTable).returning(ModelResultTable.oid)
+        q = insert(ModelResultTable).returning(
+            ModelResultTable.oid,
+            ModelResultTable.realization_id)
 
         result = session.execute(q, data).fetchall()
         session.commit()
-        return [row[0] for row in result]
+
+        # make sure that the list id is the same as the realization_id
+        # since the database does not guarantee the order of the results
+        batch = sorted(result, key=lambda x: x[1])
+        return [x[0] for x in batch]
 
 
 class GridCellRepository(
@@ -128,6 +135,14 @@ class GRParametersRepository(
             session: Session,
             rategrid: ForecastGRRateGrid,
             modelresult_oids: list[UUID]) -> None:
+
+        # make sure that the grid_id is 0 indexed
+        if max(rategrid.grid_id) >= len(modelresult_oids):
+            raise ValueError('The number of modelresult_oids is less than the '
+                             'maximum grid_id in the rategrid.')
+
+        # Modelresult_oid is guaranteed to be in the same order as the
+        # 0 indexed grid_id. Replace the grid_id with the modelresult_oid.
         rategrid.grid_id = np.array(modelresult_oids)[rategrid.grid_id]
         rategrid = rategrid.rename(columns={'grid_id': 'modelresult_oid'})
         grparameters = serialize_seismostats_grrategrid(rategrid)
@@ -153,7 +168,14 @@ class SeismicEventRepository(
                                      catalog: ForecastCatalog,
                                      modelresult_oids: list[UUID]) -> None:
 
-        # replace the catalog_id column with the modelresult_oids
+        # make sure that the catalog_id is 0 indexed
+        if max(catalog.catalog_id) >= len(modelresult_oids):
+            raise ValueError('The number of modelresult_oids is less than the '
+                             'maximum catalog_id in the catalog.')
+
+        # Modelresult_oid is guaranteed to be in the same order as the 0
+        # indexed grid_id. Replace the catalog_id column with the
+        # modelresult_oids.
         catalog.catalog_id = np.array(modelresult_oids)[catalog.catalog_id]
         catalog = catalog.rename(columns={'catalog_id': 'modelresult_oid'})
         events = serialize_seismostats_catalog(catalog)

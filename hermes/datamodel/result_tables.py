@@ -1,6 +1,6 @@
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape, to_shape
-from sqlalchemy import (Column, Float, ForeignKey, Index, String,
+from sqlalchemy import (Column, Float, ForeignKey, Index, Integer, String,
                         UniqueConstraint, delete, event, select)
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import relationship
@@ -61,6 +61,9 @@ class ModelResultTable(CreationInfoMixin, ORMBase):
 
     modelrun_oid = Column(UUID,
                           ForeignKey('modelrun.oid', ondelete='CASCADE'))
+
+    realization_id = Column(Integer)
+
     modelrun = relationship('ModelRunTable',
                             back_populates='modelresults')
 
