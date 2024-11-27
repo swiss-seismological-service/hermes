@@ -5,6 +5,10 @@ from hermes.repositories.types import shapely_to_db
 from hermes.schemas import GRParameters, SeismicEvent
 from hermes.schemas.base import Model
 
+CATALOG_QUANTITY_FIELDS = ['latitude',
+                           'longitude', 'depth', 'magnitude', 'time']
+RATEGRID_QUANTITY_FIELDS = ['number_events', 'b', 'a', 'alpha', 'mc']
+
 
 def serialize_seismostats_grrategrid(
         rategrid: ForecastGRRateGrid,
@@ -20,9 +24,7 @@ def serialize_seismostats_grrategrid(
         List of dictionaries, each dictionary representing a rategrid.
     """
 
-    required_cols = ForecastGRRateGrid._required_cols + ['number_events']
-
-    column_renames = {col: f'{col}_value' for col in required_cols}
+    column_renames = {col: f'{col}_value' for col in RATEGRID_QUANTITY_FIELDS}
 
     rategrid = rategrid.rename(columns=column_renames)
 
@@ -45,7 +47,7 @@ def serialize_seismostats_catalog(catalog: Catalog,
     """
 
     # rename value columns to match 'RealQuantity" fields
-    column_renames = {col: f'{col}_value' for col in Catalog._required_cols}
+    column_renames = {col: f'{col}_value' for col in CATALOG_QUANTITY_FIELDS}
     catalog = catalog.rename(columns=column_renames)
 
     if 'longitude_value' in catalog.columns and \

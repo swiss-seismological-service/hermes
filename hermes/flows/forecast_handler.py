@@ -20,8 +20,7 @@ from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
 from hermes.schemas import Forecast
 from hermes.schemas.base import EInput, EStatus
-from hermes.schemas.data_schemas import (InjectionObservation, InjectionPlan,
-                                         SeismicityObservation)
+from hermes.schemas.data_schemas import InjectionObservation, InjectionPlan
 from hermes.schemas.model_schemas import ModelConfig
 from hermes.schemas.project_schemas import ForecastSeries
 from hermes.utils.prefect import futures_wait
@@ -204,15 +203,12 @@ class ForecastHandler:
             self.observation_endtime
         )
 
-        seismicity = SeismicityObservation(
-            forecast_oid=self.forecast.oid,
-            data=self.catalog_data_source.get_quakeml()
-        )
         with Session() as session:
             self.forecast.seismicity_observation = \
-                SeismicityObservationRepository.create(
+                SeismicityObservationRepository.create_from_quakeml(
                     session,
-                    seismicity
+                    self.catalog_data_source.get_quakeml(),
+                    self.forecast.oid
                 )
 
     @task

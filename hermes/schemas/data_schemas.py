@@ -2,7 +2,7 @@ from uuid import UUID
 
 from shapely import Point
 
-from hermes.schemas.base import Model
+from hermes.schemas.base import Model, real_value_mixin
 
 
 class SeismicityObservation(Model):
@@ -24,14 +24,16 @@ class InjectionPlan(Model):
     forecastseries_oid: UUID | None = None
 
 
-class EventObservation(Model):
+class EventObservation(real_value_mixin('time', float),
+                       real_value_mixin('latitude', float),
+                       real_value_mixin('longitude', float),
+                       real_value_mixin('depth', float),
+                       real_value_mixin('magnitude', float)
+                       ):
     oid: UUID | None = None
-    time: float | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    depth: float | None = None
-    magnitude: float | None = None
     magnitude_type: str | None = None
-    associated_phasecount: int | None = None
+    event_type: str | None = None
     seismicityobservation_oid: UUID | None = None
+    associated_phasecount: int | None = None
+    used_phasecount: int | None = None
     coordinates: Point | None = None

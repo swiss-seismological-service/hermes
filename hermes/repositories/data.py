@@ -24,6 +24,7 @@ class EventObservationRepository(repository_factory(
                             session: Session,
                             data: Catalog,
                             seismicityobservation_oid: UUID) -> UUID:
+
         events = serialize_seismostats_catalog(data, EventObservation)
 
         session.execute(
@@ -63,7 +64,7 @@ class SeismicityObservationRepository(repository_factory(
         EventObservationRepository.create_from_catalog(
             session, data, object_db.oid)
 
-        return object_db.oid
+        return object_db
 
     @classmethod
     def create_from_quakeml(cls,
@@ -80,7 +81,7 @@ class SeismicityObservationRepository(repository_factory(
         EventObservationRepository.create_from_quakeml(
             session, data, object_db.oid)
 
-        return object_db.oid
+        return object_db
 
 
 class InjectionObservationRepository(repository_factory(

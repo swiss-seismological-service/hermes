@@ -52,6 +52,7 @@ class EventObservationTable(TimeQuantityMixin('time'),
                             ORMBase):
 
     magnitude_type = Column(String)
+    event_type = Column(String)
 
     seismicityobservation_oid = Column(UUID, ForeignKey(
         'seismicityobservation.oid', ondelete="CASCADE"))
