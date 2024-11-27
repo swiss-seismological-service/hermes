@@ -100,7 +100,6 @@ class ResultBinSchema(Model):
 
             for key in ('a', 'b', 'numberevents', 'alpha', 'mc'):
                 setattr(data, key, getattr(grparams, key))
-            # print(data.a)
             return data
 
         except BaseException:

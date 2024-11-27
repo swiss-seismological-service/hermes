@@ -97,6 +97,7 @@ class SeismicEventTable(TimeQuantityMixin('time'),
                         RealQuantityMixin('magnitude'),
                         ORMBase):
     magnitude_type = Column(String)
+    coordinates = Column(Geometry('POINT', srid=4326))
 
     modelresult_oid = Column(UUID, ForeignKey(
         'modelresult.oid', ondelete='CASCADE'))
