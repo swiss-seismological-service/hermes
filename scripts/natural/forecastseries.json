@@ -1,0 +1,14 @@
+{
+    "description": "This is a test forecast series",
+    "tags": [
+        "natural"
+    ],
+    "observation_starttime": "2024-06-01T00:00:00",
+    "bounding_polygon": "/home/nico/workspaces/hermes/scripts/natural/ch_rect.npy",
+    "depth_min": 0,
+    "depth_max": 10,
+    "seismicityobservation_required": "REQUIRED",
+    "injectionobservation_required": "NOT_ALLOWED",
+    "injectionplan_required": "NOT_ALLOWED",
+    "fdsnws_url": "http://eida.ethz.ch/fdsnws/event/1/query"
+}

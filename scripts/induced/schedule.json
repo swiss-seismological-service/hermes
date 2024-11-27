@@ -1,0 +1,6 @@
+{
+    "schedule_starttime": "2025-01-01T00:00:00",
+    "schedule_endtime": "2025-01-01T22:59:59",
+    "schedule_interval": 3600,
+    "forecast_endtime": "2025-01-01T23:59:59"
+}
