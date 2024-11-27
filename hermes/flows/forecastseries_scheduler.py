@@ -61,32 +61,55 @@ class ForecastSeriesScheduler:
         if self.schedule_active is None:
             self.schedule_active = True
 
-    def update(self, config: dict | None = None) -> None:
+    def update(self, config: dict | None = None, update_db: bool = True) \
+            -> None:
 
         if config is not None:
             schedule = ForecastSeriesSchedule(**config)
             for key, value in schedule.model_dump(exclude_unset=True).items():
                 setattr(self, key, value)
 
-        self.forecastseries = \
-            ForecastSeriesRepository.update(self.session, self.forecastseries)
+        if update_db:
+            self.forecastseries = ForecastSeriesRepository.update(
+                self.session, self.forecastseries)
 
     def __del__(self) -> None:
         self.session.close()
 
     def _build_rrule(self) -> None:
-
         assert self.schedule_starttime is not None \
             and self.schedule_interval is not None \
-            and (self.forecast_endtime or self.forecast_duration), \
+            and ((self.forecast_endtime is not None)
+                 ^ (self.forecast_duration is not None)), \
             'Creating a schedule requires a schedule_starttime, '\
-            'schedule_interval, and either forecast_endtime or ' \
+            'schedule_interval, and either forecast_endtime OR ' \
             'forecast_duration.'
 
         # If the endtime is in the past, we don't need to create a schedule
         if self.schedule_endtime is not None and \
                 self.schedule_endtime < self.now:
             return None
+
+        if self.schedule_endtime is None and \
+                self.forecast_starttime is None and \
+                self.forecast_endtime is not None:
+            raise ValueError(
+                'Cannot create a schedule without an endtime if there is '
+                'a fixed forecast endtime. You either need to specify a fixed '
+                'forecast window (by also setting forecast starttime) or '
+                'specify a schedule endtime which is before the forecast '
+                'endtime.')
+
+        if self.schedule_endtime is not None and \
+            self.forecast_endtime is not None and \
+            self.forecast_starttime is None and \
+                self.schedule_endtime >= self.forecast_endtime:
+            raise ValueError(
+                'Cannot create a schedule with a schedule endtime which is '
+                'after the forecast endtime. You either need to specify a '
+                'fixed forecast window (by also setting forecast starttime) '
+                'or specify a schedule endtime which is before the forecast '
+                'endtime.')
 
         # create a schedule which starts at schedule_starttime
         self.rrule = rrule(
@@ -116,7 +139,7 @@ class ForecastSeriesScheduler:
                     'A schedule for this ForecastSeries already exists.')
 
         # update the ForecastSeries with the new schedule configuration
-        self.update(schedule_config)
+        self.update(schedule_config, update_db=False)
 
         self._build_rrule()
 
@@ -139,7 +162,7 @@ class ForecastSeriesScheduler:
             raise ValueError('No schedule for this ForecastSeries exists.')
 
         # update the Scheduler and ForecastSeries with the new schedule
-        self.update(schedule_config)
+        self.update(schedule_config, update_db=False)
         self._build_rrule()
 
         if 'schedule_active' in schedule_config:
@@ -149,6 +172,7 @@ class ForecastSeriesScheduler:
         asyncio.run(update_deployment_schedule(self.deployment_name,
                                                self.schedule_id,
                                                self.rrule))
+        self.update()
 
     def delete_prefect_schedule(self) -> None:
 
