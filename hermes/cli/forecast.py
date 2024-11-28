@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 import typer
+from prefect.deployments import run_deployment
 from rich.console import Console
 from typing_extensions import Annotated
 
@@ -44,14 +45,28 @@ def run(
                    typer.Option(
                        ...,
                        help="Endtime of the Forecast.")],
+    local: Annotated[
+        bool,
+        typer.Option(
+            help="Flag to run the Forecast in local mode.")] = False
 ):
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         start = local_to_timezone(start)
         end = local_to_timezone(end)
-
-        forecast_runner(forecastseries_oid, start, end, mode='local')
+        mode = 'local' if local else 'deploy'
+        if local:
+            forecast_runner(forecastseries_oid, start, end, mode)
+        else:
+            run_deployment(
+                name='ForecastRunner/ForecastRunner',
+                parameters={'forecastseries_oid': forecastseries_oid,
+                            'starttime': start,
+                            'endtime': end,
+                            'mode': mode},
+                timeout=0
+            )
 
     except Exception as e:
         console.print(str(e))
