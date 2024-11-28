@@ -46,27 +46,30 @@ async def get_forecast(db: DBSessionDep,
     return db_result
 
 
-@router.get("/forecasts/{forecast_oid}/injectionwells",
+@router.get("/forecasts/{forecast_oid}/injectionobservations",
             responses={
                 200: {
                     "content": {"application/json": {}},
                     "description": "Return the HYDWS JSON.",
                 }
             })
-async def get_forecast_injectionwell(db: DBSessionDep, forecast_oid: UUID):
+async def get_forecast_injectionobservation(
+        db: DBSessionDep, forecast_oid: UUID):
 
-    db_result = await crud.read_forecast_injectionwells(db, forecast_oid)
+    db_result = await crud.read_forecast_injectionobservations(
+        db, forecast_oid)
 
     if not db_result:
         raise HTTPException(
-            status_code=404, detail="No Forecast or InjectionWells found.")
+            status_code=404,
+            detail="No Forecast or injectionobservation found.")
 
     return Response(
         content=db_result,
         media_type="application/json")
 
 
-@router.get("/forecasts/{forecast_oid}/seismiccatalog",
+@router.get("/forecasts/{forecast_oid}/seismicityobservation",
             responses={
                 200: {
                     "content": {"application/xml": {}},
@@ -74,12 +77,13 @@ async def get_forecast_injectionwell(db: DBSessionDep, forecast_oid: UUID):
                 }
             },
             response_class=XMLResponse)
-async def get_forecast_seismiccatalog(db: DBSessionDep,
-                                      forecast_oid: UUID):
+async def get_forecast_seismicityobservation(db: DBSessionDep,
+                                             forecast_oid: UUID):
     """
     Returns the seismic catalog for this project.
     """
-    db_result = await crud.read_forecast_seismiccatalog(db, forecast_oid)
+    db_result = await crud.read_forecast_seismicityobservation(db,
+                                                               forecast_oid)
 
     if not db_result:
         raise HTTPException(

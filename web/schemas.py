@@ -88,6 +88,7 @@ class ResultBinSchema(Model):
     numberevents: RealFloatValueSchema | None = None
     alpha: RealFloatValueSchema | None = None
     mc: RealFloatValueSchema | None = None
+    realization_id: int | None = None
 
     timestep: TimeStep = Field(exclude=True)
     gridcell: GridCell = Field(exclude=True)

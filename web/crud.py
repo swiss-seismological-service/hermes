@@ -139,7 +139,8 @@ async def read_forecastseries_injectionplans(
     return result.scalars().unique()
 
 
-async def read_forecast_injectionwells(db: AsyncSession, forecast_oid: UUID):
+async def read_forecast_injectionobservations(
+        db: AsyncSession, forecast_oid: UUID):
 
     statement = select(InjectionObservationTable.data).where(
         InjectionObservationTable.forecast_oid == forecast_oid)
@@ -149,7 +150,8 @@ async def read_forecast_injectionwells(db: AsyncSession, forecast_oid: UUID):
     return result.scalar()
 
 
-async def read_forecast_seismiccatalog(db: AsyncSession, forecast_oid: UUID):
+async def read_forecast_seismicityobservation(db: AsyncSession,
+                                              forecast_oid: UUID):
 
     statement = select(SeismicityObservationTable.data).where(
         SeismicityObservationTable.forecast_oid == forecast_oid)
