@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from pydantic import Field
 from shapely import Point
 
 from hermes.schemas.base import Model, real_value_mixin
@@ -35,7 +34,8 @@ class EventObservation(real_value_mixin('time', float),
     magnitude_type: str | None = None
     event_type: str | None = None
     seismicityobservation_oid: UUID | None = None
-    associated_phasecount: int | None = Field(
-        validation_alias="associatedphasecount")
-    used_phasecount: int | None = Field(validation_alias="usedphasecount")
+    associatedphasecount: int | None = None
+    usedphasecount: int | None = None
+    associatedstationcount: int | None = None
+    usedstationcount: int | None = None
     coordinates: Point | None = None

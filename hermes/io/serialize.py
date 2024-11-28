@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 from seismostats import Catalog, ForecastGRRateGrid
 from shapely import Point
 
@@ -61,7 +63,10 @@ def serialize_seismostats_catalog(catalog: Catalog,
     catalog = catalog[[c for c in catalog.columns if c in list(
         model.model_fields)]]
 
-    # pandas to_dict method for very fast serialization
+    # replace NaNs with None for database compatibility
+    catalog = catalog.replace({pd.NA: None,
+                               np.nan: None})
+
     events = catalog.to_dict(orient='records')
 
     return events

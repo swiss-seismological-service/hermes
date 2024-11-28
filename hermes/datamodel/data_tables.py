@@ -58,8 +58,10 @@ class EventObservationTable(TimeQuantityMixin('time'),
         'seismicityobservation.oid', ondelete="CASCADE"))
     seismicityobservation = relationship('SeismicityObservationTable',
                                          back_populates='events')
-    associated_phasecount = Column(Integer)
-    used_phasecount = Column(Integer)
+    associatedphasecount = Column(Integer)
+    usedphasecount = Column(Integer)
+    associatedstationcount = Column(Integer)
+    usedstationcount = Column(Integer)
     coordinates = Column(Geometry('POINT', srid=4326))
 
 
