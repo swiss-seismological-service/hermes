@@ -74,7 +74,7 @@ class InjectionPlanSchema(InjectionPlanNameSchema):
 
 
 class ForecastRateSchema(real_float_value_mixin('b', float),
-                         real_float_value_mixin('numberevents', float),
+                         real_float_value_mixin('number_events', float),
                          real_float_value_mixin('a', float),
                          real_float_value_mixin('alpha', float),
                          real_float_value_mixin('mc', float)):
@@ -85,7 +85,7 @@ class ResultBinSchema(Model):
 
     a: RealFloatValueSchema | None = None
     b: RealFloatValueSchema | None = None
-    numberevents: RealFloatValueSchema | None = None
+    number_events: RealFloatValueSchema | None = None
     alpha: RealFloatValueSchema | None = None
     mc: RealFloatValueSchema | None = None
     realization_id: int | None = None
@@ -99,7 +99,7 @@ class ResultBinSchema(Model):
             grparams = ForecastRateSchema.model_validate(
                 data.grparameters[0])
 
-            for key in ('a', 'b', 'numberevents', 'alpha', 'mc'):
+            for key in ('a', 'b', 'number_events', 'alpha', 'mc'):
                 setattr(data, key, getattr(grparams, key))
             return data
 

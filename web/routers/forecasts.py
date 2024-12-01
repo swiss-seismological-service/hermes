@@ -69,7 +69,7 @@ async def get_forecast_injectionobservation(
         media_type="application/json")
 
 
-@router.get("/forecasts/{forecast_oid}/seismicityobservation",
+@router.get("/forecasts/{forecast_oid}/seismicityobservations",
             responses={
                 200: {
                     "content": {"application/xml": {}},
