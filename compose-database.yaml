@@ -2,20 +2,22 @@ services:
     postgres:
         image: kartoza/postgis:latest
         ports:
-            - '5434:5432'
+            - '0.0.0.0:${POSTGRES_PORT:-5432}:5432'
         env_file: .env
         volumes:
-            - hermesdb:/var/lib/postgresql/data
+            - hermesdb:/var/lib/postgresql
         networks:
             - backend
 
     webservice:
-        env_file:
-            - '.env'
+        env_file: '.env'
+        environment:
+            - POSTGRES_PORT=5432
+            - POSTGRES_HOST=postgres
         build: .
         restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
-            - '${DOCKER_WEB_PORT:-127.0.0.1:8000}:8000'
+            - '0.0.0.0:${DOCKER_WEB_PORT:-8000}:8000'
         networks:
             - backend
 
