@@ -1,0 +1,25 @@
+services:
+    postgres:
+        image: kartoza/postgis:latest
+        ports:
+            - '5434:5432'
+        env_file: .env
+        volumes:
+            - hermesdb:/var/lib/postgresql/data
+        networks:
+            - backend
+
+    webservice:
+        env_file:
+            - '.env'
+        build: .
+        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
+        ports:
+            - '${DOCKER_WEB_PORT:-127.0.0.1:8000}:8000'
+        networks:
+            - backend
+
+volumes:
+    hermesdb: {}
+networks:
+    backend: {}

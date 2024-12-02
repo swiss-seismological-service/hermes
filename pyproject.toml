@@ -20,7 +20,7 @@ license = { file = "LICENSE" }
 
 dependencies = [
     "geoalchemy2",
-    "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/ramsis-model.git",
+    "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
     "hydws-client @ git+https://git@gitlab.seismo.ethz.ch/indu/hydws-client.git",
     "prefect",
     "psycopg2",

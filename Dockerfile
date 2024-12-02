@@ -25,4 +25,4 @@ ENV PYTHONUNBUFFERED="true" \
 
 EXPOSE 8000
 
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "python:config.gunicorn", "web.main:app"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "python:hermes.config.gunicorn", "web.main:app"]
