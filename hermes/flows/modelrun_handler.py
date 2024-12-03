@@ -101,7 +101,7 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
         self.session = Session()
         super().__init__(*args, **kwargs)
 
-    @task(name='RunModel')
+    @task(name='RunModel', cache_policy=None)
     def run(self) -> None:
         try:
             model_module = importlib.import_module(self.modelconfig.sfm_module)
