@@ -9,12 +9,12 @@ from hermes.cli.schedule import app as schedule
 from hermes.repositories.database import _create_tables, _drop_tables
 
 app = typer.Typer(pretty_exceptions_enable=False)
-app.add_typer(project, name="project")
+app.add_typer(project, name="projects")
 app.add_typer(forecastseries, name="forecastseries")
-app.add_typer(model, name="model")
-app.add_typer(forecast, name="forecast")
-app.add_typer(schedule, name="schedule")
-app.add_typer(injectionplan, name="injectionplan")
+app.add_typer(model, name="models")
+app.add_typer(forecast, name="forecasts")
+app.add_typer(schedule, name="schedules")
+app.add_typer(injectionplan, name="injectionplans")
 
 
 @app.command()
