@@ -141,7 +141,7 @@ class ForecastHandler:
             self.observation_endtime = self.observation_endtime.replace(
                 tzinfo=None)
 
-    @task
+    @task(cache_policy=None)
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
         if not self.builder.runs:
             self.logger.warning('No modelruns to run.')
@@ -171,7 +171,7 @@ class ForecastHandler:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
 
-    @task
+    @task(cache_policy=None)
     def _create_forecast(self) -> None:
         """
         Creates or updates the forecast in the database.
@@ -186,7 +186,7 @@ class ForecastHandler:
             self.forecast: Forecast = ForecastRepository.create(
                 session, new_forecast)
 
-    @task
+    @task(cache_policy=None)
     def _create_seismicityobservation(self) -> None:
         """
         Gets the seismicity observation data and stores it to the database.
@@ -211,7 +211,7 @@ class ForecastHandler:
                     self.forecast.oid
                 )
 
-    @task
+    @task(cache_policy=None)
     def _create_injectionobservation(self) -> None:
         """
         Gets the injection observation data and stores it to the database.
@@ -238,7 +238,7 @@ class ForecastHandler:
                     hydraulics
                 )
 
-    @task
+    @task(cache_policy=None)
     def _create_injectionplan(self) -> None:
         """
         Gets the injection plan data and stores it to the database.
