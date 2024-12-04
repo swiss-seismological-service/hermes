@@ -52,6 +52,8 @@ class ModelRunBuilder:
     def build_runs(self) -> list[tuple[DBModelRunInfo, ModelConfig]]:
         runs = []
         for modelconfig in self.modelconfigs:
+            if modelconfig.enabled is False:
+                continue
             if self.forecastseries.injection_plans:
                 for injection_plan in self.forecastseries.injection_plans:
                     runs.append(
