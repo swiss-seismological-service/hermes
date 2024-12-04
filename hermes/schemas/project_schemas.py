@@ -48,6 +48,8 @@ class ForecastSeriesConfig(CreationInfoMixin):
 
     injection_plans: list[dict] | None = Field(None, exclude=True)
 
+    model_settings: dict | None = None
+
     tags: list[str] = []
 
     seismicityobservation_required: EInput = EInput.REQUIRED

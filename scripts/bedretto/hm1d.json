@@ -108,15 +108,6 @@
                     -10
                 ]
             }
-        },
-        "well_section_publicid": "257b1702-37d4-4eff-b129-060c9c93c5b3",
-        "reference_point": [
-            8.47449792444771,
-            46.5098187019071,
-            1271.43402303251
-        ],
-        "local_proj_string": "epsg:2056",
-        "epoch_duration": 600,
-        "n_phases": 3
+        }
     }
 }

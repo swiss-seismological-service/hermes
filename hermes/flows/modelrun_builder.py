@@ -46,6 +46,8 @@ class ModelRunBuilder:
             depth_min=self.forecastseries.depth_min,
             depth_max=self.forecastseries.depth_max,
 
+            model_settings=self.forecastseries.model_settings,
+
             injection_plan_oid=getattr(injectionplan, 'oid', None)
         )
 

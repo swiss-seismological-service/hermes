@@ -59,6 +59,8 @@ class ModelRunHandlerInterface:
             depth_min=self.modelrun_info.depth_min,
             depth_max=self.modelrun_info.depth_max,
 
+            model_settings=self.modelrun_info.model_settings,
+
             model_parameters=self.modelconfig.model_parameters
         )
 

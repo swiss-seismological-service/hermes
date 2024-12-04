@@ -35,6 +35,8 @@ class BaseModelRunInfo(Model):
     depth_min: float | None = None
     depth_max: float | None = None
 
+    model_settings: dict | None = None
+
     @field_validator('bounding_polygon', mode='before')
     @classmethod
     def validate_bounding_polygon(cls, value: Any):
