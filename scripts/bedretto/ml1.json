@@ -1,0 +1,30 @@
+{
+    "enabled": true,
+    "description": "ML1",
+    "tags": [
+        "induced"
+    ],
+    "result_type": "GRID",
+    "sfm_module": "ml1.hermes",
+    "sfm_function": "run_ml1_validated",
+    "model_parameters": {
+        "M_decimals": 2,
+        "dM": 0.05,
+        "Mc": null,
+        "LASSO_m": 10,
+        "LASSO_penalty": 1,
+        "LASSO_Nmin_fit": 5,
+        "Nsim": 150,
+        "Delta_tau": 600,
+        "Pmodel": "FlowModels0-1",
+        "well_section_publicid": "257b1702-37d4-4eff-b129-060c9c93c5b3",
+        "reference_point": [
+            8.47449792444771,
+            46.5098187019071,
+            1271.43402303251
+        ],
+        "local_proj_string": "epsg:2056",
+        "epoch_duration": 600,
+        "n_phases": 3
+    }
+}

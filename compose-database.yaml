@@ -7,7 +7,7 @@ services:
         volumes:
             - hermesdb:/var/lib/postgresql
         networks:
-            - backend
+            - hermesnet
 
     webservice:
         env_file: '.env'
@@ -19,9 +19,9 @@ services:
         ports:
             - '0.0.0.0:${DOCKER_WEB_PORT:-8000}:8000'
         networks:
-            - backend
+            - hermesnet
 
 volumes:
     hermesdb: {}
 networks:
-    backend: {}
+    hermesnet: {}

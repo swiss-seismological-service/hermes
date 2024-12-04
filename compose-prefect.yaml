@@ -10,6 +10,8 @@ services:
             - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:password@prefect-postgres:5433/prefect
         depends_on:
             - prefect-postgres
+        networks:
+            - hermesnet
 
     prefect-postgres:
         image: postgres:latest
@@ -22,6 +24,10 @@ services:
             - PGPORT=5433
         volumes:
             - prefectdb:/var/lib/postgresql/data
+        networks:
+            - hermesnet
 
 volumes:
-    prefectdb:
+    prefectdb: {}
+networks:
+    hermesnet: {}
