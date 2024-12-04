@@ -157,7 +157,7 @@ class ForecastHandler:
             else:
                 for run in self.builder.runs:
                     run_deployment(
-                        name='DefaultModelRunner/DefaultModelRunner',
+                        name=f'DefaultModelRunner/{self.forecastseries.oid}',
                         parameters={'modelrun_info': run[0],
                                     'modelconfig': run[1]},
                         timeout=0

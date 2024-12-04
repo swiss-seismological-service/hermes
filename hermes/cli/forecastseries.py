@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import typer
+from prefect import serve as serve_fs
 from rich.console import Console
 from typing_extensions import Annotated
 
@@ -11,6 +12,8 @@ from hermes.actions.crud_models import (create_forecastseries,
                                         read_project_oid,
                                         update_forecastseries)
 from hermes.cli.utils import row_table
+from hermes.flows.forecast_handler import forecast_runner
+from hermes.flows.modelrun_handler import default_model_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
 from hermes.utils.dateutils import local_to_utc_dict
@@ -107,6 +110,26 @@ def delete(
         delete_forecastseries(forecastseries_oid)
 
         console.print(f'Successfully deleted ForecastSeries {forecastseries}.')
+    except Exception as e:
+        console.print(str(e))
+        typer.Exit(code=1)
+
+
+@app.command(help="Serve the forecastseries.")
+def serve(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of the ForecastSeries.")]
+):
+    try:
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+
+        forecast_deployment = forecast_runner.to_deployment(
+            name=str(forecastseries_oid),
+            parameters={"forecastseries_oid": str(forecastseries_oid)})
+        modelrun_deployment = default_model_runner.to_deployment(
+            name=str(forecastseries_oid))
+        serve_fs(forecast_deployment, modelrun_deployment)
     except Exception as e:
         console.print(str(e))
         typer.Exit(code=1)

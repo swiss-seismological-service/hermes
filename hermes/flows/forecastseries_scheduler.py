@@ -29,7 +29,7 @@ class ForecastSeriesAttr:
         setattr(instance.forecastseries, self._name, value)
 
 
-DEPLOYMENT_NAME = 'ForecastRunner/ForecastRunner'
+DEPLOYMENT_NAME = 'ForecastRunner/{}'
 
 
 class ForecastSeriesScheduler:
@@ -52,7 +52,7 @@ class ForecastSeriesScheduler:
             ForecastSeriesRepository.get_by_id(
                 self.session, forecastseries_oid)
 
-        self.deployment_name = DEPLOYMENT_NAME
+        self.deployment_name = DEPLOYMENT_NAME.format(forecastseries_oid)
 
         self.now = datetime.now()
 

@@ -161,7 +161,8 @@ def delete_forecastseries(forecastseries_oid: UUID):
     # delete schedule if exists
     if forecastseries.schedule_id:
         asyncio.run(delete_deployment_schedule(
-            DEPLOYMENT_NAME, forecastseries.schedule_id))
+            DEPLOYMENT_NAME.format(forecastseries_oid),
+            forecastseries.schedule_id))
 
     # delete forecastseries
     with Session() as session:

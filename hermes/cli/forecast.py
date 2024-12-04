@@ -60,7 +60,7 @@ def run(
             forecast_runner(forecastseries_oid, start, end, mode)
         else:
             run_deployment(
-                name='ForecastRunner/ForecastRunner',
+                name=f'ForecastRunner/{forecastseries_oid}',
                 parameters={'forecastseries_oid': forecastseries_oid,
                             'starttime': start,
                             'endtime': end,
