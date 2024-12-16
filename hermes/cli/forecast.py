@@ -7,7 +7,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from hermes.actions.crud_models import read_forecastseries_oid
-from hermes.cli.utils import row_table
+from hermes.cli.utils import console_table
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastRepository
@@ -19,14 +19,21 @@ console = Console()
 
 @app.command(help="Outputs list of Forecast "
              "belonging to the same ForecastSeries.")
-def list():
+def list(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of "
+                                  "the ForecastSeries.")],):
     with Session() as session:
-        forecasts = ForecastRepository.get_all(session)
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        forecasts = ForecastRepository.get_by_forecastseries(
+            session, forecastseries_oid)
     if not forecasts:
         console.print("No Forecasts found")
         return
 
-    table = row_table(forecasts, ['oid', 'starttime', 'endtime', 'status'])
+    table = console_table(
+        forecasts, ['oid', 'starttime', 'endtime', 'status'])
 
     console.print(table)
 
@@ -70,7 +77,7 @@ def run(
 
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Deletes a Forecast.")
@@ -85,4 +92,4 @@ def delete(
         console.print(f"ForecastSeries {forecast_oid} deleted.")
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)

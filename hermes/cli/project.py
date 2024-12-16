@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from hermes.actions.crud_models import (delete_project, read_project_oid,
                                         update_project)
-from hermes.cli.utils import row_table
+from hermes.cli.utils import console_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ProjectRepository
 from hermes.schemas import Project
@@ -18,14 +18,23 @@ console = Console()
 
 
 @app.command(help="List all Projects.")
-def list():
+def list(
+    id: Annotated[bool,
+                  typer.Option(
+                      "--id", help="Only show IDs and names.")] = False
+):
     with Session() as session:
         projects = ProjectRepository.get_all(session)
     if not projects:
         console.print("No projects found")
         return
 
-    table = row_table(projects, ['oid', 'name', 'starttime'])
+    if id:  # only show UUIDs and names
+        rows = ['oid', 'name']
+    else:
+        rows = ['name', 'starttime', 'endtime', 'description']
+
+    table = console_table(projects, rows)
 
     console.print(table)
 
@@ -72,7 +81,7 @@ def update(
         console.print(f'Successfully updated Project {name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Deletes a project.")
@@ -86,4 +95,4 @@ def delete(
         console.print(f'Successfully deleted Project {name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)

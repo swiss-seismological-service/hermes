@@ -72,7 +72,7 @@ def read_forecastseries_oid(name_or_id: str):
                 session, name_or_id)
 
         if not forecastseries_db:
-            raise Exception(f'ForecastSeries "{name_or_id}" not found.')
+            raise ValueError(f'ForecastSeries "{name_or_id}" not found.')
 
         return forecastseries_db.oid
 

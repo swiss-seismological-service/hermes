@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from hermes.actions.crud_models import (create_injectionplan,
                                         delete_injectionplan,
                                         read_forecastseries_oid)
-from hermes.cli.utils import row_table
+from hermes.cli.utils import console_table
 from hermes.repositories.data import InjectionPlanRepository
 from hermes.repositories.database import Session
 
@@ -26,16 +26,16 @@ def list(forecastseries:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         if not forecastseries_oid:
             console.print("ForecastSeries not found.")
-            return
+            raise typer.Exit(code=1)
 
         injectionplan = InjectionPlanRepository.get_by_forecastseries(
             session,
             forecastseries_oid)
         if not injectionplan:
             console.print("No InjectionPlan found.")
-            return
+            raise typer.Exit(code=1)
 
-    table = row_table(injectionplan, ['oid', 'name'])
+    table = console_table(injectionplan, ['oid', 'name'])
 
     console.print(table)
 
@@ -69,7 +69,7 @@ def create(name: Annotated[str,
 
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Delete an Injectionplan.")
@@ -83,4 +83,4 @@ def delete(injectionplan: Annotated[str,
 
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)

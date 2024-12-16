@@ -11,7 +11,7 @@ from hermes.actions.crud_models import (archive_modelconfig,
                                         enable_modelconfig,
                                         read_modelconfig_oid,
                                         update_modelconfig)
-from hermes.cli.utils import row_table
+from hermes.cli.utils import console_table, console_tree
 from hermes.repositories.database import Session
 from hermes.repositories.project import ModelConfigRepository
 
@@ -27,9 +27,28 @@ def list():
         console.print("No ModelConfigs found")
         return
 
-    table = row_table(model_config, ['oid', 'name', 'enabled'])
+    table = console_table(
+        model_config, ['oid', 'name', 'tags', 'enabled'])
 
     console.print(table)
+
+
+@app.command(help="Show full details of a single ModelConfig.")
+def show(
+    modelconfig: Annotated[str,
+                           typer.Argument(
+                               help="Name or UUID of the ModelConfig.")]):
+    with Session() as session:
+        modelconfig_oid = read_modelconfig_oid(modelconfig)
+        model_config = ModelConfigRepository.get_by_id(
+            session, modelconfig_oid)
+
+    if not model_config:
+        console.print("ModelConfig not found.")
+        return
+
+    tree = console_tree(model_config)
+    console.print(tree)
 
 
 @app.command(help="Create a new ModelConfig.")
@@ -49,7 +68,7 @@ def create(
 
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Update an existing ModelConfig.")
@@ -81,7 +100,7 @@ def update(
             f'Successfully updated ForecastSeries {model_config_out.name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Delete a ModelConfig.")
@@ -100,7 +119,7 @@ def delete(
         console.print(f'Successfully deleted ModelConfig {modelconfig}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Disable a ModelConfig.")
@@ -117,7 +136,7 @@ def disable(
             f'Successfully disabled ModelConfig {model_config_out.name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Enable a ModelConfig.")
@@ -134,7 +153,7 @@ def enable(
             f'Successfully enabled ModelConfig {model_config_out.name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Archive a ModelConfig.")
@@ -152,4 +171,4 @@ def archive(
             f'Successfully archived ModelConfig {model_config_out.name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)

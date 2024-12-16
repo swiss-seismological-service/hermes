@@ -11,11 +11,12 @@ from hermes.actions.crud_models import (create_forecastseries,
                                         read_forecastseries_oid,
                                         read_project_oid,
                                         update_forecastseries)
-from hermes.cli.utils import row_table
+from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.flows.modelrun_handler import default_model_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
+from hermes.schemas.project_schemas import ForecastSeriesConfig
 from hermes.utils.dateutils import local_to_utc_dict
 
 app = typer.Typer()
@@ -30,9 +31,35 @@ def list():
         console.print("No ForecastSeries found")
         return
 
-    table = row_table(fseries, ['oid', 'name', 'status'])
+    table = console_table(fseries,
+                          ['oid', 'name', 'observation_starttime',
+                                  'observation_endtime', 'tags'])
 
     console.print(table)
+
+
+@app.command(help="Show full details of a single ForecastSeries.")
+def show(forecastseries:
+         Annotated[str,
+                   typer.Argument(
+                       help="Name or UUID of the ForecastSeries.")]):
+
+    with Session() as session:
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        forecast_series = ForecastSeriesRepository.get_by_id(
+            session, forecastseries_oid)
+
+    if not forecast_series:
+        console.print("ForecastSeries not found.")
+        return
+
+    # don't display all the schedule information
+    fs_config = ForecastSeriesConfig(
+        **forecast_series.model_dump(
+            include=ForecastSeriesConfig.model_fields.keys()))
+
+    tree = console_tree(fs_config)
+    console.print(tree)
 
 
 @app.command(help="Creates a new ForecastSeries.")
@@ -64,7 +91,7 @@ def create(name: Annotated[str,
                       f'{forecast_series_out.name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Updates a ForecastSeries.")
@@ -95,7 +122,7 @@ def update(
             f'Successfully updated ForecastSeries {forecast_series_out.name}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Deletes a ForecastSeries.")
@@ -112,7 +139,7 @@ def delete(
         console.print(f'Successfully deleted ForecastSeries {forecastseries}.')
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
 
 
 @app.command(help="Serve the forecastseries.")
@@ -132,4 +159,4 @@ def serve(
         serve_fs(forecast_deployment, modelrun_deployment)
     except Exception as e:
         console.print(str(e))
-        typer.Exit(code=1)
+        raise typer.Exit(code=1)
