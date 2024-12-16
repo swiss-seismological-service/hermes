@@ -31,6 +31,17 @@
             ]
         ]
     },
+    "model_settings": {
+        "well_section_publicid": "37801a57-90b9-4fb5-83d7-506ee9166acf",
+        "reference_point": [
+            8.47449792444771,
+            46.5098187019071,
+            1271.43402303251
+        ],
+        "local_proj_string": "epsg:2056",
+        "epoch_duration": 600,
+        "n_phases": 8
+    },
     "depth_min": 0,
     "depth_max": 10,
     "seismicityobservation_required": "REQUIRED",
