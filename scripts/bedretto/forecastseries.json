@@ -32,8 +32,8 @@
         ]
     },
     "model_settings": {
-        "well_section_publicid": "257b1702-37d4-4eff-b129-060c9c93c5b3",
-        "reference_point": [
+        "well_section_id": "257b1702-37d4-4eff-b129-060c9c93c5b3",
+        "injection_point": [
             8.47449792444771,
             46.5098187019071,
             1271.43402303251
