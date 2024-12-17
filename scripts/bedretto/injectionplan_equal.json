@@ -1,0 +1,135 @@
+{
+    "publicid": "6a9ca7f9-8470-45b6-853a-2b7d99f9e744",
+    "name": "BFE05",
+    "location": "Bedretto",
+    "institution": "BedrettoLab",
+    "sections": [
+        {
+            "publicid": "257b1702-37d4-4eff-b129-060c9c93c5b3",
+            "starttime": "2024-12-02T10:24:00",
+            "endtime": "2024-12-20T21:32:00",
+            "topclosed": true,
+            "bottomclosed": true,
+            "name": "BFE05_section_01",
+            "hydraulics": [
+                {
+                    "datetime": {
+                        "value": "2024-12-10T20:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-10T23:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-11T01:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-11T06:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-11T12:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-11T18:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-11T23:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-12T01:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-12T06:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-12T12:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-12T18:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                },
+                {
+                    "datetime": {
+                        "value": "2024-12-12T23:00:00"
+                    },
+                    "topflow": {
+                        "value": -1
+                    }
+                }
+            ],
+            "casingdiameter": {},
+            "holediameter": {},
+            "bottommeasureddepth": {},
+            "topmeasureddepth": {},
+            "bottomaltitude": {},
+            "bottomlatitude": {},
+            "bottomlongitude": {},
+            "topaltitude": {},
+            "toplatitude": {},
+            "toplongitude": {}
+        }
+    ],
+    "measureddepth": {},
+    "bedrockaltitude": {},
+    "altitude": {
+        "value": 0
+    },
+    "latitude": {
+        "value": 0
+    },
+    "longitude": {
+        "value": 0
+    }
+}
