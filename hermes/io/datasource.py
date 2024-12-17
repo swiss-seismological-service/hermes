@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Generic, TypeVar
 
 import requests
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 
 from hermes.utils.url import add_query_params
 
@@ -11,7 +11,7 @@ T = TypeVar('T')
 
 
 class DataSource(ABC, Generic[T]):
-    @task
+    @task(name='DataSource')
     def __init__(self,
                  data: T | None = None) \
             -> None:
@@ -51,7 +51,7 @@ class DataSource(ABC, Generic[T]):
 
     @classmethod
     @abstractmethod
-    @flow
+    @task
     def from_ws(self):
         pass
 
@@ -61,7 +61,8 @@ class DataSource(ABC, Generic[T]):
     def from_file(self):
         pass
 
-    @task(retries=3,
+    @task(name='ws-request',
+          retries=3,
           retry_delay_seconds=3)
     def _request_text(self, url: str, timeout: int = 300, **kwargs) \
             -> tuple[str, int]:

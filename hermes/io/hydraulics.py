@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime
 
 from hydws.parser import BoreholeHydraulics
-from prefect import flow, task
+from prefect import task
 from typing_extensions import Self
 
 from hermes.io.datasource import DataSource
@@ -13,7 +13,7 @@ from hermes.io.datasource import DataSource
 class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
 
     @classmethod
-    @flow
+    @task(name='HydraulicsDataSource.from_ws')
     def from_ws(cls,
                 url: str,
                 starttime: datetime,
@@ -49,7 +49,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         return hds
 
     @classmethod
-    @task
+    @task(name='HydraulicsDataSource.from_file')
     def from_file(cls,
                   file_path: str,
                   starttime: datetime | None = None,

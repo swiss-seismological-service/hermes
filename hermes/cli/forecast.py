@@ -10,7 +10,8 @@ from hermes.actions.crud_models import read_forecastseries_oid
 from hermes.cli.utils import console_table
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
-from hermes.repositories.project import ForecastRepository
+from hermes.repositories.project import (ForecastRepository,
+                                         ForecastSeriesRepository)
 from hermes.utils.dateutils import local_to_timezone
 
 app = typer.Typer()
@@ -66,8 +67,13 @@ def run(
         if local:
             forecast_runner(forecastseries_oid, start, end, mode)
         else:
+
+            with Session() as session:
+                forecastseries = ForecastSeriesRepository.get_by_id(
+                    session, forecastseries_oid)
+
             run_deployment(
-                name=f'ForecastRunner/{forecastseries_oid}',
+                name=f'ForecastRunner/{forecastseries.name}',
                 parameters={'forecastseries_oid': forecastseries_oid,
                             'starttime': start,
                             'endtime': end,

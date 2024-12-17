@@ -174,7 +174,8 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
                 grid)
 
 
-@flow(name='DefaultModelRunner')
+@flow(name='DefaultModelRunner',
+      flow_run_name='ModelRun-{modelconfig.name}')
 def default_model_runner(modelrun_info: DBModelRunInfo,
                          modelconfig: ModelConfig) -> DefaultModelRunHandler:
     runner = DefaultModelRunHandler(modelrun_info, modelconfig)

@@ -3,7 +3,7 @@ import urllib.parse
 from datetime import datetime
 
 import pandas as pd
-from prefect import flow, task
+from prefect import task
 from seismostats import Catalog
 from typing_extensions import Self
 
@@ -14,7 +14,7 @@ from hermes.utils.url import add_query_params
 
 class SeismicityDataSource(DataSource[Catalog]):
     @classmethod
-    @task
+    @task(name='SeismicityDataSource.from_file')
     def from_file(cls,
                   file_path: str,
                   starttime: datetime | None = None,
@@ -62,7 +62,7 @@ class SeismicityDataSource(DataSource[Catalog]):
         return cds
 
     @classmethod
-    @flow
+    @task(name='SeismicityDataSource.from_ws')
     def from_ws(cls,
                 url: str,
                 starttime: datetime,

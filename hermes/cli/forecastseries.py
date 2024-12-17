@@ -151,12 +151,19 @@ def serve(
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
 
+        with Session() as session:
+            forecastseries = ForecastSeriesRepository.get_by_id(
+                session, forecastseries_oid)
+
         forecast_deployment = forecast_runner.to_deployment(
-            name=str(forecastseries_oid),
+            name=forecastseries.name,
             parameters={"forecastseries_oid": str(forecastseries_oid)})
+
         modelrun_deployment = default_model_runner.to_deployment(
-            name=str(forecastseries_oid))
+            name=forecastseries.name)
+
         serve_fs(forecast_deployment, modelrun_deployment)
+
     except Exception as e:
         console.print(str(e))
         raise typer.Exit(code=1)

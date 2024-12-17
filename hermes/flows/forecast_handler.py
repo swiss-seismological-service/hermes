@@ -141,7 +141,8 @@ class ForecastHandler:
             self.observation_endtime = self.observation_endtime.replace(
                 tzinfo=None)
 
-    @task(cache_policy=None)
+    @task(name='SubmitModelRuns',
+          cache_policy=None)
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
         if not self.builder.runs:
             self.logger.warning('No modelruns to run.')
@@ -157,7 +158,7 @@ class ForecastHandler:
             else:
                 for run in self.builder.runs:
                     run_deployment(
-                        name=f'DefaultModelRunner/{self.forecastseries.oid}',
+                        name=f'DefaultModelRunner/{self.forecastseries.name}',
                         parameters={'modelrun_info': run[0],
                                     'modelconfig': run[1]},
                         timeout=0
@@ -171,7 +172,8 @@ class ForecastHandler:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
 
-    @task(cache_policy=None)
+    @task(name='CreateForecast',
+          cache_policy=None)
     def _create_forecast(self) -> None:
         """
         Creates or updates the forecast in the database.
@@ -186,7 +188,8 @@ class ForecastHandler:
             self.forecast: Forecast = ForecastRepository.create(
                 session, new_forecast)
 
-    @task(cache_policy=None)
+    @task(name='CreateSeismicityObservation',
+          cache_policy=None)
     def _create_seismicityobservation(self) -> None:
         """
         Gets the seismicity observation data and stores it to the database.
@@ -211,7 +214,8 @@ class ForecastHandler:
                     self.forecast.oid
                 )
 
-    @task(cache_policy=None)
+    @task(name='CreateInjectionObservation',
+          cache_policy=None)
     def _create_injectionobservation(self) -> None:
         """
         Gets the injection observation data and stores it to the database.
@@ -238,7 +242,8 @@ class ForecastHandler:
                     hydraulics
                 )
 
-    @task(cache_policy=None)
+    @task(name='CreateInjectionPlan',
+          cache_policy=None)
     def _create_injectionplan(self) -> None:
         """
         Gets the injection plan data and stores it to the database.
@@ -271,7 +276,27 @@ class ForecastHandler:
         self.forecastseries.injection_plans = injection_plans
 
 
-@flow(name='ForecastRunner')
+def generate_flow_run_name():
+    """
+    Try to use starttime to generate a name for the flow run.
+    """
+
+    parameters = runtime.flow_run.parameters
+    start = parameters["starttime"] or \
+        runtime.flow_run.scheduled_start_time or None
+
+    if start:
+        end = parameters["endtime"] or None
+        if end:
+            return f"Forecast-{start}-{end}"
+        else:
+            return f"Forecast-{start}"
+
+    return f"Forecast-{parameters['forecastseries_oid']}"
+
+
+@flow(name='ForecastRunner',
+      flow_run_name=generate_flow_run_name)
 def forecast_runner(forecastseries_oid: UUID,
                     starttime: datetime | None = None,
                     endtime: datetime | None = None,
