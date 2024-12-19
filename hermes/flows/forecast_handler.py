@@ -74,6 +74,9 @@ class ForecastHandler:
             task_ip = self._create_injectionplan.submit()
             futures_wait([task_so, task_io, task_ip])
 
+            # necessary to raise exceptions from the tasks if any failed
+            [task_so.result(), task_io.result(), task_ip.result()]
+
             self.builder = ModelRunBuilder(self.forecast,
                                            self.forecastseries,
                                            self.modelconfigs)
@@ -259,6 +262,15 @@ class ForecastHandler:
                     session,
                     self.forecastseries.oid
                 )
+
+            if not injection_plans:
+                if self.forecastseries.injectionplan_required == \
+                        EInput.OPTIONAL:
+                    self.forecastseries.injection_plans = None
+                    return None
+                else:
+                    raise ValueError('No injection plans found for the '
+                                     'ForecastSeries.')
 
             for idx, ip in enumerate(injection_plans):
                 data = HydraulicsDataSource.from_data(json.loads(ip.data),
