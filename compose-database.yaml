@@ -1,6 +1,7 @@
 services:
     postgres:
         image: kartoza/postgis:latest
+        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
             - '0.0.0.0:${POSTGRES_PORT:-5432}:5432'
         env_file: .env

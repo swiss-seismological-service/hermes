@@ -2,6 +2,7 @@ services:
     prefect-server:
         image: prefecthq/prefect:3-latest
         command: prefect server start
+        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
             - '4200:4200'
         environment:
@@ -15,6 +16,7 @@ services:
 
     prefect-postgres:
         image: postgres:latest
+        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
             - '5433:5433'
         environment:
