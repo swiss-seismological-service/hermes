@@ -74,7 +74,10 @@ class ForecastSeriesScheduler:
                 self.session, self.forecastseries)
 
     def __del__(self) -> None:
-        self.session.close()
+        try:
+            self.session.close()
+        except BaseException:
+            pass
 
     def _build_rrule(self) -> None:
         assert self.schedule_starttime is not None \

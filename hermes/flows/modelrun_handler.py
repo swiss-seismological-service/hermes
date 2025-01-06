@@ -120,8 +120,10 @@ class DefaultModelRunHandler(ModelRunHandlerInterface):
                 self.session, self.modelrun.oid, EStatus.COMPLETED)
 
     def __del__(self):
-        print('Closing session')
-        self.session.close()
+        try:
+            self.session.close()
+        except BaseException:
+            pass
 
     def _create_modelrun(self) -> None:
         modelrun = ModelRun(
