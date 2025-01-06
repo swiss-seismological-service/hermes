@@ -52,7 +52,7 @@ class ForecastSeriesScheduler:
             ForecastSeriesRepository.get_by_id(
                 self.session, forecastseries_oid)
 
-        self.deployment_name = DEPLOYMENT_NAME.format(forecastseries_oid)
+        self.deployment_name = DEPLOYMENT_NAME.format(self.forecastseries.name)
 
         self.now = datetime.now()
 
