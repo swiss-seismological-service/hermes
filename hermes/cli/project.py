@@ -11,7 +11,6 @@ from hermes.cli.utils import console_table
 from hermes.repositories.database import Session
 from hermes.repositories.project import ProjectRepository
 from hermes.schemas import Project
-from hermes.utils.dateutils import local_to_utc_dict
 
 app = typer.Typer()
 console = Console()
@@ -52,8 +51,6 @@ def create(
     with open(config, "r") as project_file:
         project_config_dict = json.load(project_file)
 
-    project_config_dict = local_to_utc_dict(project_config_dict)
-
     project = Project(name=name, **project_config_dict)
 
     with Session() as session:
@@ -73,8 +70,6 @@ def update(
     try:
         with open(config, "r") as project_file:
             project_config_dict = json.load(project_file)
-
-        project_config_dict = local_to_utc_dict(project_config_dict)
 
         project_oid = read_project_oid(name)
         update_project(project_config_dict, project_oid)

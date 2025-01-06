@@ -1,5 +1,4 @@
 import time
-from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -65,15 +64,3 @@ def local_to_timezone(dt: datetime) -> datetime:
     utc_dt = local_dt.astimezone(tz)
 
     return utc_dt.replace(tzinfo=None)
-
-
-def local_to_utc_dict(dic: dict) -> dict:
-    new_dict = deepcopy(dic)
-    for key, value in new_dict.items():
-        # try converting string value to datetime object
-        try:
-            dt = local_to_timezone(datetime.fromisoformat(value))
-            new_dict[key] = dt.isoformat()
-        except BaseException:
-            pass
-    return new_dict

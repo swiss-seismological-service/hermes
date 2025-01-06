@@ -12,7 +12,6 @@ from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
-from hermes.utils.dateutils import local_to_timezone
 
 app = typer.Typer()
 console = Console()
@@ -61,8 +60,7 @@ def run(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        start = local_to_timezone(start)
-        end = local_to_timezone(end)
+
         mode = 'local' if local else 'deploy'
         if local:
             forecast_runner(forecastseries_oid, start, end, mode)

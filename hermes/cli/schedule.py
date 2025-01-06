@@ -13,7 +13,6 @@ from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
 from hermes.schemas.project_schemas import ForecastSeriesSchedule
-from hermes.utils.dateutils import local_to_utc_dict
 
 app = typer.Typer()
 console = Console()
@@ -86,8 +85,6 @@ def create(
     with open(config, "r") as project_file:
         schedule_config = json.load(project_file)
 
-    schedule_config = local_to_utc_dict(schedule_config)
-
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         create_schedule(schedule_config, forecastseries_oid)
@@ -116,7 +113,6 @@ def update(
     with open(config, "r") as project_file:
         schedule_config = json.load(project_file)
 
-    schedule_config = local_to_utc_dict(schedule_config)
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         update_schedule(schedule_config, forecastseries_oid)
