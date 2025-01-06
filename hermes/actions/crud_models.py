@@ -3,6 +3,7 @@ import json
 from uuid import UUID
 
 from hydws.parser import BoreholeHydraulics
+from prefect.exceptions import ObjectNotFound
 
 from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
                                                    ForecastSeriesScheduler,
@@ -160,9 +161,13 @@ def delete_forecastseries(forecastseries_oid: UUID):
 
     # delete schedule if exists
     if forecastseries.schedule_id:
-        asyncio.run(delete_deployment_schedule(
-            DEPLOYMENT_NAME.format(forecastseries_oid),
-            forecastseries.schedule_id))
+        try:
+            asyncio.run(delete_deployment_schedule(
+                DEPLOYMENT_NAME.format(forecastseries_oid),
+                forecastseries.schedule_id))
+        except ObjectNotFound:
+            # schedule has already been deleted on prefect side
+            pass
 
     # delete forecastseries
     with Session() as session:
