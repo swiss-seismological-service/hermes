@@ -171,7 +171,18 @@ def delete_forecastseries(forecastseries_oid: UUID):
 
     # delete forecastseries
     with Session() as session:
+        injectionplans = []
+        for f in forecasts:
+            ips = InjectionPlanRepository.get_ids_by_forecast(session, f.oid)
+            injectionplans.extend(ips)
+
+        # the deletion cascade takes care of most of the deletion
         ForecastSeriesRepository.delete(session, forecastseries_oid)
+
+        # injectionplans belonging to modelruns aren't automatically
+        # deleted by the cascade
+        for ip in injectionplans:
+            InjectionPlanRepository.delete(session, ip)
 
 
 def create_modelconfig(name, model_config):
@@ -342,3 +353,17 @@ def delete_injectionplan(injectionplan_oid: UUID):
 
     with Session() as session:
         InjectionPlanRepository.delete(session, injectionplan_oid)
+
+
+def delete_forecast(forecast_oid: UUID):
+    with Session() as session:
+
+        injectionplans = InjectionPlanRepository.get_ids_by_forecast(
+            session, forecast_oid)
+
+        ForecastRepository.delete(session, forecast_oid)
+
+        for ip in injectionplans:
+            InjectionPlanRepository.delete(session, ip)
+
+    return f"Forecast {forecast_oid} deleted."

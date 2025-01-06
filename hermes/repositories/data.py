@@ -10,6 +10,8 @@ from hermes.datamodel.data_tables import (EventObservationTable,
                                           InjectionObservationTable,
                                           InjectionPlanTable,
                                           SeismicityObservationTable)
+from hermes.datamodel.project_tables import ForecastTable
+from hermes.datamodel.result_tables import ModelRunTable
 from hermes.io.serialize import serialize_seismostats_catalog
 from hermes.repositories.base import repository_factory
 from hermes.schemas.data_schemas import (EventObservation,
@@ -149,3 +151,18 @@ class InjectionPlanRepository(repository_factory(
             InjectionPlanTable.forecastseries_oid == forecastseries_oid)
         result = session.execute(stmt).scalars().all()
         return [cls.model.model_validate(f) for f in result]
+
+    @classmethod
+    def get_ids_by_forecast(cls,
+                            session: Session,
+                            forecast_oid: UUID) -> InjectionPlan:
+
+        stmt = select(InjectionPlanTable.oid) \
+            .join(ModelRunTable,
+                  ModelRunTable.injectionplan_oid == InjectionPlanTable.oid) \
+            .join(ForecastTable,
+                  ForecastTable.oid == ModelRunTable.forecast_oid) \
+            .where(ForecastTable.oid == forecast_oid)
+
+        result = session.execute(stmt).scalars().all()
+        return [f for f in result]

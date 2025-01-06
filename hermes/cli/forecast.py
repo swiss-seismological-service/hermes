@@ -6,7 +6,7 @@ from prefect.deployments import run_deployment
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud_models import read_forecastseries_oid
+from hermes.actions.crud_models import delete_forecast, read_forecastseries_oid
 from hermes.cli.utils import console_table
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
@@ -93,8 +93,7 @@ def delete(
                                 help="UUID of "
                                 "the ForecastSeries.")]):
     try:
-        with Session() as session:
-            ForecastRepository.delete(session, forecast_oid)
+        delete_forecast(forecast_oid)
         console.print(f"ForecastSeries {forecast_oid} deleted.")
     except Exception as e:
         console.print(str(e))
