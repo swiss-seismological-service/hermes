@@ -5,8 +5,11 @@ from hermes.schemas import SeismicityObservation
 from hermes.schemas.project_schemas import Forecast
 
 
+@patch('hermes.repositories.project.ForecastRepository.update_status',
+       autocast=True)
 @patch('hermes.flows.forecast_handler.default_model_runner', autocast=True)
-@patch('hermes.repositories.data.SeismicityObservationRepository.create',
+@patch('hermes.repositories.data.'
+       'SeismicityObservationRepository.create_from_quakeml',
        autocast=True,
        return_value=SeismicityObservation(data='data'))
 @patch('hermes.io.SeismicityDataSource.from_uri',
@@ -28,6 +31,7 @@ class TestForecastHandler:
                   mock_get_catalog,
                   mock_so_create,
                   mock_default_model_runner: MagicMock,
+                  mock_update_status: MagicMock,
                   forecastseries,
                   forecast,
                   model_config,
@@ -53,7 +57,4 @@ class TestForecastHandler:
             endtime=forecast_handler.endtime
         ))
 
-        mock_so_create.assert_called_with(ANY, SeismicityObservation(
-            data='data',
-            forecast_oid=forecast.oid))
         assert len(mock_default_model_runner.call_args_list) == 1

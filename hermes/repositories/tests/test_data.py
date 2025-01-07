@@ -32,13 +32,13 @@ class TestData:
 
         catalog = Catalog(pd.read_parquet(catalog_path))
 
-        seismicity_oid = SeismicityObservationRepository.create_from_catalog(
+        seismicity = SeismicityObservationRepository.create_from_catalog(
             session, catalog, forecast_oid)
 
         assert connection.execute(
             text(
                 'SELECT COUNT(*) FROM seismicityobservation WHERE oid = :oid'),
-            {'oid': seismicity_oid}
+            {'oid': seismicity.oid}
         ).scalar() == 1
 
         catalog_qml = catalog.to_quakeml()
@@ -49,7 +49,7 @@ class TestData:
                 'SELECT COUNT(*) FROM seismicityobservation')).scalar() == 2
 
         obs_db = SeismicityObservationRepository.get_by_id(
-            session, seismicity_oid)
+            session, seismicity.oid)
 
         assert obs_db.data.decode('utf-8')
 

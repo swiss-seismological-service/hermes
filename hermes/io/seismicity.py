@@ -1,4 +1,3 @@
-import time
 import urllib.parse
 from datetime import datetime
 
@@ -93,12 +92,13 @@ class SeismicityDataSource(DataSource[Catalog]):
                                  endtime=end.strftime('%Y-%m-%dT%H:%M:%S'))
                 for start, end in date_ranges]
 
-        tasks = []
-        for u in urls:
-            tasks.append(cds._request_text.submit(u))
-            time.sleep(0.5)
-
-        parts = [task.result() for task in tasks]
+        try:
+            tasks = []
+            for u in urls:
+                tasks.append(cds._request_text.submit(u))
+            parts = [task.result() for task in tasks]
+        except RuntimeError:
+            parts = [cds._request_text(u) for u in urls]
 
         catalog = Catalog()
 
