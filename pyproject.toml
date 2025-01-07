@@ -19,12 +19,15 @@ authors = [
 license = { file = "LICENSE" }
 
 dependencies = [
+    "alembic",
+    "alembic-utils",
     "geoalchemy2",
     "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
     "hydws-client @ git+https://git@gitlab.seismo.ethz.ch/indu/hydws-client.git",
     "prefect",
     "psycopg2",
     "pydantic",
+    "pydantic-settings",
     "python-dotenv",
     "requests",
     "seismostats @ git+https://github.com/swiss-seismological-service/SeismoStats.git",

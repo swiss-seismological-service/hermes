@@ -42,13 +42,24 @@ def _create_tables():
 
 
 def _drop_tables():
-
     m = MetaData()
     m.reflect(engine, schema='public')
     tables = [
         table for table in m.sorted_tables if table.name not in
         ['spatial_ref_sys']]
     m.drop_all(engine, tables=tables)
+
+
+def _check_tables_exist():
+    """
+    Check if tables exist in the database,
+    assuming that if there are more than 5
+    tables, the database is initialized.
+    """
+    m = MetaData()
+    m.reflect(engine, schema='public')
+    tables = [table for table in m.sorted_tables]
+    return len(tables) > 5
 
 
 def pandas_read_sql(stmt, session):
