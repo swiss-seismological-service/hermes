@@ -1,6 +1,6 @@
 import json
+import logging
 from datetime import datetime, timedelta
-from logging import Logger
 from typing import Literal
 from uuid import UUID
 
@@ -34,7 +34,10 @@ class ForecastHandler:
                  observation_endtime: datetime | None = None,
                  observation_window: int | None = None) -> None:
 
-        self.logger: Logger = get_run_logger()
+        try:
+            self.logger = get_run_logger()
+        except BaseException:
+            self.logger = logging.getLogger('prefect.hermes')
         self.starttime: datetime
         self.endtime: datetime
         self.observation_starttime: datetime
@@ -57,11 +60,11 @@ class ForecastHandler:
                                 'ForecastSeries. Exiting.')
             return None
 
-        self._set_forecast_timebounds(starttime,
-                                      endtime,
-                                      observation_starttime,
-                                      observation_endtime,
-                                      observation_window)
+        self._calculate_forecast_timebounds(starttime,
+                                            endtime,
+                                            observation_starttime,
+                                            observation_endtime,
+                                            observation_window)
 
         self._create_forecast()
 
@@ -83,9 +86,6 @@ class ForecastHandler:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.FAILED)
             raise e
-
-    def __del__(self):
-        self.logger.info('Closing session')
 
     @task(name='SubmitModelRuns', cache_policy=None)
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
@@ -117,12 +117,12 @@ class ForecastHandler:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
 
-    def _set_forecast_timebounds(self,
-                                 starttime: datetime,
-                                 endtime: datetime,
-                                 observation_starttime: datetime,
-                                 observation_endtime: datetime,
-                                 observation_window: int) -> None:
+    def _calculate_forecast_timebounds(self,
+                                       starttime: datetime,
+                                       endtime: datetime,
+                                       observation_starttime: datetime,
+                                       observation_endtime: datetime,
+                                       observation_window: int) -> None:
         """
         Sets the forecast start and end times.
 
@@ -205,8 +205,7 @@ class ForecastHandler:
 
         if self.starttime == self.endtime:
             raise ValueError("Forecast start and end time can't be equal.")
-        print(self.starttime)
-        print(self.endtime)
+
         if self.starttime > self.endtime:
             raise ValueError("Forecast start time can't be later than "
                              "forecast end time.")

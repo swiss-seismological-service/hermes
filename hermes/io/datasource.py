@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Generic, TypeVar
@@ -30,7 +31,10 @@ class DataSource(ABC, Generic[T]):
         Returns:
             T object instance containing the data.
         """
-        self._logger = get_run_logger()
+        try:
+            self.logger = get_run_logger()
+        except BaseException:
+            self.logger = logging.getLogger('prefect.hermes')
         self.data = data
 
     @classmethod
@@ -83,7 +87,7 @@ class DataSource(ABC, Generic[T]):
 
         url = add_query_params(url, **kwargs)
 
-        self._logger.info(f'Requesting text from {url}.')
+        self.logger.info(f'Requesting text from {url}.')
 
         response = requests.get(url, timeout=timeout)
 

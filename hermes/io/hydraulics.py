@@ -31,7 +31,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         """
         hds = cls()
 
-        hds._logger.info('Requesting hydraulics from hydraulic webservice:')
+        hds.logger.info('Requesting hydraulics from hydraulic webservice:')
 
         response = hds._request_text(
             url,
@@ -39,8 +39,8 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
             starttime=starttime.strftime('%Y-%m-%dT%H:%M:%S'),
             endtime=endtime.strftime('%Y-%m-%dT%H:%M:%S'))
 
-        hds._logger.info(f'Received response from {url} '
-                         f'with status code {response[1]}.')
+        hds.logger.info(f'Received response from {url} '
+                        f'with status code {response[1]}.')
 
         hydraulics = BoreholeHydraulics(json.loads(response[0]))
 
@@ -72,7 +72,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         file_path = urllib.parse.urlparse(file_path)
         file_path = urllib.parse.unquote(file_path.path)
 
-        hds._logger.info(
+        hds.logger.info(
             f'Loading hydraulics from file (file_path={file_path}).')
 
         if format == 'hydjson':
@@ -81,7 +81,7 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
         else:
             raise NotImplementedError(f'Format {format} not supported.')
 
-        hds._logger.info(
+        hds.logger.info(
             f'Loaded hydraulics from file (file_path={file_path}).')
 
         return cls.from_data(hydraulics, starttime, endtime, hds)

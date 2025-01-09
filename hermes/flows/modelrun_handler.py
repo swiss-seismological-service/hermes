@@ -1,5 +1,6 @@
 import importlib
 import json
+import logging
 from abc import abstractmethod
 from typing import Any
 
@@ -30,7 +31,10 @@ class ModelRunHandlerInterface:
                  modelconfig: ModelConfig,
                  **kwargs) -> None:
         super().__init__(**kwargs)
-        self.logger = get_run_logger()
+        try:
+            self.logger = get_run_logger()
+        except BaseException:
+            self.logger = logging.getLogger('prefect.hermes')
         self.modelrun_info = modelrun_info
         self.modelconfig = modelconfig
 

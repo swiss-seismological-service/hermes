@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from dateutil.rrule import SECONDLY, rrule
+from prefect import get_run_logger
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.objects import DeploymentSchedule
 from prefect.client.schemas.schedules import RRuleSchedule
@@ -45,8 +46,10 @@ class ForecastSeriesScheduler:
     forecast_duration = ForecastSeriesAttr()
 
     def __init__(self, forecastseries_oid: UUID) -> None:
-
-        self.logger = logging.getLogger(__name__)
+        try:
+            self.logger = get_run_logger()
+        except BaseException:
+            self.logger = logging.getLogger('prefect.hermes')
         self.session = Session()
         self.forecastseries: ForecastSeries = \
             ForecastSeriesRepository.get_by_id(

@@ -36,7 +36,7 @@ class SeismicityDataSource(DataSource[Catalog]):
         file_path = urllib.parse.urlparse(file_path)
         file_path = urllib.parse.unquote(file_path.path)
 
-        cds._logger.info(
+        cds.logger.info(
             f'Loading seismic catalog from file (file_path={file_path}).')
 
         if format == 'quakeml':
@@ -53,7 +53,7 @@ class SeismicityDataSource(DataSource[Catalog]):
                 & (catalog['time'] <= endtime if endtime else True)
             ]
 
-        cds._logger.info(
+        cds.logger.info(
             f'Loaded seismic catalog from file (file_path={file_path}).')
 
         cds.data = catalog
@@ -79,12 +79,12 @@ class SeismicityDataSource(DataSource[Catalog]):
         """
         cds = cls()
 
-        cds._logger.info('Requesting seismic catalog from fdsnws-event:')
+        cds.logger.info('Requesting seismic catalog from fdsnws-event:')
 
         date_ranges = generate_date_ranges(starttime, endtime)
 
         if len(date_ranges) > 1:
-            cds._logger.info(
+            cds.logger.info(
                 f'Requesting catalog in {len(date_ranges)} parts.')
 
         urls = [add_query_params(url,
@@ -115,11 +115,11 @@ class SeismicityDataSource(DataSource[Catalog]):
         catalog = catalog.sort_values('time')
 
         if parts:
-            cds._logger.info(f'Received response from {url} '
-                             f'with status code {part[1]}.')
+            cds.logger.info(f'Received response from {url} '
+                            f'with status code {part[1]}.')
         else:
-            cds._logger.warning('Observed seismicity period has zero length.'
-                                ' No data was requested.')
+            cds.logger.warning('Observed seismicity period has zero length.'
+                               ' No data was requested.')
 
         cds.data = catalog
 
