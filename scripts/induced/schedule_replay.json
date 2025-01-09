@@ -1,0 +1,6 @@
+{
+    "schedule_starttime": "2022-04-21T15:00:00",
+    "schedule_endtime": "2022-04-21T16:00:00",
+    "schedule_interval": 1800,
+    "forecast_endtime": "2022-04-21T18:00:00"
+}

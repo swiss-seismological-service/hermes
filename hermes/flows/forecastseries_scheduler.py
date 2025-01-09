@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
+from typing import Literal
 from uuid import UUID
 
 from dateutil.rrule import SECONDLY, rrule
@@ -8,7 +9,9 @@ from prefect import get_run_logger
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.objects import DeploymentSchedule
 from prefect.client.schemas.schedules import RRuleSchedule
+from prefect.deployments import run_deployment
 
+from hermes.flows.forecast_handler import forecast_runner
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
 from hermes.schemas.project_schemas import (ForecastSeries,
@@ -50,6 +53,9 @@ class ForecastSeriesScheduler:
             self.logger = get_run_logger()
         except BaseException:
             self.logger = logging.getLogger('prefect.hermes')
+
+        self.logger.debug('Initializing ForecastSeriesScheduler')
+
         self.session = Session()
         self.forecastseries: ForecastSeries = \
             ForecastSeriesRepository.get_by_id(
@@ -97,6 +103,34 @@ class ForecastSeriesScheduler:
         else:
             self._create_prefect_schedule(schedule_config)
             self.logger.info('Schedule successfully created.')
+
+    def run_past_forecasts(self, mode: Literal['local', 'deploy'] = 'local'):
+        """
+        If the forecast has a start time in the past, calculate the past
+        forecast start and endtimes.
+        """
+        # If the start time is in the future,
+        # we don't have any past forecasts
+        if self.schedule_starttime > self.now:
+            self.logger.info('No past forecasts to execute.')
+            return None
+
+        past_dates = list(self._build_rrule('past'))
+
+        if mode == 'local':
+            for d in past_dates:
+                forecast_runner(self.forecastseries.oid,
+                                starttime=d,
+                                mode=mode)
+        elif mode == 'deploy':
+            for d in past_dates:
+                run_deployment(
+                    name=f'ForecastRunner/{self.forecastseries.name}',
+                    parameters={'forecastseries_oid': self.forecastseries.oid,
+                                'starttime': d,
+                                'mode': mode},
+                    timeout=0
+                )
 
     def _update(self, config: dict | None = None, update_db: bool = True) \
             -> None:
@@ -178,15 +212,17 @@ class ForecastSeriesScheduler:
 
         return False
 
-    def _build_rrule(self, future=False) -> rrule:
+    def _build_rrule(
+            self,
+            timeframe: Literal['all', 'past', 'future'] = 'all') -> rrule:
         '''
         Builds a rrule object based on the ForecastSeries attributes.
 
         args:
-            future: bool
-                If True, the next regular occurrence of the schedule will be
-                returned. If False, the schedule will start at the
-                schedule_starttime.
+            timeframe:
+                If `future`, the rrule will start at the next schedule
+                interval after the current time.
+                If `past`, the rrule will end at the current time.
         '''
         # create a schedule which starts at schedule_starttime
         rule = rrule(
@@ -195,7 +231,7 @@ class ForecastSeriesScheduler:
             dtstart=self.schedule_starttime,
             until=self.schedule_endtime)
 
-        if future:
+        if timeframe == 'future':
             if self.schedule_endtime and \
                     self.schedule_endtime < self.now:
                 raise ValueError('No future schedule can be created, '
@@ -206,6 +242,19 @@ class ForecastSeriesScheduler:
                 interval=self.schedule_interval,
                 dtstart=rule.after(self.now, inc=False),
                 until=self.schedule_endtime)
+
+        elif timeframe == 'past':
+            if self.schedule_starttime > self.now:
+                raise ValueError('No past schedule can be created, '
+                                 'the schedule startime is in the future.')
+
+            if self.schedule_endtime is None or \
+                    self.schedule_endtime > self.now:
+                rule = rrule(
+                    freq=SECONDLY,
+                    interval=self.schedule_interval,
+                    dtstart=self.schedule_starttime,
+                    until=self.now)
 
         return rule
 
@@ -269,35 +318,6 @@ class ForecastSeriesScheduler:
                                                    self.schedule_id))
 
         self._unset_schedule()
-
-    # def _set_past_forecasts(self):
-    #     """
-    #     If the forecast has a start time in the past, calculate the past
-    #     forecast start and endtimes.
-    #     """
-    #     # If the start time is in the future,
-    #     # we don't have any past forecasts
-    #     if self.schedule_starttime > self.now:
-    #         return None
-
-    #     # if the endtime lies in the past, we only want to calculate
-    #     # past forecasts up to the endtime
-    #     if self.schedule_endtime is not None and \
-    #             self.schedule_endtime < self.now:
-    #         past_end = self.schedule_endtime
-    #     # otherwise we calculate past forecasts up to the current time
-    #     else:
-    #         past_end = self.now
-
-    #     # if no duration is specified, we want to avoid creating a forecast
-    #     # which starts at the same time as the endtime
-    #     if self.forecastseries.forecast_duration is None:
-    #         past_end -= timedelta(seconds=1)
-
-    #     rrule_past = rrule(freq=SECONDLY, interval=self.schedule_interval,
-    #                        dtstart=self.schedule_starttime, until=past_end)
-
-    #     self.past_forecasts = list(rrule_past)
 
 
 async def add_deployment_schedule(

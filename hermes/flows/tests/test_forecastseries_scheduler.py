@@ -141,6 +141,31 @@ class TestForecastSeriesScheduler:
                                 schedule_active=True)
         mock_fs_update.assert_called_once_with(scheduler.session, new_fs)
 
+    @patch('hermes.flows.forecastseries_scheduler.forecast_runner',
+           autocast=True)
+    def test_catchup(self,
+                     mock_forecastrunner: MagicMock,
+                     mock_fs_get_by_id: MagicMock):
+        fs = ForecastSeries(
+            oid=uuid.uuid4(),
+            schedule_starttime=datetime(2024, 1, 1, 0, 0, 0),
+            schedule_endtime=datetime(2024, 1, 1, 0, 59, 0),
+            schedule_interval=1800,
+            forecast_duration=1800)
+
+        mock_fs_get_by_id.return_value = fs
+        scheduler = ForecastSeriesScheduler(None)
+
+        scheduler.run_past_forecasts()
+
+        assert mock_forecastrunner.call_count == 2
+        mock_forecastrunner.assert_any_call(
+            fs.oid, starttime=datetime(2024, 1, 1, 0, 0), mode='local'
+        )
+        mock_forecastrunner.assert_any_call(
+            fs.oid, starttime=datetime(2024, 1, 1, 0, 30), mode='local'
+        )
+
 
 @patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id',
        autocast=True)

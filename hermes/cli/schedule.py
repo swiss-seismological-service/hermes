@@ -180,5 +180,23 @@ def deactivate(
 
 @app.command(help="Executes Forecasts for the given schedule which "
              "have scheduled start times in the past.")
-def catchup():
-    raise NotImplementedError
+def catchup(
+    forecastseries: Annotated[str,
+                              typer.Argument(
+                                  help="Name or UUID of "
+                                  "the ForecastSeries.")],
+    local: Annotated[
+        bool,
+        typer.Option(
+            help="Flag to run the Forecast in local mode.")] = False
+):
+    mode = 'local' if local else 'deploy'
+
+    try:
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        scheduler = ForecastSeriesScheduler(forecastseries_oid)
+        scheduler.run_past_forecasts(mode)
+    except BaseException as e:
+        raise e
+        console.print(str(e))
+        raise typer.Exit(code=1)
