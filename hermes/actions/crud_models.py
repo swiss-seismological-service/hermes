@@ -298,7 +298,7 @@ def create_schedule(schedule_config: dict, forecastseries_oid: UUID):
             'Schedule ID can not be set manually.'
         )
 
-    scheduler.create_prefect_schedule(schedule_config)
+    scheduler.schedule(schedule_config)
 
 
 def update_schedule(schedule_config: dict, forecastseries_oid: UUID):

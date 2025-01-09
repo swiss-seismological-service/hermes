@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from shapely import Polygon
 from typing_extensions import Self
 
@@ -41,6 +41,7 @@ class ForecastSeriesConfig(CreationInfoMixin):
 
     observation_starttime: datetime | None = None
     observation_endtime: datetime | None = None
+    observation_window: int | None = None
 
     bounding_polygon: Polygon | None = None
     depth_min: float | None = None
@@ -58,6 +59,14 @@ class ForecastSeriesConfig(CreationInfoMixin):
 
     fdsnws_url: str | None = None
     hydws_url: str | None = None
+
+    @model_validator(mode='after')
+    @classmethod
+    def validate_observation_window(cls, values):
+        if values.observation_starttime and values.observation_window:
+            raise ValueError("You can't set both observation_starttime "
+                             "and observation_window.")
+        return values
 
     @field_validator('bounding_polygon', mode='before')
     @classmethod

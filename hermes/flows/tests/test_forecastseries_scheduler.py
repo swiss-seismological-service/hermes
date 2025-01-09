@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from dateutil.rrule import SECONDLY, rrule
@@ -14,21 +14,27 @@ from hermes.schemas import ForecastSeries
 class TestForecastSeriesScheduler:
 
     @pytest.mark.parametrize("fs", [
-        ForecastSeries(
-            schedule_starttime=None,
-            schedule_interval=1800,
-            forecast_duration=1800,
-        ),
-        ForecastSeries(
-            schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
-            schedule_interval=None,
-            forecast_endtime=datetime(2021, 1, 2, 12, 0, 0),
-        ),
-        ForecastSeries(
-            schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
-            schedule_interval=1800,
-            forecast_endtime=None
-        )])
+        {
+            "schedule_starttime": None,
+            "schedule_interval": 1800,
+            "forecast_duration": 1800,
+        },
+        {
+            "schedule_starttime": datetime(2021, 1, 2, 0, 0, 0),
+            "schedule_interval": None,
+            "forecast_duration": 1800,
+        },
+        {
+            "schedule_starttime": datetime(2021, 1, 2, 0, 0, 0),
+            "schedule_interval": 1800
+        },
+        {
+            "schedule_starttime": datetime(2021, 1, 2, 0, 0, 0),
+            "schedule_interval": 1800,
+            "schedule_endtime": datetime(2021, 1, 3, 0, 0, 0),
+            "forecast_endtime": datetime(2021, 1, 3, 0, 0, 0)
+        }
+    ])
     def test_schedule_assertions(self,
                                  mock_fs_get_by_id: MagicMock,
                                  fs: ForecastSeries):
@@ -36,11 +42,11 @@ class TestForecastSeriesScheduler:
         Test that the assertions in the ForecastSeriesScheduler
         constructor work.
         """
-        mock_fs_get_by_id.return_value = fs
+        mock_fs_get_by_id.return_value = ForecastSeries()
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             scheduler = ForecastSeriesScheduler(None)
-            scheduler._build_rrule()
+            scheduler._check_schedule_validity(fs)
 
     def test_schema_instance_attr(self, mock_fs_get_by_id: MagicMock):
         forecastseries = ForecastSeries(
@@ -69,17 +75,15 @@ class TestForecastSeriesScheduler:
                interval=1800,
                dtstart=datetime.now() + timedelta(days=1),
                until=datetime.now() + timedelta(days=2))),
-        (ForecastSeries(schedule_starttime=datetime.now() - timedelta(days=1),
-                        schedule_interval=1800,
-                        forecast_duration=1800),
-         rrule(SECONDLY,
-               interval=1800,
-               dtstart=datetime.now() + timedelta(seconds=1800))),
         (ForecastSeries(schedule_starttime=datetime.now() - timedelta(days=2),
                         schedule_interval=1800,
                         forecast_duration=1800,
                         schedule_endtime=datetime.now() - timedelta(days=1)),
-         None),
+         rrule(SECONDLY,
+               interval=1800,
+               dtstart=datetime.now() - timedelta(days=2),
+               until=datetime.now() - timedelta(days=1)
+               )),
     ])
     def test_build_rrule(self,
                          mock_fs_get_by_id: MagicMock,
@@ -88,8 +92,28 @@ class TestForecastSeriesScheduler:
         mock_fs_get_by_id.return_value = fs
         scheduler = ForecastSeriesScheduler(None)
 
-        scheduler._build_rrule()
-        assert str(scheduler.rrule) == str(expected)
+        rule = scheduler._build_rrule()
+        assert str(rule) == str(expected)
+
+    def test_future_rrule(self, mock_fs_get_by_id: MagicMock):
+        fs = ForecastSeries(
+            schedule_starttime=datetime.now() - timedelta(days=1),
+            schedule_interval=1800,
+            forecast_duration=1800)
+        expected = rrule(SECONDLY,
+                         interval=1800,
+                         dtstart=datetime.now() + timedelta(seconds=1800))
+
+        mock_fs_get_by_id.return_value = fs
+        scheduler = ForecastSeriesScheduler(None)
+
+        rule = scheduler._build_rrule(True)
+        assert str(rule) == str(expected)
+
+        scheduler.schedule_endtime = datetime.now() - timedelta(hours=1)
+
+        with pytest.raises(ValueError):
+            scheduler._build_rrule(True)
 
     @patch('hermes.repositories.project.ForecastSeriesRepository.update',
            autocast=True)
@@ -108,7 +132,7 @@ class TestForecastSeriesScheduler:
         mock_fs_update.return_value = new_forecastseries
 
         scheduler = ForecastSeriesScheduler(None)
-        scheduler.update({'schedule_starttime': new_time})
+        scheduler._update({'schedule_starttime': new_time})
 
         assert scheduler.forecastseries.schedule_starttime == new_time
         assert scheduler.schedule_starttime == new_time
@@ -142,13 +166,13 @@ class TestSchedulerClientInteractions:
         scheduler = ForecastSeriesScheduler(None)
 
         with pytest.raises(ValueError):
-            scheduler.create_prefect_schedule({})
+            scheduler.schedule({})
 
         mock_get.return_value = None
 
         start = datetime.now() + timedelta(days=1)
 
-        scheduler.create_prefect_schedule({
+        scheduler.schedule({
             'schedule_starttime': start,
             'schedule_interval': 1800,
             'forecast_duration': 1800,
@@ -160,7 +184,7 @@ class TestSchedulerClientInteractions:
         assert scheduler.forecastseries.schedule_endtime is None
 
         mock_add.assert_called_once_with(scheduler.deployment_name,
-                                         scheduler.rrule,
+                                         ANY,
                                          True)
         mock_fs_update.assert_called_with(scheduler.session,
                                           scheduler.forecastseries)
@@ -181,17 +205,17 @@ class TestSchedulerClientInteractions:
         scheduler = ForecastSeriesScheduler(None)
 
         with pytest.raises(ValueError):
-            scheduler.update_prefect_schedule({})
+            scheduler.schedule({})
 
         scheduler.schedule_id = uuid.uuid4()
 
         with pytest.raises(ValueError):
-            scheduler.update_prefect_schedule({})
+            scheduler.schedule({})
 
         mock_get.return_value = {}
 
         start = datetime.now() + timedelta(days=1)
-        scheduler.update_prefect_schedule({
+        scheduler.schedule({
             'schedule_starttime': start,
             'schedule_interval': 1800,
             'forecast_duration': 1800,
@@ -204,7 +228,7 @@ class TestSchedulerClientInteractions:
 
         mock_update.assert_called_once_with(scheduler.deployment_name,
                                             scheduler.schedule_id,
-                                            scheduler.rrule)
+                                            ANY)
         mock_fs_update.assert_called_with(scheduler.session,
                                           scheduler.forecastseries)
 
@@ -217,14 +241,14 @@ class TestSchedulerClientInteractions:
                     mock_fs_get_by_id: MagicMock):
         sid = uuid.uuid4()
         fs = ForecastSeries(schedule_id=sid)
-        fs_empty = ForecastSeries()
+        fs_empty = ForecastSeries(schedule_active=True)
         mock_fs_get_by_id.return_value = fs
         mock_fs_update.return_value = fs_empty
         mock_get.return_value = {}
 
         scheduler = ForecastSeriesScheduler(None)
 
-        scheduler.delete_prefect_schedule()
+        scheduler._delete_prefect_schedule()
 
         mock_delete.assert_called_once_with(scheduler.deployment_name,
                                             sid)

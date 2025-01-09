@@ -56,6 +56,10 @@ The general concepts of the software's domain are described here.
 - ""
 - each forecast begins from when it was started and lasts for `forecast_duration` seconds (duration takes precedence over endtime).
 
+#### schedule_starttime, schedule_endtime, schedule_interval, forecast_duration, forecast_starttime
+- start running forecasts at `schedule_starttime`,run them every `schedule_interval` until `schedule_endtime`.
+- each forecast begins from `forecast_starttime` and lasts for `forecast_duration` seconds.
+- 
 #### schedule_starttime, schedule_interval, forecast_duration
 - start running forecasts at `schedule_starttime`, run them every `schedule_interval` until manually stopped.
 - each forecast begins from when it was started until `forecast_duration`.
@@ -64,9 +68,6 @@ The general concepts of the software's domain are described here.
 - start running forecasts at `schedule_starttime`,run them every `schedule_interval` until `forecast_endtime`.
 - ""
 
-#### schedule_starttime, schedule_endtime, schedule_interval, forecast_duration, forecast_fixed_starttime
-- start running forecasts at `schedule_starttime`,run them every `schedule_interval` until `schedule_endtime`.
-- each forecast begins from `forecast_fixed_starttime` and lasts for `forecast_duration` seconds.
 
 ## Forecast
 *I'd like to run a series of models, at a specific point in time, and produce results for a certain time period.*

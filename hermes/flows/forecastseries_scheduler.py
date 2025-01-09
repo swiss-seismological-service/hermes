@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from dateutil.rrule import SECONDLY, rrule
@@ -56,14 +56,56 @@ class ForecastSeriesScheduler:
 
         self.now = datetime.now()
 
-        self.rrule = None
-
         if self.schedule_active is None:
             self.schedule_active = True
 
-    def update(self, config: dict | None = None, update_db: bool = True) \
-            -> None:
+    def __del__(self) -> None:
+        try:
+            self.session.close()
+        except BaseException:
+            pass
 
+    def schedule(self, schedule_config: dict) -> None:
+        '''
+        Creates or updates a schedule based on the given configuration.
+
+        args:
+            schedule_config: dict
+                A dictionary with the configuration to create or update a
+                schedule.
+        '''
+        self._check_schedule_validity(schedule_config)
+
+        schedule_exists = self.schedule_id is not None and \
+            asyncio.run(get_deployment_schedule_by_id(
+                self.deployment_name, self.schedule_id)) is not None
+
+        if self._is_schedule_in_past(schedule_config):
+            # No prefect schedule should be created
+            if schedule_exists:
+                self._delete_prefect_schedule()
+            self._unset_schedule(False)
+            self._update(schedule_config)
+            self.logger.info('No future schedule was created, '
+                             'all forecasts are in the past.')
+        elif schedule_exists:
+            self._update_prefect_schedule(schedule_config)
+            self.logger.info('Schedule successfully updated.')
+        else:
+            self._create_prefect_schedule(schedule_config)
+            self.logger.info('Schedule successfully created.')
+
+    def _update(self, config: dict | None = None, update_db: bool = True) \
+            -> None:
+        '''
+        Updates the ForecastSeries object with the given configuration.
+
+        args:
+            config: dict
+                A dictionary with the configuration to update.
+            update_db: bool
+                If True, the changes will be saved to the database.
+        '''
         if config is not None:
             schedule = ForecastSeriesSchedule(**config)
             for key, value in schedule.model_dump(exclude_unset=True).items():
@@ -73,111 +115,148 @@ class ForecastSeriesScheduler:
             self.forecastseries = ForecastSeriesRepository.update(
                 self.session, self.forecastseries)
 
-    def __del__(self) -> None:
-        try:
-            self.session.close()
-        except BaseException:
-            pass
+    def _check_schedule_validity(self, schedule_config: dict) -> None:
+        schedule = ForecastSeriesSchedule(**schedule_config)
 
-    def _build_rrule(self) -> None:
-        assert self.schedule_starttime is not None \
-            and self.schedule_interval is not None \
-            and ((self.forecast_endtime is not None)
-                 ^ (self.forecast_duration is not None)), \
-            'Creating a schedule requires a schedule_starttime, '\
-            'schedule_interval, and either forecast_endtime OR ' \
-            'forecast_duration.'
-
-        # If the endtime is in the past, we don't need to create a schedule
-        if self.schedule_endtime is not None and \
-                self.schedule_endtime < self.now:
-            return None
-
-        if self.schedule_endtime is None and \
-                self.forecast_starttime is None and \
-                self.forecast_endtime is not None:
+        if schedule.schedule_starttime is None \
+                or schedule.schedule_interval is None:
             raise ValueError(
-                'Cannot create a schedule without an endtime if there is '
-                'a fixed forecast endtime. You either need to specify a fixed '
-                'forecast window (by also setting forecast starttime) or '
-                'specify a schedule endtime which is before the forecast '
-                'endtime.')
+                'Creating a schedule always requires a '
+                'schedule_starttime, schedule_interval')
 
-        if self.schedule_endtime is not None and \
-            self.forecast_endtime is not None and \
-            self.forecast_starttime is None and \
-                self.schedule_endtime >= self.forecast_endtime:
+        if schedule.forecast_endtime is None \
+                and schedule.forecast_duration is None:
+            raise ValueError(
+                'Creating a schedule always requires a '
+                'forecast_endtime or/and a forecast_duration')
+
+        if schedule.schedule_endtime is not None and \
+            schedule.forecast_endtime is not None and \
+                schedule.schedule_endtime >= schedule.forecast_endtime:
             raise ValueError(
                 'Cannot create a schedule with a schedule endtime which is '
-                'after the forecast endtime. You either need to specify a '
-                'fixed forecast window (by also setting forecast starttime) '
-                'or specify a schedule endtime which is before the forecast '
-                'endtime.')
+                'after the forecast endtime.')
 
+        if schedule.forecast_starttime is not None and \
+                schedule.schedule_endtime is not None and \
+                schedule.forecast_starttime < schedule.schedule_endtime:
+            raise ValueError(
+                'Cannot create a schedule with a schedule endtime which is '
+                'after the forecast starttime.')
+
+        # if no schedule endtime is specified, check whether it is constrained
+        # by the forecast starttime or forecast endtime and set explicitly
+        if schedule.schedule_endtime is None and \
+                schedule.forecast_starttime is not None:
+            # no schedules should be created after the forecast starttime
+            schedule.schedule_endtime = schedule.forecast_starttime
+        elif schedule.schedule_endtime is None and \
+                schedule.forecast_endtime is not None:
+            # no schedules should be created after the forecast endtime
+            schedule.schedule_endtime = schedule.forecast_endtime - \
+                timedelta(seconds=schedule.schedule_interval - 1)
+
+    def _is_schedule_in_past(self, schedule_config: dict) -> bool:
+        """
+        Check if the schedule is already fully in the past.
+
+        I.e. returns False if forecasts will be created in the future.
+        """
+        schedule = ForecastSeriesSchedule(**schedule_config)
+
+        if schedule.schedule_endtime is not None and \
+                schedule.schedule_endtime < self.now:
+            return True
+
+        if schedule.schedule_endtime is None and \
+                schedule.forecast_endtime is not None and \
+                schedule.forecast_endtime < self.now:
+            return True
+
+        return False
+
+    def _build_rrule(self, future=False) -> rrule:
+        '''
+        Builds a rrule object based on the ForecastSeries attributes.
+
+        args:
+            future: bool
+                If True, the next regular occurrence of the schedule will be
+                returned. If False, the schedule will start at the
+                schedule_starttime.
+        '''
         # create a schedule which starts at schedule_starttime
-        self.rrule = rrule(
+        rule = rrule(
             freq=SECONDLY,
             interval=self.schedule_interval,
             dtstart=self.schedule_starttime,
             until=self.schedule_endtime)
 
-        # if schedule_starttime lies in the past, we need to use the next
-        # regular occurrence of the schedule.
-        if self.schedule_starttime < self.now:
-            self.rrule = rrule(
+        if future:
+            if self.schedule_endtime and \
+                    self.schedule_endtime < self.now:
+                raise ValueError('No future schedule can be created, '
+                                 'the schedule endtime is in the past.')
+
+            rule = rrule(
                 freq=SECONDLY,
                 interval=self.schedule_interval,
-                dtstart=self.rrule.after(self.now, inc=False),
+                dtstart=rule.after(self.now, inc=False),
                 until=self.schedule_endtime)
 
-    def create_prefect_schedule(self, schedule_config: dict) -> None:
+        return rule
 
-        # check whether a schedule id exists, and if so, whether the schedule
-        # still exists in prefect
-        if self.schedule_id is not None:
-            if asyncio.run(get_deployment_schedule_by_id(
-                    self.deployment_name,
-                    self.schedule_id)) is not None:
-                raise ValueError(
-                    'A schedule for this ForecastSeries already exists.')
+    def _unset_schedule(self, update_db: bool = True) -> None:
+        '''
+        Clears all schedule attributes except for `schedule_active`.
 
-        # update the ForecastSeries with the new schedule configuration
-        self.update(schedule_config, update_db=False)
+        args:
+            update_db: bool
+                If True, the changes will be saved to the database.
+        '''
+        clear = {k: None for k in ForecastSeriesSchedule.__annotations__}
+        del clear['schedule_active']
+        self._update(clear, update_db)
 
-        self._build_rrule()
+    def _create_prefect_schedule(self, schedule_config: dict) -> None:
+        # create new prefect schedule
+        self._unset_schedule(False)
+        self._update(schedule_config, update_db=False)
+        rule = self._build_rrule(True)
 
-        if self.rrule is None:
-            raise ValueError('Scheduled times are all in the past, '
-                             'no schedule will be created.')
-
-        # add the new schedule and save the schedule id to the ForecastSeries
+        # add the new schedule and save the schedule id
         prefect_schedule = asyncio.run(add_deployment_schedule(
-            self.deployment_name, self.rrule, self.schedule_active))
+            self.deployment_name, rule, self.schedule_active))
+
         self.schedule_id = prefect_schedule.id
-        self.update()
 
-    def update_prefect_schedule(self, schedule_config: dict) -> None:
+        # update data locally and on the database
+        self._update()
 
-        # check if a schedule id exists and if the schedule still exists
-        if self.schedule_id is None or \
-            asyncio.run(get_deployment_schedule_by_id(
-                self.deployment_name, self.schedule_id)) is None:
-            raise ValueError('No schedule for this ForecastSeries exists.')
+    def _update_prefect_schedule(self, schedule_config: dict) -> None:
+        # update existing prefect schedule
+        schedule_config['schedule_id'] = self.schedule_id
+        self._unset_schedule(False)
+        self._update(schedule_config, update_db=False)
+        rule = self._build_rrule(True)
 
-        # update the Scheduler and ForecastSeries with the new schedule
-        self.update(schedule_config, update_db=False)
-        self._build_rrule()
-
+        # update the schedule status if necessary
         if 'schedule_active' in schedule_config:
-            asyncio.run(update_deployment_schedule_status(
-                self.deployment_name, self.schedule_id, self.schedule_active))
+            asyncio.run(
+                update_deployment_schedule_status(self.deployment_name,
+                                                  self.schedule_id,
+                                                  self.schedule_active))
 
-        asyncio.run(update_deployment_schedule(self.deployment_name,
-                                               self.schedule_id,
-                                               self.rrule))
-        self.update()
+        # update the schedule in prefect
+        asyncio.run(
+            update_deployment_schedule(self.deployment_name,
+                                       self.schedule_id,
+                                       rule))
 
-    def delete_prefect_schedule(self) -> None:
+        # update data locally and on the database
+        self._update()
+
+    def _delete_prefect_schedule(self) -> None:
 
         # check if a schedule id exists and if the schedule still exists
         if self.schedule_id is not None and \
@@ -186,9 +265,7 @@ class ForecastSeriesScheduler:
             asyncio.run(delete_deployment_schedule(self.deployment_name,
                                                    self.schedule_id))
 
-        clear = {k: None for k in ForecastSeriesSchedule.__annotations__}
-
-        self.update(clear)
+        self._unset_schedule()
 
     # def _set_past_forecasts(self):
     #     """

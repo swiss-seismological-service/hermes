@@ -134,7 +134,7 @@ def delete(
         forecastseries_oid = read_forecastseries_oid(forecastseries)
 
         scheduler = ForecastSeriesScheduler(forecastseries_oid)
-        scheduler.delete_prefect_schedule()
+        scheduler._delete_prefect_schedule()
         console.print(
             f'Successfully deleted schedule for {forecastseries}.')
     except BaseException as e:

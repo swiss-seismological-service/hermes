@@ -43,7 +43,8 @@ class TestForecastHandler:
 
         mock_get_catalog().get_quakeml.return_value = 'data'
 
-        forecast_handler = forecast_runner(forecastseries.oid)
+        forecast_handler = forecast_runner(forecastseries.oid,
+                                           forecastseries.schedule_starttime)
 
         # make sure times can be compared and don't have incompatible tzinfo
         assert forecast_handler.starttime < forecast_handler.endtime

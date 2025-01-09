@@ -1,13 +1,12 @@
 import json
 from datetime import datetime, timedelta
+from logging import Logger
 from typing import Literal
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from prefect import flow, get_run_logger, runtime, task
 from prefect.deployments import run_deployment
 
-from hermes.config import get_settings
 from hermes.flows.modelrun_builder import ModelRunBuilder
 from hermes.flows.modelrun_handler import default_model_runner
 from hermes.io.hydraulics import HydraulicsDataSource
@@ -32,12 +31,18 @@ class ForecastHandler:
                  starttime: datetime | None = None,
                  endtime: datetime | None = None,
                  observation_starttime: datetime | None = None,
-                 observation_endtime: datetime | None = None) -> None:
+                 observation_endtime: datetime | None = None,
+                 observation_window: int | None = None) -> None:
 
-        self.logger = get_run_logger()
-
-        tz = get_settings().TIMEZONE
-        self.timezone = ZoneInfo(tz) if tz else None
+        self.logger: Logger = get_run_logger()
+        self.starttime: datetime
+        self.endtime: datetime
+        self.observation_starttime: datetime
+        self.observation_endtime: datetime
+        self.observation_window: int
+        self.forecast: Forecast = None
+        self.catalog_data_source: SeismicityDataSource = None
+        self.hydraulic_data_source: HydraulicsDataSource = None
 
         with Session() as session:
             self.forecastseries: ForecastSeries = \
@@ -52,20 +57,13 @@ class ForecastHandler:
                                 'ForecastSeries. Exiting.')
             return None
 
-        self.starttime: datetime
-        self.endtime: datetime
-        self.observation_starttime: datetime
-        self.observation_endtime: datetime
-        self.set_forecast_timebounds(starttime,
-                                     endtime,
-                                     observation_starttime,
-                                     observation_endtime)
+        self._set_forecast_timebounds(starttime,
+                                      endtime,
+                                      observation_starttime,
+                                      observation_endtime,
+                                      observation_window)
 
-        self.forecast: Forecast = None
         self._create_forecast()
-
-        self.catalog_data_source: SeismicityDataSource = None
-        self.hydraulic_data_source: HydraulicsDataSource = None
 
         try:
             # Retreive input data from various services
@@ -89,63 +87,7 @@ class ForecastHandler:
     def __del__(self):
         self.logger.info('Closing session')
 
-    def set_forecast_timebounds(self,
-                                starttime: datetime,
-                                endtime: datetime,
-                                observation_starttime: datetime,
-                                observation_endtime: datetime) -> None:
-        """
-        Sets the forecast start and end times.
-
-        Starttime:  When running forecasts manually or catching up on a
-                    schedule, the starttime should be passed as an argument.
-                    Else, a fixed starttime can be set on the ForecastSeries,
-                    which I'm not sure if is needed.
-                    If the forecasts are run on a schedule, the starttime
-                    will be the scheduled start time of the flow run.
-        Endtime:    When running forecasts manually or catching up on a
-                    schedule, the endtime should be passed as an argument.
-                    Else, it is given by one of the two following fields on
-                    the ForecastSeries:
-                    forecast_duration (priority), forecast_endtime.
-        Observation:Times should only be passed in either for manual runs
-                    when required or when catching up on a schedule.
-                    Otherwise, the observation starttime of the ForecastSeries
-                    should be used, and the endtime usually equals the
-                    starttime of the forecast.
-        """
-        self.starttime = starttime or \
-            self.forecastseries.forecast_starttime or \
-            runtime.flow_run.scheduled_start_time
-
-        self.endtime = endtime or \
-            (self.starttime
-             + timedelta(seconds=self.forecastseries.forecast_duration)
-             if self.forecastseries.forecast_duration else None) or \
-            self.forecastseries.forecast_endtime
-
-        # TODO: Think hard and carefully about timezones
-        # and where they should be set/unset.
-        if self.starttime.tzinfo is not None:
-            self.starttime = self.starttime.replace(tzinfo=None)
-        if self.endtime.tzinfo is not None:
-            self.endtime = self.endtime.replace(tzinfo=None)
-
-        self.observation_starttime = observation_starttime or \
-            self.forecastseries.observation_starttime
-        self.observation_endtime = observation_endtime or \
-            self.forecastseries.observation_endtime or \
-            self.starttime
-
-        if self.observation_starttime.tzinfo is not None:
-            self.observation_starttime = self.observation_starttime.replace(
-                tzinfo=None)
-        if self.observation_endtime.tzinfo is not None:
-            self.observation_endtime = self.observation_endtime.replace(
-                tzinfo=None)
-
-    @task(name='SubmitModelRuns',
-          cache_policy=None)
+    @task(name='SubmitModelRuns', cache_policy=None)
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
         if not self.builder.runs:
             self.logger.warning('No modelruns to run.')
@@ -175,11 +117,104 @@ class ForecastHandler:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
 
-    @task(name='CreateForecast',
-          cache_policy=None)
+    def _set_forecast_timebounds(self,
+                                 starttime: datetime,
+                                 endtime: datetime,
+                                 observation_starttime: datetime,
+                                 observation_endtime: datetime,
+                                 observation_window: int) -> None:
+        """
+        Sets the forecast start and end times.
+
+        starttime:  When running forecasts manually or catching up on a
+                    schedule, the starttime should be passed as an argument.
+                    Else, a fixed starttime can be set on the ForecastSeries.
+                    If the forecasts are run on a schedule, the starttime
+                    will be the scheduled start time of the flow run.
+        endtime:    When running forecasts manually or catching up on a
+                    schedule, the endtime should be passed as an argument.
+                    Else, it is given by the two following fields on
+                    the ForecastSeries:
+                    forecast_duration, forecast_endtime.
+        observation:Times should only be passed in either for manual runs
+                    when required or when catching up on a schedule.
+                    Otherwise, the observation starttime of the ForecastSeries
+                    should be used, and the endtime usually equals the
+                    starttime of the forecast.
+        """
+        # set start and endtime
+        self.starttime = self.forecastseries.forecast_starttime or \
+            starttime or \
+            runtime.flow_run.scheduled_start_time
+
+        if self.starttime.tzinfo is not None:
+            self.starttime = self.starttime.replace(tzinfo=None)
+
+        if self.forecastseries.forecast_starttime is not None and \
+                self.starttime > self.forecastseries.forecast_starttime:
+            raise ValueError(
+                "Starttime can't be later than forecast_starttime.")
+
+        # set endtime, forecast_duration takes precedence over forecast_endtime
+        self.endtime = endtime or \
+            (self.starttime
+             + timedelta(seconds=self.forecastseries.forecast_duration)
+             if self.forecastseries.forecast_duration else None) or \
+            self.forecastseries.forecast_endtime
+        # endtime can't be later than forecast_endtime
+        if self.forecastseries.forecast_endtime is not None and \
+                self.forecastseries.forecast_endtime < self.endtime:
+            self.endtime = self.forecastseries.forecast_endtime
+
+        if self.endtime.tzinfo is not None:
+            self.endtime = self.endtime.replace(tzinfo=None)
+
+        # set observation times
+        self.observation_starttime = observation_starttime or \
+            self.forecastseries.observation_starttime
+        self.observation_endtime = observation_endtime or \
+            self.forecastseries.observation_endtime or \
+            self.starttime
+        self.observation_window = observation_window or \
+            self.forecastseries.observation_window
+        if self.observation_starttime.tzinfo is not None:
+            self.observation_starttime = self.observation_starttime.replace(
+                tzinfo=None)
+        if self.observation_endtime.tzinfo is not None:
+            self.observation_endtime = self.observation_endtime.replace(
+                tzinfo=None)
+
+        # user can't pass both observation times and observation window
+        if (self.observation_starttime is not None
+            or self.observation_endtime != self.starttime) and \
+                self.observation_window is not None:
+            raise ValueError("You can't have an observation start/end time "
+                             "and an observation_window.")
+
+        # if observation window is passed, calculate observation start time
+        if self.observation_window is not None:
+            self.observation_starttime = self.starttime - \
+                timedelta(seconds=self.observation_window)
+
+        # Sanity Checks
+        if self.observation_starttime == self.observation_endtime:
+            raise ValueError("Observation start and end time can't be equal.")
+        if self.observation_starttime > self.observation_endtime:
+            raise ValueError("Observation start time can't be later than "
+                             "observation end time.")
+
+        if self.starttime == self.endtime:
+            raise ValueError("Forecast start and end time can't be equal.")
+        print(self.starttime)
+        print(self.endtime)
+        if self.starttime > self.endtime:
+            raise ValueError("Forecast start time can't be later than "
+                             "forecast end time.")
+
+    @task(name='CreateForecast', cache_policy=None)
     def _create_forecast(self) -> None:
         """
-        Creates or updates the forecast in the database.
+        Creates the forecast in the database.
         """
         new_forecast = self.forecast or Forecast(
             forecastseries_oid=self.forecastseries.oid,
@@ -191,8 +226,7 @@ class ForecastHandler:
             self.forecast: Forecast = ForecastRepository.create(
                 session, new_forecast)
 
-    @task(name='CreateSeismicityObservation',
-          cache_policy=None)
+    @task(name='CreateSeismicityObservation', cache_policy=None)
     def _create_seismicityobservation(self) -> None:
         """
         Gets the seismicity observation data and stores it to the database.
@@ -217,8 +251,7 @@ class ForecastHandler:
                     self.forecast.oid
                 )
 
-    @task(name='CreateInjectionObservation',
-          cache_policy=None)
+    @task(name='CreateInjectionObservation', cache_policy=None)
     def _create_injectionobservation(self) -> None:
         """
         Gets the injection observation data and stores it to the database.
@@ -245,8 +278,7 @@ class ForecastHandler:
                     hydraulics
                 )
 
-    @task(name='CreateInjectionPlan',
-          cache_policy=None)
+    @task(name='CreateInjectionPlan', cache_policy=None)
     def _create_injectionplan(self) -> None:
         """
         Gets the injection plan data and stores it to the database.
@@ -307,8 +339,7 @@ def generate_flow_run_name():
     return f"Forecast-{parameters['forecastseries_oid']}"
 
 
-@flow(name='ForecastRunner',
-      flow_run_name=generate_flow_run_name)
+@flow(name='ForecastRunner', flow_run_name=generate_flow_run_name)
 def forecast_runner(forecastseries_oid: UUID,
                     starttime: datetime | None = None,
                     endtime: datetime | None = None,

@@ -67,11 +67,7 @@ class ForecastSeriesTable(CreationInfoMixin,
     status = Column(String(25))
     description = Column(String)
 
-    project_oid = Column(UUID,
-                         ForeignKey('project.oid', ondelete="CASCADE"))
-    project = relationship('ProjectTable',
-                           back_populates='forecastseries')
-
+    observation_window = Column(Integer)
     forecast_duration = Column(Integer)
     schedule_interval = Column(Integer)
     schedule_id = Column(UUID)
@@ -83,6 +79,11 @@ class ForecastSeriesTable(CreationInfoMixin,
     depth_max = Column(Float)
 
     model_settings = Column(JSON)
+
+    project_oid = Column(UUID,
+                         ForeignKey('project.oid', ondelete="CASCADE"))
+    project = relationship('ProjectTable',
+                           back_populates='forecastseries')
 
     forecasts = relationship('ForecastTable',
                              back_populates='forecastseries',
