@@ -1,0 +1,12 @@
+[logging]
+level = "INFO"
+extra_loggers = ["hermes", "em1", "hm1d", "ml1"]
+log_prints = true
+colors = true
+root_level = "INFO"
+
+[logging.to_api]
+when_missing_flow = "ignore"
+
+[tasks]
+refresh_cache = true

@@ -1,6 +1,0 @@
-prefect config set PREFECT_TASKS_REFRESH_CACHE=true
-prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:password@localhost:5433/prefect"
-prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"
-prefect config set PREFECT_LOGGING_EXTRA_LOGGERS=hermes
-prefect config set PREFECT_LOGGING_LOG_PRINTS=true
-prefect config set PREFECT_LOGGING_TO_API_WHEN_MISSING_FLOW=ignore
