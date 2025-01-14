@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from hydws.parser import BoreholeHydraulics
@@ -52,6 +52,12 @@ class TestInjectionPlanBuilder:
 
         assert plan['topflow_uncertainty'].iloc[5] == 0.0001
 
+        plan = build_fixed(start + timedelta(minutes=2), end,
+                           60, template['config'], hydraulics_df)
+
+        assert plan.shape[0] == 10
+        assert plan['topflow'].iloc[0] == 0.04
+
     def test_build_constant(self):
         with open(os.path.join(MODULE_LOCATION, 'constant_template.json'),
                   'r') as f:
@@ -72,7 +78,6 @@ class TestInjectionPlanBuilder:
 
         plan = build_multiply(
             start, end, 60, template['config'], hydraulics_df)
-        print(plan)
 
         assert plan.shape[0] == 11
         assert plan['topflow'].unique() == [0.042]

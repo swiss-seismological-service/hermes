@@ -58,11 +58,9 @@ def build_fixed(start: datetime,
 
     # Convert nested JSON into a DataFrame
     plan_df = pd.json_normalize(config.get("plan", []), sep="_")
-    # Rename columns to match expected format
     plan_df["datetime_value"] = pd.to_datetime(plan_df["datetime_value"])
     plan_df = plan_df.set_index("datetime_value")
 
-    # # Reindex the plan_df to match the full time range
     result_df = pd.DataFrame(index=time_index)
     result_df = result_df.join(plan_df, how="outer")
 
@@ -80,8 +78,11 @@ def build_fixed(start: datetime,
         raise ValueError(
             "Invalid interpolation type. Must be 'none' or 'linear'.")
 
-    # # Ensure no remaining NaN values (fill with the last known value)
+    # Ensure no remaining NaN values (fill with the last known value)
     result_df = result_df.bfill()
+
+    # Trim the DataFrame to the specified start and end times
+    result_df = result_df[start:end]
 
     return result_df.rename(columns=lambda col:
                             col.removesuffix('_value'))
