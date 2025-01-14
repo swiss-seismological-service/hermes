@@ -2,7 +2,7 @@
     "borehole_name": "16A-32",
     "section_name": "16A-32/section_02",
     "type": "multiply",
-    "interval": 60,
+    "resolution": 60,
     "config": {
         "plan": {
             "topflow": {

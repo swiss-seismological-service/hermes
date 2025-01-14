@@ -2,7 +2,6 @@ import asyncio
 import json
 from uuid import UUID
 
-from hydws.parser import BoreholeHydraulics
 from prefect.exceptions import ObjectNotFound
 
 from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
@@ -65,6 +64,10 @@ def delete_project(project_oid: UUID):
 
 
 def read_forecastseries_oid(name_or_id: str):
+    """
+    Takes the name or ID of a Forecast Series, checks if it exists,
+    and returns the ID.
+    """
     try:
         return UUID(name_or_id, version=4)
     except ValueError:
@@ -313,52 +316,23 @@ def update_schedule(schedule_config: dict, forecastseries_oid: UUID):
 
 
 def create_injectionplan_template(name: str,
-                                  data: dict,
+                                  template: dict,
                                   forecastseries_oid: UUID):
-    if not isinstance(data, dict):
+    if not isinstance(template, dict):
         raise ValueError('Injectionplan data must be a single valid '
                          'json object.')
 
     try:
-        InjectionPlanTemplate(**data)
+        InjectionPlanTemplate(**template)  # validate data
     except Exception as e:
-        raise ValueError(f'Error parsing template: {str(e)}')
+        raise ValueError(f'Error parsing injectionplan template: {str(e)}')
 
-    data = json.dumps(data).encode()
+    template = json.dumps(template).encode()
 
     injectionplan = InjectionPlan(name=name,
-                                  template=data,
+                                  template=template,
                                   forecastseries_oid=forecastseries_oid)
 
-    try:
-        with Session() as session:
-            injectionplan_out = InjectionPlanRepository.create(
-                session, injectionplan)
-        return injectionplan_out
-    except DuplicateError:
-        raise ValueError(
-            f'InjectionPlan with name "{name}" already exists'
-            ' for this ForecastSeries, please choose a different name.')
-
-
-def create_injectionplan(name: str,
-                         data: dict,
-                         forecastseries_oid: UUID):
-
-    if not isinstance(data, dict):
-        raise ValueError('Injectionplan data must be a single valid '
-                         'json object.')
-
-    try:
-        borehole_hydraulics = BoreholeHydraulics(data)
-    except Exception as e:
-        raise ValueError(f'Error parsing hydjson: {str(e)}')
-
-    data = json.dumps(borehole_hydraulics.to_json()).encode()
-
-    injectionplan = InjectionPlan(name=name,
-                                  data=data,
-                                  forecastseries_oid=forecastseries_oid)
     try:
         with Session() as session:
             injectionplan_out = InjectionPlanRepository.create(

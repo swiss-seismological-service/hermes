@@ -10,6 +10,7 @@ from prefect.deployments import run_deployment
 from hermes.flows.modelrun_builder import ModelRunBuilder
 from hermes.flows.modelrun_handler import default_model_runner
 from hermes.io.hydraulics import HydraulicsDataSource
+from hermes.io.injectionplans import InjectionPlanBuilder
 from hermes.io.seismicity import SeismicityDataSource
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
@@ -72,11 +73,11 @@ class ForecastHandler:
             # Retreive input data from various services
             task_so = self._create_seismicityobservation.submit()
             task_io = self._create_injectionobservation.submit()
-            task_ip = self._create_injectionplan.submit()
-            futures_wait([task_so, task_io, task_ip])
-
+            futures_wait([task_so, task_io])
             # necessary to raise exceptions from the tasks if any failed
-            [task_so.result(), task_io.result(), task_ip.result()]
+            [task_so.result(), task_io.result()]
+
+            self._create_injectionplan()
 
             self.builder = ModelRunBuilder(self.forecast,
                                            self.forecastseries,
@@ -116,6 +117,127 @@ class ForecastHandler:
         with Session() as session:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
+
+    @task(name='CreateForecast', cache_policy=None)
+    def _create_forecast(self) -> None:
+        """
+        Creates the forecast in the database.
+        """
+        new_forecast = self.forecast or Forecast(
+            forecastseries_oid=self.forecastseries.oid,
+            status='PENDING',
+            starttime=self.starttime,
+            endtime=self.endtime,
+        )
+        with Session() as session:
+            self.forecast: Forecast = ForecastRepository.create(
+                session, new_forecast)
+
+    @task(name='CreateSeismicityObservation', cache_policy=None)
+    def _create_seismicityobservation(self) -> None:
+        """
+        Gets the seismicity observation data and stores it to the database.
+        """
+
+        if self.forecastseries.seismicityobservation_required == \
+                EInput.NOT_ALLOWED:
+            self.forecast.seismicity_observation = None
+            return None
+
+        self.catalog_data_source = SeismicityDataSource.from_uri(
+            self.forecastseries.fdsnws_url,
+            self.observation_starttime,
+            self.observation_endtime
+        )
+
+        with Session() as session:
+            self.forecast.seismicity_observation = \
+                SeismicityObservationRepository.create_from_quakeml(
+                    session,
+                    self.catalog_data_source.get_quakeml(),
+                    self.forecast.oid
+                )
+
+    @task(name='CreateInjectionObservation', cache_policy=None)
+    def _create_injectionobservation(self) -> None:
+        """
+        Gets the injection observation data and stores it to the database.
+        """
+        if self.forecastseries.injectionobservation_required == \
+                EInput.NOT_ALLOWED:
+            self.forecast.injection_observation = None
+            return None
+
+        self.hydraulic_data_source = HydraulicsDataSource.from_uri(
+            self.forecastseries.hydws_url,
+            self.observation_starttime,
+            self.observation_endtime
+        )
+
+        self.injection_observation = InjectionObservation(
+            forecast_oid=self.forecast.oid,
+            data=self.hydraulic_data_source.get_json()
+        )
+        with Session() as session:
+            self.forecast.injection_observation = \
+                InjectionObservationRepository.create(
+                    session,
+                    self.injection_observation
+                )
+
+    @task(name='CreateInjectionPlan', cache_policy=None)
+    def _create_injectionplan(self) -> None:
+        """
+        Gets the injection plan data and stores it to the database.
+        """
+        if self.forecastseries.injectionplan_required == \
+                EInput.NOT_ALLOWED:
+            self.forecastseries.injection_plans = None
+            return None
+
+        with Session() as session:
+            injection_plans = \
+                InjectionPlanRepository.get_by_forecastseries(
+                    session,
+                    self.forecastseries.oid
+                )
+
+            if not injection_plans:
+                if self.forecastseries.injectionplan_required == \
+                        EInput.OPTIONAL:
+                    self.forecastseries.injection_plans = None
+                    return None
+                else:
+                    raise ValueError('No injection plans found for the '
+                                     'ForecastSeries.')
+
+            for idx, ip in enumerate(injection_plans):
+                ip_builder = InjectionPlanBuilder(
+                    json.loads(ip.template),
+                    json.loads(self.forecast.injection_observation.data))
+                plan = ip_builder.build(self.starttime, self.endtime)
+
+                new_ip = InjectionPlan(
+                    name=ip.name,
+                    data=json.dumps([plan]),
+                    template=ip.template
+                )
+
+                injection_plans[idx] = InjectionPlanRepository.create(
+                    session, new_ip)
+
+        self.forecastseries.injection_plans = injection_plans
+
+    def _build_injectionplan(self) -> None:
+        """
+        Builds the injection plan data.
+        """
+        if self.forecastseries.injection_plans is None:
+            return None
+
+        for injection_plan in self.forecastseries.injection_plans:
+            InjectionPlanBuilder(injection_plan.template,
+                                 self.forecast.injection_observation.data)
 
     def _calculate_forecast_timebounds(self,
                                        starttime: datetime,
@@ -209,114 +331,6 @@ class ForecastHandler:
         if self.starttime > self.endtime:
             raise ValueError("Forecast start time can't be later than "
                              "forecast end time.")
-
-    @task(name='CreateForecast', cache_policy=None)
-    def _create_forecast(self) -> None:
-        """
-        Creates the forecast in the database.
-        """
-        new_forecast = self.forecast or Forecast(
-            forecastseries_oid=self.forecastseries.oid,
-            status='PENDING',
-            starttime=self.starttime,
-            endtime=self.endtime,
-        )
-        with Session() as session:
-            self.forecast: Forecast = ForecastRepository.create(
-                session, new_forecast)
-
-    @task(name='CreateSeismicityObservation', cache_policy=None)
-    def _create_seismicityobservation(self) -> None:
-        """
-        Gets the seismicity observation data and stores it to the database.
-        """
-
-        if self.forecastseries.seismicityobservation_required == \
-                EInput.NOT_ALLOWED:
-            self.forecast.seismicity_observation = None
-            return None
-
-        self.catalog_data_source = SeismicityDataSource.from_uri(
-            self.forecastseries.fdsnws_url,
-            self.observation_starttime,
-            self.observation_endtime
-        )
-
-        with Session() as session:
-            self.forecast.seismicity_observation = \
-                SeismicityObservationRepository.create_from_quakeml(
-                    session,
-                    self.catalog_data_source.get_quakeml(),
-                    self.forecast.oid
-                )
-
-    @task(name='CreateInjectionObservation', cache_policy=None)
-    def _create_injectionobservation(self) -> None:
-        """
-        Gets the injection observation data and stores it to the database.
-        """
-        if self.forecastseries.injectionobservation_required == \
-                EInput.NOT_ALLOWED:
-            self.forecast.injection_observation = None
-            return None
-
-        self.hydraulic_data_source = HydraulicsDataSource.from_uri(
-            self.forecastseries.hydws_url,
-            self.observation_starttime,
-            self.observation_endtime
-        )
-
-        hydraulics = InjectionObservation(
-            forecast_oid=self.forecast.oid,
-            data=self.hydraulic_data_source.get_json()
-        )
-        with Session() as session:
-            self.forecast.injection_observation = \
-                InjectionObservationRepository.create(
-                    session,
-                    hydraulics
-                )
-
-    @task(name='CreateInjectionPlan', cache_policy=None)
-    def _create_injectionplan(self) -> None:
-        """
-        Gets the injection plan data and stores it to the database.
-        """
-        if self.forecastseries.injectionplan_required == \
-                EInput.NOT_ALLOWED:
-            self.forecastseries.injection_plans = None
-            return None
-
-        with Session() as session:
-            injection_plans = \
-                InjectionPlanRepository.get_by_forecastseries(
-                    session,
-                    self.forecastseries.oid
-                )
-
-            if not injection_plans:
-                if self.forecastseries.injectionplan_required == \
-                        EInput.OPTIONAL:
-                    self.forecastseries.injection_plans = None
-                    return None
-                else:
-                    raise ValueError('No injection plans found for the '
-                                     'ForecastSeries.')
-
-            for idx, ip in enumerate(injection_plans):
-                data = HydraulicsDataSource.from_data(json.loads(ip.data),
-                                                      self.starttime,
-                                                      self.endtime)
-
-                new_ip = InjectionPlan(
-                    name=ip.name,
-                    data=data.get_json()
-                )
-
-                injection_plans[idx] = InjectionPlanRepository.create(
-                    session, new_ip)
-
-        self.forecastseries.injection_plans = injection_plans
 
 
 def generate_flow_run_name():

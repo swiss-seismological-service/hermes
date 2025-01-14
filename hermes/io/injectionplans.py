@@ -11,6 +11,8 @@ class InjectionPlanBuilder:
         self.hydraulics = None
 
         if data is not None:
+            data = next(d for d in data if d['name']
+                        == template['borehole_name'])
             self.observed_hydraulics = BoreholeHydraulics(data)
             self.hydraulics = self.observed_hydraulics.nloc[
                 template['section_name']].hydraulics
@@ -24,15 +26,15 @@ class InjectionPlanBuilder:
     def build(self, start: datetime, end: datetime) -> dict:
         if self.template_type == 'fixed':
             hydraulics = build_fixed(
-                start, end, self.template['interval'],
+                start, end, self.template['resolution'],
                 self.template['config'], self.hydraulics)
         elif self.template_type == 'constant':
             hydraulics = build_constant(
-                start, end, self.template['interval'],
+                start, end, self.template['resolution'],
                 self.template['config'], self.hydraulics)
         elif self.template_type == 'multiply':
             hydraulics = build_multiply(
-                start, end, self.template['interval'],
+                start, end, self.template['resolution'],
                 self.template['config'], self.hydraulics)
 
         ip = BoreholeHydraulics()
@@ -48,11 +50,11 @@ class InjectionPlanBuilder:
 
 def build_fixed(start: datetime,
                 end: datetime,
-                interval: int,
+                resolution: int,
                 config: dict,
                 hydraulics: pd.DataFrame | None) -> dict:
-    # Create a time range based on start, end, and interval
-    time_index = pd.date_range(start=start, end=end, freq=f"{interval}s")
+    # Create a time range based on start, end, and resolution
+    time_index = pd.date_range(start=start, end=end, freq=f"{resolution}s")
 
     # Convert nested JSON into a DataFrame
     plan_df = pd.json_normalize(config.get("plan", []), sep="_")
@@ -87,11 +89,11 @@ def build_fixed(start: datetime,
 
 def build_constant(start: datetime,
                    end: datetime,
-                   interval: int,
+                   resolution: int,
                    config: dict,
                    hydraulics: pd.DataFrame | None) -> dict:
-    # Create a time range based on start, end, and interval
-    time_index = pd.date_range(start=start, end=end, freq=f"{interval}s")
+    # Create a time range based on start, end, and resolution
+    time_index = pd.date_range(start=start, end=end, freq=f"{resolution}s")
 
     # Convert nested JSON into a DataFrame
     plan_df = pd.json_normalize(config.get("plan", []), sep="_")
@@ -107,7 +109,7 @@ def build_constant(start: datetime,
 
 def build_multiply(start: datetime,
                    end: datetime,
-                   interval: int,
+                   resolution: int,
                    config: dict,
                    hydraulics: pd.DataFrame | None) -> dict:
 
@@ -115,8 +117,8 @@ def build_multiply(start: datetime,
         raise ValueError("Hydraulics data must be provided "
                          "for multiply injection plans.")
 
-    # Create a time range based on start, end, and interval
-    time_index = pd.date_range(start=start, end=end, freq=f"{interval}s")
+    # Create a time range based on start, end, and resolution
+    time_index = pd.date_range(start=start, end=end, freq=f"{resolution}s")
 
     # Convert nested JSON into a DataFrame
     plan_df = pd.json_normalize(config.get("plan", []), sep="_")

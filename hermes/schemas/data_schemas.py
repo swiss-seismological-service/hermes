@@ -15,7 +15,7 @@ class InjectionPlanTemplate(Model):
     type: str | None = None
     section_name: str | None = None
     borehole_name: str | None = None
-    interval: int | None = None
+    resolution: int | None = None
     config: dict | None = None
 
 

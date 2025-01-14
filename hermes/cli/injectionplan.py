@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud_models import (create_injectionplan,
+from hermes.actions.crud_models import (create_injectionplan_template,
                                         delete_injectionplan,
                                         read_forecastseries_oid)
 from hermes.cli.utils import console_table
@@ -52,7 +52,7 @@ def create(name: Annotated[str,
            file: Annotated[Path,
                            typer.Option(
                                ..., resolve_path=True, readable=True,
-                               help="Path to hydjson file.")]):
+                               help="Path to IP template file.")]):
 
     with open(file, "r") as injectionplan_file:
         injectionplan = json.load(injectionplan_file)
@@ -60,7 +60,7 @@ def create(name: Annotated[str,
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
 
-        forecast_series_out = create_injectionplan(
+        forecast_series_out = create_injectionplan_template(
             name, injectionplan, forecastseries_oid)
 
         console.print('Successfully created new Injectionplan '

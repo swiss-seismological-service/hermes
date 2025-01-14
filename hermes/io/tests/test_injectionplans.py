@@ -26,7 +26,7 @@ class TestInjectionPlanBuilder:
                   'r') as f:
             template = json.load(f)
 
-        builder = InjectionPlanBuilder(template, data)
+        builder = InjectionPlanBuilder(template, [data])
         plan = builder.build(start, end)
         assert plan['publicid'] == "caf65646-8093-4aaf-989c-1c837f497667"
         assert plan['sections'][0]['name'] == "16A-32/section_02"
