@@ -2,23 +2,55 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from hydws.parser import BoreholeHydraulics, SectionHydraulics
 
 
 class InjectionPlanBuilder:
     def __init__(self, template: dict, data: dict | None = None):
         self.template = template
+        self.hydraulics = None
 
-        self.data = data
+        if data is not None:
+            self.observed_hydraulics = BoreholeHydraulics(data)
+            self.hydraulics = self.observed_hydraulics.nloc[
+                template['section_name']].hydraulics
+
+        self.template_type = template['type']
+        valid_types = ['fixed', 'constant', 'multiply']
+        if self.template_type not in valid_types:
+            raise ValueError(f"Invalid template type: {self.template_type}, "
+                             f"must be one of {valid_types}")
 
     def build(self, start: datetime, end: datetime) -> dict:
-        pass
+        if self.template_type == 'fixed':
+            hydraulics = build_fixed(
+                start, end, self.template['interval'],
+                self.template['config'], self.hydraulics)
+        elif self.template_type == 'constant':
+            hydraulics = build_constant(
+                start, end, self.template['interval'],
+                self.template['config'], self.hydraulics)
+        elif self.template_type == 'multiply':
+            hydraulics = build_multiply(
+                start, end, self.template['interval'],
+                self.template['config'], self.hydraulics)
+
+        ip = BoreholeHydraulics()
+        ip.metadata = self.observed_hydraulics.metadata
+        section = SectionHydraulics()
+        section.metadata = self.observed_hydraulics.nloc[
+            self.template['section_name']].metadata
+        section.hydraulics = hydraulics
+        ip[section.metadata['publicid']] = section
+
+        return ip.to_json()
 
 
 def build_fixed(start: datetime,
                 end: datetime,
                 interval: int,
                 config: dict,
-                hydraulics: pd.DataFrame) -> dict:
+                hydraulics: pd.DataFrame | None) -> dict:
     # Create a time range based on start, end, and interval
     time_index = pd.date_range(start=start, end=end, freq=f"{interval}s")
 
@@ -57,7 +89,7 @@ def build_constant(start: datetime,
                    end: datetime,
                    interval: int,
                    config: dict,
-                   hydraulics: pd.DataFrame) -> dict:
+                   hydraulics: pd.DataFrame | None) -> dict:
     # Create a time range based on start, end, and interval
     time_index = pd.date_range(start=start, end=end, freq=f"{interval}s")
 
@@ -77,7 +109,12 @@ def build_multiply(start: datetime,
                    end: datetime,
                    interval: int,
                    config: dict,
-                   hydraulics: pd.DataFrame) -> dict:
+                   hydraulics: pd.DataFrame | None) -> dict:
+
+    if hydraulics is None:
+        raise ValueError("Hydraulics data must be provided "
+                         "for multiply injection plans.")
+
     # Create a time range based on start, end, and interval
     time_index = pd.date_range(start=start, end=end, freq=f"{interval}s")
 

@@ -17,7 +17,7 @@ from hermes.repositories.project import (ForecastRepository,
 from hermes.repositories.results import ModelRunRepository
 from hermes.repositories.types import DuplicateError
 from hermes.schemas import EStatus, ForecastSeriesConfig, ModelConfig
-from hermes.schemas.data_schemas import InjectionPlan
+from hermes.schemas.data_schemas import InjectionPlan, InjectionPlanTemplate
 from hermes.schemas.project_schemas import Project
 
 
@@ -310,6 +310,35 @@ def update_schedule(schedule_config: dict, forecastseries_oid: UUID):
         )
 
     scheduler.update_prefect_schedule(schedule_config)
+
+
+def create_injectionplan_template(name: str,
+                                  data: dict,
+                                  forecastseries_oid: UUID):
+    if not isinstance(data, dict):
+        raise ValueError('Injectionplan data must be a single valid '
+                         'json object.')
+
+    try:
+        InjectionPlanTemplate(**data)
+    except Exception as e:
+        raise ValueError(f'Error parsing template: {str(e)}')
+
+    data = json.dumps(data).encode()
+
+    injectionplan = InjectionPlan(name=name,
+                                  template=data,
+                                  forecastseries_oid=forecastseries_oid)
+
+    try:
+        with Session() as session:
+            injectionplan_out = InjectionPlanRepository.create(
+                session, injectionplan)
+        return injectionplan_out
+    except DuplicateError:
+        raise ValueError(
+            f'InjectionPlan with name "{name}" already exists'
+            ' for this ForecastSeries, please choose a different name.')
 
 
 def create_injectionplan(name: str,

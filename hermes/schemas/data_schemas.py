@@ -11,6 +11,14 @@ class SeismicityObservation(Model):
     forecast_oid: UUID | None = None
 
 
+class InjectionPlanTemplate(Model):
+    type: str | None = None
+    section_name: str | None = None
+    borehole_name: str | None = None
+    interval: int | None = None
+    config: dict | None = None
+
+
 class InjectionObservation(Model):
     oid: UUID | None = None
     data: bytes | None = None
@@ -20,6 +28,7 @@ class InjectionObservation(Model):
 class InjectionPlan(Model):
     oid: UUID | None = None
     data: bytes | None = None
+    template: bytes | None = None
     name: str | None = None
     forecastseries_oid: UUID | None = None
 

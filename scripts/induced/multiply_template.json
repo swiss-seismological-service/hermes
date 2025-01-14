@@ -6,11 +6,7 @@
     "config": {
         "plan": {
             "topflow": {
-                "value": 2,
-                "uncertainty": 1
-            },
-            "bottomflow": {
-                "value": 3
+                "value": 2
             }
         },
         "lookback_window": 5,

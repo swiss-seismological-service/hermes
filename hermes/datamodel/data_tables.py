@@ -10,7 +10,8 @@ from hermes.datamodel.base import ORMBase, RealQuantityMixin, TimeQuantityMixin
 
 class InjectionPlanTable(ORMBase):
     name = Column(String, nullable=False)
-    data = Column(LargeBinary, nullable=False)
+    data = Column(LargeBinary)
+    template = Column(LargeBinary)
 
     forecastseries_oid = Column(UUID, ForeignKey('forecastseries.oid',
                                                  ondelete="CASCADE"))

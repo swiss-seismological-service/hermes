@@ -1,45 +1,43 @@
-[
-    {
-        "borehole_name": "16A-32",
-        "section_name": "16A-32/section_02",
-        "type": "fixed",
-        "interval": 60,
-        "config": {
-            "plan": [
-                {
-                    "datetime": {
-                        "value": "2022-04-19T14:01:00"
-                    },
-                    "topflow": {
-                        "value": 0.04,
-                        "uncertainty": 0.0001
-                    },
-                    "bottomflow": {
-                        "value": 0.03
-                    }
+{
+    "borehole_name": "16A-32",
+    "section_name": "16A-32/section_02",
+    "type": "fixed",
+    "interval": 60,
+    "config": {
+        "plan": [
+            {
+                "datetime": {
+                    "value": "2022-04-19T14:01:00"
                 },
-                {
-                    "datetime": {
-                        "value": "2022-04-19T14:05:00"
-                    },
-                    "topflow": {
-                        "value": 0.045
-                    }
+                "topflow": {
+                    "value": 0.04,
+                    "uncertainty": 0.0001
                 },
-                {
-                    "datetime": {
-                        "value": "2022-04-19T14:08:30"
-                    },
-                    "topflow": {
-                        "value": 0.05
-                    },
-                    "bottomflow": {
-                        "value": 0.04,
-                        "uncertainty": 0.0002
-                    }
+                "bottomflow": {
+                    "value": 0.03
                 }
-            ],
-            "interpolation": "none"
-        }
+            },
+            {
+                "datetime": {
+                    "value": "2022-04-19T14:05:00"
+                },
+                "topflow": {
+                    "value": 0.045
+                }
+            },
+            {
+                "datetime": {
+                    "value": "2022-04-19T14:08:30"
+                },
+                "topflow": {
+                    "value": 0.05
+                },
+                "bottomflow": {
+                    "value": 0.04,
+                    "uncertainty": 0.0002
+                }
+            }
+        ],
+        "interpolation": "none"
     }
-]
+}
