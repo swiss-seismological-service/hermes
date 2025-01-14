@@ -107,13 +107,13 @@ class TestForecastSeriesScheduler:
         mock_fs_get_by_id.return_value = fs
         scheduler = ForecastSeriesScheduler(None)
 
-        rule = scheduler._build_rrule(True)
+        rule = scheduler._build_rrule('future')
         assert str(rule) == str(expected)
 
         scheduler.schedule_endtime = datetime.now() - timedelta(hours=1)
 
         with pytest.raises(ValueError):
-            scheduler._build_rrule(True)
+            scheduler._build_rrule('future')
 
     @patch('hermes.repositories.project.ForecastSeriesRepository.update',
            autocast=True)
