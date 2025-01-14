@@ -1,61 +1,54 @@
-from unittest.mock import ANY, MagicMock, patch
+import os
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
-from hermes.flows.forecast_handler import forecast_runner
-from hermes.schemas import SeismicityObservation
-from hermes.schemas.project_schemas import Forecast
+from prefect import flow
+
+from hermes.flows.forecast_handler import (ForecastHandler, InjectionPlan,
+                                           ModelConfig)
+from hermes.schemas import ForecastSeries
+
+MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'data')
+with open(os.path.join(MODULE_LOCATION, 'injection.json')) as f:
+    INJECTION = f.read()
+with open(os.path.join(MODULE_LOCATION, 'quakeml.xml')) as f:
+    SEISMICITY = f.read()
 
 
-@patch('hermes.repositories.project.ForecastRepository.update_status',
+@patch('hermes.flows.forecast_handler.default_model_runner',
        autocast=True)
-@patch('hermes.flows.forecast_handler.default_model_runner', autocast=True)
-@patch('hermes.repositories.data.'
-       'SeismicityObservationRepository.create_from_quakeml',
-       autocast=True,
-       return_value=SeismicityObservation(data='data'))
 @patch('hermes.io.SeismicityDataSource.from_uri',
        autocast=True)
-@patch('hermes.repositories.project.ForecastRepository.create',
-       autocast=True)
-@patch('hermes.repositories.project.'
-       'ForecastSeriesRepository.get_model_configs',
-       autocast=True)
-@patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id',
+@patch('hermes.io.HydraulicsDataSource.from_uri',
        autocast=True)
 @patch('hermes.flows.forecast_handler.Session')
 class TestForecastHandler:
+    @flow
     def test_full(self,
-                  session,
-                  mock_fs_get_by_id,
-                  mock_fs_get_model_configs,
-                  mock_f_create: MagicMock,
-                  mock_get_catalog,
-                  mock_so_create,
+                  # MOCKS
+                  forecast_handler_session: MagicMock,
+                  mock_get_injection: MagicMock,
+                  mock_get_catalog: MagicMock,
                   mock_default_model_runner: MagicMock,
-                  mock_update_status: MagicMock,
-                  forecastseries,
-                  forecast,
-                  model_config,
-                  prefect):
+                  # FIXTURES
+                  session,
+                  forecastseries_db: ForecastSeries,
+                  modelconfig_db: ModelConfig,
+                  injectionplan_db: InjectionPlan,
+                  prefect
+                  ):
+        forecast_handler_session.return_value.__enter__.return_value = session
+        mock_get_catalog().get_quakeml.return_value = SEISMICITY
+        mock_get_injection().get_json.return_value = INJECTION
 
-        mock_f_create.return_value = forecast
-        mock_fs_get_by_id.return_value = forecastseries
-        mock_fs_get_model_configs.return_value = [model_config]
+        forecast_handler = ForecastHandler(
+            forecastseries_db.oid,
+            starttime=datetime(2022, 4, 21, 14, 50, 0),
+            endtime=datetime(2022, 4, 21, 14, 55, 0)
+        )
+        forecast_handler.run()
 
-        mock_get_catalog().get_quakeml.return_value = 'data'
-
-        forecast_handler = forecast_runner(forecastseries.oid,
-                                           forecastseries.schedule_starttime)
-
-        # make sure times can be compared and don't have incompatible tzinfo
-        assert forecast_handler.starttime < forecast_handler.endtime
-        assert forecastseries.observation_starttime < \
-            forecast_handler.starttime
-
-        mock_f_create.assert_called_with(ANY, Forecast(
-            forecastseries_oid=forecastseries.oid,
-            status='PENDING',
-            starttime=forecast_handler.starttime,
-            endtime=forecast_handler.endtime
-        ))
-
-        assert len(mock_default_model_runner.call_args_list) == 1
+        assert mock_default_model_runner.call_count == 1
+        assert len(forecast_handler.forecastseries.injection_plans) == 1
+        assert len(forecast_handler.modelconfigs) == 1

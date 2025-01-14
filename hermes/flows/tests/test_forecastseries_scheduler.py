@@ -36,8 +36,11 @@ class TestForecastSeriesScheduler:
         }
     ])
     def test_schedule_assertions(self,
+                                 # MOCKS
                                  mock_fs_get_by_id: MagicMock,
-                                 fs: ForecastSeries):
+                                 # FIXTURES
+                                 fs: ForecastSeries
+                                 ):
         """
         Test that the assertions in the ForecastSeriesScheduler
         constructor work.
@@ -48,7 +51,10 @@ class TestForecastSeriesScheduler:
             scheduler = ForecastSeriesScheduler(None)
             scheduler._check_schedule_validity(fs)
 
-    def test_schema_instance_attr(self, mock_fs_get_by_id: MagicMock):
+    def test_schema_instance_attr(self,
+                                  # MOCKS
+                                  mock_fs_get_by_id: MagicMock
+                                  ):
         forecastseries = ForecastSeries(
             schedule_starttime=datetime(2021, 1, 2, 0, 0, 0))
         mock_fs_get_by_id.return_value = forecastseries
@@ -86,16 +92,22 @@ class TestForecastSeriesScheduler:
                )),
     ])
     def test_build_rrule(self,
+                         # MOCKS
                          mock_fs_get_by_id: MagicMock,
+                         # PARAMETERS
                          fs: ForecastSeries,
-                         expected: rrule):
+                         expected: rrule
+                         ):
         mock_fs_get_by_id.return_value = fs
         scheduler = ForecastSeriesScheduler(None)
 
         rule = scheduler._build_rrule()
         assert str(rule) == str(expected)
 
-    def test_future_rrule(self, mock_fs_get_by_id: MagicMock):
+    def test_future_rrule(self,
+                          # MOCKS
+                          mock_fs_get_by_id: MagicMock
+                          ):
         fs = ForecastSeries(
             schedule_starttime=datetime.now() - timedelta(days=1),
             schedule_interval=1800,
@@ -118,8 +130,10 @@ class TestForecastSeriesScheduler:
     @patch('hermes.repositories.project.ForecastSeriesRepository.update',
            autocast=True)
     def test_update(self,
+                    # MOCKS
                     mock_fs_update: MagicMock,
-                    mock_fs_get_by_id: MagicMock):
+                    mock_fs_get_by_id: MagicMock
+                    ):
 
         forecastseries = ForecastSeries(
             schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
@@ -144,8 +158,10 @@ class TestForecastSeriesScheduler:
     @patch('hermes.flows.forecastseries_scheduler.forecast_runner',
            autocast=True)
     def test_catchup(self,
+                     # MOCKS
                      mock_forecastrunner: MagicMock,
-                     mock_fs_get_by_id: MagicMock):
+                     mock_fs_get_by_id: MagicMock
+                     ):
         fs = ForecastSeries(
             oid=uuid.uuid4(),
             schedule_starttime=datetime(2024, 1, 1, 0, 0, 0),
@@ -177,10 +193,12 @@ class TestSchedulerClientInteractions:
     @patch('hermes.flows.forecastseries_scheduler.add_deployment_schedule',
            autocast=True)
     def test_create(self,
+                    # MOCKS
                     mock_add: MagicMock,
                     mock_get: MagicMock,
                     mock_fs_update: MagicMock,
-                    mock_fs_get_by_id: MagicMock):
+                    mock_fs_get_by_id: MagicMock
+                    ):
 
         fs = ForecastSeries(schedule_id=uuid.uuid4())
         mock_fs_get_by_id.return_value = fs
@@ -217,10 +235,12 @@ class TestSchedulerClientInteractions:
     @patch('hermes.flows.forecastseries_scheduler.update_deployment_schedule',
            autocast=True)
     def test_update(self,
+                    # MOCKS
                     mock_update: MagicMock,
                     mock_get: MagicMock,
                     mock_fs_update: MagicMock,
-                    mock_fs_get_by_id: MagicMock):
+                    mock_fs_get_by_id: MagicMock
+                    ):
 
         fs = ForecastSeries()
         mock_fs_get_by_id.return_value = fs
@@ -260,10 +280,12 @@ class TestSchedulerClientInteractions:
     @patch('hermes.flows.forecastseries_scheduler.delete_deployment_schedule',
            autocast=True)
     def test_delete(self,
+                    # MOCKS
                     mock_delete: MagicMock,
                     mock_get: MagicMock,
                     mock_fs_update: MagicMock,
-                    mock_fs_get_by_id: MagicMock):
+                    mock_fs_get_by_id: MagicMock
+                    ):
         sid = uuid.uuid4()
         fs = ForecastSeries(schedule_id=sid)
         fs_empty = ForecastSeries(schedule_active=True)

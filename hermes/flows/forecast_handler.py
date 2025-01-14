@@ -39,6 +39,7 @@ class ForecastHandler:
             self.logger = get_run_logger()
         except BaseException:
             self.logger = logging.getLogger('prefect.hermes')
+
         self.starttime: datetime
         self.endtime: datetime
         self.observation_starttime: datetime
