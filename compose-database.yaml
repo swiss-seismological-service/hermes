@@ -4,18 +4,34 @@ services:
         restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
             - '0.0.0.0:${POSTGRES_PORT:-5432}:5432'
-        env_file: .env
         volumes:
             - hermesdb:/var/lib/postgresql
+        healthcheck:
+        test:
+            [
+                'CMD',
+                'pg_isready',
+                '-q',
+                '-d',
+                '${POSTGRES_DB}',
+                '-U',
+                '${POSTGRES_USER}',
+            ]
+        timeout: 45s
+        interval: 5s
+        retries: 20
         networks:
             - hermesnet
 
     webservice:
-        env_file: '.env'
         environment:
             - POSTGRES_PORT=5432
             - POSTGRES_HOST=postgres
         build: .
+        depends_on:
+            postgres:
+                condition: service_healthy
+
         restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
             - '0.0.0.0:${DOCKER_WEB_PORT:-8000}:8000'

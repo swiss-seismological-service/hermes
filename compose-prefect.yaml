@@ -8,7 +8,7 @@ services:
         environment:
             - PREFECT_SERVER_API_HOST=0.0.0.0
             - PREFECT_UI_API_URL=http://localhost:4200/api
-            - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:password@prefect-postgres:5433/prefect
+            - PREFECT_API_DATABASE_CONNECTION_URL='${PREFECT_API_DATABASE_CONNECTION_URL:-postgresql+asyncpg://postgres:prefect127@prefect-postgres:5433/prefect}'
         depends_on:
             - prefect-postgres
         networks:
@@ -21,7 +21,7 @@ services:
             - '5433:5433'
         environment:
             - POSTGRES_USER=postgres
-            - POSTGRES_PASSWORD=password
+            - POSTGRES_PASSWORD='${PREFECT_PASSWORD:-prefect127}'
             - POSTGRES_DB=prefect
             - PGPORT=5433
         volumes:
