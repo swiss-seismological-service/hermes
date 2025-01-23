@@ -1,29 +1,28 @@
 services:
     prefect-server:
         image: prefecthq/prefect:3-latest
-        command: prefect server start
-        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
-        ports:
-            - '4200:4200'
         environment:
             - PREFECT_SERVER_API_HOST=0.0.0.0
             - PREFECT_UI_API_URL=http://localhost:4200/api
-            - PREFECT_API_DATABASE_CONNECTION_URL='${PREFECT_API_DATABASE_CONNECTION_URL:-postgresql+asyncpg://postgres:prefect127@prefect-postgres:5433/prefect}'
+            - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:'${PREFECT_PASSWORD:-prefect127}'@prefect-postgres:5432/prefect
+        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
+        ports:
+            - '4200:4200'
         depends_on:
             - prefect-postgres
+        command: prefect server start
         networks:
             - hermesnet
 
     prefect-postgres:
         image: postgres:latest
-        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
-        ports:
-            - '5433:5433'
         environment:
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD='${PREFECT_PASSWORD:-prefect127}'
             - POSTGRES_DB=prefect
-            - PGPORT=5433
+        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
+        ports:
+            - '0.0.0.0:5433:5432'
         volumes:
             - prefectdb:/var/lib/postgresql/data
         networks:

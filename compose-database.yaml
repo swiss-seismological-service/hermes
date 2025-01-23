@@ -1,37 +1,28 @@
 services:
     postgres:
+        environment:
+            - POSTGRES_USER
+            - POSTGRES_DB
+            - POSTGRES_PASS=${POSTGRES_PASSWORD}
         image: kartoza/postgis:latest
         restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
-            - '0.0.0.0:${POSTGRES_PORT:-5432}:5432'
+            - '0.0.0.0:${POSTGRES_PORT:-5434}:5432'
         volumes:
-            - hermesdb:/var/lib/postgresql
-        healthcheck:
-        test:
-            [
-                'CMD',
-                'pg_isready',
-                '-q',
-                '-d',
-                '${POSTGRES_DB}',
-                '-U',
-                '${POSTGRES_USER}',
-            ]
-        timeout: 45s
-        interval: 5s
-        retries: 20
+            - hermesdb:/var/lib/postgresql/data
         networks:
             - hermesnet
 
     webservice:
         environment:
-            - POSTGRES_PORT=5432
             - POSTGRES_HOST=postgres
+            - POSTGRES_PASSWORD
+            - POSTGRES_PORT=${POSTGRES_PORT:-5434}
+            - POSTGRES_USER
+            - POSTGRES_DB
         build: .
         depends_on:
-            postgres:
-                condition: service_healthy
-
+            - postgres
         restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
         ports:
             - '0.0.0.0:${DOCKER_WEB_PORT:-8000}:8000'
