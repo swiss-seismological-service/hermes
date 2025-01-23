@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye AS app
+FROM python:3.12-slim-bullseye AS app
 
 LABEL maintainer="Nicolas Schmid <nicolas.schmid@sed.ethz.ch>"
 
