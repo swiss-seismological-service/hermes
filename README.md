@@ -37,6 +37,12 @@ pip install -e src/hermes
 ```
 cp src/hermes/.env.example .env
 ```
+As a quick test setup, the configuration works as is, but is not secure. Please change the credentials, ports and connection strings in the .env file as well as in the compose files (see below) according to your needs.
 
-Please change the credentials, ports and connection strings in the .env file as well as in the compose files (see below) according to your needs. As a quick test setup, the configuration works as is.
+#### 6. Start the services
+```
+docker compose -f src/hermes/compose-prefect.yaml up -d
+docker compose -f src/hermes/compose-database.yaml --env-file .env up -d
+```
+If you want to change the credentials of the prefect database, you can pass along the `POSTGRES_...` and `PREFECT_...` variables to the compose-prefect yaml file. Do not forget to adapt the database connection string in the application .env file.
 
