@@ -62,3 +62,55 @@ pip install -e src/em1
 pip install -e src/etas
 ```
 
+### 8. Start with example configuration and data
+```
+cp -r src/hermes/examples .
+```
+Update the absolute path `fdsnws_url` in the `examples/induced/forecastseries.json` file to the path of the `examples/induced` folder.
+
+### 9. Initialize the database
+```
+hermes db init
+```
+This only needs to be done once. In case you want to delete all data and start from scratch, you can run `hermes db purge` and then `hermes db init` again.
+
+### 10. Load an example configuration
+```
+hermes projects create project_induced --config examples/induced/project.json
+hermes forecastseries create fs_induced --config examples/induced/forecastseries.json --project project_induced
+hermes injectionplans create default --forecastseries fs_induced --file examples/induced/multiply_template.json
+hermes models create em1 --config examples/induced/model_config.json
+```
+
+The CLI can be used to interact with the HERMES service. For a list of available commands, run `hermes --help`. Most commands have a `--help` option to show the available options.
+
+Most setting should be self-explanatory, but more information can be found in the [concepts documentation](https://github.com/swiss-seismological-service/hermes/blob/main/docs/concepts.md).
+
+A more detailed of the InjectionPlan configuration can be found [here](https://github.com/swiss-seismological-service/hermes/blob/main/docs/injectionplan.md).
+
+### 11. Run a single forecast using the CLI
+```
+hermes forecasts run fs_induced --start 2022-04-21T15:00:00 --end 2022-04-21T18:00:00 --local
+```
+This starts a single forecast directly on the local machine. 
+
+### 12. (Optional) Schedule forecasts or execute "replays".
+To use advanced features like scheduling, it is necessary to start a process which "serves" the forecastseries. 
+```
+hermes forecasts serve fs_induced
+```
+Once this process is running, you can "send" a forecast to the service using the above command without the `--local` flag.
+```
+hermes forecasts run fs_induced --start 2022-04-21T15:00:00 --end 2022-04-21T18:00:00
+```
+This will again execute a single forecast, but this time it will be executed by the service. This now allows us to create a schedule for the forecastseries, which will automatically execute forecasts at the specified times. More information about the schedule settings can be found [here](https://github.com/swiss-seismological-service/hermes/blob/main/docs/concepts.md#forecast-series-scheduling).
+
+```
+hermes schedules create fs_induced --config examples/induced/schedule_replay.json
+```
+This schedule specifies forecasts in the past. Accordingly, no future forecasts will be executed, but the `catchup` command can be used to execute all forecasts as a "replay".
+```
+hermes schedules catchup fs_induced
+```
+
+__Note__ that a schedule can either lie in the past, the future, or both. The `catchup` command will only execute forecasts in the past, while the service will automatically execute forecasts in the future.

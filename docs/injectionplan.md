@@ -80,7 +80,7 @@ The simplest form of an injectionplan template. A constant value will be assumed
 - `plan` a dictionary with the data value for each key.
 
 ## `multiply`
-A template which dynamically creates the injectionplan. The latest injection rate at the time of the forecast is retrieved and multiplied it by a constant factor.
+A template which dynamically creates the injectionplan. The latest injection rate at the time of the forecast is retrieved and multiplied by a constant factor.
 
 ```json
 {
