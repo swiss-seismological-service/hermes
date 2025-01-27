@@ -121,3 +121,7 @@ To view the forecasts and modelruns, currently only the webservice is available.
 To view the status of the latest forecasts, you can navigate to the following URL: [http://localhost:8000/v2/forecasts](http://localhost:8000/v2/forecasts).
 
 To more easily debug the models, you can download the exact configuration and input files the modelrun used. You need copy the `oid` of the modelrun you'd like to download and then navigate to the following URL: `http://localhost:8000/v2/modelruns/{oid}/input`
+
+## Results
+
+The results of the modelruns can be directly downloaded from the webservice. This API is still under development and will be improved in the future. The results can be downloaded from the following URL: `http://localhost:8000/v2/modelruns/{oid}/result`. In the future, a more user-friendly interface will be provided.

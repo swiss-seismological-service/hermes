@@ -222,6 +222,26 @@ async def read_modelrun_rates(db: AsyncSession, modelrun_id: UUID):
     return result.scalar()
 
 
+async def read_modelrun_catalog(db: AsyncSession, modelrun_id: UUID):
+
+    statement = select(ModelRunTable) \
+        .options(joinedload(ModelRunTable.modelconfig)
+                 .load_only(ModelConfigTable.name, ModelConfigTable.oid),
+                 joinedload(ModelRunTable.injectionplan)
+                 .load_only(InjectionPlanTable.name, InjectionPlanTable.oid),
+                 joinedload(ModelRunTable.modelresults).options(
+            joinedload(ModelResultTable.timestep),
+            joinedload(ModelResultTable.gridcell),
+            joinedload(ModelResultTable.seismicevents),
+        )
+    ) \
+        .where(ModelRunTable.oid == modelrun_id)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
 async def read_forecast_rates(db: AsyncSession,
                               forecast_id: UUID,
                               modelconfigs: list[str] | None = None,
@@ -271,3 +291,21 @@ async def read_injectionplan_by_modelrun(db: AsyncSession, modelrun_oid: UUID):
     result = await db.execute(statement)
 
     return result.scalar()
+
+
+async def read_modelrun(db: AsyncSession, modelrun_oid: UUID):
+    statement = select(ModelRunTable) \
+        .where(ModelRunTable.oid == modelrun_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_modelresults(db: AsyncSession, modelrun_oid: UUID):
+    statement = select(ModelResultTable) \
+        .where(ModelResultTable.modelrun_oid == modelrun_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalars().unique().all()

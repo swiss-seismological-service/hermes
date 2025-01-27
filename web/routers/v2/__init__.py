@@ -3,16 +3,18 @@ import zipfile
 from pathlib import Path
 from uuid import UUID
 
+import pandas as pd
 from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from hermes_model import ModelInput
 from jinja2 import Template
 
-from hermes.schemas.base import EInput
+from hermes.schemas.base import EInput, EResultType
 from web import crud
 from web.database import DBSessionDep
 from web.schemas import (ForecastDetailSchema, ForecastSchema,
-                         ForecastSeriesSchema)
+                         ForecastSeriesSchema, ModelRunCatalogSchema,
+                         ModelRunRateGridSchema)
 
 router = APIRouter()
 
@@ -115,4 +117,40 @@ async def get_modelrun_result(db: DBSessionDep, modelrun_id: UUID):
     """
     Returns the results of the modelrun.
     """
-    pass
+    # get modelrun result type
+    modelconfig = await crud.read_modelrun_modelconfig(db, modelrun_id)
+    result_type = modelconfig.result_type
+
+    if result_type == EResultType.GRID:
+        result = await crud.read_modelrun_rates(db, modelrun_id)
+        result = ModelRunRateGridSchema.model_validate(result)
+        result = result.model_dump(exclude_none=True)['rateforecasts']
+        result = pd.json_normalize(result, sep='_')
+        result.columns = result.columns.str.replace('_value', '')
+
+    if result_type == EResultType.CATALOG:
+        result = await crud.read_modelrun_catalog(db, modelrun_id)
+        result = ModelRunCatalogSchema.model_validate(result)
+        result = result.model_dump(exclude_none=True)[
+            'catalogs']
+        events = []
+        for ri, r in enumerate(result):
+            for ei, event in enumerate(r['seismicevents']):
+                event['realization_id'] = r['realization_id']
+            events.extend(result[ri]['seismicevents'])
+        result = pd.json_normalize(events, sep='_')
+        result.columns = result.columns.str.replace('_value', '')
+
+    csv_buffer = io.StringIO()
+    result.to_csv(csv_buffer, index=False)
+
+    # csv_buffer.seek(0)
+    # headers = {"Content-Disposition": "attachment; filename=dataframe.csv"}
+
+    # return StreamingResponse(csv_buffer,
+    #                          media_type="text/csv",
+    #                           headers=headers
+    #                          )
+
+    csv_content = csv_buffer.getvalue()
+    return Response(content=csv_content, media_type="text")

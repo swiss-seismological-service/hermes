@@ -57,7 +57,9 @@ class ModelRunDetailSchema(ModelRun):
     @computed_field
     @property
     def injectionplan_name(self) -> str:
-        return self.injectionplan.name
+        if hasattr(self.injectionplan, 'name'):
+            return self.injectionplan.name
+        return None
 
 
 class ForecastDetailSchema(ForecastSchema):
@@ -79,6 +81,14 @@ class ForecastRateSchema(real_float_value_mixin('b', float),
                          real_float_value_mixin('alpha', float),
                          real_float_value_mixin('mc', float)):
     pass
+
+
+class SeismicEventSchema(real_float_value_mixin('time', datetime),
+                         real_float_value_mixin('longitude', float),
+                         real_float_value_mixin('latitude', float),
+                         real_float_value_mixin('depth', float),
+                         real_float_value_mixin('magnitude', float)):
+    magnitude_type: str | None = None
 
 
 class ResultBinSchema(Model):
@@ -149,4 +159,64 @@ class ResultBinSchema(Model):
 
 class ModelRunRateGridSchema(ModelRunDetailSchema):
     rateforecasts: list[ResultBinSchema] | None = Field(
+        validation_alias="modelresults")
+
+
+class ForecastCatalogSchema(Model):
+
+    time: RealFloatValueSchema | None = None
+    longitude: RealFloatValueSchema | None = None
+    latitude: RealFloatValueSchema | None = None
+    depth: RealFloatValueSchema | None = None
+    magnitude: RealFloatValueSchema | None = None
+    magnitude_type: str | None = None
+
+    timestep: TimeStep = Field(exclude=True)
+    gridcell: GridCell = Field(exclude=True)
+    seismicevents: list[SeismicEventSchema] | None = None
+    realization_id: int | None = None
+
+    @computed_field
+    @property
+    def starttime(self) -> datetime:
+        return self.timestep.starttime
+
+    @computed_field
+    @property
+    def endtime(self) -> datetime:
+        return self.timestep.endtime
+
+    @computed_field
+    @property
+    def depth_min(self) -> float:
+        return self.gridcell.depth_min
+
+    @computed_field
+    @property
+    def depth_max(self) -> float:
+        return self.gridcell.depth_max
+
+    @computed_field
+    @property
+    def latitude_min(self) -> float:
+        return self.gridcell.geom.bounds[1]
+
+    @computed_field
+    @property
+    def latitude_max(self) -> float:
+        return self.gridcell.geom.bounds[3]
+
+    @computed_field
+    @property
+    def longitude_min(self) -> float:
+        return self.gridcell.geom.bounds[0]
+
+    @computed_field
+    @property
+    def longitude_max(self) -> float:
+        return self.gridcell.geom.bounds[2]
+
+
+class ModelRunCatalogSchema(ModelRunDetailSchema):
+    catalogs: list[ForecastCatalogSchema] | None = Field(
         validation_alias="modelresults")
