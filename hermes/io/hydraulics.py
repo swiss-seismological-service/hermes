@@ -1,5 +1,4 @@
 import json
-import urllib.parse
 from copy import deepcopy
 from datetime import datetime
 
@@ -68,9 +67,6 @@ class HydraulicsDataSource(DataSource[BoreholeHydraulics]):
             BoreholeHydraulics object
         """
         hds = cls()
-
-        file_path = urllib.parse.urlparse(file_path)
-        file_path = urllib.parse.unquote(file_path.path)
 
         hds.logger.info(
             f'Loading hydraulics from file (file_path={file_path}).')

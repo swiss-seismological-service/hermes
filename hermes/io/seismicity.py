@@ -1,4 +1,3 @@
-import urllib.parse
 from datetime import datetime
 
 import pandas as pd
@@ -32,9 +31,6 @@ class SeismicityDataSource(DataSource[Catalog]):
             SeismicityDataSource object
         """
         cds = cls()
-
-        file_path = urllib.parse.urlparse(file_path)
-        file_path = urllib.parse.unquote(file_path.path)
 
         cds.logger.info(
             f'Loading seismic catalog from file (file_path={file_path}).')

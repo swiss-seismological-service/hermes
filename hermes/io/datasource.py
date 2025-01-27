@@ -1,4 +1,5 @@
 import logging
+import urllib.parse
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Generic, TypeVar
@@ -44,7 +45,10 @@ class DataSource(ABC, Generic[T]):
                  endtime: datetime | None = None) -> 'DataSource':
 
         if uri.startswith('file://'):
-            data = cls.from_file(uri, starttime, endtime)
+
+            file_path = urllib.parse.urlparse(uri)
+            file_path = urllib.parse.unquote(file_path.path)
+            data = cls.from_file(file_path, starttime, endtime)
         elif uri.startswith('http://') or uri.startswith('https://'):
             data = cls.from_ws(uri, starttime, endtime)
         else:
