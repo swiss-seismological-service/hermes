@@ -50,7 +50,15 @@ As a quick test setup, the configuration works as is, but is not secure. Please 
 
 ### 6. Start the HERMES database services
 ```
-docker compose -f src/hermes/compose-database.yaml up -d
+docker compose --env-file .env -f src/hermes/compose-database.yaml up -d
 ```
 
+### 7. Install the models
+```
+git clone https://gitlab.seismo.ethz.ch/indu/em1.git src/em1
+git clone https://github.com/swiss-seismological-service/etas.git src/etas
+
+pip install -e src/em1
+pip install -e src/etas
+```
 
