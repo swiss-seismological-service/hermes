@@ -114,3 +114,10 @@ hermes schedules catchup fs_induced
 ```
 
 __Note__ that a schedule can either lie in the past, the future, or both. The `catchup` command will only execute forecasts in the past, while the service will automatically execute forecasts in the future.
+
+## Debugging
+To view the forecasts and modelruns, currently only the webservice is available. The available endpoints are listed in the [API documentation](http://localhost:8000/docs).
+
+To view the status of the latest forecasts, you can navigate to the following URL: [http://localhost:8000/v2/forecasts](http://localhost:8000/v2/forecasts).
+
+To more easily debug the models, you can download the exact configuration and input files the modelrun used. You need copy the `oid` of the modelrun you'd like to download and then navigate to the following URL: `http://localhost:8000/v2/modelruns/{oid}/input`

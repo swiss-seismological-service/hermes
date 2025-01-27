@@ -92,6 +92,24 @@ async def read_all_forecasts(db: AsyncSession,
     return results.scalars().unique().all()
 
 
+async def read_forecasts(db: AsyncSession, limit: int = 100):
+    statement = select(ForecastTable) \
+        .options(
+            joinedload(ForecastTable.modelruns)
+            .subqueryload(ModelRunTable.modelconfig)
+            .load_only(ModelConfigTable.name, ModelConfigTable.oid),
+            joinedload(ForecastTable.modelruns)
+            .subqueryload(ModelRunTable.injectionplan)
+            .load_only(InjectionPlanTable.name, InjectionPlanTable.oid)
+    ) \
+        .order_by(ForecastTable.creationinfo_creationtime.desc()) \
+        .limit(limit)
+
+    result = await db.execute(statement)
+
+    return result.scalars().unique().all()
+
+
 async def read_forecast_modelruns(db: AsyncSession, forecast_oid: UUID):
 
     # load Forecast, defer well&catalog
@@ -139,7 +157,7 @@ async def read_forecastseries_injectionplans(
     return result.scalars().unique()
 
 
-async def read_forecast_injectionobservations(
+async def read_forecast_injectionobservation(
         db: AsyncSession, forecast_oid: UUID):
 
     statement = select(InjectionObservationTable.data).where(
@@ -233,3 +251,23 @@ async def read_forecast_rates(db: AsyncSession,
     result = await db.execute(statement)
 
     return result.scalars().unique()
+
+
+async def read_forecast_by_modelrun(db: AsyncSession, modelrun_oid: UUID):
+    statement = select(ForecastTable) \
+        .join(ModelRunTable) \
+        .where(ModelRunTable.oid == modelrun_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
+async def read_injectionplan_by_modelrun(db: AsyncSession, modelrun_oid: UUID):
+    statement = select(InjectionPlanTable.data) \
+        .join(ModelRunTable) \
+        .where(ModelRunTable.oid == modelrun_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()

@@ -56,7 +56,7 @@ async def get_forecast(db: DBSessionDep,
 async def get_forecast_injectionobservation(
         db: DBSessionDep, forecast_oid: UUID):
 
-    db_result = await crud.read_forecast_injectionobservations(
+    db_result = await crud.read_forecast_injectionobservation(
         db, forecast_oid)
 
     if not db_result:

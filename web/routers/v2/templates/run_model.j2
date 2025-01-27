@@ -1,0 +1,45 @@
+import json
+
+from {{data.sfm_module}} import {{data.sfm_function}}
+
+{% if data.seismicityobservation %}
+with open("seismicityobservation.xml") as f:
+    SEISMICITY_OBSERVATION = f.read()
+{% else %}
+SEISMICITY_OBSERVATION = None
+{% endif %}
+
+{% if data.injectionplan %}
+with open("injectionobservation.json") as f:
+    INJECTION_OBSERVATION = json.load(f)
+{% else %}
+INJECTION_OBSERVATION = None
+{% endif %}
+
+
+{% if data.injectionplan %}
+with open("injectionplan.json") as f:
+    INJECTION_PLAN = json.load(f)
+{% else %}
+INJECTION_PLAN = None
+{% endif %}
+
+def run():
+    data = {
+        'forecast_start': '{{data.forecast_start.strftime('%Y-%m-%dT%H:%M:%S')}}',
+        'forecast_end': '{{data.forecast_end.strftime('%Y-%m-%dT%H:%M:%S')}}',
+        'injection_observation': INJECTION_OBSERVATION,
+        'injection_plan': INJECTION_PLAN,
+        'bounding_polygon': '{{data.bounding_polygon}}',
+        'depth_min': {{data.depth_min}},
+        'depth_max': {{data.depth_max}},
+        'seismicity_observation': SEISMICITY_OBSERVATION,
+        "model_parameters": {{data.model_parameters}},
+        "model_settings": {{data.model_settings}},
+    }
+
+    model_output = {{data.sfm_function}}(data)  # validated input
+
+
+if __name__ == '__main__':
+    run()
