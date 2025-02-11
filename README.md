@@ -97,7 +97,7 @@ This starts a single forecast directly on the local machine.
 ### 12. (Optional) Schedule forecasts or execute "replays".
 To use advanced features like scheduling, it is necessary to start a process which "serves" the forecastseries. 
 ```
-hermes forecasts serve fs_induced
+hermes forecastseries serve fs_induced
 ```
 Once this process is running, you can "send" a forecast to the service using the above command without the `--local` flag.
 ```
