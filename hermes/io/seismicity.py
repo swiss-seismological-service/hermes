@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -91,6 +92,7 @@ class SeismicityDataSource(DataSource[Catalog]):
         try:
             tasks = []
             for u in urls:
+                time.sleep(0.5)
                 tasks.append(cds._request_text.submit(u))
             parts = [task.result() for task in tasks]
         except RuntimeError:
