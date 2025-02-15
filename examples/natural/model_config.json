@@ -26,7 +26,6 @@
         "earth_radius": 6.3781e3,
         "auxiliary_start": "1992-01-01T00:00:00",
         "timewindow_start": "1997-01-01T00:00:00",
-        "m_thr": 2.5,
-        "n_simulations": 100
+        "m_thr": 2.5
     }
 }
