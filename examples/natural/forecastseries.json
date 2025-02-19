@@ -4,10 +4,10 @@
         "natural"
     ],
     "model_settings": {
-        "n_simulations": 10000
+        "n_simulations": 2500
     },
     "observation_starttime": "1992-01-01T00:00:00",
-    "bounding_polygon": "/home/nico/workspaces/hermes/examples/natural/ch_rect.npy",
+    "bounding_polygon": "/home/nicolas/workspaces/hermes/examples/natural/ch_shape.npy",
     "depth_min": 0,
     "depth_max": 10,
     "seismicityobservation_required": "REQUIRED",
