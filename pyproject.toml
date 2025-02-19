@@ -24,7 +24,7 @@ dependencies = [
     "geoalchemy2",
     "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
     "hydws-client @ git+https://git@gitlab.seismo.ethz.ch/indu/hydws-client.git",
-    "prefect",
+    "prefect<=3.2.5",
     "psycopg2",
     "pydantic",
     "pydantic-settings",

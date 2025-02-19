@@ -5,9 +5,9 @@ services:
             - POSTGRES_USER
             - POSTGRES_PASS=${POSTGRES_PASSWORD}
         image: kartoza/postgis:latest
-        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
+        restart: ${DOCKER_RESTART_POLICY:-unless-stopped}
         ports:
-            - '0.0.0.0:${POSTGRES_PORT:-5434}:5432'
+            - 0.0.0.0:${POSTGRES_PORT:-5434}:5432
         volumes:
             - hermesdb:/var/lib/postgresql/data
         networks:
@@ -23,9 +23,9 @@ services:
         build: .
         depends_on:
             - postgres
-        restart: '${DOCKER_RESTART_POLICY:-unless-stopped}'
+        restart: ${DOCKER_RESTART_POLICY:-unless-stopped}
         ports:
-            - '0.0.0.0:${DOCKER_WEB_PORT:-8000}:8000'
+            - 0.0.0.0:${DOCKER_WEB_PORT:-8000}:8000
         networks:
             - hermesnet
 
