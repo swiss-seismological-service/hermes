@@ -99,7 +99,15 @@ To use advanced features like scheduling, it is necessary to start a process whi
 ```
 hermes forecastseries serve fs_induced
 ```
-Once this process is running, you can "send" a forecast to the service using the above command without the `--local` flag.
+
+Depending on your model, you need to control how many modelruns are executed in parallel, you can do that by specifying the `--concurrency-limit` option which is by default set to 3. Please consider, that also the requesting of the input data can become a limiting factor if you are requesting a lot of data at the same time (eg. requests to an FDSNWS).
+
+```
+hermes forecastseries serve fs_induced --concurrency-limit 1
+```
+
+Once this process is running, you can "send" a forecast to the service using the above command without the `--local` flag.  
+
 ```
 hermes forecasts run fs_induced --start 2022-04-21T15:00:00 --end 2022-04-21T18:00:00
 ```

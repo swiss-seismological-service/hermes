@@ -141,7 +141,9 @@ def delete(
 def serve(
     forecastseries: Annotated[str,
                               typer.Argument(
-                                  help="Name or UUID of the ForecastSeries.")]
+                                  help="Name or UUID of the ForecastSeries.")],
+    concurrency_limit: Annotated[int,
+                                 typer.Option()] = 3
 ):
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
@@ -152,10 +154,12 @@ def serve(
 
         forecast_deployment = forecast_runner.to_deployment(
             name=forecastseries.name,
-            parameters={"forecastseries_oid": str(forecastseries_oid)})
+            parameters={"forecastseries_oid": str(forecastseries_oid)},
+            concurrency_limit=concurrency_limit)
 
         modelrun_deployment = default_model_runner.to_deployment(
-            name=forecastseries.name)
+            name=forecastseries.name,
+            concurrency_limit=concurrency_limit)
 
         serve_fs(forecast_deployment, modelrun_deployment)
 
