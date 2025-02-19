@@ -1,3 +1,4 @@
+import random
 import time
 from datetime import datetime
 
@@ -92,7 +93,7 @@ class SeismicityDataSource(DataSource[Catalog]):
         try:
             tasks = []
             for u in urls:
-                time.sleep(0.5)
+                time.sleep(random.uniform(1, 2))
                 tasks.append(cds._request_text.submit(u))
             parts = [task.result() for task in tasks]
         except RuntimeError:

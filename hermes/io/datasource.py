@@ -71,7 +71,8 @@ class DataSource(ABC, Generic[T]):
 
     @task(name='ws-request',
           retries=3,
-          retry_delay_seconds=3)
+          retry_delay_seconds=[3, 9, 27],
+          retry_jitter_factor=0.5)
     def _request_text(self, url: str, timeout: int = 300, **kwargs) \
             -> tuple[str, int]:
         """
