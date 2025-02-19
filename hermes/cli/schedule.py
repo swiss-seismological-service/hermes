@@ -109,7 +109,10 @@ def update(
                           readable=True,
                           help="Path to json schedule "
                           "configuration file.")]):
-
+    # TODO: currently does not work for schedules which are in the past
+    raise NotImplementedError("This feature is not yet implemented."
+                              "Please use the 'delete' command and then"
+                              "create a new schedule.")
     with open(config, "r") as project_file:
         schedule_config = json.load(project_file)
 

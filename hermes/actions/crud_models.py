@@ -312,7 +312,7 @@ def update_schedule(schedule_config: dict, forecastseries_oid: UUID):
             'Schedule ID can not be set manually.'
         )
 
-    scheduler.update_prefect_schedule(schedule_config)
+    scheduler._update_prefect_schedule(schedule_config)
 
 
 def create_injectionplan_template(name: str,
