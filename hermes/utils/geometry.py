@@ -18,7 +18,8 @@ def convert_input_to_polygon(value: str) -> Polygon:
     Returns:
         A shapely Polygon object.
     """
-    if Path(value).exists():
+    # path names can at most be 255 characters long
+    if len(value) < 255 and Path(value).exists():
         try:
             if value.endswith('.npy'):
                 fl = np.load(value, mmap_mode='r')
