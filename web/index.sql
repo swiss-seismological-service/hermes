@@ -1,0 +1,1 @@
+CREATE INDEX idx_eventobservation_time_value ON eventobservation USING BRIN (time_value);
