@@ -132,6 +132,7 @@ class ModelConfigTable(ORMBase, NameMixin):
 
     _tags = relationship('TagTable',
                          back_populates='modelconfigs',
+                         lazy='joined',
                          secondary=tag_model_config_association)
 
     @hybrid_property

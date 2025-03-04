@@ -68,6 +68,16 @@ async def read_forecastseries(db: AsyncSession,
     return result.scalars().unique().one_or_none()
 
 
+async def read_modelconfig(db: AsyncSession,
+                           modelconfig_oid: UUID) -> ModelConfigTable:
+    statement = select(ModelConfigTable).where(
+        ModelConfigTable.oid == modelconfig_oid)
+
+    result = await db.execute(statement)
+
+    return result.scalar()
+
+
 async def read_modelconfigs(db: AsyncSession,
                             tag_names: list[str]) \
         -> list[ModelConfigTable]:

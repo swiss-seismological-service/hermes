@@ -7,6 +7,7 @@ from web.database import sessionmanager
 from web.routers import data, forecasts, forecastseries, modelruns, projects
 from web.routers.v2 import forecasts as forecasts_v2
 from web.routers.v2 import forecastseries as forecastseries_v2
+from web.routers.v2 import modelconfigs as modelconfigs_v2
 from web.routers.v2 import modelruns as modelruns_v2
 
 
@@ -32,6 +33,7 @@ app.include_router(data.router, prefix='/v1')
 app.include_router(forecasts_v2.router, prefix='/v2')
 app.include_router(modelruns_v2.router, prefix='/v2')
 app.include_router(forecastseries_v2.router, prefix='/v2')
+app.include_router(modelconfigs_v2.router, prefix='/v2')
 
 app = CORSMiddleware(
     app=app,

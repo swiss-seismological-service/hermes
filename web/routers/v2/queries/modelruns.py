@@ -6,7 +6,7 @@ WITH grid_cells AS (
                         :res_lon,
                         :res_lat
                         ) AS grid_geom,
-        COUNT(*) AS point_count
+        COUNT(*) AS event_count
     FROM
         (SELECT modelresult.realization_id, seismicevent.coordinates
             FROM modelresult
@@ -24,6 +24,6 @@ WITH grid_cells AS (
 SELECT
     ST_X(grid_geom) AS grid_lon,
     ST_Y(grid_geom) AS grid_lat,
-    point_count
+    event_count
 FROM grid_cells;
 """

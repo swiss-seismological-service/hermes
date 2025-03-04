@@ -3,15 +3,19 @@
 EVENT_COUNT_SERIES = """
 SELECT
     forecast_oid,
+    starttime,
+    endtime,
     modelrun_oid,
     realization_id,
-    COUNT(*) AS point_count
+    COUNT(*) AS event_count
 FROM (
     SELECT
     forecast.oid as forecast_oid,
         modelrun.oid as modelrun_oid,
         modelresult.realization_id as realization_id,
-        seismicevent.coordinates as coordinates
+        seismicevent.coordinates as coordinates,
+        forecast.starttime as starttime,
+        forecast.endtime as endtime
     FROM forecast
     JOIN modelrun
         ON forecast.oid = modelrun.forecast_oid
@@ -25,5 +29,5 @@ FROM (
 WHERE
     ST_X(events.coordinates) BETWEEN :min_lon AND :max_lon
     AND ST_Y(events.coordinates) BETWEEN :min_lat AND :max_lat
-GROUP BY realization_id, modelrun_oid, forecast_oid
+GROUP BY realization_id, modelrun_oid, forecast_oid, starttime, endtime
 """
