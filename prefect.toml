@@ -10,3 +10,6 @@ when_missing_flow = "ignore"
 
 [tasks]
 refresh_cache = true
+
+[server.deployments]
+concurrency_slot_wait_seconds = 60
