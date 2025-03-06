@@ -7,7 +7,7 @@
         "n_simulations": 10000
     },
     "observation_starttime": "1992-01-01T00:00:00",
-    "bounding_polygon": "/home/nico/workspaces/hermes/examples/oef_ch/ch_shape.npy",
+    "bounding_polygon": "/home/nicolas/workspaces/hermes/examples/oef_ch/ch_shape.npy",
     "depth_min": 0,
     "depth_max": 1000,
     "seismicityobservation_required": "REQUIRED",

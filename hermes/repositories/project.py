@@ -142,7 +142,7 @@ class ForecastSeriesRepository(repository_factory(
         # Query to get model configs with the same tags
         q = select(ModelConfigTable).join(
             ModelConfigTable._tags).where(TagTable.oid.in_(subquery))
-        result = session.execute(q).scalars().all()
+        result = session.execute(q).unique().scalars().all()
 
         return [ModelConfig.model_validate(m) for m in result]
 
