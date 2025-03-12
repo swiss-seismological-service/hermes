@@ -1,33 +1,21 @@
 # for one forecastseries and modelconfig, count events per
 # modelrun and realization inside a bounding box
 EVENT_COUNT_SERIES = """
-SELECT
-    forecast_oid,
-    starttime,
-    endtime,
-    modelrun_oid,
-    realization_id,
-    COUNT(*) AS event_count
-FROM (
-    SELECT
-    forecast.oid as forecast_oid,
-        modelrun.oid as modelrun_oid,
-        modelresult.realization_id as realization_id,
-        seismicevent.coordinates as coordinates,
-        forecast.starttime as starttime,
-        forecast.endtime as endtime
-    FROM forecast
-    JOIN modelrun
-        ON forecast.oid = modelrun.forecast_oid
-    JOIN modelresult
-        ON modelrun.oid = modelresult.modelrun_oid
-    JOIN seismicevent
-        ON modelresult.oid = seismicevent.modelresult_oid
-    WHERE forecast.forecastseries_oid = :forecastseries_oid
-    AND modelrun.modelconfig_oid = :modelconfig_oid
-    ) as events
-WHERE
-    ST_X(events.coordinates) BETWEEN :min_lon AND :max_lon
-    AND ST_Y(events.coordinates) BETWEEN :min_lat AND :max_lat
-GROUP BY realization_id, modelrun_oid, forecast_oid, starttime, endtime
+    SELECT f.oid AS forecast_oid,
+                    res.realization_id,
+                    COUNT(*) AS event_count
+    FROM forecast f
+    JOIN modelrun mr
+    ON f.oid = mr.forecast_oid
+    AND mr.modelconfig_oid = :modelconfig_oid
+    JOIN modelresult res
+    ON mr.oid = res.modelrun_oid
+    JOIN seismicevent s
+    ON res.oid = s.modelresult_oid
+    AND ST_Within(
+            s.coordinates,
+            ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326))
+    WHERE f.forecastseries_oid = :forecastseries_oid
+    GROUP BY 	f.oid,
+                res.realization_id;
 """

@@ -14,11 +14,9 @@ WITH grid_cells AS (
                     ON modelresult.oid = seismicevent.modelresult_oid
             WHERE modelresult.modelrun_oid = :modelrun_oid
         ) as events
-    WHERE
-      ST_X(events.coordinates)
-        BETWEEN :min_lon AND :max_lon
-      AND ST_Y(events.coordinates)
-        BETWEEN :min_lat AND :max_lat
+    WHERE ST_Within(
+            events.coordinates,
+            ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326))
     GROUP BY grid_geom
 )
 SELECT

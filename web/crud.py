@@ -233,7 +233,7 @@ async def read_modelrun_rates(db: AsyncSession, modelrun_id: UUID):
 
 
 async def read_modelrun_catalog(db: AsyncSession, modelrun_id: UUID):
-
+    # TODO: Very Slow
     statement = select(ModelRunTable) \
         .options(joinedload(ModelRunTable.modelconfig)
                  .load_only(ModelConfigTable.name, ModelConfigTable.oid),
