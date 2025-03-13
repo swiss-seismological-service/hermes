@@ -67,7 +67,7 @@ class TestSeismicityDataSource:
                                       datetime(2021, 1, 1),
                                       datetime(2021, 1, 2))
 
-        mock_file_source.assert_called_with('file:///home/user/file.txt',
+        mock_file_source.assert_called_with('/home/user/file.txt',
                                             datetime(2021, 1, 1),
                                             datetime(2021, 1, 2))
 

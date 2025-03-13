@@ -49,7 +49,7 @@ class ForecastSeriesConfig(CreationInfoMixin):
 
     injection_plans: list[dict] | None = Field(None, exclude=True)
 
-    model_settings: dict | None = None
+    model_settings: dict = {}
 
     tags: list[str] = []
 
