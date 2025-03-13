@@ -1,10 +1,13 @@
+import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
+from time import sleep
 from typing import Literal
 from uuid import UUID
 
 from prefect import flow, get_run_logger, runtime, task
+from prefect.client.orchestration import get_client
 from prefect.deployments import run_deployment
 
 from hermes.flows.modelrun_builder import ModelRunBuilder
@@ -99,22 +102,35 @@ class ForecastHandler:
             return None
 
         try:
+            with Session() as session:
+                ForecastRepository.update_status(session, self.forecast.oid,
+                                                 EStatus.RUNNING)
             if mode == 'local':
                 for run in self.builder.runs:
                     default_model_runner(*run)
             else:
+                running = []
+                is_final = [False]
+
                 for run in self.builder.runs:
-                    run_deployment(
+                    running.append(run_deployment(
                         name=f'DefaultModelRunner/{self.forecastseries.name}',
                         parameters={'modelrun_info': run[0],
                                     'modelconfig': run[1]},
                         timeout=0
-                    )
+                    ))
+
+                while not all(is_final):
+                    is_final = [asyncio.run(check_flow_run_is_final(r.id))
+                                for r in running]
+                    sleep(10)
+
         except BaseException as e:
             with Session() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.FAILED)
             raise e
+
         with Session() as session:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
@@ -362,3 +378,12 @@ def forecast_runner(forecastseries_oid: UUID,
     forecasthandler = ForecastHandler(forecastseries_oid, starttime, endtime)
     forecasthandler.run(mode)
     return forecasthandler
+
+
+async def check_flow_run_is_final(flow_run_id: UUID) -> bool:
+    """
+    Check if a flow run is in a final state.
+    """
+    async with get_client() as client:
+        flow_run = await client.read_flow_run(flow_run_id=flow_run_id)
+        return flow_run.state.is_final()
