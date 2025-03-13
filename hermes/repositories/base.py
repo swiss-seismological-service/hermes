@@ -45,7 +45,7 @@ def repository_factory(model: Model, orm_model: ORMBase):
         @classmethod
         def get_all(cls, session: Session) -> list:
             q = select(cls.orm_model)
-            result = session.execute(q).scalars().all()
+            result = session.execute(q).unique().scalars().all()
             return [cls.model.model_validate(row) for row in result]
 
         @classmethod

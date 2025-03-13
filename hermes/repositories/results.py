@@ -167,7 +167,8 @@ class SeismicEventRepository(
                                      session: Session,
                                      catalog: ForecastCatalog,
                                      modelresult_oids: list[UUID]) -> None:
-
+        if catalog.empty:
+            return
         # make sure that the catalog_id is 0 indexed
         if max(catalog.catalog_id) >= len(modelresult_oids):
             raise ValueError('The number of modelresult_oids is less than the '
