@@ -1,7 +1,7 @@
 
 from geoalchemy2 import Geometry
-from sqlalchemy import (Column, ForeignKey, Integer, LargeBinary, String,
-                        Table, UniqueConstraint)
+from sqlalchemy import (Column, ForeignKey, Index, Integer, LargeBinary,
+                        String, Table, UniqueConstraint)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -64,6 +64,11 @@ class EventObservationTable(TimeQuantityMixin('time'),
     associatedstationcount = Column(Integer)
     usedstationcount = Column(Integer)
     coordinates = Column(Geometry('POINT', srid=4326))
+
+    __table_args__ = (
+        Index('idx_eventobservation_time_value', 'time_value',
+              postgresql_using='brin'),
+    )
 
 
 tag_forecast_series_association = Table(

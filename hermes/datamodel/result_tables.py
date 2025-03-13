@@ -31,8 +31,9 @@ class GridCellTable(ORMBase):
     unique_geom = Column(Geometry('POLYGON'), nullable=False)
     depth_min = Column(Float)
     depth_max = Column(Float)
-    forecastseries_oid = Column(UUID, ForeignKey(
-        'forecastseries.oid', ondelete='CASCADE'))
+    forecastseries_oid = Column(UUID,
+                                ForeignKey('forecastseries.oid',
+                                           ondelete='CASCADE'))
 
     modelresults = relationship(
         'ModelResultTable',
@@ -60,7 +61,8 @@ event.listen(GridCellTable, 'before_update', set_unique_geom)
 class ModelResultTable(CreationInfoMixin, ORMBase):
 
     modelrun_oid = Column(UUID,
-                          ForeignKey('modelrun.oid', ondelete='CASCADE'))
+                          ForeignKey('modelrun.oid', ondelete='CASCADE'),
+                          index=True)
 
     realization_id = Column(Integer)
 
@@ -89,6 +91,10 @@ class ModelResultTable(CreationInfoMixin, ORMBase):
                                 cascade='all, delete-orphan',
                                 passive_deletes=True)
 
+    __table_args__ = (
+        Index('idx_modelresult_oid', 'oid'),
+    )
+
 
 class SeismicEventTable(TimeQuantityMixin('time'),
                         RealQuantityMixin('latitude'),
@@ -99,8 +105,11 @@ class SeismicEventTable(TimeQuantityMixin('time'),
     magnitude_type = Column(String)
     coordinates = Column(Geometry('POINT', srid=4326))
 
-    modelresult_oid = Column(UUID, ForeignKey(
-        'modelresult.oid', ondelete='CASCADE'))
+    modelresult_oid = Column(UUID,
+                             ForeignKey('modelresult.oid',
+                                        ondelete='CASCADE'),
+                             index=True)
+
     modelresult = relationship(
         'ModelResultTable',
         back_populates='seismicevents')
@@ -112,13 +121,15 @@ class ModelRunTable(ORMBase):
 
     modelconfig_oid = Column(UUID,
                              ForeignKey('modelconfig.oid',
-                                        ondelete="RESTRICT"))
+                                        ondelete="RESTRICT"),
+                             index=True)
     modelconfig = relationship('ModelConfigTable',
                                back_populates='modelruns')
 
     forecast_oid = Column(UUID,
                           ForeignKey('forecast.oid',
-                                     ondelete="CASCADE"))
+                                     ondelete="CASCADE"),
+                          index=True)
     forecast = relationship('ForecastTable',
                             back_populates='modelruns')
 

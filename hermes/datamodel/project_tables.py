@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 
 from geoalchemy2 import Geometry
-from sqlalchemy import (JSON, Boolean, Column, Float, ForeignKey, Integer,
-                        String)
+from sqlalchemy import (JSON, Boolean, Column, Float, ForeignKey, Index,
+                        Integer, String)
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -37,7 +37,8 @@ class ForecastTable(CreationInfoMixin,
 
     forecastseries_oid = Column(UUID,
                                 ForeignKey('forecastseries.oid',
-                                           ondelete="CASCADE"))
+                                           ondelete="CASCADE"),
+                                index=True)
     forecastseries = relationship('ForecastSeriesTable',
                                   back_populates='forecasts')
 
@@ -55,6 +56,11 @@ class ForecastTable(CreationInfoMixin,
                                          back_populates='forecast',
                                          cascade='all, delete-orphan',
                                          passive_deletes=True)
+    __table_args__ = (
+        Index('idx_forecast_starttime', 'starttime',
+              postgresql_using='brin'),
+        Index('idx_forecast_endtime', 'endtime',
+              postgresql_using='brin'))
 
 
 class ForecastSeriesTable(CreationInfoMixin,
