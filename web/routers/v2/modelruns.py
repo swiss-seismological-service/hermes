@@ -6,7 +6,7 @@ from uuid import UUID
 
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response, StreamingResponse
 from hermes_model import ModelInput
 from jinja2 import Template
@@ -89,6 +89,10 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
 
     # get the corresponding forecast
     forecast = await crud.read_forecast_by_modelrun(db, modelrun_id)
+
+    if not forecast:
+        raise HTTPException(status_code=404, detail="No modelrun not found.")
+
     forecast = ForecastSchema.model_validate(forecast)
 
     # get the corresponding forecastseries
