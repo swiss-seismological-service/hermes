@@ -1,5 +1,6 @@
 services:
     postgres:
+        shm_size: 1gb
         environment:
             - POSTGRES_DB
             - POSTGRES_USER
