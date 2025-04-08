@@ -30,23 +30,33 @@ class TestSeismicityDataSource:
 
         assert catalog.get_quakeml() == catalog.data.to_quakeml()
 
+    @patch('seismostats.FDSNWSEventClient._get_batch_params')
     @patch('hermes.io.datasource.requests.get')
-    def test_get_catalog_from_fdsnws(self, mock_get):
+    def test_get_catalog_from_fdsnws(self, mock_get, params):
 
         with open(os.path.join(MODULE_LOCATION, 'quakeml.xml'), 'r') as f:
             answer = Mock(text=f.read(), status_code=200)
 
-        urls = ['https://mock.com?starttime=2021-12-25T00%3A00%3A00&'
-                'endtime=2022-12-25T00%3A00%3A00',
-                'https://mock.com?starttime=2022-12-25T00%3A00%3A00&'
-                'endtime=2023-01-12T12%3A01%3A03']
+        params.return_value = [
+            {'starttime': '2021-12-25T00:00:00',
+             'endtime': '2022-12-25T00:00:00',
+             'limit': 1000,
+             'offset': 0},
+            {'starttime': '2021-12-25T00:00:00',
+             'endtime': '2022-12-25T00:00:00',
+             'limit': 1000,
+             'offset': 1000}
+        ]
 
+        urls = ['https://mock.com?starttime=2021-12-25T00%3A00%3A00&'
+                'endtime=2022-12-25T00%3A00%3A00&limit=1000&offset=0',
+                'https://mock.com?starttime=2021-12-25T00%3A00%3A00&'
+                'endtime=2022-12-25T00%3A00%3A00&limit=1000&offset=1000']
         mock_get.return_value = answer
 
         base_url = 'https://mock.com'
         starttime = datetime(2021, 12, 25)
-        endtime = datetime(2023, 1, 12, 12, 1, 3)
-
+        endtime = datetime(2022, 12, 25)
         catalog = SeismicityDataSource.from_ws(
             base_url, starttime, endtime)
 

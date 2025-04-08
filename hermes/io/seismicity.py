@@ -4,11 +4,10 @@ from datetime import datetime
 
 import pandas as pd
 from prefect import task
-from seismostats import Catalog
+from seismostats import Catalog, FDSNWSEventClient
 from typing_extensions import Self
 
 from hermes.io.datasource import DataSource
-from hermes.utils.dateutils import generate_date_ranges
 from hermes.utils.url import add_query_params
 
 
@@ -79,16 +78,17 @@ class SeismicityDataSource(DataSource[Catalog]):
 
         cds.logger.info('Requesting seismic catalog from fdsnws-event:')
 
-        date_ranges = generate_date_ranges(starttime, endtime)
+        client = FDSNWSEventClient(url)
+        client.params = {'starttime': starttime.strftime('%Y-%m-%dT%H:%M:%S'),
+                         'endtime': endtime.strftime('%Y-%m-%dT%H:%M:%S')}
 
-        if len(date_ranges) > 1:
+        params = client._get_batch_params(1000)
+
+        if len(params) > 1:
             cds.logger.info(
-                f'Requesting catalog in {len(date_ranges)} parts.')
+                f'Requesting catalog in {len(params)} parts.')
 
-        urls = [add_query_params(url,
-                                 starttime=start.strftime('%Y-%m-%dT%H:%M:%S'),
-                                 endtime=end.strftime('%Y-%m-%dT%H:%M:%S'))
-                for start, end in date_ranges]
+        urls = [add_query_params(url, **p) for p in params]
 
         try:
             tasks = []
