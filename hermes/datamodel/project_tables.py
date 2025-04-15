@@ -87,7 +87,8 @@ class ForecastSeriesTable(CreationInfoMixin,
     model_settings = Column(JSON, default={})
 
     project_oid = Column(UUID,
-                         ForeignKey('project.oid', ondelete="CASCADE"))
+                         ForeignKey('project.oid', ondelete="CASCADE"),
+                         index=True)
     project = relationship('ProjectTable',
                            back_populates='forecastseries')
 

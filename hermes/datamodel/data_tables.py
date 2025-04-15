@@ -14,7 +14,8 @@ class InjectionPlanTable(ORMBase):
     template = Column(LargeBinary)
 
     forecastseries_oid = Column(UUID, ForeignKey('forecastseries.oid',
-                                                 ondelete="CASCADE"))
+                                                 ondelete="CASCADE"),
+                                index=True)
     forecastseries = relationship('ForecastSeriesTable',
                                   back_populates='injectionplans')
 
@@ -29,7 +30,8 @@ class InjectionObservationTable(ORMBase):
     data = Column(LargeBinary, nullable=False)
 
     forecast_oid = Column(UUID, ForeignKey('forecast.oid',
-                                           ondelete="CASCADE"))
+                                           ondelete="CASCADE"),
+                          index=True)
     forecast = relationship('ForecastTable',
                             back_populates='injectionobservation')
 
@@ -38,7 +40,8 @@ class SeismicityObservationTable(ORMBase):
     data = Column(LargeBinary, nullable=False)
 
     forecast_oid = Column(UUID, ForeignKey('forecast.oid',
-                                           ondelete="CASCADE"))
+                                           ondelete="CASCADE"),
+                          index=True)
     forecast = relationship('ForecastTable',
                             back_populates='seismicityobservation')
     events = relationship('EventObservationTable',
@@ -56,7 +59,7 @@ class EventObservationTable(TimeQuantityMixin('time'),
     event_type = Column(String)
 
     seismicityobservation_oid = Column(UUID, ForeignKey(
-        'seismicityobservation.oid', ondelete="CASCADE"))
+        'seismicityobservation.oid', ondelete="CASCADE"), index=True)
     seismicityobservation = relationship('SeismicityObservationTable',
                                          back_populates='events')
     associatedphasecount = Column(Integer)
@@ -79,6 +82,7 @@ tag_forecast_series_association = Table(
     Column('tag_oid', UUID,
            ForeignKey('tag.oid', ondelete="CASCADE"),
            primary_key=True))
+
 tag_model_config_association = Table(
     'tag_model_config_association', ORMBase.metadata,
     Column('tag_oid', UUID,

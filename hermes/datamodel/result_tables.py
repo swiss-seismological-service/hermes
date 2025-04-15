@@ -15,7 +15,7 @@ class TimeStepTable(ORMBase):
     endtime = Column(TIMESTAMP(precision=0), nullable=False)
 
     forecastseries_oid = Column(UUID, ForeignKey(
-        'forecastseries.oid', ondelete='CASCADE'))
+        'forecastseries.oid', ondelete='CASCADE'), index=True)
 
     modelresults = relationship(
         'ModelResultTable',
@@ -33,7 +33,8 @@ class GridCellTable(ORMBase):
     depth_max = Column(Float)
     forecastseries_oid = Column(UUID,
                                 ForeignKey('forecastseries.oid',
-                                           ondelete='CASCADE'))
+                                           ondelete='CASCADE'),
+                                index=True)
 
     modelresults = relationship(
         'ModelResultTable',
@@ -171,7 +172,7 @@ class GRParametersTable(RealQuantityMixin('number_events'),
                         RealQuantityMixin('alpha'),
                         ORMBase):
     modelresult_oid = Column(UUID, ForeignKey(
-        'modelresult.oid', ondelete='CASCADE'))
+        'modelresult.oid', ondelete='CASCADE'), index=True)
     modelresult = relationship(
         'ModelResultTable',
         back_populates='grparameters')
