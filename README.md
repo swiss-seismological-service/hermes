@@ -133,3 +133,38 @@ To more easily debug the models, you can download the exact configuration and in
 ## Results
 
 The results of the modelruns can be directly downloaded from the webservice. This API is still under development and will be improved in the future. The results can be downloaded from the following URL: `http://localhost:8000/v2/modelruns/{oid}/result`. In the future, a more user-friendly interface will be provided.
+
+
+<!-- ## Update
+To update, first go to the `src/hermes` folder and pull the latest changes:
+```
+cd src/hermes
+git pull
+```
+
+Optionally do the same for the models.
+
+Then force-reinstall the dependencies to be sure that the correct versions are installed:
+```bash
+pip install -e src/hermes --force-reinstall
+```
+
+Update the prefect docker containers:
+
+```bash
+docker compose -f src/hermes/compose-prefect.yaml down -v
+docker compose -f src/hermes/compose-prefect.yaml pull
+docker compose -f src/hermes/compose-prefect.yaml up -d
+```
+
+Next you can update the hermes database and webservice:
+```bash
+docker compose -f src/hermes/compose-database.yaml pull
+docker compose -f src/hermes/compose-database.yaml build
+docker compose --env-file .env -f src/hermes/compose-database.yaml up -d
+```
+
+Now update the database:
+```bash
+hermes db upgrade
+``` -->
