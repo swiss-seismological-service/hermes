@@ -153,6 +153,18 @@ class InjectionPlanRepository(repository_factory(
         return [cls.model.model_validate(f) for f in result]
 
     @classmethod
+    async def get_by_forecastseries_async(
+            cls,
+            session: Session,
+            forecastseries_oid: UUID) -> InjectionPlan:
+
+        stmt = select(InjectionPlanTable).where(
+            InjectionPlanTable.forecastseries_oid == forecastseries_oid)
+        result = await session.execute(stmt)
+        result = result.scalars().unique()
+        return [cls.model.model_validate(f) for f in result]
+
+    @classmethod
     def get_ids_by_forecast(cls,
                             session: Session,
                             forecast_oid: UUID) -> InjectionPlan:

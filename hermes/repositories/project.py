@@ -1,7 +1,9 @@
 from geoalchemy2.shape import from_shape
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session, joinedload
 
 from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
@@ -72,6 +74,41 @@ class ForecastSeriesRepository(repository_factory(
             ForecastSeriesTable.project_oid == project_oid)
         result = session.execute(q).scalars().all()
         return [cls.model.model_validate(f) for f in result]
+
+    @classmethod
+    async def get_by_project_async(cls,
+                                   session: AsyncSession,
+                                   project_oid: str,
+                                   joined_attrs: list[str] | None = None,
+                                   override_model: BaseModel | None = None) \
+            -> list[ForecastSeries]:
+        q = select(ForecastSeriesTable).where(
+            ForecastSeriesTable.project_oid == project_oid)
+        if joined_attrs:
+            for attr in joined_attrs:
+                q = q.options(joinedload(getattr(ForecastSeriesTable, attr)))
+        result = await session.execute(q)
+        result = result.unique().scalars().all()
+        model = override_model or cls.model
+        return [model.model_validate(f) for f in result]
+
+    @classmethod
+    async def get_by_id_async(cls,
+                              session: AsyncSession,
+                              forecastseries_oid: str,
+                              joined_attrs: list[str] | None = None,
+                              override_model: BaseModel | None = None) \
+            -> ForecastSeries:
+
+        q = select(ForecastSeriesTable).where(
+            ForecastSeriesTable.oid == forecastseries_oid)
+        if joined_attrs:
+            for attr in joined_attrs:
+                q = q.options(joinedload(getattr(ForecastSeriesTable, attr)))
+        result = await session.execute(q)
+        result = result.unique().scalar_one_or_none()
+        model = override_model or cls.model
+        return model.model_validate(result) if result else None
 
     @classmethod
     def create(cls, session: Session, data: ForecastSeries) -> ForecastSeries:
@@ -213,3 +250,14 @@ class ModelConfigRepository(repository_factory(
             session.commit()
             session.refresh(result)
         return cls.model.model_validate(result)
+
+    @classmethod
+    async def get_by_tags_async(cls,
+                                session: AsyncSession,
+                                tag_names: list[str]) -> list[ModelConfig]:
+        q = select(ModelConfigTable).where(
+            ModelConfigTable._tags.any(TagTable.name.in_(tag_names)))
+
+        result = await session.execute(q)
+        result = result.unique().scalars().all()
+        return [cls.model.model_validate(m) for m in result]

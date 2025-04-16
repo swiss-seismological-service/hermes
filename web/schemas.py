@@ -1,19 +1,16 @@
 import json
-from datetime import datetime
 from uuid import UUID
 
-from pydantic import Field, computed_field, field_validator, model_validator
+from pydantic import Field, computed_field, field_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas import Forecast, ForecastSeries, ModelRun, Project
 from hermes.schemas.base import Model
-from hermes.schemas.result_schemas import GridCell, TimeStep
-from web.mixins import (CreationInfoMixin, RealFloatValueSchema,
-                        real_float_value_mixin)
+from web.mixins import CreationInfoMixin
 
 
-class ProjectSchema(CreationInfoMixin, Project):
+class ProjectJSONSchema(CreationInfoMixin, Project):
     pass
 
 
@@ -27,7 +24,7 @@ class InjectionPlanNameSchema(Model):
     oid: UUID
 
 
-class ForecastSeriesSchema(CreationInfoMixin, ForecastSeries):
+class ForecastSeriesJSONSchema(CreationInfoMixin, ForecastSeries):
     modelconfigs: list[ModelConfigNameSchema] | None = None
     injectionplans: list[InjectionPlanNameSchema] | None
     bounding_polygon: str | PolygonType | None = None
@@ -67,156 +64,9 @@ class ForecastDetailSchema(ForecastSchema):
 
 
 class InjectionPlanSchema(InjectionPlanNameSchema):
-    borehole_hydraulics: dict | None = Field(validation_alias="data")
+    borehole_hydraulics: dict | None = Field(validation_alias="template")
 
     @field_validator('borehole_hydraulics', mode='before')
     @classmethod
     def load_data(cls, v: str) -> dict:
         return json.loads(v)
-
-
-class ForecastRateSchema(real_float_value_mixin('b', float),
-                         real_float_value_mixin('number_events', float),
-                         real_float_value_mixin('a', float),
-                         real_float_value_mixin('alpha', float),
-                         real_float_value_mixin('mc', float)):
-    pass
-
-
-class SeismicEventSchema(real_float_value_mixin('time', datetime),
-                         real_float_value_mixin('longitude', float),
-                         real_float_value_mixin('latitude', float),
-                         real_float_value_mixin('depth', float),
-                         real_float_value_mixin('magnitude', float)):
-    magnitude_type: str | None = None
-
-
-class ResultBinSchema(Model):
-
-    a: RealFloatValueSchema | None = None
-    b: RealFloatValueSchema | None = None
-    number_events: RealFloatValueSchema | None = None
-    alpha: RealFloatValueSchema | None = None
-    mc: RealFloatValueSchema | None = None
-    realization_id: int | None = None
-
-    timestep: TimeStep = Field(exclude=True)
-    gridcell: GridCell = Field(exclude=True)
-
-    @model_validator(mode='before')
-    def hoist_params(cls, data):
-        try:
-            grparams = ForecastRateSchema.model_validate(
-                data.grparameters[0])
-
-            for key in ('a', 'b', 'number_events', 'alpha', 'mc'):
-                setattr(data, key, getattr(grparams, key))
-            return data
-
-        except BaseException:
-            return data
-
-    @computed_field
-    @property
-    def starttime(self) -> datetime:
-        return self.timestep.starttime
-
-    @computed_field
-    @property
-    def endtime(self) -> datetime:
-        return self.timestep.endtime
-
-    @computed_field
-    @property
-    def depth_min(self) -> float:
-        return self.gridcell.depth_min
-
-    @computed_field
-    @property
-    def depth_max(self) -> float:
-        return self.gridcell.depth_max
-
-    @computed_field
-    @property
-    def latitude_min(self) -> float:
-        return self.gridcell.geom.bounds[1]
-
-    @computed_field
-    @property
-    def latitude_max(self) -> float:
-        return self.gridcell.geom.bounds[3]
-
-    @computed_field
-    @property
-    def longitude_min(self) -> float:
-        return self.gridcell.geom.bounds[0]
-
-    @computed_field
-    @property
-    def longitude_max(self) -> float:
-        return self.gridcell.geom.bounds[2]
-
-
-class ModelRunRateGridSchema(ModelRunDetailSchema):
-    rateforecasts: list[ResultBinSchema] | None = Field(
-        validation_alias="modelresults")
-
-
-class ForecastCatalogSchema(Model):
-
-    time: RealFloatValueSchema | None = None
-    longitude: RealFloatValueSchema | None = None
-    latitude: RealFloatValueSchema | None = None
-    depth: RealFloatValueSchema | None = None
-    magnitude: RealFloatValueSchema | None = None
-    magnitude_type: str | None = None
-
-    timestep: TimeStep = Field(exclude=True)
-    gridcell: GridCell = Field(exclude=True)
-    seismicevents: list[SeismicEventSchema] | None = None
-    realization_id: int | None = None
-
-    @computed_field
-    @property
-    def starttime(self) -> datetime:
-        return self.timestep.starttime
-
-    @computed_field
-    @property
-    def endtime(self) -> datetime:
-        return self.timestep.endtime
-
-    @computed_field
-    @property
-    def depth_min(self) -> float:
-        return self.gridcell.depth_min
-
-    @computed_field
-    @property
-    def depth_max(self) -> float:
-        return self.gridcell.depth_max
-
-    @computed_field
-    @property
-    def latitude_min(self) -> float:
-        return self.gridcell.geom.bounds[1]
-
-    @computed_field
-    @property
-    def latitude_max(self) -> float:
-        return self.gridcell.geom.bounds[3]
-
-    @computed_field
-    @property
-    def longitude_min(self) -> float:
-        return self.gridcell.geom.bounds[0]
-
-    @computed_field
-    @property
-    def longitude_max(self) -> float:
-        return self.gridcell.geom.bounds[2]
-
-
-class ModelRunCatalogSchema(ModelRunDetailSchema):
-    catalogs: list[ForecastCatalogSchema] | None = Field(
-        validation_alias="modelresults")

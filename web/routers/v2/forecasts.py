@@ -6,23 +6,10 @@ from fastapi import APIRouter, Response
 from seismostats import Catalog
 from sqlalchemy import text
 
-from web import crud
 from web.database import DBSessionDep
 from web.routers.v2.queries.forecasts import OBSERVED_EVENTS
-from web.schemas import ForecastDetailSchema
 
 router = APIRouter(tags=['forecast'])
-
-
-@router.get("/forecasts",
-            response_model=list[ForecastDetailSchema],
-            response_model_exclude_none=False)
-async def get_forecasts(db: DBSessionDep):
-    """
-    Returns the last 100 forecasts.
-    """
-    db_result = await crud.read_forecasts(db)
-    return db_result
 
 
 @router.get("/forecasts/{forecast_id}/seismicityobservation")
