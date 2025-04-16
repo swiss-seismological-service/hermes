@@ -14,7 +14,7 @@ RATEGRID_QUANTITY_FIELDS = ['number_events', 'b', 'a', 'alpha', 'mc']
 
 def serialize_seismostats_grrategrid(
         rategrid: ForecastGRRateGrid,
-        model: Model = GRParameters) -> list[dict]:
+        model: type[Model] = GRParameters) -> list[dict]:
     """
     Serialize a Seismostats ForecastGRRateGrid object to a list of dicts.
 
@@ -36,8 +36,9 @@ def serialize_seismostats_grrategrid(
     return rategrid.to_dict(orient='records')
 
 
-def serialize_seismostats_catalog(catalog: Catalog,
-                                  model: Model = SeismicEvent) -> list[dict]:
+def serialize_seismostats_catalog(
+    catalog: Catalog,
+        model: type[Model] = SeismicEvent) -> list[dict]:
     """
     Serialize a Seismostats Catalog object to a list of dictionaries.
 
