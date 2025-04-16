@@ -98,7 +98,8 @@ class ForecastSeriesTable(CreationInfoMixin,
                              passive_deletes=True)
     _tags = relationship('TagTable',
                          back_populates='forecastseries',
-                         secondary=tag_forecast_series_association)
+                         secondary=tag_forecast_series_association,
+                         lazy='joined')
 
     fdsnws_url = Column(String)
     hydws_url = Column(String)
