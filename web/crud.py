@@ -1,93 +1,14 @@
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from hermes.datamodel import ProjectTable
 from hermes.datamodel.data_tables import (InjectionObservationTable,
                                           InjectionPlanTable,
                                           SeismicityObservationTable)
-from hermes.datamodel.project_tables import (ForecastSeriesTable,
-                                             ForecastTable, ModelConfigTable,
-                                             TagTable)
+from hermes.datamodel.project_tables import ForecastTable, ModelConfigTable
 from hermes.datamodel.result_tables import ModelResultTable, ModelRunTable
-
-
-async def read_all_projects(db: AsyncSession,
-                            starttime: datetime | None = None) \
-        -> list[ProjectTable]:
-
-    statement = select(ProjectTable)
-
-    if starttime:
-        statement = statement.filter(ProjectTable.starttime > starttime)
-
-    results = await db.execute(statement)
-
-    return results.scalars().unique().all()
-
-
-async def read_project(db: AsyncSession,
-                       project_oid: UUID) -> \
-        ProjectTable | None:
-
-    statement = select(ProjectTable).where(ProjectTable.oid == project_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalars().unique().one_or_none()
-
-
-async def read_all_forecastseries(db: AsyncSession,
-                                  project_oid: UUID) \
-        -> list[ForecastSeriesTable]:
-
-    statement = select(ForecastSeriesTable) \
-        .options(joinedload(ForecastSeriesTable._tags),
-                 joinedload(ForecastSeriesTable.injectionplans)) \
-        .where(project_oid == project_oid)
-
-    results = await db.execute(statement)
-
-    return results.scalars().unique().all()
-
-
-async def read_forecastseries(db: AsyncSession,
-                              forecastseries_oid: UUID) \
-        -> ForecastSeriesTable | None:
-
-    statement = select(ForecastSeriesTable) \
-        .options(joinedload(ForecastSeriesTable._tags),
-                 joinedload(ForecastSeriesTable.injectionplans)) \
-        .where(ForecastSeriesTable.oid == forecastseries_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalars().unique().one_or_none()
-
-
-async def read_modelconfig(db: AsyncSession,
-                           modelconfig_oid: UUID) -> ModelConfigTable:
-    statement = select(ModelConfigTable).where(
-        ModelConfigTable.oid == modelconfig_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalar()
-
-
-async def read_modelconfigs(db: AsyncSession,
-                            tag_names: list[str]) \
-        -> list[ModelConfigTable]:
-
-    statement = select(ModelConfigTable).where(
-        ModelConfigTable._tags.any(TagTable.name.in_(tag_names)))
-
-    results = await db.execute(statement)
-
-    return results.scalars().unique()
 
 
 async def read_all_forecasts(db: AsyncSession,
@@ -141,32 +62,6 @@ async def read_forecast_modelruns(db: AsyncSession, forecast_oid: UUID):
     return result.scalar()
 
 
-async def read_forecastseries_modelconfigs(db: AsyncSession,
-                                           forecastseries_oid: UUID) \
-        -> list[ModelConfigTable]:
-
-    statement = select(ModelConfigTable) \
-        .join(ModelConfigTable._tags) \
-        .options(joinedload(ModelConfigTable._tags))\
-        .join(ForecastSeriesTable, TagTable.forecastseries) \
-        .where(ForecastSeriesTable.oid == forecastseries_oid)
-
-    results = await db.execute(statement)
-
-    return results.scalars().unique().all()
-
-
-async def read_forecastseries_injectionplans(
-        db: AsyncSession,
-        forecastseries_oid: UUID) -> list[InjectionPlanTable]:
-    statement = select(InjectionPlanTable) \
-        .where(InjectionPlanTable.forecastseries_oid == forecastseries_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalars().unique()
-
-
 async def read_forecast_injectionobservation(
         db: AsyncSession, forecast_oid: UUID):
 
@@ -196,16 +91,6 @@ async def read_modelrun_modelconfig(db: AsyncSession, modelrun_oid: UUID):
               ModelRunTable.modelconfig_oid == ModelConfigTable.oid) \
         .options(joinedload(ModelConfigTable._tags)) \
         .where(ModelRunTable.oid == modelrun_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalar()
-
-
-async def read_injectionplan(db: AsyncSession, injectionplan_oid: UUID):
-
-    statement = select(InjectionPlanTable.data).where(
-        InjectionPlanTable.oid == injectionplan_oid)
 
     result = await db.execute(statement)
 
@@ -301,21 +186,3 @@ async def read_injectionplan_by_modelrun(db: AsyncSession, modelrun_oid: UUID):
     result = await db.execute(statement)
 
     return result.scalar()
-
-
-async def read_modelrun(db: AsyncSession, modelrun_oid: UUID):
-    statement = select(ModelRunTable) \
-        .where(ModelRunTable.oid == modelrun_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalar()
-
-
-async def read_modelresults(db: AsyncSession, modelrun_oid: UUID):
-    statement = select(ModelResultTable) \
-        .where(ModelResultTable.modelrun_oid == modelrun_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalars().unique().all()

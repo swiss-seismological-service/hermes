@@ -12,11 +12,12 @@ from hermes_model import ModelInput
 from jinja2 import Template
 from sqlalchemy import text
 
+from hermes.repositories.project import ForecastSeriesRepository
 from hermes.schemas.base import EInput, EResultType
 from web import crud
 from web.database import DBSessionDep
 from web.routers.v2.queries.modelruns import EVENTCOUNTS
-from web.schemas import (ForecastSchema, ForecastSeriesSchema,
+from web.schemas import (ForecastSchema, ForecastSeriesJSONSchema,
                          ModelRunCatalogSchema, ModelRunRateGridSchema)
 
 router = APIRouter(tags=['modelruns'])
@@ -96,9 +97,10 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
     forecast = ForecastSchema.model_validate(forecast)
 
     # get the corresponding forecastseries
-    forecastseries = await crud.read_forecastseries(
-        db, forecast.forecastseries_oid)
-    forecastseries = ForecastSeriesSchema.model_validate(forecastseries)
+    forecastseries = await ForecastSeriesRepository.get_by_id_async(
+        db,
+        forecast.forecastseries_oid,
+        override_model=ForecastSeriesJSONSchema)
 
     # get the corresponding modelconfig
     modelconfig = await crud.read_modelrun_modelconfig(db, modelrun_id)

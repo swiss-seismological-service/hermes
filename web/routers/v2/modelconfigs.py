@@ -1,9 +1,10 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
+from hermes.repositories.project import ModelConfigRepository
 from hermes.schemas.model_schemas import ModelConfig
-from web import crud
 from web.database import DBSessionDep
 
 router = APIRouter(tags=['modelconfigs'])
@@ -12,13 +13,17 @@ router = APIRouter(tags=['modelconfigs'])
 @router.get("/modelconfigs",
             response_model=list[ModelConfig],
             response_model_exclude_none=True)
-async def get_forecastseries_modelconfigs(db: DBSessionDep,
-                                          tags: list[str] | None = None):
+async def get_forecastseries_modelconfigs(
+        db: DBSessionDep,
+        tags: Annotated[list[str] | None, Query()] = None):
     """
     Returns a list of ModelConfigs
     """
-
-    db_result = await crud.read_modelconfigs(db, tags)
+    print(tags)
+    if tags is None:
+        db_result = await ModelConfigRepository.get_all_async(db)
+    else:
+        db_result = await ModelConfigRepository.get_by_tags_async(db, tags)
 
     return db_result
 
@@ -32,7 +37,8 @@ async def get_modelconfig(db: DBSessionDep,
     Returns a ModelConfig
     """
 
-    db_result = await crud.read_modelconfig(db, modelconfig_oid)
+    db_result = await ModelConfigRepository.get_by_id_async(db,
+                                                            modelconfig_oid)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="Modelconfig not found.")
