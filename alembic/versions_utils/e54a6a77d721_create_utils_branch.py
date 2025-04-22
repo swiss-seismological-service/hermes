@@ -35,7 +35,8 @@ def downgrade() -> None:
     public_hermes_dummy = PGFunction(
         schema="public",
         signature="hermes_dummy()",
-        definition='RETURNS void AS $$\n  BEGIN\n    -- No operation\n  END;\n  $$ LANGUAGE plpgsql'
+        definition='''RETURNS void AS $$\n  BEGIN
+                -- No operation\n  END;\n  $$ LANGUAGE plpgsql'''
     )
     op.drop_entity(public_hermes_dummy)
 

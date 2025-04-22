@@ -135,19 +135,19 @@ To more easily debug the models, you can download the exact configuration and in
 The results of the modelruns can be directly downloaded from the webservice. This API is still under development and will be improved in the future. The results can be downloaded from the following URL: `http://localhost:8000/v2/modelruns/{oid}/result`. In the future, a more user-friendly interface will be provided.
 
 
-<!-- ## Update
-To update, first go to the `src/hermes` folder and pull the latest changes:
-```
+## Reinstall
+If you want to update the project and would like a clean install or/and don't care about the existing data, you can do so by running the following commands:
+
+To update, first go to the `src/hermes` folder and pull the latest changes. Then force-reinstall the dependencies to be sure that the correct versions are installed:
+
+```bash
 cd src/hermes
 git pull
-```
-
-Optionally do the same for the models.
-
-Then force-reinstall the dependencies to be sure that the correct versions are installed:
-```bash
 pip install -e src/hermes --force-reinstall
+cd ../..
 ```
+
+Optionally do the same for the models.  
 
 Update the prefect docker containers:
 
@@ -167,4 +167,31 @@ docker compose --env-file .env -f src/hermes/compose-database.yaml up -d
 Now update the database:
 ```bash
 hermes db upgrade
-``` -->
+```
+
+## Update
+If you want to update the project and would like to keep the existing data, you can do so by running the following commands:
+
+To update, first go to the `src/hermes` folder and pull the latest changes. Then force-reinstall the dependencies to be sure that the correct versions are installed:
+
+```bash
+cd src/hermes
+git pull
+pip install -e src/hermes --force-reinstall
+cd ../..
+```
+
+Optionally do the same for the models.
+
+Update the prefect docker containers:
+
+```bash
+docker compose -f src/hermes/compose-prefect.yaml up -d
+prefect server database upgrade -y
+```
+
+Next you can update the hermes database and webservice:
+```bash
+docker compose -f src/hermes/compose-database.yaml up -d --build
+hermes db upgrade
+```

@@ -1,6 +1,6 @@
 services:
     prefect-server:
-        image: prefecthq/prefect:3.2.5-python3.12
+        image: prefecthq/prefect:3.3.5-python3.12
         environment:
             - PREFECT_SERVER_API_HOST=0.0.0.0
             - PREFECT_UI_API_URL=${PREFECT_API_URL:-http://localhost:4200/api}

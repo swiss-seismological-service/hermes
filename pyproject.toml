@@ -12,10 +12,7 @@ name = "HERMES"
 version = "0.1.0"
 description = "Hub for Earthquake foRecasts ManagEment and Scheduling "
 readme = "README.md"
-authors = [
-    { name = "Laura Sarson" },
-    { name = "Nicolas Schmid", email = "nicolas.schmid@sed.ethz.ch" },
-]
+authors = [{ name = "Laura Sarson" }, { name = "Nicolas Schmid" }]
 license = { file = "LICENSE" }
 
 dependencies = [
@@ -25,13 +22,13 @@ dependencies = [
     "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
     "hydws-client @ git+https://git@gitlab.seismo.ethz.ch/indu/hydws-client.git",
     "pandas",
-    "prefect==3.2.5",
+    "prefect==3.3.5",
     "psycopg2",
     "pydantic<2.11.0",
     "pydantic-settings",
     "python-dotenv",
     "requests",
-    "seismostats @ git+https://github.com/swiss-seismological-service/SeismoStats.git",
+    "seismostats",
     "shapely",
     "sqlalchemy",
     "typer",
