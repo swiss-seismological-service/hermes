@@ -1,13 +1,14 @@
-from typing import Annotated
+import json
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Response
 
-from web import crud
+from hermes.repositories.data import (InjectionObservationRepository,
+                                      SeismicityObservationRepository)
+from hermes.repositories.project import ForecastRepository
 from web.database import DBSessionDep
 from web.routers import XMLResponse
-from web.schemas import (ForecastDetailSchema, ForecastSchema,
-                         ModelRunRateGridSchema)
+from web.schemas import ForecastSchema
 
 router = APIRouter(tags=['forecast'])
 
@@ -21,7 +22,8 @@ async def get_all_forecasts(db: DBSessionDep,
     Returns a list of ForecastSeries
     """
 
-    db_result = await crud.read_all_forecasts(db, forecastseries_oid)
+    db_result = await ForecastRepository.get_by_forecastseries_async(
+        db, forecastseries_oid)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecastseries found.")
@@ -30,7 +32,7 @@ async def get_all_forecasts(db: DBSessionDep,
 
 
 @router.get("/forecasts/{forecast_oid}",
-            response_model=ForecastDetailSchema,
+            response_model=ForecastSchema,
             response_model_exclude_none=False)
 async def get_forecast(db: DBSessionDep,
                        forecast_oid: UUID):
@@ -38,7 +40,8 @@ async def get_forecast(db: DBSessionDep,
     Returns a single Forecast
     """
 
-    db_result = await crud.read_forecast_modelruns(db, forecast_oid)
+    db_result = await ForecastRepository.get_by_id_async(
+        db, forecast_oid)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecast found.")
@@ -56,7 +59,7 @@ async def get_forecast(db: DBSessionDep,
 async def get_forecast_injectionobservation(
         db: DBSessionDep, forecast_oid: UUID):
 
-    db_result = await crud.read_forecast_injectionobservation(
+    db_result = await InjectionObservationRepository.get_by_forecast_async(
         db, forecast_oid)
 
     if not db_result:
@@ -64,8 +67,12 @@ async def get_forecast_injectionobservation(
             status_code=404,
             detail="No Forecast or injectionobservation found.")
 
+    db_result = db_result.model_dump()
+    if 'data' in db_result.keys():
+        db_result['data'] = json.loads(db_result['data'])
+
     return Response(
-        content=db_result,
+        content=json.dumps(db_result['data']),
         media_type="application/json")
 
 
@@ -82,8 +89,9 @@ async def get_forecast_seismicityobservation(db: DBSessionDep,
     """
     Returns the seismic catalog for this project.
     """
-    db_result = await crud.read_forecast_seismicityobservation(db,
-                                                               forecast_oid)
+
+    db_result = await SeismicityObservationRepository.get_by_forecast_async(
+        db, forecast_oid)
 
     if not db_result:
         raise HTTPException(
@@ -91,27 +99,27 @@ async def get_forecast_seismicityobservation(db: DBSessionDep,
             detail="No Forecast or SeismicityObservation found.")
 
     return Response(
-        content=db_result,
+        content=db_result.data,
         media_type="application/xml")
 
 
-@router.get("/forecasts/{forecast_id}/rates",
-            response_model=list[ModelRunRateGridSchema],
-            response_model_exclude_none=True)
-async def get_forecast_rates(
-        db: DBSessionDep,
-        forecast_id: UUID,
-        modelconfigs: Annotated[list[str] | None, Query()] = None,
-        injectionplans: Annotated[list[str] | None, Query()] = None):
-    """
-    Returns a list of ForecastRateGrids
-    """
-    db_result = await crud.read_forecast_rates(db,
-                                               forecast_id,
-                                               modelconfigs,
-                                               injectionplans)
+# @router.get("/forecasts/{forecast_id}/rates",
+#             response_model=list[ModelRunRateGridSchema],
+#             response_model_exclude_none=True)
+# async def get_forecast_rates(
+#         db: DBSessionDep,
+#         forecast_id: UUID,
+#         modelconfigs: Annotated[list[str] | None, Query()] = None,
+#         injectionplans: Annotated[list[str] | None, Query()] = None):
+#     """
+#     Returns a list of ForecastRateGrids
+#     """
+#     db_result = await crud.read_forecast_rates(db,
+#                                                forecast_id,
+#                                                modelconfigs,
+#                                                injectionplans)
 
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecast found.")
+#     if not db_result:
+#         raise HTTPException(status_code=404, detail="No forecast found.")
 
-    return db_result
+#     return db_result

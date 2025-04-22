@@ -11,57 +11,6 @@ from hermes.datamodel.project_tables import ForecastTable, ModelConfigTable
 from hermes.datamodel.result_tables import ModelResultTable, ModelRunTable
 
 
-async def read_all_forecasts(db: AsyncSession,
-                             forecastseries_oid: UUID) \
-        -> list[ForecastTable]:
-
-    statement = select(ForecastTable).where(
-        ForecastTable.forecastseries_oid == forecastseries_oid)
-
-    results = await db.execute(statement)
-
-    return results.scalars().unique().all()
-
-
-async def read_forecasts(db: AsyncSession, limit: int = 100):
-    statement = select(ForecastTable) \
-        .options(
-            joinedload(ForecastTable.modelruns)
-            .subqueryload(ModelRunTable.modelconfig)
-            .load_only(ModelConfigTable.name, ModelConfigTable.oid),
-            joinedload(ForecastTable.modelruns)
-            .subqueryload(ModelRunTable.injectionplan)
-            .load_only(InjectionPlanTable.name, InjectionPlanTable.oid)
-    ) \
-        .order_by(ForecastTable.creationinfo_creationtime.desc()) \
-        .limit(limit)
-
-    result = await db.execute(statement)
-
-    return result.scalars().unique().all()
-
-
-async def read_forecast_modelruns(db: AsyncSession, forecast_oid: UUID):
-
-    # load Forecast, defer well&catalog
-    # join model runs, defer injectionplan
-    # subqueryload modelconfig, load only name
-    statement = select(ForecastTable) \
-        .options(
-            joinedload(ForecastTable.modelruns)
-            .subqueryload(ModelRunTable.modelconfig)
-            .load_only(ModelConfigTable.name, ModelConfigTable.oid),
-            joinedload(ForecastTable.modelruns)
-            .subqueryload(ModelRunTable.injectionplan)
-            .load_only(InjectionPlanTable.name, InjectionPlanTable.oid)
-    ) \
-        .where(ForecastTable.oid == forecast_oid)
-
-    result = await db.execute(statement)
-
-    return result.scalar()
-
-
 async def read_forecast_injectionobservation(
         db: AsyncSession, forecast_oid: UUID):
 

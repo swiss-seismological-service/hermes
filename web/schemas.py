@@ -1,11 +1,11 @@
 import json
 from uuid import UUID
 
-from pydantic import Field, computed_field, field_validator
+from pydantic import Field, field_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
-from hermes.schemas import Forecast, ForecastSeries, ModelRun, Project
+from hermes.schemas import Forecast, ForecastSeries, Project
 from hermes.schemas.base import Model
 from web.mixins import CreationInfoMixin
 
@@ -37,30 +37,6 @@ class ForecastSeriesJSONSchema(CreationInfoMixin, ForecastSeries):
 
 class ForecastSchema(CreationInfoMixin, Forecast):
     pass
-
-
-class ModelRunDetailSchema(ModelRun):
-    forecast_oid: UUID = Field(exclude=True)
-    modelconfig: ModelConfigNameSchema | None = \
-        Field(default=None, exclude=True)
-    injectionplan: InjectionPlanNameSchema | None = \
-        Field(default=None, exclude=True)
-
-    @computed_field
-    @property
-    def modelconfig_name(self) -> str:
-        return self.modelconfig.name
-
-    @computed_field
-    @property
-    def injectionplan_name(self) -> str:
-        if hasattr(self.injectionplan, 'name'):
-            return self.injectionplan.name
-        return None
-
-
-class ForecastDetailSchema(ForecastSchema):
-    modelruns: list[ModelRunDetailSchema] | None = None
 
 
 class InjectionPlanSchema(InjectionPlanNameSchema):

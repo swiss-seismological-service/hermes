@@ -85,6 +85,18 @@ class SeismicityObservationRepository(repository_factory(
 
         return object_db
 
+    @classmethod
+    async def get_by_forecast_async(
+            cls,
+            session: Session,
+            forecast_oid: UUID) -> SeismicityObservation:
+
+        stmt = select(SeismicityObservationTable).where(
+            SeismicityObservationTable.forecast_oid == forecast_oid)
+        result = await session.execute(stmt)
+        result = result.scalar()
+        return cls.model.model_validate(result)
+
 
 class InjectionObservationRepository(repository_factory(
         InjectionObservation, InjectionObservationTable)):
@@ -110,6 +122,18 @@ class InjectionObservationRepository(repository_factory(
         hydjson = json.dumps(data.to_json())
 
         return cls.create_from_hydjson(session, hydjson, forecast_oid)
+
+    @classmethod
+    async def get_by_forecast_async(
+            cls,
+            session: Session,
+            forecast_oid: UUID) -> InjectionObservation:
+
+        stmt = select(InjectionObservationTable).where(
+            InjectionObservationTable.forecast_oid == forecast_oid)
+        result = await session.execute(stmt)
+        result = result.scalar()
+        return cls.model.model_validate(result)
 
 
 class InjectionPlanRepository(repository_factory(

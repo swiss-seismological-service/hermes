@@ -207,6 +207,17 @@ class ForecastRepository(repository_factory(Forecast, ForecastTable)):
         result = session.execute(q).scalars().all()
         return [cls.model.model_validate(f) for f in result]
 
+    @classmethod
+    async def get_by_forecastseries_async(
+            cls,
+            session: AsyncSession,
+            forecastseries_oid: str) -> list[Forecast]:
+        q = select(ForecastTable).where(
+            ForecastTable.forecastseries_oid == forecastseries_oid)
+        result = await session.execute(q)
+        result = result.unique().scalars().all()
+        return [cls.model.model_validate(f) for f in result]
+
 
 class ModelConfigRepository(repository_factory(
         ModelConfig, ModelConfigTable)):
