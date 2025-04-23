@@ -12,13 +12,16 @@ from hermes_model import ModelInput
 from jinja2 import Template
 from sqlalchemy import text
 
-from hermes.repositories.project import ForecastSeriesRepository
-from hermes.schemas.base import EInput, EResultType
-from web import crud
+from hermes.repositories.data import (InjectionObservationRepository,
+                                      InjectionPlanRepository,
+                                      SeismicityObservationRepository)
+from hermes.repositories.project import (ForecastRepository,
+                                         ForecastSeriesRepository,
+                                         ModelConfigRepository)
+from hermes.schemas.base import EInput
 from web.database import DBSessionDep
 from web.routers.v2.queries.modelruns import EVENTCOUNTS
-from web.schemas import (ForecastSchema, ForecastSeriesJSONSchema,
-                         ModelRunCatalogSchema, ModelRunRateGridSchema)
+from web.schemas import ForecastSchema
 
 router = APIRouter(tags=['modelruns'])
 
@@ -34,7 +37,7 @@ async def get_modelrun_rates(db: DBSessionDep,
                              max_lat: float,
                              realization_id: bool = False
                              ):
-
+    # TODO: include option for realization_id
     # Execute the query
     stmt = text(EVENTCOUNTS).bindparams(modelrun_oid=modelrun_id,
                                         min_lon=min_lon + (res_lon / 2),
@@ -89,8 +92,8 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
     """
 
     # get the corresponding forecast
-    forecast = await crud.read_forecast_by_modelrun(db, modelrun_id)
-
+    forecast = await ForecastRepository.get_by_modelrun_async(
+        db, modelrun_id)
     if not forecast:
         raise HTTPException(status_code=404, detail="No modelrun not found.")
 
@@ -99,37 +102,39 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
     # get the corresponding forecastseries
     forecastseries = await ForecastSeriesRepository.get_by_id_async(
         db,
-        forecast.forecastseries_oid,
-        override_model=ForecastSeriesJSONSchema)
+        forecast.forecastseries_oid)
 
     # get the corresponding modelconfig
-    modelconfig = await crud.read_modelrun_modelconfig(db, modelrun_id)
-
+    modelconfig = await ModelConfigRepository.get_by_modelrun_async(
+        db, modelrun_id)
     seismicityobservation = None
     if forecastseries.seismicityobservation_required != EInput.NOT_ALLOWED:
-        seismicityobservation = await crud.read_forecast_seismicityobservation(
-            db, forecast.oid)
-        seismicityobservation = io.BytesIO(seismicityobservation)
+        seismicityobservation = \
+            await SeismicityObservationRepository.get_by_forecast_async(
+                db, forecast.oid)
+        seismicityobservation = io.BytesIO(seismicityobservation.data)
         seismicityobservation.name = "seismicityobservation.xml"
 
     injectionobservation = None
     if forecastseries.injectionobservation_required != EInput.NOT_ALLOWED:
-        injectionobservation = await crud.read_forecast_injectionobservation(
-            db, forecast.oid)
-        injectionobservation = io.BytesIO(injectionobservation)
+        injectionobservation = \
+            await InjectionObservationRepository.get_by_forecast_async(
+                db, forecast.oid)
+        injectionobservation = io.BytesIO(injectionobservation.data)
         injectionobservation.name = "injectionobservation.json"
 
     injectionplan = None
     if forecastseries.injectionplan_required != EInput.NOT_ALLOWED:
-        injectionplan = await crud.read_injectionplan_by_modelrun(
+        injectionplan = await InjectionPlanRepository.get_by_modelrun_async(
             db, modelrun_id)
+        injectionplan = injectionplan.data
         injectionplan = io.BytesIO(injectionplan)
         injectionplan.name = "injectionplan.json"
 
     model_input = ModelInput(
         forecast_start=forecast.starttime,
         forecast_end=forecast.endtime,
-        bounding_polygon=forecastseries.bounding_polygon,
+        bounding_polygon=forecastseries.bounding_polygon.wkt,
         depth_min=forecastseries.depth_min,
         depth_max=forecastseries.depth_max,
         model_parameters=modelconfig.model_parameters,
@@ -169,37 +174,37 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
                              headers=headers)
 
 
-@router.get("/modelruns/{modelrun_id}/result")
-async def get_modelrun_result(db: DBSessionDep, modelrun_id: UUID):
-    """
-    Returns the results of the modelrun.
-    """
-    # get modelrun result type
-    modelconfig = await crud.read_modelrun_modelconfig(db, modelrun_id)
-    result_type = modelconfig.result_type
+# @router.get("/modelruns/{modelrun_id}/result")
+# async def get_modelrun_result(db: DBSessionDep, modelrun_id: UUID):
+#     """
+#     Returns the results of the modelrun.
+#     """
+#     # get modelrun result type
+#     modelconfig = await crud.read_modelrun_modelconfig(db, modelrun_id)
+#     result_type = modelconfig.result_type
 
-    if result_type == EResultType.GRID:
-        result = await crud.read_modelrun_rates(db, modelrun_id)
-        result = ModelRunRateGridSchema.model_validate(result)
-        result = result.model_dump(exclude_none=True)['rateforecasts']
-        result = pd.json_normalize(result, sep='_')
-        result.columns = result.columns.str.replace('_value', '')
+#     if result_type == EResultType.GRID:
+#         result = await crud.read_modelrun_rates(db, modelrun_id)
+#         result = ModelRunRateGridSchema.model_validate(result)
+#         result = result.model_dump(exclude_none=True)['rateforecasts']
+#         result = pd.json_normalize(result, sep='_')
+#         result.columns = result.columns.str.replace('_value', '')
 
-    if result_type == EResultType.CATALOG:
-        result = await crud.read_modelrun_catalog(db, modelrun_id)
-        result = ModelRunCatalogSchema.model_validate(result)
-        result = result.model_dump(exclude_none=True)[
-            'catalogs']
-        events = []
-        for ri, r in enumerate(result):
-            for ei, event in enumerate(r['seismicevents']):
-                event['realization_id'] = r['realization_id']
-            events.extend(result[ri]['seismicevents'])
-        result = pd.json_normalize(events, sep='_')
-        result.columns = result.columns.str.replace('_value', '')
+#     if result_type == EResultType.CATALOG:
+#         result = await crud.read_modelrun_catalog(db, modelrun_id)
+#         result = ModelRunCatalogSchema.model_validate(result)
+#         result = result.model_dump(exclude_none=True)[
+#             'catalogs']
+#         events = []
+#         for ri, r in enumerate(result):
+#             for ei, event in enumerate(r['seismicevents']):
+#                 event['realization_id'] = r['realization_id']
+#             events.extend(result[ri]['seismicevents'])
+#         result = pd.json_normalize(events, sep='_')
+#         result.columns = result.columns.str.replace('_value', '')
 
-    csv_buffer = io.StringIO()
-    result.to_csv(csv_buffer, index=False)
+#     csv_buffer = io.StringIO()
+#     result.to_csv(csv_buffer, index=False)
 
-    csv_content = csv_buffer.getvalue()
-    return Response(content=csv_content, media_type="text")
+#     csv_content = csv_buffer.getvalue()
+#     return Response(content=csv_content, media_type="text")

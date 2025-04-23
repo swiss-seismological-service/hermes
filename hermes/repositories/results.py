@@ -228,3 +228,14 @@ class ModelRunRepository(repository_factory(
             ModelRunTable.injectionplan_oid == injectionplan_oid)
         result = session.execute(q).unique().all()
         return [cls.model.model_validate(r) for r in result]
+
+    @classmethod
+    async def get_by_forecast_async(
+            cls,
+            session: Session,
+            forecast_oid: UUID) -> list[ModelRun]:
+        q = select(ModelRunTable).where(
+            ModelRunTable.forecast_oid == forecast_oid)
+        result = await session.execute(q)
+        result = result.unique().scalars().all()
+        return [cls.model.model_validate(r) for r in result]

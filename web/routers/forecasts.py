@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Response
 from hermes.repositories.data import (InjectionObservationRepository,
                                       SeismicityObservationRepository)
 from hermes.repositories.project import ForecastRepository
+from hermes.repositories.results import ModelRunRepository
+from hermes.schemas.result_schemas import ModelRun
 from web.database import DBSessionDep
 from web.routers import XMLResponse
 from web.schemas import ForecastSchema
@@ -102,6 +104,18 @@ async def get_forecast_seismicityobservation(db: DBSessionDep,
         content=db_result.data,
         media_type="application/xml")
 
+
+@router.get("/forecasts/{forecast_oid}/modelruns",
+            response_model=list[ModelRun])
+async def get_forecast_modelruns(db: DBSessionDep,
+                                 forecast_oid: UUID):
+    """
+    Returns a list of ModelRuns for this forecast.
+    """
+    db_result = await ModelRunRepository.get_by_forecast_async(
+        db, forecast_oid)
+
+    return db_result
 
 # @router.get("/forecasts/{forecast_id}/rates",
 #             response_model=list[ModelRunRateGridSchema],

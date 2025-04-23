@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              ProjectTable, TagTable)
+from hermes.datamodel.result_tables import ModelRunTable
 from hermes.repositories.base import repository_factory
 from hermes.schemas import (EStatus, Forecast, ForecastSeries, ModelConfig,
                             Project, Tag)
@@ -218,6 +219,18 @@ class ForecastRepository(repository_factory(Forecast, ForecastTable)):
         result = result.unique().scalars().all()
         return [cls.model.model_validate(f) for f in result]
 
+    @classmethod
+    async def get_by_modelrun_async(
+            cls,
+            session: AsyncSession,
+            modelrun_oid: str) -> list[Forecast]:
+        q = select(ForecastTable) \
+            .join(ModelRunTable) \
+            .where(ModelRunTable.oid == modelrun_oid)
+        result = await session.execute(q)
+        result = result.scalar()
+        return cls.model.model_validate(result)
+
 
 class ModelConfigRepository(repository_factory(
         ModelConfig, ModelConfigTable)):
@@ -272,3 +285,13 @@ class ModelConfigRepository(repository_factory(
         result = await session.execute(q)
         result = result.unique().scalars().all()
         return [cls.model.model_validate(m) for m in result]
+
+    @classmethod
+    async def get_by_modelrun_async(cls,
+                                    session: AsyncSession,
+                                    modelrun_oid: str) -> list[ModelConfig]:
+        q = select(ModelConfigTable).join(
+            ModelRunTable).where(ModelRunTable.oid == modelrun_oid)
+        result = await session.execute(q)
+        result = result.scalar()
+        return cls.model.model_validate(result)

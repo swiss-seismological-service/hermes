@@ -91,9 +91,9 @@ class SeismicityObservationRepository(repository_factory(
             session: Session,
             forecast_oid: UUID) -> SeismicityObservation:
 
-        stmt = select(SeismicityObservationTable).where(
+        q = select(SeismicityObservationTable).where(
             SeismicityObservationTable.forecast_oid == forecast_oid)
-        result = await session.execute(stmt)
+        result = await session.execute(q)
         result = result.scalar()
         return cls.model.model_validate(result)
 
@@ -129,9 +129,9 @@ class InjectionObservationRepository(repository_factory(
             session: Session,
             forecast_oid: UUID) -> InjectionObservation:
 
-        stmt = select(InjectionObservationTable).where(
+        q = select(InjectionObservationTable).where(
             InjectionObservationTable.forecast_oid == forecast_oid)
-        result = await session.execute(stmt)
+        result = await session.execute(q)
         result = result.scalar()
         return cls.model.model_validate(result)
 
@@ -171,9 +171,9 @@ class InjectionPlanRepository(repository_factory(
                               session: Session,
                               forecastseries_oid: UUID) -> InjectionPlan:
 
-        stmt = select(InjectionPlanTable).where(
+        q = select(InjectionPlanTable).where(
             InjectionPlanTable.forecastseries_oid == forecastseries_oid)
-        result = session.execute(stmt).scalars().all()
+        result = session.execute(q).scalars().all()
         return [cls.model.model_validate(f) for f in result]
 
     @classmethod
@@ -182,9 +182,9 @@ class InjectionPlanRepository(repository_factory(
             session: Session,
             forecastseries_oid: UUID) -> InjectionPlan:
 
-        stmt = select(InjectionPlanTable).where(
+        q = select(InjectionPlanTable).where(
             InjectionPlanTable.forecastseries_oid == forecastseries_oid)
-        result = await session.execute(stmt)
+        result = await session.execute(q)
         result = result.scalars().unique()
         return [cls.model.model_validate(f) for f in result]
 
@@ -193,12 +193,26 @@ class InjectionPlanRepository(repository_factory(
                             session: Session,
                             forecast_oid: UUID) -> InjectionPlan:
 
-        stmt = select(InjectionPlanTable.oid) \
+        q = select(InjectionPlanTable.oid) \
             .join(ModelRunTable,
                   ModelRunTable.injectionplan_oid == InjectionPlanTable.oid) \
             .join(ForecastTable,
                   ForecastTable.oid == ModelRunTable.forecast_oid) \
             .where(ForecastTable.oid == forecast_oid)
 
-        result = session.execute(stmt).scalars().all()
+        result = session.execute(q).scalars().all()
         return [f for f in result]
+
+    @classmethod
+    async def get_by_modelrun_async(
+            cls,
+            session: Session,
+            modelrun_id: UUID) -> InjectionPlan:
+
+        q = select(InjectionPlanTable) \
+            .join(ModelRunTable) \
+            .where(ModelRunTable.oid == modelrun_id)
+
+        result = await session.execute(q)
+        result = result.scalar()
+        return cls.model.model_validate(result)
