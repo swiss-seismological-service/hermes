@@ -19,7 +19,7 @@ async def get_forecastseries_modelconfigs(
     """
     Returns a list of ModelConfigs
     """
-    print(tags)
+
     if tags is None:
         db_result = await ModelConfigRepository.get_all_async(db)
     else:

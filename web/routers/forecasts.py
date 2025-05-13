@@ -1,15 +1,18 @@
 import json
+from datetime import datetime
 from uuid import UUID
 
+import pandas as pd
 from fastapi import APIRouter, HTTPException, Response
+from seismostats import Catalog
+from sqlalchemy import text
 
-from hermes.repositories.data import (InjectionObservationRepository,
-                                      SeismicityObservationRepository)
+from hermes.repositories.data import InjectionObservationRepository
 from hermes.repositories.project import ForecastRepository
 from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.result_schemas import ModelRun
 from web.database import DBSessionDep
-from web.routers import XMLResponse
+from web.queries.forecasts import OBSERVED_EVENTS
 from web.schemas import ForecastSchema
 
 router = APIRouter(tags=['forecast'])
@@ -78,31 +81,41 @@ async def get_forecast_injectionobservation(
         media_type="application/json")
 
 
-@router.get("/forecasts/{forecast_oid}/seismicityobservations",
-            responses={
-                200: {
-                    "content": {"application/xml": {}},
-                    "description": "Return the seismic catalog as QML.",
-                }
-            },
-            response_class=XMLResponse)
-async def get_forecast_seismicityobservation(db: DBSessionDep,
-                                             forecast_oid: UUID):
+@router.get("/forecasts/{forecast_id}/seismicityobservation")
+async def get_forecast_seismicityobservation(
+        db: DBSessionDep,
+        forecast_id: UUID,
+        start_time: datetime,
+        min_lon: float,
+        min_lat: float,
+        max_lon: float,
+        max_lat: float,
+        min_mag: float,
+        end_time: datetime = datetime.now()):
     """
-    Returns the seismic catalog for this project.
+    Returns the seismicity observation for a given forecast.
     """
+    stmt = text(OBSERVED_EVENTS).bindparams(
+        forecast_id=forecast_id,
+        start_time=start_time,
+        min_lon=min_lon,
+        min_lat=min_lat,
+        max_lon=max_lon,
+        max_lat=max_lat,
+        min_mag=min_mag,
+        end_time=end_time
+    )
 
-    db_result = await SeismicityObservationRepository.get_by_forecast_async(
-        db, forecast_oid)
+    result = await db.execute(stmt)
+    rows = result.fetchall()  # Fetch all results
+    columns = result.keys()   # Get column names
 
-    if not db_result:
-        raise HTTPException(
-            status_code=404,
-            detail="No Forecast or SeismicityObservation found.")
-
-    return Response(
-        content=db_result.data,
-        media_type="application/xml")
+    cat = pd.DataFrame(rows, columns=columns)
+    cat = Catalog(cat.rename(columns=lambda col:
+                             col.removesuffix('_value')))
+    qml = cat.to_quakeml()
+    return Response(content=qml,
+                    media_type="application/xml")
 
 
 @router.get("/forecasts/{forecast_oid}/modelruns",
@@ -116,24 +129,3 @@ async def get_forecast_modelruns(db: DBSessionDep,
         db, forecast_oid)
 
     return db_result
-
-# @router.get("/forecasts/{forecast_id}/rates",
-#             response_model=list[ModelRunRateGridSchema],
-#             response_model_exclude_none=True)
-# async def get_forecast_rates(
-#         db: DBSessionDep,
-#         forecast_id: UUID,
-#         modelconfigs: Annotated[list[str] | None, Query()] = None,
-#         injectionplans: Annotated[list[str] | None, Query()] = None):
-#     """
-#     Returns a list of ForecastRateGrids
-#     """
-#     db_result = await crud.read_forecast_rates(db,
-#                                                forecast_id,
-#                                                modelconfigs,
-#                                                injectionplans)
-
-#     if not db_result:
-#         raise HTTPException(status_code=404, detail="No forecast found.")
-
-#     return db_result
