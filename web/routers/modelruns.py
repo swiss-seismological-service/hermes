@@ -18,7 +18,7 @@ from hermes.repositories.data import (InjectionObservationRepository,
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ModelConfigRepository)
-from hermes.schemas.base import EInput
+from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
 from web.queries.modelruns import EVENTCOUNTS
@@ -50,10 +50,14 @@ async def get_modelrun_rates(db: DBSessionDep,
                              res_lon: float,
                              res_lat: float,
                              max_lon: float,
-                             max_lat: float,
-                             realization_id: bool = False
+                             max_lat: float
                              ):
-    # TODO: include option for realization_id
+
+    # Check for correct result type
+    config = await ModelConfigRepository.get_by_modelrun_async(db, modelrun_id)
+    if config.result_type != EResultType.CATALOG:
+        return HTTPException(400, "Wrong result type for this endpoint.")
+
     # Execute the query
     stmt = text(EVENTCOUNTS).bindparams(modelrun_oid=modelrun_id,
                                         min_lon=min_lon + (res_lon / 2),

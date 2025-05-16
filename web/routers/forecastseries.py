@@ -8,6 +8,7 @@ from sqlalchemy import text
 from hermes.repositories.data import InjectionPlanRepository
 from hermes.repositories.project import (ForecastSeriesRepository,
                                          ModelConfigRepository)
+from hermes.schemas.base import EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
 from web.queries.forecastseries import EVENT_COUNT_SERIES
@@ -115,6 +116,12 @@ async def get_forecastseries_eventcounts(
     """
     Returns the seismicity observation for a given forecast.
     """
+
+    # Check for correct result type
+    config = await ModelConfigRepository.get_by_id_async(db, modelconfig_oid)
+    if config.result_type != EResultType.CATALOG:
+        return HTTPException(400, "Wrong result type for this endpoint.")
+
     stmt = text(EVENT_COUNT_SERIES).bindparams(
         forecastseries_oid=forecastseries_oid,
         modelconfig_oid=modelconfig_oid,
