@@ -2,6 +2,7 @@
 import pandas as pd
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.engine import URL, Engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import text
@@ -67,4 +68,25 @@ def pandas_read_sql(stmt, session):
     # with session.connection() as conn:
     #     df = pd.read_sql_query(stmt, conn)
 
+    return df
+
+
+async def pandas_read_sql_async(stmt, session: AsyncSession):
+    """
+    Execute a SQLAlchemy Select statement asynchronously,
+    and load results into a DataFrame using pd.read_sql.
+    """
+    def read_sql_sync(connection, statement):
+        return pd.read_sql(statement, connection)
+
+    # Compile SQLAlchemy statement to raw SQL string
+    compiled_stmt = stmt.compile(
+        compile_kwargs={"literal_binds": True},
+        dialect=session.bind.dialect
+    )
+
+    connection = await session.connection()
+    # Important: Extract a DBAPI-compatible connection explicitly
+
+    df = await connection.run_sync(read_sql_sync, str(compiled_stmt))
     return df

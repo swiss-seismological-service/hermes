@@ -18,6 +18,7 @@ from hermes.repositories.data import (InjectionObservationRepository,
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ModelConfigRepository)
+from hermes.repositories.results import GRParametersRepository
 from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
@@ -192,3 +193,30 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
     return StreamingResponse(zip_buffer,
                              media_type="application/zip",
                              headers=headers)
+
+
+@router.get("/modelruns/{modelrun_id}/forecast")
+async def get_modelrun_forecast(db: DBSessionDep, modelrun_id: UUID):
+    """
+    Returns the forecast data for a modelrun.
+    """
+
+    modelconfig = await ModelConfigRepository.get_by_modelrun_async(
+        db, modelrun_id)
+
+    if modelconfig.result_type == EResultType.GRID:
+        forecast = await GRParametersRepository.get_forecast_grrategrid(
+            db,
+            modelrun_id)
+        if forecast.empty:
+            raise HTTPException(status_code=404,
+                                detail="No forecast data found.")
+    else:
+        raise NotImplementedError
+
+    # return a csv
+    csv_buffer = io.StringIO()
+    forecast.to_csv(csv_buffer, index=False)
+
+    csv_content = csv_buffer.getvalue()
+    return Response(content=csv_content, media_type="text")

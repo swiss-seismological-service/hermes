@@ -3,7 +3,7 @@ import pandas as pd
 from seismostats import Catalog, ForecastGRRateGrid
 from shapely import Point
 
-from hermes.repositories.types import shapely_to_db
+from hermes.repositories.types import PolygonType, db_to_shapely, shapely_to_db
 from hermes.schemas import GRParameters, SeismicEvent
 from hermes.schemas.base import Model
 
@@ -34,6 +34,58 @@ def serialize_seismostats_grrategrid(
         model.model_fields)]]
 
     return rategrid.to_dict(orient='records')
+
+
+def deserialize_seismostats_grrategrid(
+        rategrid: pd.DataFrame) -> ForecastGRRateGrid:
+    """
+    Deserialize a pd.DataFrame directly from the DB model to a
+    Seismostats ForecastGRRateGrid object.
+
+    Args:
+        rategrid: List of dictionaries representing the rategrid.
+        model: Model object to deserialize the rategrid to.
+
+    Returns:
+        ForecastGRRateGrid object.
+    """
+    if rategrid.empty:
+        return ForecastGRRateGrid()
+    # rename value columns to match 'RealQuantity" fields
+    column_renames = {f'{col}_value': col for col in RATEGRID_QUANTITY_FIELDS}
+    rategrid = rategrid.rename(columns=column_renames)
+
+    boundingbox = deserialize_geom_column(rategrid['geom'])
+    rategrid = pd.concat([boundingbox, rategrid], axis=1)
+
+    rategrid = rategrid.drop(columns=['oid', 'modelresult_oid', 'geom'])
+    rategrid = rategrid.dropna(axis=1, how='all')
+
+    return ForecastGRRateGrid(rategrid)
+
+
+def deserialize_geom_column(geom_col: pd.Series) -> pd.DataFrame:
+    """
+    Deserialize the geometry column of a rategrid DataFrame.
+
+    Args:
+        rategrid: DataFrame with a geometry column.
+
+    Returns:
+        DataFrame with the geometry column deserialized.
+    """
+    if geom_col.empty:
+        return geom_col
+
+    geom_col = geom_col.apply(
+        lambda x: db_to_shapely(PolygonType(x)) if x is not None else None)
+    bounds = geom_col.apply(
+        lambda geom: geom.bounds if geom is not None else (None, None,
+                                                           None, None))
+    bounding_cols = pd.DataFrame(bounds.tolist(), columns=[
+        'longitude_min', 'latitude_min', 'longitude_max', 'latitude_max'
+    ])
+    return bounding_cols
 
 
 def serialize_seismostats_catalog(

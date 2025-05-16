@@ -12,10 +12,11 @@ from sqlalchemy.orm import Session
 from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
                                             ModelResultTable, ModelRunTable,
                                             SeismicEventTable, TimeStepTable)
-from hermes.io.serialize import (serialize_seismostats_catalog,
+from hermes.io.serialize import (deserialize_seismostats_grrategrid,
+                                 serialize_seismostats_catalog,
                                  serialize_seismostats_grrategrid)
 from hermes.repositories.base import repository_factory
-from hermes.repositories.database import pandas_read_sql
+from hermes.repositories.database import pandas_read_sql, pandas_read_sql_async
 from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
                                            ModelRun, SeismicEvent, TimeStep)
 
@@ -151,11 +152,28 @@ class GRParametersRepository(
         session.commit()
 
     @classmethod
-    def get_forecast_grrategrid(
+    async def get_forecast_grrategrid(
             cls,
             session: Session,
-            modelresult_oid: UUID) -> ForecastGRRateGrid:
-        pass
+            modelrun_oid: UUID) -> ForecastGRRateGrid:
+
+        q = select(ModelResultTable.realization_id,
+                   GRParametersTable,
+                   GridCellTable.depth_min,
+                   GridCellTable.depth_max,
+                   GridCellTable.geom,
+                   TimeStepTable.starttime,
+                   TimeStepTable.endtime,).where(
+            ModelResultTable.modelrun_oid == modelrun_oid) \
+            .join(GRParametersTable) \
+            .join(GridCellTable) \
+            .join(TimeStepTable)
+
+        result = await pandas_read_sql_async(q, session)
+
+        rategrid = deserialize_seismostats_grrategrid(result)
+
+        return rategrid
 
 
 class SeismicEventRepository(
