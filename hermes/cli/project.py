@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from hermes.actions.crud_models import (delete_project, read_project_oid,
                                         update_project)
 from hermes.cli.utils import console_table
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import ProjectRepository
 from hermes.schemas import Project
 
@@ -22,7 +22,7 @@ def list(
                   typer.Option(
                       "--id", help="Only show IDs and names.")] = False
 ):
-    with Session() as session:
+    with DatabaseSession() as session:
         projects = ProjectRepository.get_all(session)
     if not projects:
         console.print("No projects found")
@@ -53,7 +53,7 @@ def create(
 
     project = Project(name=name, **project_config_dict)
 
-    with Session() as session:
+    with DatabaseSession() as session:
         project_out = ProjectRepository.create(session, project)
     console.print(f'Successfully created new Project {project_out.name}.')
 

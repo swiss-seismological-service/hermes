@@ -8,7 +8,7 @@ from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
                                                    ForecastSeriesScheduler,
                                                    delete_deployment_schedule)
 from hermes.repositories.data import InjectionPlanRepository
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ModelConfigRepository,
@@ -24,7 +24,7 @@ def read_project_oid(name_or_id: str):
     try:
         return UUID(name_or_id, version=4)
     except ValueError:
-        with Session() as session:
+        with DatabaseSession() as session:
             project_db = ProjectRepository.get_by_name(session, name_or_id)
 
         if not project_db:
@@ -39,7 +39,7 @@ def update_project(new_config: dict,
     new_data = Project(oid=project_oid, **new_config)
 
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             project_out = ProjectRepository.update(session, new_data)
     except DuplicateError:
         raise ValueError(f'Project with name "{new_config["name"]}"'
@@ -51,7 +51,7 @@ def update_project(new_config: dict,
 def delete_project(project_oid: UUID):
     # delete all forecastseries separately to ensure correct deletion
     # of associated forecasts and schedules
-    with Session() as session:
+    with DatabaseSession() as session:
         forecastseries = ForecastSeriesRepository.get_by_project(
             session, project_oid)
 
@@ -59,7 +59,7 @@ def delete_project(project_oid: UUID):
         delete_forecastseries(fseries.oid)
 
     # delete project
-    with Session() as session:
+    with DatabaseSession() as session:
         ProjectRepository.delete(session, project_oid)
 
 
@@ -71,7 +71,7 @@ def read_forecastseries_oid(name_or_id: str):
     try:
         return UUID(name_or_id, version=4)
     except ValueError:
-        with Session() as session:
+        with DatabaseSession() as session:
             forecastseries_db = ForecastSeriesRepository.get_by_name(
                 session, name_or_id)
 
@@ -87,7 +87,7 @@ def create_forecastseries(name, fseries_config, project_oid):
                                            project_oid=project_oid,
                                            **fseries_config)
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             forecast_series_out = ForecastSeriesRepository.create(
                 session, forecast_series)
 
@@ -108,7 +108,7 @@ def update_forecastseries(fseries_config: dict,
     # check whether they are being updated and raise an exception
     # if not forced
     if not force:
-        with Session() as session:
+        with DatabaseSession() as session:
             old_forecastseries = ForecastSeriesRepository.get_by_id(
                 session, forecastseries_oid)
 
@@ -132,7 +132,7 @@ def update_forecastseries(fseries_config: dict,
                         'Use --force to update anyway.')
 
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             forecast_series_out = ForecastSeriesRepository.update(
                 session, new_forecastseries)
     except DuplicateError:
@@ -144,7 +144,7 @@ def update_forecastseries(fseries_config: dict,
 
 def delete_forecastseries(forecastseries_oid: UUID):
 
-    with Session() as session:
+    with DatabaseSession() as session:
         forecastseries = ForecastSeriesRepository.get_by_id(
             session, forecastseries_oid)
 
@@ -153,7 +153,7 @@ def delete_forecastseries(forecastseries_oid: UUID):
             f'ForecastSeries with oid "{forecastseries_oid}" not found.')
 
     # check no forecasts are running
-    with Session() as session:
+    with DatabaseSession() as session:
         forecasts = ForecastRepository.get_by_forecastseries(
             session, forecastseries_oid)
 
@@ -173,7 +173,7 @@ def delete_forecastseries(forecastseries_oid: UUID):
             pass
 
     # delete forecastseries
-    with Session() as session:
+    with DatabaseSession() as session:
         injectionplans = []
         for f in forecasts:
             ips = InjectionPlanRepository.get_ids_by_forecast(session, f.oid)
@@ -191,7 +191,7 @@ def delete_forecastseries(forecastseries_oid: UUID):
 def create_modelconfig(name, model_config):
     model_config = ModelConfig(name=name, **model_config)
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             model_config_out = ModelConfigRepository.create(
                 session, model_config)
         return model_config_out
@@ -205,7 +205,7 @@ def read_modelconfig_oid(name_or_id: str):
     try:
         return UUID(name_or_id, version=4)
     except ValueError:
-        with Session() as session:
+        with DatabaseSession() as session:
             model_config_db = ModelConfigRepository.get_by_name(
                 session, name_or_id)
 
@@ -220,7 +220,7 @@ def update_modelconfig(new_config: dict,
                        force: bool = False):
 
     if not force:
-        with Session() as session:
+        with DatabaseSession() as session:
             modelruns = ModelRunRepository.get_by_modelconfig(
                 session, modelconfig_oid)
         if len(modelruns) > 0:
@@ -231,7 +231,7 @@ def update_modelconfig(new_config: dict,
     new_data = ModelConfig(oid=modelconfig_oid, **new_config)
 
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             model_config_out = ModelConfigRepository.update(session, new_data)
     except DuplicateError:
         raise ValueError(f'ModelConfig with name "{new_config["name"]}"'
@@ -241,7 +241,7 @@ def update_modelconfig(new_config: dict,
 
 
 def delete_modelconfig(modelconfig_oid: UUID):
-    with Session() as session:
+    with DatabaseSession() as session:
         modelruns = ModelRunRepository.get_by_modelconfig(
             session, modelconfig_oid)
     if len(modelruns) > 0:
@@ -249,12 +249,12 @@ def delete_modelconfig(modelconfig_oid: UUID):
             'ModelConfig cannot be deleted because it is associated with '
             'one or more ModelRuns. Delete the ModelRuns first.')
 
-    with Session() as session:
+    with DatabaseSession() as session:
         ModelConfigRepository.delete(session, modelconfig_oid)
 
 
 def enable_modelconfig(modelconfig_oid: UUID):
-    with Session() as session:
+    with DatabaseSession() as session:
         model_config = ModelConfigRepository.get_by_id(
             session, modelconfig_oid)
         model_config.enabled = True
@@ -262,7 +262,7 @@ def enable_modelconfig(modelconfig_oid: UUID):
 
 
 def disable_modelconfig(modelconfig_oid: UUID):
-    with Session() as session:
+    with DatabaseSession() as session:
         model_config = ModelConfigRepository.get_by_id(
             session, modelconfig_oid)
         model_config.enabled = False
@@ -270,20 +270,20 @@ def disable_modelconfig(modelconfig_oid: UUID):
 
 
 def archive_modelconfig(modelconfig_oid: UUID):
-    with Session() as session:
+    with DatabaseSession() as session:
         model_config = ModelConfigRepository.get_by_id(
             session, modelconfig_oid)
         model_config.enabled = False
         base_name = model_config.name
 
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             model_config.name = f'{base_name}_archived'
             model_config = ModelConfigRepository.update(session, model_config)
             return model_config
     except DuplicateError:
         for i in range(1, 100):
-            with Session() as session:
+            with DatabaseSession() as session:
                 try:
                     model_config.name = f'{base_name}_archived_{i}'
                     model_config = ModelConfigRepository.update(
@@ -334,7 +334,7 @@ def create_injectionplan_template(name: str,
                                   forecastseries_oid=forecastseries_oid)
 
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             injectionplan_out = InjectionPlanRepository.create(
                 session, injectionplan)
         return injectionplan_out
@@ -345,7 +345,7 @@ def create_injectionplan_template(name: str,
 
 
 def delete_injectionplan(injectionplan_oid: UUID):
-    with Session() as session:
+    with DatabaseSession() as session:
         modelruns = ModelRunRepository.get_by_injectionplan(
             session, injectionplan_oid)
 
@@ -354,12 +354,12 @@ def delete_injectionplan(injectionplan_oid: UUID):
             'Injectionplan cannot be deleted because it is associated with '
             'one or more ModelRuns. Delete the ModelRuns first.')
 
-    with Session() as session:
+    with DatabaseSession() as session:
         InjectionPlanRepository.delete(session, injectionplan_oid)
 
 
 def delete_forecast(forecast_oid: UUID):
-    with Session() as session:
+    with DatabaseSession() as session:
 
         injectionplans = InjectionPlanRepository.get_ids_by_forecast(
             session, forecast_oid)

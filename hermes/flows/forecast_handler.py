@@ -18,7 +18,7 @@ from hermes.io.seismicity import SeismicityDataSource
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
                                       SeismicityObservationRepository)
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
 from hermes.schemas import Forecast
@@ -52,7 +52,7 @@ class ForecastHandler:
         self.catalog_data_source: SeismicityDataSource = None
         self.hydraulic_data_source: HydraulicsDataSource = None
 
-        with Session() as session:
+        with DatabaseSession() as session:
             self.forecastseries: ForecastSeries = \
                 ForecastSeriesRepository.get_by_id(
                     session, forecastseries_oid)
@@ -87,7 +87,7 @@ class ForecastHandler:
                                            self.forecastseries,
                                            self.modelconfigs)
         except BaseException as e:
-            with Session() as session:
+            with DatabaseSession() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.FAILED)
             raise e
@@ -96,13 +96,13 @@ class ForecastHandler:
     def run(self, mode: Literal['local', 'deploy'] = 'local') -> None:
         if not self.builder.runs:
             self.logger.warning('No modelruns to run.')
-            with Session() as session:
+            with DatabaseSession() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.CANCELLED)
             return None
 
         try:
-            with Session() as session:
+            with DatabaseSession() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.RUNNING)
             if mode == 'local':
@@ -126,12 +126,12 @@ class ForecastHandler:
                     sleep(10)
 
         except BaseException as e:
-            with Session() as session:
+            with DatabaseSession() as session:
                 ForecastRepository.update_status(session, self.forecast.oid,
                                                  EStatus.FAILED)
             raise e
 
-        with Session() as session:
+        with DatabaseSession() as session:
             ForecastRepository.update_status(session, self.forecast.oid,
                                              EStatus.COMPLETED)
 
@@ -146,7 +146,7 @@ class ForecastHandler:
             starttime=self.starttime,
             endtime=self.endtime,
         )
-        with Session() as session:
+        with DatabaseSession() as session:
             self.forecast: Forecast = ForecastRepository.create(
                 session, new_forecast)
 
@@ -167,7 +167,7 @@ class ForecastHandler:
             self.observation_endtime
         )
 
-        with Session() as session:
+        with DatabaseSession() as session:
             self.forecast.seismicity_observation = \
                 SeismicityObservationRepository.create_from_quakeml(
                     session,
@@ -195,7 +195,7 @@ class ForecastHandler:
             forecast_oid=self.forecast.oid,
             data=self.hydraulic_data_source.get_json()
         )
-        with Session() as session:
+        with DatabaseSession() as session:
             self.forecast.injection_observation = \
                 InjectionObservationRepository.create(
                     session,
@@ -212,7 +212,7 @@ class ForecastHandler:
             self.forecastseries.injection_plans = None
             return None
 
-        with Session() as session:
+        with DatabaseSession() as session:
             injection_plans = \
                 InjectionPlanRepository.get_by_forecastseries(
                     session,

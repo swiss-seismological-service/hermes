@@ -12,7 +12,7 @@ from prefect.client.schemas.schedules import RRuleSchedule
 from prefect.deployments import run_deployment
 
 from hermes.flows.forecast_handler import forecast_runner
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import ForecastSeriesRepository
 from hermes.schemas.project_schemas import (ForecastSeries,
                                             ForecastSeriesSchedule)
@@ -56,7 +56,7 @@ class ForecastSeriesScheduler:
 
         self.logger.debug('Initializing ForecastSeriesScheduler')
 
-        self.session = Session()
+        self.session = DatabaseSession()
         self.forecastseries: ForecastSeries = \
             ForecastSeriesRepository.get_by_id(
                 self.session, forecastseries_oid)

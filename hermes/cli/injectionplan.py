@@ -10,7 +10,7 @@ from hermes.actions.crud_models import (create_injectionplan_template,
                                         read_forecastseries_oid)
 from hermes.cli.utils import console_table
 from hermes.repositories.data import InjectionPlanRepository
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 
 app = typer.Typer()
 console = Console()
@@ -22,7 +22,7 @@ def list(forecastseries:
                    typer.Argument(
                        help="Name or UUID of the ForecastSeries.")]):
 
-    with Session() as session:
+    with DatabaseSession() as session:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         if not forecastseries_oid:
             console.print("ForecastSeries not found.")

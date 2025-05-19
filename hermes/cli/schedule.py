@@ -10,7 +10,7 @@ from hermes.actions.crud_models import (create_schedule,
                                         update_schedule)
 from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import ForecastSeriesRepository
 from hermes.schemas.project_schemas import ForecastSeriesSchedule
 
@@ -20,7 +20,7 @@ console = Console()
 
 @app.command(help="Lists existing schedules.")
 def list():
-    with Session() as session:
+    with DatabaseSession() as session:
         fseries = ForecastSeriesRepository.get_all(session)
 
     fseries = [f for f in fseries if f.schedule_id]
@@ -45,7 +45,7 @@ def show(
                                   "the ForecastSeries.")]):
 
     try:
-        with Session() as session:
+        with DatabaseSession() as session:
             forecastseries_oid = read_forecastseries_oid(forecastseries)
             forecast_series = ForecastSeriesRepository.get_by_id(
                 session, forecastseries_oid)

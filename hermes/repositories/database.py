@@ -1,9 +1,11 @@
 
 import pandas as pd
+from sqlalchemy import Select
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import text
 
@@ -35,7 +37,7 @@ def create_engine(url: URL, **kwargs) -> Engine:
 
 
 engine = create_engine(settings.SQLALCHEMY_DATABASE_URL)
-Session = sessionmaker(engine, expire_on_commit=True)
+DatabaseSession = sessionmaker(engine, expire_on_commit=True)
 
 
 def _create_tables():
@@ -63,11 +65,8 @@ def _check_tables_exist():
     return len(tables) > 5
 
 
-def pandas_read_sql(stmt, session):
+def pandas_read_sql(stmt: Select, session: Session):
     df = pd.read_sql_query(stmt, session.connection())
-    # with session.connection() as conn:
-    #     df = pd.read_sql_query(stmt, conn)
-
     return df
 
 
