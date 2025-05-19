@@ -12,11 +12,12 @@ from sqlalchemy.orm import Session
 from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
                                             ModelResultTable, ModelRunTable,
                                             SeismicEventTable, TimeStepTable)
-from hermes.io.serialize import (deserialize_seismostats_grrategrid,
+from hermes.io.serialize import (deserialize_seismostats_catalog,
+                                 deserialize_seismostats_grrategrid,
                                  serialize_seismostats_catalog,
                                  serialize_seismostats_grrategrid)
 from hermes.repositories.base import repository_factory
-from hermes.repositories.database import pandas_read_sql, pandas_read_sql_async
+from hermes.repositories.database import pandas_read_sql_async
 from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
                                            ModelRun, SeismicEvent, TimeStep)
 
@@ -203,13 +204,27 @@ class SeismicEventRepository(
         session.commit()
 
     @classmethod
-    def get_catalog(cls, session: Session, modelresult_oid: UUID) -> Catalog:
-        q = select(SeismicEventTable).where(
-            SeismicEventTable.modelresult_oid == modelresult_oid)
+    async def get_forecast_catalog(
+            cls,
+            session: Session,
+            modelrun_oid: UUID) -> Catalog:
+        q = select(ModelResultTable.realization_id,
+                   *SeismicEventTable.__table__.c,
+                   GridCellTable.depth_min,
+                   GridCellTable.depth_max,
+                   GridCellTable.geom,
+                   TimeStepTable.starttime,
+                   TimeStepTable.endtime).where(
+            ModelResultTable.modelrun_oid == modelrun_oid) \
+            .join(SeismicEventTable) \
+            .join(GridCellTable) \
+            .join(TimeStepTable)
 
-        df = pandas_read_sql(q, session)
+        result = await pandas_read_sql_async(q, session)
 
-        return Catalog(df)
+        catalog = deserialize_seismostats_catalog(result)
+
+        return catalog
 
 
 class ModelRunRepository(repository_factory(

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from seismostats import Catalog, ForecastGRRateGrid
+from seismostats import Catalog, ForecastCatalog, ForecastGRRateGrid
 from shapely import Point
 
 from hermes.repositories.types import db_to_shapely, shapely_to_db
@@ -123,3 +123,36 @@ def serialize_seismostats_catalog(
     events = catalog.to_dict(orient='records')
 
     return events
+
+
+def deserialize_seismostats_catalog(
+        catalog: pd.DataFrame) -> ForecastCatalog:
+    """
+    Deserialize a pd.DataFrame directly from the DB model to a
+    Seismostats Catalog object.
+
+    Args:
+        catalog: List of dictionaries representing the events.
+        model: Model object to deserialize the events to.
+
+    Returns:
+        Catalog object.
+    """
+    if catalog.empty:
+        return Catalog()
+
+    # rename value columns to match 'RealQuantity" fields
+    column_renames = {f'{col}_value': col for col in CATALOG_QUANTITY_FIELDS}
+    catalog = catalog.rename(columns=column_renames)
+
+    boundingbox = deserialize_geom_column(catalog['geom'])
+    catalog = pd.concat([boundingbox, catalog], axis=1)
+
+    # drop oid and modelresult_oid columns
+    catalog = catalog.drop(
+        columns=['oid', 'modelresult_oid', 'coordinates', 'geom'])
+
+    # drop empty columns
+    catalog = catalog.dropna(axis=1, how='all')
+
+    return Catalog(catalog)
