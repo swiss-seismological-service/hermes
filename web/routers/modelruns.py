@@ -24,7 +24,7 @@ from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
 from web.queries.modelruns import EVENTCOUNTS
-from web.schemas import ForecastSchema
+from web.schemas import ForecastJSON, ModelRunJSON
 
 router = APIRouter(tags=['modelruns'])
 
@@ -122,7 +122,7 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     if not forecast:
         raise HTTPException(status_code=404, detail="No modelrun not found.")
 
-    forecast = ForecastSchema.model_validate(forecast)
+    forecast = ForecastJSON.model_validate(forecast)
 
     # get the corresponding forecastseries
     forecastseries = await ForecastSeriesRepository.get_by_id_async(
@@ -231,3 +231,14 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     forecast.to_csv(csv_buffer, index=False)
     csv_content = csv_buffer.getvalue()
     return Response(content=csv_content, media_type="text")
+
+
+@router.get("modelruns/{modelrun_id}",
+            response_model=ModelRunJSON,
+            response_model_exclude_none=False)
+async def get_modelrun(db: DBSessionDep,
+                       modelrun_id: UUID):
+    """
+    Returns a modelrun by id.
+    """
+    raise NotImplementedError

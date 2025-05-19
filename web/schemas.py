@@ -10,7 +10,7 @@ from hermes.schemas.base import Model
 from web.mixins import CreationInfoMixin
 
 
-class ProjectJSONSchema(CreationInfoMixin, Project):
+class ProjectJSON(CreationInfoMixin, Project):
     pass
 
 
@@ -24,7 +24,7 @@ class InjectionPlanNameSchema(Model):
     oid: UUID
 
 
-class ForecastSeriesJSONSchema(CreationInfoMixin, ForecastSeries):
+class ForecastSeriesJSON(CreationInfoMixin, ForecastSeries):
     modelconfigs: list[ModelConfigNameSchema] | None = None
     injectionplans: list[InjectionPlanNameSchema] | None
     bounding_polygon: str | PolygonType | None = None
@@ -35,14 +35,18 @@ class ForecastSeriesJSONSchema(CreationInfoMixin, ForecastSeries):
         return db_to_shapely(value).wkt
 
 
-class ForecastSchema(CreationInfoMixin, Forecast):
+class ForecastJSON(CreationInfoMixin, Forecast):
     pass
 
 
-class InjectionPlanSchema(InjectionPlanNameSchema):
+class InjectionPlanJSON(InjectionPlanNameSchema):
     borehole_hydraulics: dict | None = Field(validation_alias="template")
 
     @field_validator('borehole_hydraulics', mode='before')
     @classmethod
     def load_data(cls, v: str) -> dict:
         return json.loads(v)
+
+
+class ModelRunJSON(Model):
+    pass

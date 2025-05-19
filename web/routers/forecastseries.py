@@ -12,13 +12,13 @@ from hermes.schemas.base import EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
 from web.queries.forecastseries import EVENT_COUNT_SERIES
-from web.schemas import ForecastSeriesJSONSchema, InjectionPlanSchema
+from web.schemas import ForecastSeriesJSON, InjectionPlanJSON
 
 router = APIRouter(tags=['forecastseries'])
 
 
 @router.get("/projects/{project_id}/forecastseries",
-            response_model=list[ForecastSeriesJSONSchema],
+            response_model=list[ForecastSeriesJSON],
             response_model_exclude_none=True)
 async def get_projects_forecastseries(db: DBSessionDep,
                                       project_id: UUID):
@@ -28,7 +28,7 @@ async def get_projects_forecastseries(db: DBSessionDep,
 
     db_result = await ForecastSeriesRepository.get_by_project_async(
         db, project_id, joined_attrs=['_tags', 'injectionplans'],
-        override_model=ForecastSeriesJSONSchema)
+        override_model=ForecastSeriesJSON)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecastseries found.")
@@ -41,7 +41,7 @@ async def get_projects_forecastseries(db: DBSessionDep,
 
 
 @router.get("/forecastseries/{forecastseries_oid}",
-            response_model=ForecastSeriesJSONSchema,
+            response_model=ForecastSeriesJSON,
             response_model_exclude_none=True)
 async def get_forecastseries(db: DBSessionDep,
                              forecastseries_oid: UUID):
@@ -51,7 +51,7 @@ async def get_forecastseries(db: DBSessionDep,
 
     db_result = await ForecastSeriesRepository.get_by_id_async(
         db, forecastseries_oid, joined_attrs=['_tags', 'injectionplans'],
-        override_model=ForecastSeriesJSONSchema)
+        override_model=ForecastSeriesJSON)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecastseries found.")
@@ -87,7 +87,7 @@ async def get_modelconfigs(db: DBSessionDep,
 
 
 @router.get("/forecastseries/{forecastseries_oid}/injectionplans",
-            response_model=list[InjectionPlanSchema],
+            response_model=list[InjectionPlanJSON],
             response_model_exclude_none=True)
 async def get_injectionplans(db: DBSessionDep,
                              forecastseries_oid: UUID):

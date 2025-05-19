@@ -14,13 +14,13 @@ from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.result_schemas import ModelRun
 from web.database import DBSessionDep
 from web.queries.forecasts import OBSERVED_EVENTS
-from web.schemas import ForecastSchema
+from web.schemas import ForecastJSON
 
 router = APIRouter(tags=['forecast'])
 
 
 @router.get("/forecastseries/{forecastseries_oid}/forecasts",
-            response_model=list[ForecastSchema],
+            response_model=list[ForecastJSON],
             response_model_exclude_none=False)
 async def get_forecasts(db: DBSessionDep,
                         forecastseries_oid: UUID):
@@ -38,7 +38,7 @@ async def get_forecasts(db: DBSessionDep,
 
 
 @router.get("/forecasts/{forecast_oid}",
-            response_model=ForecastSchema,
+            response_model=ForecastJSON,
             response_model_exclude_none=False)
 async def get_forecast(db: DBSessionDep,
                        forecast_oid: UUID):
