@@ -158,7 +158,7 @@ class GRParametersRepository(
             modelrun_oid: UUID) -> ForecastGRRateGrid:
 
         q = select(ModelResultTable.realization_id,
-                   GRParametersTable,
+                   *GRParametersTable.__table__.c,
                    GridCellTable.depth_min,
                    GridCellTable.depth_max,
                    GridCellTable.geom,

@@ -3,7 +3,7 @@ import pandas as pd
 from seismostats import Catalog, ForecastGRRateGrid
 from shapely import Point
 
-from hermes.repositories.types import PolygonType, db_to_shapely, shapely_to_db
+from hermes.repositories.types import db_to_shapely, shapely_to_db
 from hermes.schemas import GRParameters, SeismicEvent
 from hermes.schemas.base import Model
 
@@ -78,7 +78,7 @@ def deserialize_geom_column(geom_col: pd.Series) -> pd.DataFrame:
         return geom_col
 
     geom_col = geom_col.apply(
-        lambda x: db_to_shapely(PolygonType(x)) if x is not None else None)
+        lambda x: db_to_shapely(x) if x is not None else None)
     bounds = geom_col.apply(
         lambda geom: geom.bounds if geom is not None else (None, None,
                                                            None, None))

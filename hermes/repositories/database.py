@@ -70,22 +70,11 @@ def pandas_read_sql(stmt: Select, session: Session):
     return df
 
 
-async def pandas_read_sql_async(stmt, session: AsyncSession):
+async def pandas_read_sql_async(stmt: Select, session: AsyncSession):
     """
-    Execute a SQLAlchemy Select statement asynchronously,
-    and load results into a DataFrame using pd.read_sql.
+    Get a pandas dataframe from a SQL statement.
     """
-    def read_sql_sync(connection, statement):
-        return pd.read_sql(statement, connection)
-
-    # Compile SQLAlchemy statement to raw SQL string
-    compiled_stmt = stmt.compile(
-        compile_kwargs={"literal_binds": True},
-        dialect=session.bind.dialect
-    )
-
-    connection = await session.connection()
-    # Important: Extract a DBAPI-compatible connection explicitly
-
-    df = await connection.run_sync(read_sql_sync, str(compiled_stmt))
-    return df
+    result = await session.execute(stmt)
+    rows = result.fetchall()
+    columns = result.keys()
+    return pd.DataFrame(rows, columns=columns)
