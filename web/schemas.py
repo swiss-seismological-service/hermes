@@ -1,12 +1,13 @@
 import json
+from datetime import datetime
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas import Forecast, ForecastSeries, Project
-from hermes.schemas.base import Model
+from hermes.schemas.base import EResultType, Model
 from web.mixins import CreationInfoMixin
 
 
@@ -48,5 +49,23 @@ class InjectionPlanJSON(InjectionPlanNameSchema):
         return json.loads(v)
 
 
-class ModelRunJSON(Model):
-    pass
+class ModelResultJSON(Model):
+    gridcell_oid: UUID | None = None
+    timestep_oid: UUID | None = None
+    result_type: EResultType | None = None
+    starttime: datetime | None = None
+    endtime: datetime | None = None
+    geom: str | PolygonType | None = None
+    depth_min: float | None = None
+    depth_max: float | None = None
+    result_id: int | None = None
+
+    @field_validator('geom', mode='after')
+    @classmethod
+    def validate_geom(cls, value: PolygonType) -> Self:
+        return db_to_shapely(value).wkt
+
+    model_config = ConfigDict(
+        **Model.model_config,
+        ser_exclude={"gridcell_oid", "timestep_oid"}
+    )

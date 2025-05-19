@@ -19,12 +19,13 @@ from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ModelConfigRepository)
 from hermes.repositories.results import (GRParametersRepository,
+                                         ModelResultRepository,
                                          SeismicEventRepository)
 from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
 from web.queries.modelruns import EVENTCOUNTS
-from web.schemas import ForecastJSON, ModelRunJSON
+from web.schemas import ForecastJSON, ModelResultJSON
 
 router = APIRouter(tags=['modelruns'])
 
@@ -233,12 +234,59 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     return Response(content=csv_content, media_type="text")
 
 
-@router.get("modelruns/{modelrun_id}",
-            response_model=ModelRunJSON,
+@router.get("/modelruns/{modelrun_oid}",
+            response_model=list[ModelResultJSON],
             response_model_exclude_none=False)
 async def get_modelrun(db: DBSessionDep,
-                       modelrun_id: UUID):
+                       modelrun_oid: UUID):
     """
     Returns a modelrun by id.
     """
-    raise NotImplementedError
+
+    db_result = await ModelResultRepository.get_by_modelrun_aggregated_async(
+        db, modelrun_oid)
+
+    return db_result
+
+
+@router.get("/modelruns/{modelrun_oid}/results/{result_id}",
+            response_class=StreamingResponse,
+            responses={200: {"content": {"text/csv": {}}}}
+            )
+async def get_modelrun_results_by_id(db: DBSessionDep,
+                                     modelrun_oid: UUID,
+                                     result_id: int):
+    """
+    Returns the forecast data for a modelrun.
+    """
+
+    # TODO:
+    # For an efficient retreival, using the result_id, we don't need to
+    # also return the geometry and time information.
+    # However we need to think whether perhaps we'd still like to have
+    # specific ways of handling this depending on the result type.
+
+    result_mapping = \
+        await ModelResultRepository.get_by_modelrun_aggregated_async(
+            db, modelrun_oid)
+    result_mapping = result_mapping[result_id]
+
+    if result_mapping.result_type == EResultType.GRID:
+        forecast = await GRParametersRepository.get_forecast_grrategrid(
+            db,
+            modelrun_oid,
+            result_mapping.gridcell_oid,
+            result_mapping.timestep_oid)
+
+        if forecast.empty:
+            raise HTTPException(status_code=404,
+                                detail="No forecast data found.")
+
+    else:
+        raise NotImplementedError
+
+    # return a csv
+    csv_buffer = io.StringIO()
+    forecast.to_csv(csv_buffer, index=False)
+    csv_content = csv_buffer.getvalue()
+    return Response(content=csv_content, media_type="text")
