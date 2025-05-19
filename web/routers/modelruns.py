@@ -32,7 +32,7 @@ router = APIRouter(tags=['modelruns'])
 @router.get("/modelruns/{modelrun_oid}/modelconfig",
             response_model=ModelConfig,
             response_model_exclude_none=False)
-async def get_modelrun_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
+async def get_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
 
     db_result = await ModelConfigRepository.get_by_modelrun_async(
         db, modelrun_oid)
@@ -45,15 +45,15 @@ async def get_modelrun_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
 
 
 @router.get("/modelruns/{modelrun_id}/eventcounts")
-async def get_modelrun_rates(db: DBSessionDep,
-                             modelrun_id: UUID,
-                             min_lon: float,
-                             min_lat: float,
-                             res_lon: float,
-                             res_lat: float,
-                             max_lon: float,
-                             max_lat: float
-                             ):
+async def get_gridded_eventcounts(db: DBSessionDep,
+                                  modelrun_id: UUID,
+                                  min_lon: float,
+                                  min_lat: float,
+                                  res_lon: float,
+                                  res_lat: float,
+                                  max_lon: float,
+                                  max_lat: float
+                                  ):
 
     # Check for correct result type
     config = await ModelConfigRepository.get_by_modelrun_async(db, modelrun_id)
@@ -107,8 +107,11 @@ async def get_modelrun_rates(db: DBSessionDep,
     return Response(content=csv_content, media_type="text")
 
 
-@router.get("/modelruns/{modelrun_id}/input")
-async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
+@router.get("/modelruns/{modelrun_id}/input",
+            response_class=StreamingResponse,
+            responses={200: {"content": {"application/zip": {}}}}
+            )
+async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     """
     Returns an archive containing the input data for a modelrun.
     """
@@ -189,15 +192,19 @@ async def get_modelrun_input(db: DBSessionDep, modelrun_id: UUID):
 
     # Step 3: Prepare the ZIP file for download
     zip_buffer.seek(0)  # Reset buffer pointer to the beginning
-    headers = {"Content-Disposition": "attachment; filename=files.zip"}
+    headers = {"Content-Disposition":
+               f"attachment; filename=input_{modelrun_id}.zip"}
 
     return StreamingResponse(zip_buffer,
                              media_type="application/zip",
                              headers=headers)
 
 
-@router.get("/modelruns/{modelrun_id}/forecast")
-async def get_modelrun_forecast(db: DBSessionDep, modelrun_id: UUID):
+@router.get("/modelruns/{modelrun_id}/results",
+            response_class=StreamingResponse,
+            responses={200: {"content": {"text/csv": {}}}}
+            )
+async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     """
     Returns the forecast data for a modelrun.
     """
@@ -222,6 +229,5 @@ async def get_modelrun_forecast(db: DBSessionDep, modelrun_id: UUID):
     # return a csv
     csv_buffer = io.StringIO()
     forecast.to_csv(csv_buffer, index=False)
-
     csv_content = csv_buffer.getvalue()
     return Response(content=csv_content, media_type="text")

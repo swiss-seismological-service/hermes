@@ -20,8 +20,8 @@ router = APIRouter(tags=['forecastseries'])
 @router.get("/projects/{project_id}/forecastseries",
             response_model=list[ForecastSeriesJSONSchema],
             response_model_exclude_none=True)
-async def get_all_forecastseries(db: DBSessionDep,
-                                 project_id: UUID):
+async def get_projects_forecastseries(db: DBSessionDep,
+                                      project_id: UUID):
     """
     Returns a list of ForecastSeries
     """
@@ -65,8 +65,8 @@ async def get_forecastseries(db: DBSessionDep,
 @router.get("/forecastseries/{forecastseries_oid}/modelconfigs",
             response_model=list[ModelConfig],
             response_model_exclude_none=True)
-async def get_forecastseries_modelconfigs(db: DBSessionDep,
-                                          forecastseries_oid: UUID):
+async def get_modelconfigs(db: DBSessionDep,
+                           forecastseries_oid: UUID):
     """
     Returns a list of ModelConfigs
     """
@@ -89,8 +89,8 @@ async def get_forecastseries_modelconfigs(db: DBSessionDep,
 @router.get("/forecastseries/{forecastseries_oid}/injectionplans",
             response_model=list[InjectionPlanSchema],
             response_model_exclude_none=True)
-async def get_forecastseries_injectionplans(db: DBSessionDep,
-                                            forecastseries_oid: UUID):
+async def get_injectionplans(db: DBSessionDep,
+                             forecastseries_oid: UUID):
     """
     Returns a list of InjectionPlans
     """
@@ -105,7 +105,7 @@ async def get_forecastseries_injectionplans(db: DBSessionDep,
 
 
 @router.get("/forecastseries/{forecastseries_oid}/eventcounts")
-async def get_forecastseries_eventcounts(
+async def get_gridded_evencounts(
         db: DBSessionDep,
         forecastseries_oid: UUID,
         modelconfig_oid: UUID,

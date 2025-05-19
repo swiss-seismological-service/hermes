@@ -3,7 +3,8 @@ from datetime import datetime
 from uuid import UUID
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from seismostats import Catalog
 from sqlalchemy import text
 
@@ -21,8 +22,8 @@ router = APIRouter(tags=['forecast'])
 @router.get("/forecastseries/{forecastseries_oid}/forecasts",
             response_model=list[ForecastSchema],
             response_model_exclude_none=False)
-async def get_all_forecasts(db: DBSessionDep,
-                            forecastseries_oid: UUID):
+async def get_forecasts(db: DBSessionDep,
+                        forecastseries_oid: UUID):
     """
     Returns a list of ForecastSeries
     """
@@ -55,13 +56,8 @@ async def get_forecast(db: DBSessionDep,
 
 
 @router.get("/forecasts/{forecast_oid}/injectionobservations",
-            responses={
-                200: {
-                    "content": {"application/json": {}},
-                    "description": "Return the HYDWS JSON.",
-                }
-            })
-async def get_forecast_injectionobservation(
+            response_class=StreamingResponse)
+async def get_injectionobservation_hydjson(
         db: DBSessionDep, forecast_oid: UUID):
 
     db_result = await InjectionObservationRepository.get_by_forecast_async(
@@ -76,13 +72,15 @@ async def get_forecast_injectionobservation(
     if 'data' in db_result.keys():
         db_result['data'] = json.loads(db_result['data'])
 
-    return Response(
+    return StreamingResponse(
         content=json.dumps(db_result['data']),
         media_type="application/json")
 
 
-@router.get("/forecasts/{forecast_id}/seismicityobservation")
-async def get_forecast_seismicityobservation(
+@router.get("/forecasts/{forecast_id}/seismicityobservation",
+            response_class=StreamingResponse,
+            responses={200: {"content": {"application/xml": {}}}})
+async def get_seismicityobservation(
         db: DBSessionDep,
         forecast_id: UUID,
         start_time: datetime,
@@ -114,14 +112,14 @@ async def get_forecast_seismicityobservation(
     cat = Catalog(cat.rename(columns=lambda col:
                              col.removesuffix('_value')))
     qml = cat.to_quakeml()
-    return Response(content=qml,
-                    media_type="application/xml")
+    return StreamingResponse(content=qml,
+                             media_type="application/xml")
 
 
 @router.get("/forecasts/{forecast_oid}/modelruns",
             response_model=list[ModelRun])
-async def get_forecast_modelruns(db: DBSessionDep,
-                                 forecast_oid: UUID):
+async def get_modelruns(db: DBSessionDep,
+                        forecast_oid: UUID):
     """
     Returns a list of ModelRuns for this forecast.
     """

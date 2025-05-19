@@ -13,7 +13,7 @@ router = APIRouter(tags=['modelconfigs'])
 @router.get("/modelconfigs",
             response_model=list[ModelConfig],
             response_model_exclude_none=True)
-async def get_forecastseries_modelconfigs(
+async def get_all_modelconfigs(
         db: DBSessionDep,
         tags: Annotated[list[str] | None, Query()] = None):
     """
