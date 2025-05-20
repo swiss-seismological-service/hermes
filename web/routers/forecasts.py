@@ -17,24 +17,6 @@ from web.schemas import ForecastJSON
 router = APIRouter(tags=['forecast'])
 
 
-@router.get("/forecastseries/{forecastseries_oid}/forecasts",
-            response_model=list[ForecastJSON],
-            response_model_exclude_none=False)
-async def get_forecasts(db: DBSessionDep,
-                        forecastseries_oid: UUID):
-    """
-    Returns a list of ForecastSeries
-    """
-
-    db_result = await ForecastRepository.get_by_forecastseries_async(
-        db, forecastseries_oid)
-
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecastseries found.")
-
-    return db_result
-
-
 @router.get("/forecasts/{forecast_oid}",
             response_model=ForecastJSON,
             response_model_exclude_none=False)

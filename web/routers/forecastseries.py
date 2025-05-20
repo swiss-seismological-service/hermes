@@ -6,41 +6,19 @@ from fastapi import APIRouter, HTTPException, Response
 from sqlalchemy import text
 
 from hermes.repositories.data import InjectionPlanRepository
-from hermes.repositories.project import (ForecastSeriesRepository,
+from hermes.repositories.project import (ForecastRepository,
+                                         ForecastSeriesRepository,
                                          ModelConfigRepository)
 from hermes.schemas.base import EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
 from web.queries.forecastseries import EVENT_COUNT_SERIES
-from web.schemas import ForecastSeriesJSON, InjectionPlanJSON
+from web.schemas import ForecastJSON, ForecastSeriesJSON, InjectionPlanJSON
 
-router = APIRouter(tags=['forecastseries'])
-
-
-@router.get("/projects/{project_id}/forecastseries",
-            response_model=list[ForecastSeriesJSON],
-            response_model_exclude_none=True)
-async def get_projects_forecastseries(db: DBSessionDep,
-                                      project_id: UUID):
-    """
-    Returns a list of ForecastSeries
-    """
-
-    db_result = await ForecastSeriesRepository.get_by_project_async(
-        db, project_id, joined_attrs=['_tags', 'injectionplans'],
-        override_model=ForecastSeriesJSON)
-
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecastseries found.")
-
-    for fc in db_result:
-        fc.modelconfigs = await ModelConfigRepository.get_by_tags_async(
-            db, fc.tags)
-
-    return db_result
+router = APIRouter(prefix='/forecastseries', tags=['forecastseries'])
 
 
-@router.get("/forecastseries/{forecastseries_oid}",
+@router.get("/{forecastseries_oid}",
             response_model=ForecastSeriesJSON,
             response_model_exclude_none=True)
 async def get_forecastseries(db: DBSessionDep,
@@ -62,7 +40,26 @@ async def get_forecastseries(db: DBSessionDep,
     return db_result
 
 
-@router.get("/forecastseries/{forecastseries_oid}/modelconfigs",
+@router.get("/{forecastseries_oid}/forecasts",
+            response_model=list[ForecastJSON],
+            response_model_exclude_none=True)
+async def get_forecasts(db: DBSessionDep,
+                        forecastseries_oid: UUID):
+    """
+    Returns a list of ForecastSeries
+    """
+    db_result = await ForecastRepository.get_by_forecastseries_joined_async(
+        db, forecastseries_oid)
+
+    if not db_result:
+        raise HTTPException(status_code=404, detail="No forecastseries found.")
+
+    db_result = [ForecastJSON.model_validate(r) for r in db_result]
+
+    return db_result
+
+
+@router.get("/{forecastseries_oid}/modelconfigs",
             response_model=list[ModelConfig],
             response_model_exclude_none=True)
 async def get_modelconfigs(db: DBSessionDep,
@@ -86,7 +83,7 @@ async def get_modelconfigs(db: DBSessionDep,
     return db_result
 
 
-@router.get("/forecastseries/{forecastseries_oid}/injectionplans",
+@router.get("/{forecastseries_oid}/injectionplans",
             response_model=list[InjectionPlanJSON],
             response_model_exclude_none=True)
 async def get_injectionplans(db: DBSessionDep,
@@ -104,7 +101,7 @@ async def get_injectionplans(db: DBSessionDep,
     return db_result
 
 
-@router.get("/forecastseries/{forecastseries_oid}/eventcounts")
+@router.get("/{forecastseries_oid}/eventcounts")
 async def get_gridded_evencounts(
         db: DBSessionDep,
         forecastseries_oid: UUID,

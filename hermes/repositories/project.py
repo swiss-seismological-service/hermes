@@ -5,6 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
 
+from hermes.datamodel.data_tables import (InjectionObservationTable,
+                                          InjectionPlanTable,
+                                          SeismicityObservationTable)
 from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              ProjectTable, TagTable)
@@ -212,12 +215,52 @@ class ForecastRepository(repository_factory(Forecast, ForecastTable)):
     async def get_by_forecastseries_async(
             cls,
             session: AsyncSession,
-            forecastseries_oid: str) -> list[Forecast]:
+            forecastseries_oid: str,
+            joined_attrs: list[str] | None = None,
+            override_model: BaseModel | None = None) -> list[Forecast]:
         q = select(ForecastTable).where(
             ForecastTable.forecastseries_oid == forecastseries_oid)
+        if joined_attrs:
+            for attr in joined_attrs:
+                q = q.options(joinedload(getattr(ForecastTable, attr)))
         result = await session.execute(q)
         result = result.unique().scalars().all()
-        return [cls.model.model_validate(f) for f in result]
+        model = override_model or cls.model
+        return [model.model_validate(f) for f in result]
+
+    @classmethod
+    async def get_by_forecastseries_joined_async(
+            cls,
+            session: AsyncSession,
+            forecastseries_oid: str) -> list:
+        """
+        Gets Forecasts by ForecastSeries with joined information down to the
+        ModelRun level. This is used to get all the information needed to
+        efficiently navigate the Forecastseries' Forecasts and results.
+        """
+        q = (
+            select(ForecastTable)
+            .where(ForecastTable.forecastseries_oid == forecastseries_oid)
+            .options(
+                joinedload(ForecastTable.injectionobservation)
+                .load_only(InjectionObservationTable.oid),
+                joinedload(ForecastTable.seismicityobservation)
+                .load_only(SeismicityObservationTable.oid),
+                joinedload(ForecastTable.modelruns)
+                .options(
+                    joinedload(ModelRunTable.modelconfig)
+                    .load_only(ModelConfigTable.oid,
+                               ModelConfigTable.result_type,
+                               ModelConfigTable.name),
+                    joinedload(ModelRunTable.injectionplan)
+                    .load_only(InjectionPlanTable.name,
+                               InjectionPlanTable.oid)
+                )
+            )
+        )
+        result = await session.execute(q)
+        forecasts = result.unique().scalars().all()
+        return forecasts
 
     @classmethod
     async def get_by_modelrun_async(

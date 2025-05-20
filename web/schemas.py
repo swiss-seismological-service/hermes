@@ -6,23 +6,48 @@ from pydantic import ConfigDict, Field, field_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
-from hermes.schemas import Forecast, ForecastSeries, Project
-from hermes.schemas.base import EResultType, Model
+from hermes.schemas import ForecastSeries, Project
+from hermes.schemas.base import EResultType, EStatus, Model
 from web.mixins import CreationInfoMixin
 
 
-class ProjectJSON(CreationInfoMixin, Project):
-    pass
-
-
 class ModelConfigNameSchema(Model):
-    name: str | None
-    oid: UUID
+    name: str | None = None
+    result_type: EResultType | None = None
+    oid: UUID | None = None
 
 
 class InjectionPlanNameSchema(Model):
-    name: str | None
+    name: str | None = None
+    oid: UUID | None = None
+
+
+class SeismicityObservationOIDSchema(Model):
+    oid: UUID | None = None
+
+
+class InjectionObservationOIDSchema(Model):
+    oid: UUID | None = None
+
+
+class ModelRunJSON(Model):
+    modelconfig: ModelConfigNameSchema | None = None
+    injectionplan: InjectionPlanNameSchema | None = None
+
+
+class ForecastJSON(CreationInfoMixin):
     oid: UUID
+
+    status: EStatus | None = None
+
+    starttime: datetime | None = None
+    endtime: datetime | None = None
+
+    forecastseries_oid: UUID | None = Field(exclude=True)
+    seismicityobservation: SeismicityObservationOIDSchema
+    injectionobservation: InjectionObservationOIDSchema
+
+    modelruns: list[ModelRunJSON] = []
 
 
 class ForecastSeriesJSON(CreationInfoMixin, ForecastSeries):
@@ -36,7 +61,7 @@ class ForecastSeriesJSON(CreationInfoMixin, ForecastSeries):
         return db_to_shapely(value).wkt
 
 
-class ForecastJSON(CreationInfoMixin, Forecast):
+class ProjectJSON(CreationInfoMixin, Project):
     pass
 
 
