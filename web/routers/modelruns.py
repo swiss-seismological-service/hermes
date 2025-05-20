@@ -196,9 +196,9 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     headers = {"Content-Disposition":
                f"attachment; filename=input_{modelrun_id}.zip"}
 
-    return Response(zip_buffer,
-                    media_type="application/zip",
-                    headers=headers)
+    return StreamingResponse(zip_buffer,
+                             media_type="application/zip",
+                             headers=headers)
 
 
 @router.get("/modelruns/{modelrun_id}/results",
@@ -261,7 +261,7 @@ async def get_modelrun(db: DBSessionDep,
 
 
 @router.get("/modelruns/{modelrun_oid}/results/{result_id}",
-            response_class=StreamingResponse,
+            response_class=Response,
             responses={200: {"content": {"text/csv": {}}}}
             )
 async def get_modelrun_results_by_id(db: DBSessionDep,
@@ -303,7 +303,7 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
     forecast.to_csv(csv_buffer, index=False)
     csv_content = csv_buffer.getvalue()
     return Response(content=csv_content,
-                    media_type="text/csv")
+                    media_type="text")
 
 
 @router.get("/modelruns/{modelrun_oid}/injectionplan",

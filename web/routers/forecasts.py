@@ -1,14 +1,12 @@
-import json
 from datetime import datetime
 from uuid import UUID
 
-import pandas as pd
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Response
 from seismostats import Catalog
 from sqlalchemy import text
 
 from hermes.repositories.data import InjectionObservationRepository
+from hermes.repositories.database import pandas_read_sql_async
 from hermes.repositories.project import ForecastRepository
 from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.result_schemas import ModelRun
@@ -56,7 +54,7 @@ async def get_forecast(db: DBSessionDep,
 
 
 @router.get("/forecasts/{forecast_oid}/injectionobservations",
-            response_class=StreamingResponse)
+            response_class=Response)
 async def get_injectionobservation_hydjson(
         db: DBSessionDep, forecast_oid: UUID):
 
@@ -68,28 +66,23 @@ async def get_injectionobservation_hydjson(
             status_code=404,
             detail="No Forecast or injectionobservation found.")
 
-    db_result = db_result.model_dump()
-    if 'data' in db_result.keys():
-        db_result['data'] = json.loads(db_result['data'])
-
-    return StreamingResponse(
-        content=json.dumps(db_result['data']),
-        media_type="application/json")
+    return Response(content=db_result.data,
+                    media_type='application/json')
 
 
 @router.get("/forecasts/{forecast_id}/seismicityobservation",
-            response_class=StreamingResponse,
+            response_class=Response,
             responses={200: {"content": {"application/xml": {}}}})
 async def get_seismicityobservation(
         db: DBSessionDep,
         forecast_id: UUID,
-        start_time: datetime,
-        min_lon: float,
-        min_lat: float,
-        max_lon: float,
-        max_lat: float,
-        min_mag: float,
-        end_time: datetime = datetime.now()):
+        start_time: datetime = datetime.min,
+        min_lon: float = -180,
+        min_lat: float = -90,
+        max_lon: float = 180,
+        max_lat: float = 90,
+        min_mag: float = -10,
+        end_time: datetime = datetime.max):
     """
     Returns the seismicity observation for a given forecast.
     """
@@ -104,16 +97,12 @@ async def get_seismicityobservation(
         end_time=end_time
     )
 
-    result = await db.execute(stmt)
-    rows = result.fetchall()  # Fetch all results
-    columns = result.keys()   # Get column names
-
-    cat = pd.DataFrame(rows, columns=columns)
+    cat = await pandas_read_sql_async(stmt, db)
     cat = Catalog(cat.rename(columns=lambda col:
                              col.removesuffix('_value')))
     qml = cat.to_quakeml()
-    return StreamingResponse(content=qml,
-                             media_type="application/xml")
+    return Response(content=qml,
+                    media_type="application/xml")
 
 
 @router.get("/forecasts/{forecast_oid}/modelruns",
