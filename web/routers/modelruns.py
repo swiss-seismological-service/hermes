@@ -18,9 +18,9 @@ from hermes.repositories.data import (InjectionObservationRepository,
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository,
                                          ModelConfigRepository)
-from hermes.repositories.results import (GRParametersRepository,
-                                         ModelResultRepository,
-                                         SeismicEventRepository)
+from hermes.repositories.results import (EventForecastRepository,
+                                         GRParametersRepository,
+                                         ModelResultRepository)
 from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
 from web.database import DBSessionDep
@@ -221,7 +221,7 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
             raise HTTPException(status_code=404,
                                 detail="No forecast data found.")
     elif modelconfig.result_type == EResultType.CATALOG:
-        forecast = await SeismicEventRepository.get_forecast_catalog(
+        forecast = await EventForecastRepository.get_forecast_catalog(
             db,
             modelrun_id)
     else:
@@ -287,7 +287,7 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
                                 detail="No forecast data found.")
 
     elif result_mapping.result_type == EResultType.CATALOG:
-        forecast = await SeismicEventRepository.get_forecast_catalog(
+        forecast = await EventForecastRepository.get_forecast_catalog(
             db,
             modelrun_oid,
             timestep_oid=result_mapping.timestep_oid,

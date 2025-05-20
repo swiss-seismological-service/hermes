@@ -4,7 +4,7 @@ from seismostats import Catalog, ForecastCatalog, ForecastGRRateGrid
 from shapely import Point
 
 from hermes.repositories.types import db_to_shapely, shapely_to_db
-from hermes.schemas import GRParameters, SeismicEvent
+from hermes.schemas import EventForecast, GRParameters
 from hermes.schemas.base import Model
 
 CATALOG_QUANTITY_FIELDS = ['latitude',
@@ -102,7 +102,7 @@ def deserialize_geom_column(geom_col: pd.Series) -> pd.DataFrame:
 
 def serialize_seismostats_catalog(
     catalog: Catalog,
-        model: type[Model] = SeismicEvent) -> list[dict]:
+        model: type[Model] = EventForecast) -> list[dict]:
     """
     Serialize a Seismostats Catalog object to a list of dictionaries.
 

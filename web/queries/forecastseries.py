@@ -10,7 +10,7 @@ EVENT_COUNT_SERIES = """
     AND mr.modelconfig_oid = :modelconfig_oid
     JOIN modelresult res
     ON mr.oid = res.modelrun_oid
-    JOIN seismicevent s
+    JOIN eventforecast s
     ON res.oid = s.modelresult_oid
     AND ST_Within(
             s.coordinates,

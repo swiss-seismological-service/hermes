@@ -33,6 +33,6 @@ class TestDefaultModelRun:
             text('SELECT COUNT(*) FROM modelresult'))
         assert n_modelresult.scalar() == 100
 
-        n_seismicevents = session.execute(
-            text('SELECT COUNT(*) FROM seismicevent'))
-        assert n_seismicevents.scalar() == 344
+        n_eventforecasts = session.execute(
+            text('SELECT COUNT(*) FROM eventforecast'))
+        assert n_eventforecasts.scalar() == 344

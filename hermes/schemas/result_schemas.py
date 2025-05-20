@@ -63,12 +63,12 @@ class GridCell(Model):
         return value
 
 
-class SeismicEvent(real_value_mixin('longitude', float),
-                   real_value_mixin('latitude', float),
-                   real_value_mixin('depth', float),
-                   real_value_mixin('magnitude', float),
-                   real_value_mixin('time', datetime)
-                   ):
+class EventForecast(real_value_mixin('longitude', float),
+                    real_value_mixin('latitude', float),
+                    real_value_mixin('depth', float),
+                    real_value_mixin('magnitude', float),
+                    real_value_mixin('time', datetime)
+                    ):
     oid: UUID | None = None
     magnitude_type: str | None = None
     modelresult_oid: UUID | None = None

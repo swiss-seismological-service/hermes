@@ -9,17 +9,19 @@ from sqlalchemy import func, insert, join, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
+from hermes.datamodel.result_tables import (EventForecastTable, GridCellTable,
+                                            GRParametersTable,
                                             ModelResultTable, ModelRunTable,
-                                            SeismicEventTable, TimeStepTable)
+                                            TimeStepTable)
 from hermes.io.serialize import (deserialize_seismostats_catalog,
                                  deserialize_seismostats_grrategrid,
                                  serialize_seismostats_catalog,
                                  serialize_seismostats_grrategrid)
 from hermes.repositories.base import repository_factory
 from hermes.repositories.database import pandas_read_sql_async
-from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
-                                           ModelRun, SeismicEvent, TimeStep)
+from hermes.schemas.result_schemas import (EventForecast, GridCell,
+                                           GRParameters, ModelResult, ModelRun,
+                                           TimeStep)
 from web.schemas import ModelResultJSON
 
 
@@ -263,9 +265,9 @@ class GRParametersRepository(
         return rategrid
 
 
-class SeismicEventRepository(
-    repository_factory(SeismicEvent,
-                       SeismicEventTable)):
+class EventForecastRepository(
+    repository_factory(EventForecast,
+                       EventForecastTable)):
 
     @classmethod
     def create_from_forecast_catalog(cls,
@@ -286,7 +288,7 @@ class SeismicEventRepository(
         catalog = catalog.rename(columns={'catalog_id': 'modelresult_oid'})
         events = serialize_seismostats_catalog(catalog)
 
-        session.execute(insert(SeismicEventTable), events)
+        session.execute(insert(EventForecastTable), events)
         session.commit()
 
     @classmethod
@@ -305,14 +307,14 @@ class SeismicEventRepository(
             filter.append(ModelResultTable.timestep_oid == timestep_oid)
 
         q = select(ModelResultTable.realization_id,
-                   *SeismicEventTable.__table__.c,
+                   *EventForecastTable.__table__.c,
                    GridCellTable.depth_min,
                    GridCellTable.depth_max,
                    GridCellTable.geom,
                    TimeStepTable.starttime,
                    TimeStepTable.endtime)\
             .where(*filter) \
-            .join(SeismicEventTable) \
+            .join(EventForecastTable) \
             .join(GridCellTable) \
             .join(TimeStepTable)
 
