@@ -37,20 +37,25 @@ def serialize_seismostats_grrategrid(
 
 
 def deserialize_seismostats_grrategrid(
-        rategrid: pd.DataFrame) -> ForecastGRRateGrid:
+        rategrid: pd.DataFrame,
+        timestep: bool = True) -> ForecastGRRateGrid:
     """
     Deserialize a pd.DataFrame directly from the DB model to a
     Seismostats ForecastGRRateGrid object.
 
     Args:
-        rategrid: List of dictionaries representing the rategrid.
-        model: Model object to deserialize the rategrid to.
+        rategrid: Raw tabular data from the database.
+        timestep: Whether the data is for a single timestep.
 
     Returns:
         ForecastGRRateGrid object.
     """
     if rategrid.empty:
         return ForecastGRRateGrid()
+
+    starttime = None
+    endtime = None
+
     # rename value columns to match 'RealQuantity" fields
     column_renames = {f'{col}_value': col for col in RATEGRID_QUANTITY_FIELDS}
     rategrid = rategrid.rename(columns=column_renames)
@@ -61,7 +66,14 @@ def deserialize_seismostats_grrategrid(
     rategrid = rategrid.drop(columns=['oid', 'modelresult_oid', 'geom'])
     rategrid = rategrid.dropna(axis=1, how='all')
 
-    return ForecastGRRateGrid(rategrid)
+    if timestep:
+        starttime = rategrid['starttime'].unique()[0].to_pydatetime()
+        endtime = rategrid['endtime'].unique()[0].to_pydatetime()
+        rategrid = rategrid.drop(columns=['starttime', 'endtime'])
+
+    return ForecastGRRateGrid(rategrid,
+                              starttime=starttime,
+                              endtime=endtime)
 
 
 def deserialize_geom_column(geom_col: pd.Series) -> pd.DataFrame:
@@ -126,14 +138,18 @@ def serialize_seismostats_catalog(
 
 
 def deserialize_seismostats_catalog(
-        catalog: pd.DataFrame) -> ForecastCatalog:
+        catalog: pd.DataFrame,
+        gridcell: bool = True,
+        timestep: bool = True
+) -> ForecastCatalog:
     """
     Deserialize a pd.DataFrame directly from the DB model to a
     Seismostats Catalog object.
 
     Args:
-        catalog: List of dictionaries representing the events.
-        model: Model object to deserialize the events to.
+        rategrid: Raw tabular data from the database.
+        gridcell: Whether the data is for a single gridcell.
+        timestep: Whether the data is for a single timestep.
 
     Returns:
         Catalog object.
@@ -141,18 +157,38 @@ def deserialize_seismostats_catalog(
     if catalog.empty:
         return Catalog()
 
+    starttime = None
+    endtime = None
+    bounding_polygon = None
+    depth_min = None
+    depth_max = None
+
     # rename value columns to match 'RealQuantity" fields
     column_renames = {f'{col}_value': col for col in CATALOG_QUANTITY_FIELDS}
     catalog = catalog.rename(columns=column_renames)
 
-    boundingbox = deserialize_geom_column(catalog['geom'])
-    catalog = pd.concat([boundingbox, catalog], axis=1)
+    if gridcell:
+        bounding_polygon = db_to_shapely(catalog['geom'][0])
+        depth_min = catalog['depth_min'][0]
+        depth_max = catalog['depth_max'][0]
+        catalog = catalog.drop(columns=['depth_min', 'depth_max'])
+    else:
+        boundingbox = deserialize_geom_column(catalog['geom'])
+        catalog = pd.concat([boundingbox, catalog], axis=1)
+
+    if timestep:
+        starttime = catalog['starttime'][0]
+        endtime = catalog['endtime'][0]
+        catalog = catalog.drop(columns=['starttime', 'endtime'])
 
     # drop oid and modelresult_oid columns
     catalog = catalog.drop(
         columns=['oid', 'modelresult_oid', 'coordinates', 'geom'])
-
-    # drop empty columns
     catalog = catalog.dropna(axis=1, how='all')
 
-    return Catalog(catalog)
+    return Catalog(catalog,
+                   starttime=starttime,
+                   endtime=endtime,
+                   bounding_polygon=bounding_polygon,
+                   depth_min=depth_min,
+                   depth_max=depth_max)

@@ -236,15 +236,26 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
 
 @router.get("/modelruns/{modelrun_oid}",
             response_model=list[ModelResultJSON],
-            response_model_exclude_none=False)
+            response_model_exclude_none=True)
 async def get_modelrun(db: DBSessionDep,
                        modelrun_oid: UUID):
     """
     Returns a modelrun by id.
     """
 
-    db_result = await ModelResultRepository.get_by_modelrun_aggregated_async(
+    db_config = await ModelConfigRepository.get_by_modelrun_async(
         db, modelrun_oid)
+
+    if db_config.result_type == EResultType.CATALOG:
+        db_result = \
+            await ModelResultRepository.get_by_modelrun_agg_async(
+                db, modelrun_oid)
+    elif db_config.result_type == EResultType.GRID:
+        db_result = \
+            await ModelResultRepository.get_by_modelrun_agg_time_async(
+                db, modelrun_oid)
+    else:
+        raise NotImplementedError
 
     return db_result
 
@@ -260,14 +271,8 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
     Returns the forecast data for a modelrun.
     """
 
-    # TODO:
-    # For an efficient retreival, using the result_id, we don't need to
-    # also return the geometry and time information.
-    # However we need to think whether perhaps we'd still like to have
-    # specific ways of handling this depending on the result type.
-
     result_mapping = \
-        await ModelResultRepository.get_by_modelrun_aggregated_async(
+        await ModelResultRepository.get_by_modelrun_agg_async(
             db, modelrun_oid)
     result_mapping = result_mapping[result_id]
 
@@ -275,13 +280,21 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
         forecast = await GRParametersRepository.get_forecast_grrategrid(
             db,
             modelrun_oid,
-            result_mapping.gridcell_oid,
-            result_mapping.timestep_oid)
+            timestep_oid=result_mapping.timestep_oid)
 
         if forecast.empty:
             raise HTTPException(status_code=404,
                                 detail="No forecast data found.")
 
+    elif result_mapping.result_type == EResultType.CATALOG:
+        forecast = await SeismicEventRepository.get_forecast_catalog(
+            db,
+            modelrun_oid,
+            timestep_oid=result_mapping.timestep_oid,
+            gridcell_oid=result_mapping.gridcell_oid)
+        if forecast.empty:
+            raise HTTPException(status_code=404,
+                                detail="No forecast data found.")
     else:
         raise NotImplementedError
 

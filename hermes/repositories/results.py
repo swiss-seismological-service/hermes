@@ -53,7 +53,7 @@ class ModelResultRepository(
         return [x[0] for x in batch]
 
     @classmethod
-    async def get_by_modelrun_aggregated_async(
+    async def get_by_modelrun_agg_async(
             cls,
             session: Session,
             modelrun_oid: UUID) -> list[ModelResult]:
@@ -85,6 +85,38 @@ class ModelResultRepository(
                 func.ST_XMin(GridCellTable.unique_geom),
                 func.ST_YMin(GridCellTable.unique_geom),
                 GridCellTable.depth_min,
+                TimeStepTable.starttime,
+            )
+        )
+        result = await session.execute(q)
+        result = result.mappings().all()
+
+        return [ModelResultJSON.model_validate({**r, "result_id": i})
+                for i, r in enumerate(result)]
+
+    @classmethod
+    async def get_by_modelrun_agg_time_async(
+            cls,
+            session: Session,
+            modelrun_oid: UUID) -> list[ModelResult]:
+        """
+        Get all model results for a given model run, aggregated by time step.
+        """
+        q = (
+            select(
+                TimeStepTable.starttime,
+                TimeStepTable.endtime,
+                TimeStepTable.oid.label("timestep_oid"),
+                func.min(ModelResultTable.result_type).label("result_type"),
+            )
+            .select_from(
+                join(TimeStepTable,
+                     ModelResultTable,
+                     TimeStepTable.oid == ModelResultTable.timestep_oid)
+            )
+            .where(ModelResultTable.modelrun_oid == modelrun_oid)
+            .group_by(TimeStepTable.oid)
+            .order_by(
                 TimeStepTable.starttime,
             )
         )
@@ -224,7 +256,9 @@ class GRParametersRepository(
 
         result = await pandas_read_sql_async(q, session)
 
-        rategrid = deserialize_seismostats_grrategrid(result)
+        rategrid = deserialize_seismostats_grrategrid(
+            result,
+            timestep=timestep_oid is not None)
 
         return rategrid
 
@@ -284,7 +318,10 @@ class SeismicEventRepository(
 
         result = await pandas_read_sql_async(q, session)
 
-        catalog = deserialize_seismostats_catalog(result)
+        catalog = deserialize_seismostats_catalog(
+            result,
+            gridcell=gridcell_oid is not None,
+            timestep=timestep_oid is not None)
 
         return catalog
 
