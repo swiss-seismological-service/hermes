@@ -196,9 +196,9 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     headers = {"Content-Disposition":
                f"attachment; filename=input_{modelrun_id}.zip"}
 
-    return StreamingResponse(zip_buffer,
-                             media_type="application/zip",
-                             headers=headers)
+    return Response(zip_buffer,
+                    media_type="application/zip",
+                    headers=headers)
 
 
 @router.get("/modelruns/{modelrun_id}/results",
@@ -302,4 +302,24 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
     csv_buffer = io.StringIO()
     forecast.to_csv(csv_buffer, index=False)
     csv_content = csv_buffer.getvalue()
-    return Response(content=csv_content, media_type="text")
+    return Response(content=csv_content,
+                    media_type="text/csv")
+
+
+@router.get("/modelruns/{modelrun_oid}/injectionplan",
+            response_class=Response)
+async def get_injectionplan(db: DBSessionDep,
+                            modelrun_oid: UUID):
+    """
+    Returns the injection plan for a modelrun.
+    """
+
+    db_result = await InjectionPlanRepository.get_by_modelrun_async(
+        db, modelrun_oid)
+
+    if not db_result:
+        raise HTTPException(status_code=404,
+                            detail="No modelrun or injectionplan found.")
+
+    return Response(db_result.data[1:-1],  # remove start and end []
+                    media_type='application/json')
