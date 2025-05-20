@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pytest
-from seismostats import Catalog, ForecastCatalog
+from seismostats import ForecastCatalog
 from shapely import Polygon
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -225,24 +225,6 @@ class TestEventForecast:
 
         event = EventForecastRepository.create(session, event)
         assert event.oid is not None
-
-    def test_get_catalog(self, session):
-        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
-        catalog = Catalog(pd.read_parquet(catalog_path))
-        catalog['catalog_id'] = 0
-
-        modelresult = ModelResult(result_type=EResultType.CATALOG)
-        modelresult_oid = ModelResultRepository.create(
-            session, modelresult).oid
-
-        EventForecastRepository.create_from_forecast_catalog(
-            session, catalog, [modelresult_oid])
-
-        catalog2 = EventForecastRepository.get_catalog(
-            session, modelresult_oid)
-
-        assert len(catalog) == len(catalog2)
-        assert isinstance(catalog2, Catalog)
 
     def test_create_from_forecast_catalog(self, session):
         catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')

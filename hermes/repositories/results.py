@@ -292,7 +292,7 @@ class EventForecastRepository(
         session.commit()
 
     @classmethod
-    async def get_forecast_catalog(
+    async def get_forecast_catalog_async(
             cls,
             session: Session,
             modelrun_oid: UUID,

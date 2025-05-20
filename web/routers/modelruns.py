@@ -221,7 +221,7 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
             raise HTTPException(status_code=404,
                                 detail="No forecast data found.")
     elif modelconfig.result_type == EResultType.CATALOG:
-        forecast = await EventForecastRepository.get_forecast_catalog(
+        forecast = await EventForecastRepository.get_forecast_catalog_async(
             db,
             modelrun_id)
     else:
@@ -287,7 +287,7 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
                                 detail="No forecast data found.")
 
     elif result_mapping.result_type == EResultType.CATALOG:
-        forecast = await EventForecastRepository.get_forecast_catalog(
+        forecast = await EventForecastRepository.get_forecast_catalog_async(
             db,
             modelrun_oid,
             timestep_oid=result_mapping.timestep_oid,
