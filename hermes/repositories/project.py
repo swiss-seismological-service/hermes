@@ -245,7 +245,7 @@ class ForecastRepository(repository_factory(Forecast, ForecastTable)):
 
         result = await session.execute(q)
         result = result.unique().scalars().all()
-        return [cls.model.model_validate(r) for r in result]
+        return [ForecastJSON.model_validate(r) for r in result]
 
     @classmethod
     async def get_by_id_joined_async(

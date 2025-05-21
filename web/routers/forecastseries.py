@@ -51,11 +51,6 @@ async def get_forecasts(db: DBSessionDep,
     db_result = await ForecastRepository.get_by_forecastseries_joined_async(
         db, forecastseries_oid)
 
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecastseries found.")
-
-    db_result = [ForecastJSON.model_validate(r) for r in db_result]
-
     return db_result
 
 
@@ -77,9 +72,6 @@ async def get_modelconfigs(db: DBSessionDep,
     db_result = await ModelConfigRepository.get_by_tags_async(
         db, fs.tags)
 
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No modelconfigs found.")
-
     return db_result
 
 
@@ -94,9 +86,6 @@ async def get_injectionplans(db: DBSessionDep,
 
     db_result = await InjectionPlanRepository.get_by_forecastseries_async(
         db, forecastseries_oid)
-
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No injectionplans found.")
 
     return db_result
 

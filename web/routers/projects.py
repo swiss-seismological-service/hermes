@@ -13,7 +13,7 @@ router = APIRouter(prefix='/projects', tags=['project'])
 
 @router.get("",
             response_model=list[ProjectJSON],
-            response_model_exclude_none=False)
+            response_model_exclude_none=True)
 async def get_all_projects(db: DBSessionDep):
     """
     Returns a list of projects.
@@ -28,7 +28,7 @@ async def get_all_projects(db: DBSessionDep):
 
 @router.get("/{project_oid}",
             response_model=ProjectJSON,
-            response_model_exclude_none=False)
+            response_model_exclude_none=True)
 async def get_project(db: DBSessionDep,
                       project_oid: UUID):
     """
