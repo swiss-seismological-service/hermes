@@ -114,6 +114,9 @@ async def get_gridded_evencounts(
     Returns the seismicity observation for a given forecast.
     """
 
+    # TODO: Improve performance if possible
+    # TODO: Automatic grid bounds if not provided
+
     # Check for correct result type
     config = await ModelConfigRepository.get_by_id_async(db, modelconfig_oid)
     if config.result_type != EResultType.CATALOG:

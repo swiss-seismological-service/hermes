@@ -19,14 +19,14 @@ router = APIRouter(tags=['forecast'])
 
 @router.get("/forecasts/{forecast_oid}",
             response_model=ForecastJSON,
-            response_model_exclude_none=False)
+            response_model_exclude_none=True)
 async def get_forecast(db: DBSessionDep,
                        forecast_oid: UUID):
     """
     Returns a single Forecast
     """
 
-    db_result = await ForecastRepository.get_by_id_async(
+    db_result = await ForecastRepository.get_by_id_joined_async(
         db, forecast_oid)
 
     if not db_result:

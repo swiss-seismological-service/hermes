@@ -95,7 +95,7 @@ class SeismicityObservationRepository(repository_factory(
             SeismicityObservationTable.forecast_oid == forecast_oid)
         result = await session.execute(q)
         result = result.scalar()
-        return cls.model.model_validate(result)
+        return cls.model.model_validate(result) if result else None
 
 
 class InjectionObservationRepository(repository_factory(
@@ -215,4 +215,4 @@ class InjectionPlanRepository(repository_factory(
 
         result = await session.execute(q)
         result = result.scalar()
-        return cls.model.model_validate(result)
+        return cls.model.model_validate(result) if result else None

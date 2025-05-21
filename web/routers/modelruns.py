@@ -30,6 +30,32 @@ from web.schemas import ForecastJSON, ModelResultJSON
 router = APIRouter(tags=['modelruns'])
 
 
+@router.get("/modelruns/{modelrun_oid}",
+            response_model=list[ModelResultJSON],
+            response_model_exclude_none=True)
+async def get_modelrun(db: DBSessionDep,
+                       modelrun_oid: UUID):
+    """
+    Returns a modelrun by id.
+    """
+
+    db_config = await ModelConfigRepository.get_by_modelrun_async(
+        db, modelrun_oid)
+
+    if db_config.result_type == EResultType.CATALOG:
+        db_result = \
+            await ModelResultRepository.get_by_modelrun_agg_async(
+                db, modelrun_oid)
+    elif db_config.result_type == EResultType.GRID:
+        db_result = \
+            await ModelResultRepository.get_by_modelrun_agg_time_async(
+                db, modelrun_oid)
+    else:
+        raise NotImplementedError
+
+    return db_result
+
+
 @router.get("/modelruns/{modelrun_oid}/modelconfig",
             response_model=ModelConfig,
             response_model_exclude_none=False)
@@ -60,6 +86,8 @@ async def get_gridded_eventcounts(db: DBSessionDep,
     config = await ModelConfigRepository.get_by_modelrun_async(db, modelrun_id)
     if config.result_type != EResultType.CATALOG:
         return HTTPException(400, "Wrong result type for this endpoint.")
+
+    # TODO: Automatic grid bounds if not provided
 
     # Execute the query
     stmt = text(EVENTCOUNTS).bindparams(modelrun_oid=modelrun_id,
@@ -234,32 +262,6 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     return Response(content=csv_content, media_type="text")
 
 
-@router.get("/modelruns/{modelrun_oid}",
-            response_model=list[ModelResultJSON],
-            response_model_exclude_none=True)
-async def get_modelrun(db: DBSessionDep,
-                       modelrun_oid: UUID):
-    """
-    Returns a modelrun by id.
-    """
-
-    db_config = await ModelConfigRepository.get_by_modelrun_async(
-        db, modelrun_oid)
-
-    if db_config.result_type == EResultType.CATALOG:
-        db_result = \
-            await ModelResultRepository.get_by_modelrun_agg_async(
-                db, modelrun_oid)
-    elif db_config.result_type == EResultType.GRID:
-        db_result = \
-            await ModelResultRepository.get_by_modelrun_agg_time_async(
-                db, modelrun_oid)
-    else:
-        raise NotImplementedError
-
-    return db_result
-
-
 @router.get("/modelruns/{modelrun_oid}/results/{result_id}",
             response_class=Response,
             responses={200: {"content": {"text/csv": {}}}}
@@ -319,7 +321,7 @@ async def get_injectionplan(db: DBSessionDep,
 
     if not db_result:
         raise HTTPException(status_code=404,
-                            detail="No modelrun or injectionplan found.")
+                            detail="No injectionplan found.")
 
     return Response(db_result.data[1:-1],  # remove start and end []
                     media_type='application/json')

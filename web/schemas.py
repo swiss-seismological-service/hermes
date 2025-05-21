@@ -12,25 +12,26 @@ from web.mixins import CreationInfoMixin
 
 
 class ModelConfigNameSchema(Model):
-    name: str | None = None
+    oid: UUID
+    name: str
     result_type: EResultType | None = None
-    oid: UUID | None = None
 
 
 class InjectionPlanNameSchema(Model):
-    name: str | None = None
-    oid: UUID | None = None
+    oid: UUID
+    name: str
 
 
 class SeismicityObservationOIDSchema(Model):
-    oid: UUID | None = None
+    oid: UUID
 
 
 class InjectionObservationOIDSchema(Model):
-    oid: UUID | None = None
+    oid: UUID
 
 
 class ModelRunJSON(Model):
+    oid: UUID
     modelconfig: ModelConfigNameSchema | None = None
     injectionplan: InjectionPlanNameSchema | None = None
 
@@ -38,14 +39,14 @@ class ModelRunJSON(Model):
 class ForecastJSON(CreationInfoMixin):
     oid: UUID
 
-    status: EStatus | None = None
+    status: EStatus
 
     starttime: datetime | None = None
     endtime: datetime | None = None
 
-    forecastseries_oid: UUID | None = Field(exclude=True)
-    seismicityobservation: SeismicityObservationOIDSchema
-    injectionobservation: InjectionObservationOIDSchema
+    forecastseries_oid: UUID = Field(exclude=True)
+    seismicityobservation: SeismicityObservationOIDSchema | None = None
+    injectionobservation: InjectionObservationOIDSchema | None = None
 
     modelruns: list[ModelRunJSON] = []
 
@@ -75,9 +76,9 @@ class InjectionPlanJSON(InjectionPlanNameSchema):
 
 
 class ModelResultJSON(Model):
-    gridcell_oid: UUID | None = None
-    timestep_oid: UUID | None = None
-    result_type: EResultType | None = None
+    gridcell_oid: UUID
+    timestep_oid: UUID
+    result_type: EResultType
     starttime: datetime | None = None
     endtime: datetime | None = None
     geom: str | PolygonType | None = None
