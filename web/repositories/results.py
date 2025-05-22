@@ -10,16 +10,16 @@ from hermes.datamodel.result_tables import (EventForecastTable, GridCellTable,
                                             TimeStepTable)
 from hermes.io.serialize import (deserialize_seismostats_catalog,
                                  deserialize_seismostats_grrategrid)
-from hermes.repositories.base import repository_factory
 from hermes.schemas.result_schemas import (EventForecast, GridCell,
                                            GRParameters, ModelResult, ModelRun)
+from web.repositories.base import async_repository_factory
 from web.repositories.database import pandas_read_sql_async
 from web.schemas import ModelResultJSON
 
 
 class AsyncModelResultRepository(
-    repository_factory(ModelResult,
-                       ModelResultTable)):
+    async_repository_factory(ModelResult,
+                             ModelResultTable)):
 
     @classmethod
     async def get_by_modelrun_agg(
@@ -96,20 +96,20 @@ class AsyncModelResultRepository(
                 for i, r in enumerate(result)]
 
 
-class AsyncGridCellRepository(repository_factory(GridCell,
-                                                 GridCellTable)):
+class AsyncGridCellRepository(async_repository_factory(GridCell,
+                                                       GridCellTable)):
     pass
 
 
 class AsyncTimeStepRepository(
-    repository_factory(GridCell,
-                       TimeStepTable)):
+    async_repository_factory(GridCell,
+                             TimeStepTable)):
     pass
 
 
 class AsyncGRParametersRepository(
-    repository_factory(GRParameters,
-                       GRParametersTable)):
+    async_repository_factory(GRParameters,
+                             GRParametersTable)):
 
     @classmethod
     async def get_forecast_grrategrid(
@@ -148,8 +148,8 @@ class AsyncGRParametersRepository(
 
 
 class AsyncEventForecastRepository(
-    repository_factory(EventForecast,
-                       EventForecastTable)):
+    async_repository_factory(EventForecast,
+                             EventForecastTable)):
 
     @classmethod
     async def get_forecast_catalog(
@@ -188,7 +188,7 @@ class AsyncEventForecastRepository(
         return catalog
 
 
-class AsyncModelRunRepository(repository_factory(
+class AsyncModelRunRepository(async_repository_factory(
         ModelRun, ModelRunTable)):
 
     @classmethod
