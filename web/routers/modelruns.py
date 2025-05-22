@@ -23,9 +23,9 @@ from hermes.repositories.results import (EventForecastRepository,
                                          ModelResultRepository)
 from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
+from hermes.schemas.web_schemas import ForecastJSON, ModelResultJSON
 from web.database import DBSessionDep
 from web.queries.modelruns import EVENTCOUNTS
-from web.schemas import ForecastJSON, ModelResultJSON
 
 router = APIRouter(tags=['modelruns'])
 

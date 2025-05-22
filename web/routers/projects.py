@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException
 from hermes.repositories.project import (ForecastSeriesRepository,
                                          ModelConfigRepository,
                                          ProjectRepository)
+from hermes.schemas.web_schemas import ForecastSeriesJSON, ProjectJSON
 from web.database import DBSessionDep
-from web.schemas import ForecastSeriesJSON, ProjectJSON
 
 router = APIRouter(prefix='/projects', tags=['project'])
 

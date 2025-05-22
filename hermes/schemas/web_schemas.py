@@ -2,13 +2,12 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, computed_field, field_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
 from hermes.schemas import ForecastSeries, Project
 from hermes.schemas.base import EResultType, EStatus, Model
-from web.mixins import CreationInfoMixin
 
 
 class ModelConfigNameSchema(Model):
@@ -34,6 +33,39 @@ class ModelRunJSON(Model):
     oid: UUID
     modelconfig: ModelConfigNameSchema | None = None
     injectionplan: InjectionPlanNameSchema | None = None
+
+
+class CreationInfoSchema(Model):
+    author: str | None = None
+    agencyid: str | None = None
+    creationtime: datetime | None = None
+    version: str | None = None
+    copyrightowner: str | None = None
+    licence: str | None = None
+
+
+def creationinfo_factory(obj: Model) -> CreationInfoSchema:
+    return CreationInfoSchema(
+        author=obj.creationinfo_author,
+        agencyid=obj.creationinfo_agencyid,
+        creationtime=obj.creationinfo_creationtime,
+        version=obj.creationinfo_version,
+        copyrightowner=obj.creationinfo_copyrightowner,
+        licence=obj.creationinfo_licence)
+
+
+class CreationInfoMixin(Model):
+    creationinfo_author: str | None = Field(default=None, exclude=True)
+    creationinfo_agencyid: str | None = Field(default=None, exclude=True)
+    creationinfo_creationtime: datetime = Field(default=None, exclude=True)
+    creationinfo_version: str | None = Field(default=None, exclude=True)
+    creationinfo_copyrightowner: str | None = Field(default=None, exclude=True)
+    creationinfo_licence: str | None = Field(default=None, exclude=True)
+
+    @computed_field
+    @property
+    def creationinfo(self) -> CreationInfoSchema:
+        return creationinfo_factory(self)
 
 
 class ForecastJSON(CreationInfoMixin):

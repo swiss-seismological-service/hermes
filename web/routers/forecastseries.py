@@ -11,9 +11,10 @@ from hermes.repositories.project import (ForecastRepository,
                                          ModelConfigRepository)
 from hermes.schemas.base import EResultType
 from hermes.schemas.model_schemas import ModelConfig
+from hermes.schemas.web_schemas import (ForecastJSON, ForecastSeriesJSON,
+                                        InjectionPlanJSON)
 from web.database import DBSessionDep
 from web.queries.forecastseries import EVENT_COUNT_SERIES
-from web.schemas import ForecastJSON, ForecastSeriesJSON, InjectionPlanJSON
 
 router = APIRouter(prefix='/forecastseries', tags=['forecastseries'])
 

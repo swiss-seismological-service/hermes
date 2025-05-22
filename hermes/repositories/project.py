@@ -15,7 +15,7 @@ from hermes.datamodel.result_tables import ModelRunTable
 from hermes.repositories.base import repository_factory
 from hermes.schemas import (EStatus, Forecast, ForecastSeries, ModelConfig,
                             Project, Tag)
-from web.schemas import ForecastJSON
+from hermes.schemas.web_schemas import ForecastJSON
 
 
 class ProjectRepository(repository_factory(Project, ProjectTable)):

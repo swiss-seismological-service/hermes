@@ -10,9 +10,9 @@ from hermes.repositories.database import pandas_read_sql_async
 from hermes.repositories.project import ForecastRepository
 from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.result_schemas import ModelRun
+from hermes.schemas.web_schemas import ForecastJSON
 from web.database import DBSessionDep
 from web.queries.forecasts import OBSERVED_EVENTS
-from web.schemas import ForecastJSON
 
 router = APIRouter(tags=['forecast'])
 

@@ -22,7 +22,7 @@ from hermes.repositories.database import pandas_read_sql_async
 from hermes.schemas.result_schemas import (EventForecast, GridCell,
                                            GRParameters, ModelResult, ModelRun,
                                            TimeStep)
-from web.schemas import ModelResultJSON
+from hermes.schemas.web_schemas import ModelResultJSON
 
 
 class ModelResultRepository(
