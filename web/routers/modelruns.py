@@ -28,10 +28,10 @@ from web.repositories.results import (AsyncEventForecastRepository,
                                       AsyncModelRunRepository)
 from web.schemas import ForecastJSON, ModelResultJSON
 
-router = APIRouter(tags=['modelruns'])
+router = APIRouter(prefix="/modelruns", tags=['modelruns'])
 
 
-@router.get("/modelruns/{modelrun_oid}",
+@router.get("/{modelrun_oid}",
             response_model=list[ModelResultJSON],
             response_model_exclude_none=True)
 async def get_modelrun(db: DBSessionDep,
@@ -62,7 +62,7 @@ async def get_modelrun(db: DBSessionDep,
     return db_result
 
 
-@router.get("/modelruns/{modelrun_oid}/modelconfig",
+@router.get("/{modelrun_oid}/modelconfig",
             response_model=ModelConfig,
             response_model_exclude_none=False)
 async def get_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
@@ -78,7 +78,7 @@ async def get_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
     return db_result
 
 
-@router.get("/modelruns/{modelrun_id}/eventcounts")
+@router.get("/{modelrun_id}/eventcounts")
 async def get_gridded_eventcounts(db: DBSessionDep,
                                   modelrun_id: UUID,
                                   min_lon: float,
@@ -142,7 +142,7 @@ async def get_gridded_eventcounts(db: DBSessionDep,
     return Response(content=csv_content, media_type="text")
 
 
-@router.get("/modelruns/{modelrun_id}/input",
+@router.get("/{modelrun_id}/input",
             response_class=StreamingResponse,
             responses={200: {"content": {"application/zip": {}}}}
             )
@@ -235,7 +235,7 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
                              headers=headers)
 
 
-@router.get("/modelruns/{modelrun_id}/results",
+@router.get("/{modelrun_id}/results",
             response_class=StreamingResponse,
             responses={200: {"content": {"text/csv": {}}}}
             )
@@ -270,7 +270,7 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     return Response(content=csv_content, media_type="text")
 
 
-@router.get("/modelruns/{modelrun_oid}/results/{result_id}",
+@router.get("/{modelrun_oid}/results/{result_id}",
             response_class=Response,
             responses={200: {"content": {"text/csv": {}}}}
             )
@@ -325,7 +325,7 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
                     media_type="text")
 
 
-@router.get("/modelruns/{modelrun_oid}/injectionplan",
+@router.get("/{modelrun_oid}/injectionplan",
             response_class=Response)
 async def get_injectionplan(db: DBSessionDep,
                             modelrun_oid: UUID):

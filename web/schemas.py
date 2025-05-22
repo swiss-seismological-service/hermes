@@ -10,31 +10,6 @@ from hermes.schemas import ForecastSeries, Project
 from hermes.schemas.base import EResultType, EStatus, Model
 
 
-class ModelConfigNameSchema(Model):
-    oid: UUID
-    name: str
-    result_type: EResultType | None = None
-
-
-class InjectionPlanNameSchema(Model):
-    oid: UUID
-    name: str
-
-
-class SeismicityObservationOIDSchema(Model):
-    oid: UUID
-
-
-class InjectionObservationOIDSchema(Model):
-    oid: UUID
-
-
-class ModelRunJSON(Model):
-    oid: UUID
-    modelconfig: ModelConfigNameSchema | None = None
-    injectionplan: InjectionPlanNameSchema | None = None
-
-
 class CreationInfoSchema(Model):
     author: str | None = None
     agencyid: str | None = None
@@ -66,6 +41,32 @@ class CreationInfoMixin(Model):
     @property
     def creationinfo(self) -> CreationInfoSchema:
         return creationinfo_factory(self)
+
+
+class ModelConfigNameSchema(Model):
+    oid: UUID
+    name: str
+    result_type: EResultType | None = None
+
+
+class InjectionPlanNameSchema(Model):
+    oid: UUID
+    name: str
+
+
+class SeismicityObservationOIDSchema(Model):
+    oid: UUID
+
+
+class InjectionObservationOIDSchema(Model):
+    oid: UUID
+
+
+class ModelRunJSON(Model):
+    oid: UUID
+    modelconfig: ModelConfigNameSchema | None = None
+    injectionplan: InjectionPlanNameSchema | None = None
+    status: EStatus | None = None
 
 
 class ForecastJSON(CreationInfoMixin):

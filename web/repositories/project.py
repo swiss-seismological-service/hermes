@@ -80,7 +80,8 @@ class AsyncForecastRepository(async_repository_factory(Forecast,
             joinedload(ModelRunTable.injectionplan)
             .load_only(InjectionPlanTable.name,
                        InjectionPlanTable.oid)
-        ).load_only(ModelRunTable.oid))
+        ).load_only(ModelRunTable.oid,
+                    ModelRunTable.status))
 
     @classmethod
     async def get_by_forecastseries_joined(

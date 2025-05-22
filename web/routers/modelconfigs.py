@@ -7,10 +7,10 @@ from hermes.schemas.model_schemas import ModelConfig
 from web.repositories.database import DBSessionDep
 from web.repositories.project import AsyncModelConfigRepository
 
-router = APIRouter(tags=['modelconfigs'])
+router = APIRouter(prefix='/modelconfigs', tags=['modelconfigs'])
 
 
-@router.get("/modelconfigs",
+@router.get("",
             response_model=list[ModelConfig],
             response_model_exclude_none=True)
 async def get_all_modelconfigs(
@@ -28,7 +28,7 @@ async def get_all_modelconfigs(
     return db_result
 
 
-@router.get("/modelconfigs/{modelconfig_oid}",
+@router.get("/{modelconfig_oid}",
             response_model=ModelConfig,
             response_model_exclude_none=True)
 async def get_modelconfig(db: DBSessionDep,

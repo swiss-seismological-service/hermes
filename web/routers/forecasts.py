@@ -13,10 +13,10 @@ from web.repositories.project import AsyncForecastRepository
 from web.repositories.results import AsyncModelRunRepository
 from web.schemas import ForecastJSON
 
-router = APIRouter(tags=['forecast'])
+router = APIRouter(prefix="/forecasts", tags=['forecast'])
 
 
-@router.get("/forecasts/{forecast_oid}",
+@router.get("/{forecast_oid}",
             response_model=ForecastJSON,
             response_model_exclude_none=True)
 async def get_forecast(db: DBSessionDep,
@@ -34,7 +34,7 @@ async def get_forecast(db: DBSessionDep,
     return db_result
 
 
-@router.get("/forecasts/{forecast_oid}/injectionobservations",
+@router.get("/{forecast_oid}/injectionobservations",
             response_class=Response)
 async def get_injectionobservation_hydjson(
         db: DBSessionDep, forecast_oid: UUID):
@@ -51,7 +51,7 @@ async def get_injectionobservation_hydjson(
                     media_type='application/json')
 
 
-@router.get("/forecasts/{forecast_id}/seismicityobservation",
+@router.get("/{forecast_id}/seismicityobservation",
             response_class=Response,
             responses={200: {"content": {"application/xml": {}}}})
 async def get_seismicityobservation(
@@ -86,7 +86,7 @@ async def get_seismicityobservation(
                     media_type="application/xml")
 
 
-@router.get("/forecasts/{forecast_oid}/modelruns",
+@router.get("/{forecast_oid}/modelruns",
             response_model=list[ModelRun])
 async def get_modelruns(db: DBSessionDep,
                         forecast_oid: UUID):
