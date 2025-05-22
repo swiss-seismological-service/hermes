@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from web.database import sessionmanager
+from web.repositories.database import sessionmanager
 from web.routers import (forecasts, forecastseries, modelconfigs, modelruns,
                          projects)
 

@@ -3,9 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 
-from hermes.repositories.project import ModelConfigRepository
 from hermes.schemas.model_schemas import ModelConfig
-from web.database import DBSessionDep
+from web.repositories.database import DBSessionDep
+from web.repositories.project import AsyncModelConfigRepository
 
 router = APIRouter(tags=['modelconfigs'])
 
@@ -21,9 +21,9 @@ async def get_all_modelconfigs(
     """
 
     if tags is None:
-        db_result = await ModelConfigRepository.get_all_async(db)
+        db_result = await AsyncModelConfigRepository.get_all(db)
     else:
-        db_result = await ModelConfigRepository.get_by_tags_async(db, tags)
+        db_result = await AsyncModelConfigRepository.get_by_tags(db, tags)
 
     return db_result
 
@@ -37,8 +37,8 @@ async def get_modelconfig(db: DBSessionDep,
     Returns a ModelConfig
     """
 
-    db_result = await ModelConfigRepository.get_by_id_async(db,
-                                                            modelconfig_oid)
+    db_result = await AsyncModelConfigRepository.get_by_id(db,
+                                                           modelconfig_oid)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="Modelconfig not found.")

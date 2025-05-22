@@ -5,16 +5,15 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException, Response
 from sqlalchemy import text
 
-from hermes.repositories.data import InjectionPlanRepository
-from hermes.repositories.project import (ForecastRepository,
-                                         ForecastSeriesRepository,
-                                         ModelConfigRepository)
 from hermes.schemas.base import EResultType
 from hermes.schemas.model_schemas import ModelConfig
-from hermes.schemas.web_schemas import (ForecastJSON, ForecastSeriesJSON,
-                                        InjectionPlanJSON)
-from web.database import DBSessionDep
 from web.queries.forecastseries import EVENT_COUNT_SERIES
+from web.repositories.data import AsyncInjectionPlanRepository
+from web.repositories.database import DBSessionDep
+from web.repositories.project import (AsyncForecastRepository,
+                                      AsyncForecastSeriesRepository,
+                                      AsyncModelConfigRepository)
+from web.schemas import ForecastJSON, ForecastSeriesJSON, InjectionPlanJSON
 
 router = APIRouter(prefix='/forecastseries', tags=['forecastseries'])
 
@@ -28,14 +27,14 @@ async def get_forecastseries(db: DBSessionDep,
     Returns a ForecastSeries
     """
 
-    db_result = await ForecastSeriesRepository.get_by_id_async(
+    db_result = await AsyncForecastSeriesRepository.get_by_id(
         db, forecastseries_oid, joined_attrs=['_tags', 'injectionplans'],
         override_model=ForecastSeriesJSON)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecastseries found.")
 
-    db_result.modelconfigs = await ModelConfigRepository.get_by_tags_async(
+    db_result.modelconfigs = await AsyncModelConfigRepository.get_by_tags(
         db, db_result.tags)
 
     return db_result
@@ -49,7 +48,7 @@ async def get_forecasts(db: DBSessionDep,
     """
     Returns a list of ForecastSeries
     """
-    db_result = await ForecastRepository.get_by_forecastseries_joined_async(
+    db_result = await AsyncForecastRepository.get_by_forecastseries_joined(
         db, forecastseries_oid)
 
     return db_result
@@ -64,13 +63,13 @@ async def get_modelconfigs(db: DBSessionDep,
     Returns a list of ModelConfigs
     """
 
-    fs = await ForecastSeriesRepository.get_by_id_async(
+    fs = await AsyncForecastSeriesRepository.get_by_id(
         db, forecastseries_oid)
 
     if not fs:
         raise HTTPException(status_code=404, detail="No forecastseries found.")
 
-    db_result = await ModelConfigRepository.get_by_tags_async(
+    db_result = await AsyncModelConfigRepository.get_by_tags(
         db, fs.tags)
 
     return db_result
@@ -85,7 +84,7 @@ async def get_injectionplans(db: DBSessionDep,
     Returns a list of InjectionPlans
     """
 
-    db_result = await InjectionPlanRepository.get_by_forecastseries_async(
+    db_result = await AsyncInjectionPlanRepository.get_by_forecastseries(
         db, forecastseries_oid)
 
     return db_result
@@ -108,7 +107,7 @@ async def get_gridded_evencounts(
     # TODO: Automatic grid bounds if not provided
 
     # Check for correct result type
-    config = await ModelConfigRepository.get_by_id_async(db, modelconfig_oid)
+    config = await AsyncModelConfigRepository.get_by_id(db, modelconfig_oid)
     if config.result_type != EResultType.CATALOG:
         return HTTPException(400, "Wrong result type for this endpoint.")
 

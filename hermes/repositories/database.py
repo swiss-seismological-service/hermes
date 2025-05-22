@@ -3,7 +3,6 @@ import pandas as pd
 from sqlalchemy import Select
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.engine import URL, Engine
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.schema import MetaData
@@ -68,13 +67,3 @@ def _check_tables_exist():
 def pandas_read_sql(stmt: Select, session: Session):
     df = pd.read_sql_query(stmt, session.connection())
     return df
-
-
-async def pandas_read_sql_async(stmt: Select, session: AsyncSession):
-    """
-    Get a pandas dataframe from a SQL statement.
-    """
-    result = await session.execute(stmt)
-    rows = result.fetchall()
-    columns = result.keys()
-    return pd.DataFrame(rows, columns=columns)

@@ -12,20 +12,20 @@ from hermes_model import ModelInput
 from jinja2 import Template
 from sqlalchemy import text
 
-from hermes.repositories.data import (InjectionObservationRepository,
-                                      InjectionPlanRepository,
-                                      SeismicityObservationRepository)
-from hermes.repositories.project import (ForecastRepository,
-                                         ForecastSeriesRepository,
-                                         ModelConfigRepository)
-from hermes.repositories.results import (EventForecastRepository,
-                                         GRParametersRepository,
-                                         ModelResultRepository)
 from hermes.schemas.base import EInput, EResultType
 from hermes.schemas.model_schemas import ModelConfig
-from hermes.schemas.web_schemas import ForecastJSON, ModelResultJSON
-from web.database import DBSessionDep
 from web.queries.modelruns import EVENTCOUNTS
+from web.repositories.data import (AsyncInjectionObservationRepository,
+                                   AsyncInjectionPlanRepository,
+                                   AsyncSeismicityObservationRepository)
+from web.repositories.database import DBSessionDep
+from web.repositories.project import (AsyncForecastRepository,
+                                      AsyncForecastSeriesRepository,
+                                      AsyncModelConfigRepository)
+from web.repositories.results import (AsyncEventForecastRepository,
+                                      AsyncGRParametersRepository,
+                                      AsyncModelResultRepository)
+from web.schemas import ForecastJSON, ModelResultJSON
 
 router = APIRouter(tags=['modelruns'])
 
@@ -39,16 +39,16 @@ async def get_modelrun(db: DBSessionDep,
     Returns a modelrun by id.
     """
 
-    db_config = await ModelConfigRepository.get_by_modelrun_async(
+    db_config = await AsyncModelConfigRepository.get_by_modelrun(
         db, modelrun_oid)
 
     if db_config.result_type == EResultType.CATALOG:
         db_result = \
-            await ModelResultRepository.get_by_modelrun_agg_async(
+            await AsyncModelResultRepository.get_by_modelrun_agg(
                 db, modelrun_oid)
     elif db_config.result_type == EResultType.GRID:
         db_result = \
-            await ModelResultRepository.get_by_modelrun_agg_time_async(
+            await AsyncModelResultRepository.get_by_modelrun_agg_time(
                 db, modelrun_oid)
     else:
         raise NotImplementedError
@@ -61,7 +61,7 @@ async def get_modelrun(db: DBSessionDep,
             response_model_exclude_none=False)
 async def get_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
 
-    db_result = await ModelConfigRepository.get_by_modelrun_async(
+    db_result = await AsyncModelConfigRepository.get_by_modelrun(
         db, modelrun_oid)
 
     if not db_result:
@@ -83,7 +83,7 @@ async def get_gridded_eventcounts(db: DBSessionDep,
                                   ):
 
     # Check for correct result type
-    config = await ModelConfigRepository.get_by_modelrun_async(db, modelrun_id)
+    config = await AsyncModelConfigRepository.get_by_modelrun(db, modelrun_id)
     if config.result_type != EResultType.CATALOG:
         return HTTPException(400, "Wrong result type for this endpoint.")
 
@@ -146,7 +146,7 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     """
 
     # get the corresponding forecast
-    forecast = await ForecastRepository.get_by_modelrun_async(
+    forecast = await AsyncForecastRepository.get_by_modelrun(
         db, modelrun_id)
     if not forecast:
         raise HTTPException(status_code=404, detail="No modelrun not found.")
@@ -154,17 +154,17 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     forecast = ForecastJSON.model_validate(forecast)
 
     # get the corresponding forecastseries
-    forecastseries = await ForecastSeriesRepository.get_by_id_async(
+    forecastseries = await AsyncForecastSeriesRepository.get_by_id(
         db,
         forecast.forecastseries_oid)
 
     # get the corresponding modelconfig
-    modelconfig = await ModelConfigRepository.get_by_modelrun_async(
+    modelconfig = await AsyncModelConfigRepository.get_by_modelrun(
         db, modelrun_id)
     seismicityobservation = None
     if forecastseries.seismicityobservation_required != EInput.NOT_ALLOWED:
         seismicityobservation = \
-            await SeismicityObservationRepository.get_by_forecast_async(
+            await AsyncSeismicityObservationRepository.get_by_forecast(
                 db, forecast.oid)
         seismicityobservation = io.BytesIO(seismicityobservation.data)
         seismicityobservation.name = "seismicityobservation.xml"
@@ -172,14 +172,14 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     injectionobservation = None
     if forecastseries.injectionobservation_required != EInput.NOT_ALLOWED:
         injectionobservation = \
-            await InjectionObservationRepository.get_by_forecast_async(
+            await AsyncInjectionObservationRepository.get_by_forecast(
                 db, forecast.oid)
         injectionobservation = io.BytesIO(injectionobservation.data)
         injectionobservation.name = "injectionobservation.json"
 
     injectionplan = None
     if forecastseries.injectionplan_required != EInput.NOT_ALLOWED:
-        injectionplan = await InjectionPlanRepository.get_by_modelrun_async(
+        injectionplan = await AsyncInjectionPlanRepository.get_by_modelrun(
             db, modelrun_id)
         injectionplan = injectionplan.data
         injectionplan = io.BytesIO(injectionplan)
@@ -238,18 +238,18 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     Returns the forecast data for a modelrun.
     """
 
-    modelconfig = await ModelConfigRepository.get_by_modelrun_async(
+    modelconfig = await AsyncModelConfigRepository.get_by_modelrun(
         db, modelrun_id)
 
     if modelconfig.result_type == EResultType.GRID:
-        forecast = await GRParametersRepository.get_forecast_grrategrid(
+        forecast = await AsyncGRParametersRepository.get_forecast_grrategrid(
             db,
             modelrun_id)
         if forecast.empty:
             raise HTTPException(status_code=404,
                                 detail="No forecast data found.")
     elif modelconfig.result_type == EResultType.CATALOG:
-        forecast = await EventForecastRepository.get_forecast_catalog_async(
+        forecast = await AsyncEventForecastRepository.get_forecast_catalog(
             db,
             modelrun_id)
     else:
@@ -274,12 +274,12 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
     """
 
     result_mapping = \
-        await ModelResultRepository.get_by_modelrun_agg_async(
+        await AsyncModelResultRepository.get_by_modelrun_agg(
             db, modelrun_oid)
     result_mapping = result_mapping[result_id]
 
     if result_mapping.result_type == EResultType.GRID:
-        forecast = await GRParametersRepository.get_forecast_grrategrid(
+        forecast = await AsyncGRParametersRepository.get_forecast_grrategrid(
             db,
             modelrun_oid,
             timestep_oid=result_mapping.timestep_oid)
@@ -289,7 +289,7 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
                                 detail="No forecast data found.")
 
     elif result_mapping.result_type == EResultType.CATALOG:
-        forecast = await EventForecastRepository.get_forecast_catalog_async(
+        forecast = await AsyncEventForecastRepository.get_forecast_catalog(
             db,
             modelrun_oid,
             timestep_oid=result_mapping.timestep_oid,
@@ -316,7 +316,7 @@ async def get_injectionplan(db: DBSessionDep,
     Returns the injection plan for a modelrun.
     """
 
-    db_result = await InjectionPlanRepository.get_by_modelrun_async(
+    db_result = await AsyncInjectionPlanRepository.get_by_modelrun(
         db, modelrun_oid)
 
     if not db_result:

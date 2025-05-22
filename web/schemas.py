@@ -108,8 +108,8 @@ class InjectionPlanJSON(InjectionPlanNameSchema):
 
 
 class ModelResultJSON(Model):
-    gridcell_oid: UUID
-    timestep_oid: UUID
+    gridcell_oid: UUID | None = None
+    timestep_oid: UUID | None = None
     result_type: EResultType
     starttime: datetime | None = None
     endtime: datetime | None = None

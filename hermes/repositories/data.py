@@ -85,18 +85,6 @@ class SeismicityObservationRepository(repository_factory(
 
         return object_db
 
-    @classmethod
-    async def get_by_forecast_async(
-            cls,
-            session: Session,
-            forecast_oid: UUID) -> SeismicityObservation:
-
-        q = select(SeismicityObservationTable).where(
-            SeismicityObservationTable.forecast_oid == forecast_oid)
-        result = await session.execute(q)
-        result = result.scalar()
-        return cls.model.model_validate(result) if result else None
-
 
 class InjectionObservationRepository(repository_factory(
         InjectionObservation, InjectionObservationTable)):
@@ -122,18 +110,6 @@ class InjectionObservationRepository(repository_factory(
         hydjson = json.dumps(data.to_json())
 
         return cls.create_from_hydjson(session, hydjson, forecast_oid)
-
-    @classmethod
-    async def get_by_forecast_async(
-            cls,
-            session: Session,
-            forecast_oid: UUID) -> InjectionObservation:
-
-        q = select(InjectionObservationTable).where(
-            InjectionObservationTable.forecast_oid == forecast_oid)
-        result = await session.execute(q)
-        result = result.scalar()
-        return cls.model.model_validate(result)
 
 
 class InjectionPlanRepository(repository_factory(
@@ -177,18 +153,6 @@ class InjectionPlanRepository(repository_factory(
         return [cls.model.model_validate(f) for f in result]
 
     @classmethod
-    async def get_by_forecastseries_async(
-            cls,
-            session: Session,
-            forecastseries_oid: UUID) -> InjectionPlan:
-
-        q = select(InjectionPlanTable).where(
-            InjectionPlanTable.forecastseries_oid == forecastseries_oid)
-        result = await session.execute(q)
-        result = result.scalars().unique()
-        return [cls.model.model_validate(f) for f in result]
-
-    @classmethod
     def get_ids_by_forecast(cls,
                             session: Session,
                             forecast_oid: UUID) -> InjectionPlan:
@@ -202,17 +166,3 @@ class InjectionPlanRepository(repository_factory(
 
         result = session.execute(q).scalars().all()
         return [f for f in result]
-
-    @classmethod
-    async def get_by_modelrun_async(
-            cls,
-            session: Session,
-            modelrun_id: UUID) -> InjectionPlan:
-
-        q = select(InjectionPlanTable) \
-            .join(ModelRunTable) \
-            .where(ModelRunTable.oid == modelrun_id)
-
-        result = await session.execute(q)
-        result = result.scalar()
-        return cls.model.model_validate(result) if result else None

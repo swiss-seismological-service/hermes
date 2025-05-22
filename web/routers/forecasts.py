@@ -5,14 +5,13 @@ from fastapi import APIRouter, HTTPException, Response
 from seismostats import Catalog
 from sqlalchemy import text
 
-from hermes.repositories.data import InjectionObservationRepository
-from hermes.repositories.database import pandas_read_sql_async
-from hermes.repositories.project import ForecastRepository
-from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.result_schemas import ModelRun
-from hermes.schemas.web_schemas import ForecastJSON
-from web.database import DBSessionDep
 from web.queries.forecasts import OBSERVED_EVENTS
+from web.repositories.data import AsyncInjectionObservationRepository
+from web.repositories.database import DBSessionDep, pandas_read_sql_async
+from web.repositories.project import AsyncForecastRepository
+from web.repositories.results import AsyncModelRunRepository
+from web.schemas import ForecastJSON
 
 router = APIRouter(tags=['forecast'])
 
@@ -26,7 +25,7 @@ async def get_forecast(db: DBSessionDep,
     Returns a single Forecast
     """
 
-    db_result = await ForecastRepository.get_by_id_joined_async(
+    db_result = await AsyncForecastRepository.get_by_id_joined(
         db, forecast_oid)
 
     if not db_result:
@@ -40,7 +39,7 @@ async def get_forecast(db: DBSessionDep,
 async def get_injectionobservation_hydjson(
         db: DBSessionDep, forecast_oid: UUID):
 
-    db_result = await InjectionObservationRepository.get_by_forecast_async(
+    db_result = await AsyncInjectionObservationRepository.get_by_forecast(
         db, forecast_oid)
 
     if not db_result:
@@ -94,7 +93,7 @@ async def get_modelruns(db: DBSessionDep,
     """
     Returns a list of ModelRuns for this forecast.
     """
-    db_result = await ModelRunRepository.get_by_forecast_async(
+    db_result = await AsyncModelRunRepository.get_by_forecast(
         db, forecast_oid)
 
     return db_result
