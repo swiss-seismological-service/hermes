@@ -1,0 +1,15 @@
+{
+    "borehole_name": "16A-32",
+    "section_name": "16A-32/section_03",
+    "type": "multiply",
+    "resolution": 60,
+    "config": {
+        "plan": {
+            "topflow": {
+                "value": 1
+            }
+        },
+        "lookback_window": 5,
+        "mode": "mean"
+    }
+}

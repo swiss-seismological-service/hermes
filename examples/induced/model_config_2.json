@@ -1,0 +1,20 @@
+{
+    "enabled": true,
+    "description": "EM1_2",
+    "tags": [
+        "test"
+    ],
+    "result_type": "GRID",
+    "sfm_module": "em1.hermes",
+    "sfm_function": "run_em1_validated",
+    "model_parameters": {
+        "b_value": 1,
+        "afb": -2,
+        "Tau": 60,
+        "dM": 0.05,
+        "Mc": null,
+        "tau_force": false,
+        "Nsim": 100,
+        "mode": "MLE"
+    }
+}
