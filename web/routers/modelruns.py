@@ -24,7 +24,8 @@ from web.repositories.project import (AsyncForecastRepository,
                                       AsyncModelConfigRepository)
 from web.repositories.results import (AsyncEventForecastRepository,
                                       AsyncGRParametersRepository,
-                                      AsyncModelResultRepository)
+                                      AsyncModelResultRepository,
+                                      AsyncModelRunRepository)
 from web.schemas import ForecastJSON, ModelResultJSON
 
 router = APIRouter(tags=['modelruns'])
@@ -41,6 +42,11 @@ async def get_modelrun(db: DBSessionDep,
 
     db_config = await AsyncModelConfigRepository.get_by_modelrun(
         db, modelrun_oid)
+
+    if not db_config:
+        # Config would necessarily exist.
+        raise HTTPException(status_code=404,
+                            detail="ModelRun not found.")
 
     if db_config.result_type == EResultType.CATALOG:
         db_result = \
@@ -65,8 +71,9 @@ async def get_modelconfig(db: DBSessionDep, modelrun_oid: UUID):
         db, modelrun_oid)
 
     if not db_result:
+        # Config would necessarily exist.
         raise HTTPException(
-            status_code=404, detail="No modelrun or ModelConfig found.")
+            status_code=404, detail="ModelRun not found.")
 
     return db_result
 
@@ -79,8 +86,7 @@ async def get_gridded_eventcounts(db: DBSessionDep,
                                   res_lon: float,
                                   res_lat: float,
                                   max_lon: float,
-                                  max_lat: float
-                                  ):
+                                  max_lat: float):
 
     # Check for correct result type
     config = await AsyncModelConfigRepository.get_by_modelrun(db, modelrun_id)
@@ -149,7 +155,7 @@ async def get_modelrun_input_files(db: DBSessionDep, modelrun_id: UUID):
     forecast = await AsyncForecastRepository.get_by_modelrun(
         db, modelrun_id)
     if not forecast:
-        raise HTTPException(status_code=404, detail="No modelrun not found.")
+        raise HTTPException(status_code=404, detail="ModelRun not found.")
 
     forecast = ForecastJSON.model_validate(forecast)
 
@@ -241,13 +247,15 @@ async def get_modelrun_results(db: DBSessionDep, modelrun_id: UUID):
     modelconfig = await AsyncModelConfigRepository.get_by_modelrun(
         db, modelrun_id)
 
+    if not modelconfig:
+        # Config would necessarily exist.
+        raise HTTPException(status_code=404,
+                            detail="ModelRun not found.")
+
     if modelconfig.result_type == EResultType.GRID:
         forecast = await AsyncGRParametersRepository.get_forecast_grrategrid(
             db,
             modelrun_id)
-        if forecast.empty:
-            raise HTTPException(status_code=404,
-                                detail="No forecast data found.")
     elif modelconfig.result_type == EResultType.CATALOG:
         forecast = await AsyncEventForecastRepository.get_forecast_catalog(
             db,
@@ -276,6 +284,15 @@ async def get_modelrun_results_by_id(db: DBSessionDep,
     result_mapping = \
         await AsyncModelResultRepository.get_by_modelrun_agg(
             db, modelrun_oid)
+
+    if not result_mapping:
+        result_db = await AsyncModelRunRepository.get_by_id(
+            db, modelrun_oid)
+        if not result_db:
+            raise HTTPException(status_code=404,
+                                detail="ModelRun not found.")
+        return Response('', media_type='text')
+
     result_mapping = result_mapping[result_id]
 
     if result_mapping.result_type == EResultType.GRID:
@@ -320,8 +337,13 @@ async def get_injectionplan(db: DBSessionDep,
         db, modelrun_oid)
 
     if not db_result:
-        raise HTTPException(status_code=404,
-                            detail="No injectionplan found.")
+        db_result = await AsyncModelRunRepository.get_by_id(
+            db, modelrun_oid)
+        if not db_result:
+            raise HTTPException(status_code=404,
+                                detail="ModelRun not found.")
+        return Response('{}',
+                        media_type='application/json')
 
     return Response(db_result.data[1:-1],  # remove start and end []
                     media_type='application/json')

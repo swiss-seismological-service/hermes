@@ -32,7 +32,8 @@ async def get_forecastseries(db: DBSessionDep,
         override_model=ForecastSeriesJSON)
 
     if not db_result:
-        raise HTTPException(status_code=404, detail="No forecastseries found.")
+        raise HTTPException(
+            status_code=404, detail="Forecastseries not found.")
 
     db_result.modelconfigs = await AsyncModelConfigRepository.get_by_tags(
         db, db_result.tags)

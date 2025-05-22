@@ -20,9 +20,6 @@ async def get_all_projects(db: DBSessionDep):
     """
     db_result = await AsyncProjectRepository.get_all(db)
 
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No projects found.")
-
     return db_result
 
 
@@ -38,7 +35,7 @@ async def get_project(db: DBSessionDep,
     db_result = await AsyncProjectRepository.get_by_id(db, project_oid)
 
     if not db_result:
-        raise HTTPException(status_code=404, detail="No projects found.")
+        raise HTTPException(status_code=404, detail="Project not found.")
 
     return db_result
 
@@ -55,9 +52,6 @@ async def get_projects_forecastseries(db: DBSessionDep,
     db_result = await AsyncForecastSeriesRepository.get_by_project(
         db, project_id, joined_attrs=['_tags', 'injectionplans'],
         override_model=ForecastSeriesJSON)
-
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecastseries found.")
 
     for fc in db_result:
         fc.modelconfigs = await AsyncModelConfigRepository.get_by_tags(
