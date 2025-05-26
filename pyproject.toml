@@ -31,7 +31,7 @@ dependencies = [
     "alembic-utils",
     "alembic",
     "geoalchemy2",
-    # "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
+    "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
     "hydws-client",
     "pandas",
     "prefect==3.3.5",
