@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
 import pytest
 from dateutil.rrule import SECONDLY, rrule
@@ -10,7 +10,7 @@ from hermes.schemas import ForecastSeries
 
 
 @patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id',
-       autocast=True)
+       autospec=True)
 class TestForecastSeriesScheduler:
 
     @pytest.mark.parametrize("fs", [
@@ -128,7 +128,7 @@ class TestForecastSeriesScheduler:
             scheduler._build_rrule('future')
 
     @patch('hermes.flows.forecastseries_scheduler.forecast_runner',
-           autocast=True)
+           autospec=True)
     def test_catchup(self,
                      # MOCKS
                      mock_forecastrunner: MagicMock,
@@ -144,6 +144,8 @@ class TestForecastSeriesScheduler:
         mock_fs_get_by_id.return_value = fs
         scheduler = ForecastSeriesScheduler(None)
 
+        assert scheduler.prefect_schedule_exists is False
+
         scheduler.run_past_forecasts()
 
         assert mock_forecastrunner.call_count == 2
@@ -156,17 +158,23 @@ class TestForecastSeriesScheduler:
 
 
 @patch('hermes.repositories.project.ForecastSeriesRepository.get_by_id',
-       autocast=True)
+       autospec=True)
 @patch('hermes.repositories.project.ForecastSeriesRepository.update',
-       autocast=True)
+       autospec=True)
 @patch('hermes.flows.forecastseries_scheduler.get_deployment_schedule_by_id',
-       autocast=True)
+       autospec=True)
 class TestSchedulerClientInteractions:
+    @patch('hermes.flows.forecastseries_scheduler.deployment_active',
+           autospec=True, return_value=True)
+    @patch('hermes.flows.forecastseries_scheduler.deployment_exists',
+           autospec=True, return_value=True)
     @patch('hermes.flows.forecastseries_scheduler.add_deployment_schedule',
-           autocast=True)
+           autospec=True)
     def test_create(self,
                     # MOCKS
                     mock_add: MagicMock,
+                    mock_deployment_exists: MagicMock,
+                    mock_deployment_active: MagicMock,
                     mock_get: MagicMock,
                     mock_fs_update: MagicMock,
                     mock_fs_get_by_id: MagicMock
@@ -187,11 +195,13 @@ class TestSchedulerClientInteractions:
 
         start = datetime.now() + timedelta(days=1)
 
-        scheduler.create({
+        schedule_data = {
             'schedule_starttime': start,
             'schedule_interval': 1800,
             'forecast_duration': 1800,
-            'schedule_endtime': None})
+            'schedule_endtime': None}
+
+        scheduler.create(schedule_data)
 
         assert scheduler.forecastseries.schedule_starttime == start
         assert scheduler.forecastseries.schedule_interval == 1800
@@ -204,11 +214,25 @@ class TestSchedulerClientInteractions:
         mock_fs_update.assert_called_with(scheduler.session,
                                           scheduler.forecastseries)
 
+        schedule_data2 = schedule_data.copy()
+        schedule_data2['schedule_id'] = uuid.uuid4()
+
+        with pytest.raises(ValueError):
+            scheduler.create(schedule_data2)
+
+        mock_deployment_exists.return_value = False
+        with pytest.raises(ValueError):
+            scheduler.create(schedule_data)
+
+    @patch('hermes.flows.forecastseries_scheduler.'
+           'ForecastSeriesScheduler.schedule_exists',
+           new_callable=PropertyMock, return_value=True)
     @patch('hermes.flows.forecastseries_scheduler.delete_deployment_schedule',
-           autocast=True)
+           autospec=True)
     def test_delete(self,
                     # MOCKS
                     mock_delete: MagicMock,
+                    mock_schedule_exists: MagicMock,
                     mock_get: MagicMock,
                     mock_fs_update: MagicMock,
                     mock_fs_get_by_id: MagicMock
@@ -227,3 +251,33 @@ class TestSchedulerClientInteractions:
         mock_delete.assert_called_once_with(scheduler.deployment_name,
                                             sid)
         mock_fs_update.assert_called_with(scheduler.session, fs_empty)
+
+    @patch('hermes.flows.forecastseries_scheduler'
+           '.update_deployment_schedule_status',
+           autospec=True)
+    @patch('hermes.flows.forecastseries_scheduler.'
+           'ForecastSeriesScheduler.schedule_exists',
+           new_callable=PropertyMock, return_value=True)
+    @patch('hermes.flows.forecastseries_scheduler.'
+           'ForecastSeriesScheduler.prefect_schedule_exists',
+           new_callable=PropertyMock, return_value=True)
+    def test_update_status(self,
+                           mock_prefect_schedule_exists: MagicMock,
+                           mock_schedule_exists: MagicMock,
+                           mock_update_status: MagicMock,
+                           mock_get: MagicMock,
+                           mock_fs_update: MagicMock,
+                           mock_fs_get_by_id: MagicMock):
+
+        scheduler = ForecastSeriesScheduler(None)
+        scheduler.update_status(True)
+        assert mock_update_status.call_count == 1
+
+        mock_schedule_exists.return_value = False
+        with pytest.raises(ValueError):
+            scheduler.update_status(True)
+
+        mock_schedule_exists.return_value = True
+        mock_prefect_schedule_exists.return_value = False
+
+        assert mock_update_status.call_count == 1
