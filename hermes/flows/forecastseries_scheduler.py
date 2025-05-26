@@ -113,7 +113,7 @@ class ForecastSeriesScheduler:
         return (prefect_schedule and local_schedule) or \
             (local_schedule and past_schedule)
 
-    def schedule(self, schedule_config: dict) -> None:
+    def create_schedule(self, schedule_config: dict) -> None:
         '''
         Creates or updates a schedule based on the given configuration.
 
@@ -124,24 +124,39 @@ class ForecastSeriesScheduler:
         '''
         self._check_schedule_validity(schedule_config)
 
-        schedule_exists = self.schedule_id is not None and \
-            asyncio.run(get_deployment_schedule_by_id(
-                self.deployment_name, self.schedule_id)) is not None
+        if self.schedule_exists:
+            raise ValueError(
+                'A schedule already exists for this ForecastSeries. '
+                'Use `update_schedule` to update the existing schedule.')
 
-        if self._is_schedule_in_past(schedule_config):
-            # No prefect schedule should be created
-            if schedule_exists:
-                self._delete_prefect_schedule()
-            self._unset_schedule(False)
-            self._update(schedule_config)
+        self._unset_schedule(False)
+        self._update(schedule_config)
+        if not self._is_schedule_in_past(schedule_config):
+            # create a new prefect schedule
+            self._create_prefect_schedule(schedule_config)
+        else:
             self.logger.info('No future schedule was created, '
                              'all forecasts are in the past.')
-        elif schedule_exists:
-            self._update_prefect_schedule(schedule_config)
-            self.logger.info('Schedule successfully updated.')
-        else:
-            self._create_prefect_schedule(schedule_config)
-            self.logger.info('Schedule successfully created.')
+
+        self.logger.info('Schedule successfully created.')
+
+    def update_schedule_status(self, active: bool) -> None:
+        """
+        Updates the status of the schedule to active or inactive.
+        If the schedule is active, it will be created or updated.
+        If the schedule is inactive, it will be deleted.
+        """
+        if not self.schedule_exists:
+            raise ValueError(
+                'No schedule exists for this ForecastSeries. '
+                'Use `create_schedule` to create a new schedule.')
+
+        # update the prefect schedule status
+        asyncio.run(update_deployment_schedule_status(
+            self.deployment_name, self.schedule_id, True))
+        self.schedule_active = active
+        self._update()
+        self.logger.info('Schedule successfully activated.')
 
     def run_past_forecasts(self, mode: Literal['local', 'deploy'] = 'local'):
         """
@@ -324,29 +339,6 @@ class ForecastSeriesScheduler:
         # update data locally and on the database
         self._update()
 
-    def _update_prefect_schedule(self, schedule_config: dict) -> None:
-        # update existing prefect schedule
-        schedule_config['schedule_id'] = self.schedule_id
-        self._unset_schedule(False)
-        self._update(schedule_config, update_db=False)
-        rule = self._build_rrule(True)
-
-        # update the schedule status if necessary
-        if 'schedule_active' in schedule_config:
-            asyncio.run(
-                update_deployment_schedule_status(self.deployment_name,
-                                                  self.schedule_id,
-                                                  self.schedule_active))
-
-        # update the schedule in prefect
-        asyncio.run(
-            update_deployment_schedule(self.deployment_name,
-                                       self.schedule_id,
-                                       rule))
-
-        # update data locally and on the database
-        self._update()
-
     def _delete_prefect_schedule(self) -> None:
 
         # check if a schedule id exists and if the schedule still exists
@@ -385,21 +377,6 @@ async def get_deployment_schedule_by_id(
         schedules = await client.read_deployment_schedules(deployment.id)
 
     return next((s for s in schedules if s.id == schedule_id), None)
-
-
-async def update_deployment_schedule(
-        deployment_name: str,
-        schedule_id: UUID,
-        new_schedule: rrule) -> None:
-
-    async with get_client() as client:
-        deployment = await client.read_deployment_by_name(deployment_name)
-
-        await client.update_deployment_schedule(
-            deployment_id=deployment.id,
-            schedule_id=schedule_id,
-            schedule=RRuleSchedule(rrule=str(new_schedule))
-        )
 
 
 async def update_deployment_schedule_status(

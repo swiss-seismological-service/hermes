@@ -127,34 +127,6 @@ class TestForecastSeriesScheduler:
         with pytest.raises(ValueError):
             scheduler._build_rrule('future')
 
-    @patch('hermes.repositories.project.ForecastSeriesRepository.update',
-           autocast=True)
-    def test_update(self,
-                    # MOCKS
-                    mock_fs_update: MagicMock,
-                    mock_fs_get_by_id: MagicMock
-                    ):
-
-        forecastseries = ForecastSeries(
-            schedule_starttime=datetime(2021, 1, 2, 0, 0, 0),
-            schedule_interval=1800)
-        new_time = datetime(2024, 1, 3, 0, 0, 0)
-        new_forecastseries = ForecastSeries(schedule_starttime=new_time,
-                                            schedule_interval=1800)
-
-        mock_fs_get_by_id.return_value = forecastseries
-        mock_fs_update.return_value = new_forecastseries
-
-        scheduler = ForecastSeriesScheduler(None)
-        scheduler._update({'schedule_starttime': new_time})
-
-        assert scheduler.forecastseries.schedule_starttime == new_time
-        assert scheduler.schedule_starttime == new_time
-        new_fs = ForecastSeries(schedule_starttime=new_time,
-                                schedule_interval=1800,
-                                schedule_active=True)
-        mock_fs_update.assert_called_once_with(scheduler.session, new_fs)
-
     @patch('hermes.flows.forecastseries_scheduler.forecast_runner',
            autocast=True)
     def test_catchup(self,
@@ -209,13 +181,13 @@ class TestSchedulerClientInteractions:
         scheduler = ForecastSeriesScheduler(None)
 
         with pytest.raises(ValueError):
-            scheduler.schedule({})
+            scheduler.create_schedule({})
 
         mock_get.return_value = None
 
         start = datetime.now() + timedelta(days=1)
 
-        scheduler.schedule({
+        scheduler.create_schedule({
             'schedule_starttime': start,
             'schedule_interval': 1800,
             'forecast_duration': 1800,
@@ -229,51 +201,6 @@ class TestSchedulerClientInteractions:
         mock_add.assert_called_once_with(scheduler.deployment_name,
                                          ANY,
                                          True)
-        mock_fs_update.assert_called_with(scheduler.session,
-                                          scheduler.forecastseries)
-
-    @patch('hermes.flows.forecastseries_scheduler.update_deployment_schedule',
-           autocast=True)
-    def test_update(self,
-                    # MOCKS
-                    mock_update: MagicMock,
-                    mock_get: MagicMock,
-                    mock_fs_update: MagicMock,
-                    mock_fs_get_by_id: MagicMock
-                    ):
-
-        fs = ForecastSeries()
-        mock_fs_get_by_id.return_value = fs
-        mock_fs_update.return_value = fs
-        mock_get.return_value = None
-
-        scheduler = ForecastSeriesScheduler(None)
-
-        with pytest.raises(ValueError):
-            scheduler.schedule({})
-
-        scheduler.schedule_id = uuid.uuid4()
-
-        with pytest.raises(ValueError):
-            scheduler.schedule({})
-
-        mock_get.return_value = {}
-
-        start = datetime.now() + timedelta(days=1)
-        scheduler.schedule({
-            'schedule_starttime': start,
-            'schedule_interval': 1800,
-            'forecast_duration': 1800,
-            'schedule_endtime': None})
-
-        assert scheduler.forecastseries.schedule_starttime == start
-        assert scheduler.forecastseries.schedule_interval == 1800
-        assert scheduler.forecastseries.forecast_duration == 1800
-        assert scheduler.forecastseries.schedule_endtime is None
-
-        mock_update.assert_called_once_with(scheduler.deployment_name,
-                                            scheduler.schedule_id,
-                                            ANY)
         mock_fs_update.assert_called_with(scheduler.session,
                                           scheduler.forecastseries)
 

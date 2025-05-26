@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from hermes.actions.crud_models import (create_schedule,
                                         read_forecastseries_oid,
-                                        update_schedule)
+                                        update_schedule_status)
 from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
@@ -88,39 +88,8 @@ def create(
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         create_schedule(schedule_config, forecastseries_oid)
-
         console.print(
             f'Successfully created schedule for {forecastseries}.')
-    except BaseException as e:
-        console.print(str(e))
-        raise typer.Exit(code=1)
-
-
-@app.command(help="Updates existing schedule.")
-def update(
-    forecastseries: Annotated[str,
-                              typer.Argument(
-                                  help="Name or UUID of "
-                                  "the ForecastSeries.")],
-    config: Annotated[Path,
-                      typer.Option(
-                          ...,
-                          resolve_path=True,
-                          readable=True,
-                          help="Path to json schedule "
-                          "configuration file.")]):
-    # TODO: currently does not work for schedules which are in the past
-    raise NotImplementedError("This feature is not yet implemented."
-                              "Please use the 'delete' command and then"
-                              "create a new schedule.")
-    with open(config, "r") as project_file:
-        schedule_config = json.load(project_file)
-
-    try:
-        forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule(schedule_config, forecastseries_oid)
-        console.print(
-            f'Successfully updated schedule for {forecastseries}.')
     except BaseException as e:
         console.print(str(e))
         raise typer.Exit(code=1)
@@ -154,7 +123,7 @@ def activate(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule({'schedule_active': True}, forecastseries_oid)
+        update_schedule_status(forecastseries_oid, active=True)
 
         console.print(
             f'Successfully activated schedule for {forecastseries}.')
@@ -172,7 +141,7 @@ def deactivate(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule({'schedule_active': False}, forecastseries_oid)
+        update_schedule_status(forecastseries_oid, active=False)
 
         console.print(
             f'Successfully deactivated schedule for {forecastseries}.')
