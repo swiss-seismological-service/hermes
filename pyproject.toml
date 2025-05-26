@@ -1,31 +1,43 @@
 [build-system]
-requires = ["setuptools>=70.0.0", "wheel>=0.43.0"]
+requires = ["setuptools>=80", "wheel>=0.45", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = [""]
-include = ["hermes"]
+where = ["."]
+include = ["hermes*"]
 exclude = ["web"]
 
 [project]
 name = "HERMES"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Hub for Earthquake foRecasts ManagEment and Scheduling "
 readme = "README.md"
 authors = [{ name = "Laura Sarson" }, { name = "Nicolas Schmid" }]
 license = { file = "LICENSE" }
-
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+]
 dependencies = [
-    "alembic",
     "alembic-utils",
+    "alembic",
     "geoalchemy2",
-    "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
-    "hydws-client @ git+https://git@gitlab.seismo.ethz.ch/indu/hydws-client.git",
+    # "hermes-model @ git+https://gitlab.seismo.ethz.ch/indu/hermes-model.git",
+    "hydws-client",
     "pandas",
     "prefect==3.3.5",
     "psycopg2",
-    "pydantic<2.11.0",
     "pydantic-settings",
+    "pydantic",
     "python-dotenv",
     "requests",
     "seismostats",
@@ -37,7 +49,17 @@ dependencies = [
 requires-python = ">=3.12"
 
 [project.optional-dependencies]
-dev = ["pytest", "pyarrow", "isort", "pytest-cov", "tox", "flake8"]
+dev = [
+    "build",
+    "flake8",
+    "isort",
+    "pyarrow",
+    "pytest-cov",
+    "pytest",
+    "setuptools-scm",
+    "tox",
+    "twine",
+]
 
 [project.scripts]
 hermes = "hermes.cli:app"
