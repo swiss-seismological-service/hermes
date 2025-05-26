@@ -8,9 +8,9 @@ include = ["hermes*"]
 exclude = ["web"]
 
 [project]
-name = "HERMES"
+name = "rt-hermes"
 dynamic = ["version"]
-description = "Hub for Earthquake foRecasts ManagEment and Scheduling "
+description = "RealTime Hub for Earthquake foRecasts ManagEment and Scheduling "
 readme = "README.md"
 authors = [{ name = "Laura Sarson" }, { name = "Nicolas Schmid" }]
 license = { file = "LICENSE" }
@@ -27,6 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
 ]
+
 dependencies = [
     "alembic-utils",
     "alembic",
