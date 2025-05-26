@@ -50,17 +50,10 @@ def show(
                                   "the ForecastSeries.")]):
 
     try:
-<<<<<<< Updated upstream
-        with Session() as session:
-            forecastseries_oid = read_forecastseries_oid(forecastseries)
-            forecast_series = ForecastSeriesRepository.get_by_id(
-                session, forecastseries_oid)
-=======
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         scheduler = ForecastSeriesScheduler(forecastseries_oid)
         exists = scheduler.schedule_exists
         fs_config = scheduler.schedule_info
->>>>>>> Stashed changes
     except ValueError as e:
         console.print(str(e))
         raise typer.Exit(code=1)
