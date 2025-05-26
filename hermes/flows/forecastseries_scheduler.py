@@ -91,14 +91,35 @@ class ForecastSeriesScheduler:
         )
 
     @property
+    def deployment_exists(self) -> bool:
+        '''
+        Returns True if the deployment exists for the ForecastSeries.
+        '''
+        return asyncio.run(deployment_exists(self.deployment_name))
+
+    @property
+    def deployment_active(self) -> bool:
+        '''
+        Returns True if the deployment is active for the ForecastSeries.
+        '''
+        return asyncio.run(deployment_active(self.deployment_name))
+
+    @property
+    def prefect_schedule_exists(self) -> bool:
+        '''
+        Returns True if a prefect schedule exists for the ForecastSeries.
+        '''
+        if self.schedule_id is None:
+            return False
+
+        return asyncio.run(get_deployment_schedule_by_id(
+            self.deployment_name, self.schedule_id)) is not None
+
+    @property
     def schedule_exists(self) -> bool:
         '''
         Returns True if a schedule exists for the ForecastSeries.
         '''
-        prefect_schedule = self.schedule_id is not None and \
-            asyncio.run(get_deployment_schedule_by_id(
-                self.deployment_name, self.schedule_id)) is not None
-
         try:
             self._check_schedule_validity(
                 self.schedule_info.model_dump(exclude_unset=True))
@@ -110,10 +131,10 @@ class ForecastSeriesScheduler:
         past_schedule = self._is_schedule_in_past(
             self.schedule_info.model_dump(exclude_unset=True))
 
-        return (prefect_schedule and local_schedule) or \
+        return (self.prefect_schedule_exists and local_schedule) or \
             (local_schedule and past_schedule)
 
-    def create_schedule(self, schedule_config: dict) -> None:
+    def create(self, schedule_config: dict) -> None:
         '''
         Creates or updates a schedule based on the given configuration.
 
@@ -122,25 +143,46 @@ class ForecastSeriesScheduler:
                 A dictionary with the configuration to create or update a
                 schedule.
         '''
+        if not self.deployment_exists and not self._is_schedule_in_past(
+                schedule_config):
+            raise ValueError(
+                'No deployment exists for this ForecastSeries. Please '
+                'create one first with "hermes forecastseries serve".')
+
+        if 'schedule_id' in schedule_config.keys():
+            raise ValueError(
+                'Schedule ID can not be set manually.'
+            )
+
         self._check_schedule_validity(schedule_config)
 
         if self.schedule_exists:
             raise ValueError(
-                'A schedule already exists for this ForecastSeries. '
-                'Use `update_schedule` to update the existing schedule.')
+                'Schedule already exists for this ForecastSeries. Use '
+                '"delete" to remove the existing schedule before creating '
+                'a new one.'
+            )
 
         self._unset_schedule(False)
         self._update(schedule_config)
         if not self._is_schedule_in_past(schedule_config):
             # create a new prefect schedule
             self._create_prefect_schedule(schedule_config)
+
+            # check if the deployment is being served
+            status = asyncio.run(deployment_active(self.deployment_name))
+            if not status:
+                self.logger.warning(
+                    'The deployment is not active, to run the '
+                    'schedule, activate the deployment with '
+                    '"hermes forecastseries serve".')
         else:
             self.logger.info('No future schedule was created, '
                              'all forecasts are in the past.')
 
         self.logger.info('Schedule successfully created.')
 
-    def update_schedule_status(self, active: bool) -> None:
+    def update_status(self, active: bool) -> None:
         """
         Updates the status of the schedule to active or inactive.
         If the schedule is active, it will be created or updated.
@@ -151,18 +193,36 @@ class ForecastSeriesScheduler:
                 'No schedule exists for this ForecastSeries. '
                 'Use `create_schedule` to create a new schedule.')
 
-        # update the prefect schedule status
-        asyncio.run(update_deployment_schedule_status(
-            self.deployment_name, self.schedule_id, True))
+        if self.prefect_schedule_exists:
+            # update the prefect schedule status
+            asyncio.run(update_deployment_schedule_status(
+                self.deployment_name, self.schedule_id, active))
+
         self.schedule_active = active
         self._update()
-        self.logger.info('Schedule successfully activated.')
+
+    def delete_schedule(self) -> None:
+        if not self.schedule_exists:
+            raise ValueError(
+                'No schedule exists for this ForecastSeries. ')
+
+        # check if a schedule id exists and if the schedule still exists
+        if self.prefect_schedule_exists:
+            asyncio.run(delete_deployment_schedule(self.deployment_name,
+                                                   self.schedule_id))
+
+        self._unset_schedule()
 
     def run_past_forecasts(self, mode: Literal['local', 'deploy'] = 'local'):
         """
         If the forecast has a start time in the past, calculate the past
         forecast start and endtimes.
         """
+        if self.schedule_active is False:
+            self.logger.info('Schedule is deactivated, no past forecasts '
+                             'will be executed.')
+            return None
+
         # If the start time is in the future,
         # we don't have any past forecasts
         if self.schedule_starttime > self.now:
@@ -314,14 +374,14 @@ class ForecastSeriesScheduler:
 
     def _unset_schedule(self, update_db: bool = True) -> None:
         '''
-        Clears all schedule attributes except for `schedule_active`.
+        Clears all schedule attributes and resets active to True.
 
         args:
             update_db: bool
                 If True, the changes will be saved to the database.
         '''
         clear = {k: None for k in ForecastSeriesSchedule.__annotations__}
-        del clear['schedule_active']
+        clear['schedule_active'] = True
         self._update(clear, update_db)
 
     def _create_prefect_schedule(self, schedule_config: dict) -> None:
@@ -338,17 +398,6 @@ class ForecastSeriesScheduler:
 
         # update data locally and on the database
         self._update()
-
-    def _delete_prefect_schedule(self) -> None:
-
-        # check if a schedule id exists and if the schedule still exists
-        if self.schedule_id is not None and \
-            asyncio.run(get_deployment_schedule_by_id(
-                self.deployment_name, self.schedule_id)) is not None:
-            asyncio.run(delete_deployment_schedule(self.deployment_name,
-                                                   self.schedule_id))
-
-        self._unset_schedule()
 
 
 async def add_deployment_schedule(
@@ -404,3 +453,28 @@ async def delete_deployment_schedule(
             deployment_id=deployment.id,
             schedule_id=schedule_id
         )
+
+
+async def deployment_exists(
+        deployment_name: str) -> bool:
+    """
+    Check if a deployment exists by its name.
+    """
+    async with get_client() as client:
+        try:
+            await client.read_deployment_by_name(deployment_name)
+            return True
+        except Exception:
+            return False
+
+
+async def deployment_active(
+        deployment_name: str) -> bool:
+    """
+    Check if a deployment is active by its name.
+    """
+    async with get_client() as client:
+        deployment = await client.read_deployment_by_name(deployment_name)
+        if deployment.status.value == 'NOT_READY' or deployment.paused is True:
+            return False
+        return True

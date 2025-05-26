@@ -181,13 +181,13 @@ class TestSchedulerClientInteractions:
         scheduler = ForecastSeriesScheduler(None)
 
         with pytest.raises(ValueError):
-            scheduler.create_schedule({})
+            scheduler.create({})
 
         mock_get.return_value = None
 
         start = datetime.now() + timedelta(days=1)
 
-        scheduler.create_schedule({
+        scheduler.create({
             'schedule_starttime': start,
             'schedule_interval': 1800,
             'forecast_duration': 1800,
@@ -222,7 +222,7 @@ class TestSchedulerClientInteractions:
 
         scheduler = ForecastSeriesScheduler(None)
 
-        scheduler._delete_prefect_schedule()
+        scheduler.delete_schedule()
 
         mock_delete.assert_called_once_with(scheduler.deployment_name,
                                             sid)

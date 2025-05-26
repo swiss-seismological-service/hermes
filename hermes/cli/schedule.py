@@ -5,9 +5,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from hermes.actions.crud_models import (create_schedule,
-                                        read_forecastseries_oid,
-                                        update_schedule_status)
+from hermes.actions.crud_models import read_forecastseries_oid
 from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
@@ -30,7 +28,7 @@ def list():
             fs_with_schedule.append(fs)
 
     if not fseries:
-        console.print("No Schedules found")
+        console.print("No Schedules found.")
         return
 
     table = console_table(fseries, ['name',
@@ -87,9 +85,11 @@ def create(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        create_schedule(schedule_config, forecastseries_oid)
+        scheduler = ForecastSeriesScheduler(forecastseries_oid)
+        scheduler.create(schedule_config)
+
         console.print(
-            f'Successfully created schedule for {forecastseries}.')
+            f'Successfully created schedule for "{forecastseries}".')
     except BaseException as e:
         console.print(str(e))
         raise typer.Exit(code=1)
@@ -106,9 +106,9 @@ def delete(
         forecastseries_oid = read_forecastseries_oid(forecastseries)
 
         scheduler = ForecastSeriesScheduler(forecastseries_oid)
-        scheduler._delete_prefect_schedule()
+        scheduler.delete_schedule()
         console.print(
-            f'Successfully deleted schedule for {forecastseries}.')
+            f'Successfully deleted schedule for "{forecastseries}".')
     except BaseException as e:
         console.print(str(e))
         raise typer.Exit(code=1)
@@ -123,10 +123,11 @@ def activate(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule_status(forecastseries_oid, active=True)
+        scheduler = ForecastSeriesScheduler(forecastseries_oid)
+        scheduler.update_status(active=True)
 
         console.print(
-            f'Successfully activated schedule for {forecastseries}.')
+            f'Successfully activated schedule for "{forecastseries}".')
     except BaseException as e:
         console.print(str(e))
         raise typer.Exit(code=1)
@@ -141,10 +142,11 @@ def deactivate(
 
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
-        update_schedule_status(forecastseries_oid, active=False)
+        scheduler = ForecastSeriesScheduler(forecastseries_oid)
+        scheduler.update_status(active=False)
 
         console.print(
-            f'Successfully deactivated schedule for {forecastseries}.')
+            f'Successfully deactivated schedule for "{forecastseries}".')
     except BaseException as e:
         console.print(str(e))
         raise typer.Exit(code=1)
@@ -169,6 +171,5 @@ def catchup(
         scheduler = ForecastSeriesScheduler(forecastseries_oid)
         scheduler.run_past_forecasts(mode)
     except BaseException as e:
-        raise e
         console.print(str(e))
         raise typer.Exit(code=1)

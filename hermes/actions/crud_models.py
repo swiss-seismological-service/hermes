@@ -5,7 +5,6 @@ from uuid import UUID
 from prefect.exceptions import ObjectNotFound
 
 from hermes.flows.forecastseries_scheduler import (DEPLOYMENT_NAME,
-                                                   ForecastSeriesScheduler,
                                                    delete_deployment_schedule)
 from hermes.repositories.data import InjectionPlanRepository
 from hermes.repositories.database import Session
@@ -291,41 +290,6 @@ def archive_modelconfig(modelconfig_oid: UUID):
                     return model_config
                 except DuplicateError:
                     continue
-
-
-def create_schedule(schedule_config: dict, forecastseries_oid: UUID):
-    scheduler = ForecastSeriesScheduler(forecastseries_oid)
-
-    if 'schedule_id' in schedule_config.keys():
-        raise ValueError(
-            'Schedule ID can not be set manually.'
-        )
-
-    if scheduler.schedule_exists:
-        raise ValueError(
-            'Schedule already exists for this ForecastSeries. '
-            'Use "update" to modify the existing schedule or "delete"'
-            'to remove it.'
-        )
-
-    scheduler.create_schedule(schedule_config)
-
-
-def update_schedule_status(forecastseries_oid: UUID, active: bool):
-    """
-    Update the status of the schedule for a given ForecastSeries.
-    If active is True, the schedule will be activated,
-    otherwise it will be deactivated.
-    """
-    scheduler = ForecastSeriesScheduler(forecastseries_oid)
-
-    if not scheduler.schedule_exists:
-        raise ValueError(
-            'Schedule does not exist for this ForecastSeries. '
-            'Use "create" to create a new schedule.'
-        )
-
-    scheduler.update_schedule_status(active)
 
 
 def create_injectionplan_template(name: str,
