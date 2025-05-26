@@ -34,7 +34,7 @@ def console_table(
     return table
 
 
-def console_tree(model: BaseModel) -> None:
+def console_tree(model: BaseModel, show_none: bool = True) -> None:
     """
     Displays a single pydantic model, including nested dictionaries and lists.
 
@@ -55,7 +55,9 @@ def console_tree(model: BaseModel) -> None:
         else:
             tree.add(f"[bold]{key}:[/bold] {value}")
 
-    for field, value in model.dict().items():
+    for field, value in model.model_dump().items():
+        if not show_none and value is None:
+            continue
         add_branch(tree, field, value)
 
     return tree

@@ -74,6 +74,45 @@ class ForecastSeriesScheduler:
         except BaseException:
             pass
 
+    @property
+    def schedule_info(self) -> ForecastSeriesSchedule:
+        '''
+        Returns the ForecastSeriesSchedule object of the ForecastSeries.
+        '''
+        return ForecastSeriesSchedule(
+            schedule_starttime=self.schedule_starttime,
+            schedule_interval=self.schedule_interval,
+            schedule_endtime=self.schedule_endtime,
+            schedule_id=self.schedule_id,
+            schedule_active=self.schedule_active,
+            forecast_starttime=self.forecast_starttime,
+            forecast_endtime=self.forecast_endtime,
+            forecast_duration=self.forecast_duration
+        )
+
+    @property
+    def schedule_exists(self) -> bool:
+        '''
+        Returns True if a schedule exists for the ForecastSeries.
+        '''
+        prefect_schedule = self.schedule_id is not None and \
+            asyncio.run(get_deployment_schedule_by_id(
+                self.deployment_name, self.schedule_id)) is not None
+
+        try:
+            self._check_schedule_validity(
+                self.schedule_info.model_dump(exclude_unset=True))
+            local_schedule = True
+        except ValueError:
+            # if this fails, the schedule is not valid
+            local_schedule = False
+
+        past_schedule = self._is_schedule_in_past(
+            self.schedule_info.model_dump(exclude_unset=True))
+
+        return (prefect_schedule and local_schedule) or \
+            (local_schedule and past_schedule)
+
     def schedule(self, schedule_config: dict) -> None:
         '''
         Creates or updates a schedule based on the given configuration.

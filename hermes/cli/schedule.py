@@ -12,7 +12,6 @@ from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
 from hermes.repositories.database import Session
 from hermes.repositories.project import ForecastSeriesRepository
-from hermes.schemas.project_schemas import ForecastSeriesSchedule
 
 app = typer.Typer()
 console = Console()
@@ -23,7 +22,12 @@ def list():
     with Session() as session:
         fseries = ForecastSeriesRepository.get_all(session)
 
-    fseries = [f for f in fseries if f.schedule_id]
+    fs_with_schedule = []
+
+    for fs in fseries:
+        scheduler = ForecastSeriesScheduler(fs.oid)
+        if scheduler.schedule_exists:
+            fs_with_schedule.append(fs)
 
     if not fseries:
         console.print("No Schedules found")
@@ -31,6 +35,7 @@ def list():
 
     table = console_table(fseries, ['name',
                                     'schedule_starttime',
+                                    'schedule_endtime',
                                     'schedule_interval',
                                     'schedule_active'])
 
@@ -45,26 +50,28 @@ def show(
                                   "the ForecastSeries.")]):
 
     try:
+<<<<<<< Updated upstream
         with Session() as session:
             forecastseries_oid = read_forecastseries_oid(forecastseries)
             forecast_series = ForecastSeriesRepository.get_by_id(
                 session, forecastseries_oid)
+=======
+        forecastseries_oid = read_forecastseries_oid(forecastseries)
+        scheduler = ForecastSeriesScheduler(forecastseries_oid)
+        exists = scheduler.schedule_exists
+        fs_config = scheduler.schedule_info
+>>>>>>> Stashed changes
     except ValueError as e:
         console.print(str(e))
         raise typer.Exit(code=1)
     except BaseException as e:
         raise e
 
-    if not forecast_series.schedule_id:
+    if not exists:
         console.print("No schedule found.")
         raise typer.Exit(code=1)
 
-    # don't display all the schedule information
-    fs_config = ForecastSeriesSchedule(
-        **forecast_series.model_dump(
-            include=ForecastSeriesSchedule.model_fields.keys()))
-
-    tree = console_tree(fs_config)
+    tree = console_tree(fs_config, show_none=False)
     console.print(tree)
 
 
