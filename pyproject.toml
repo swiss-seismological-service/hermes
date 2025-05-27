@@ -15,15 +15,14 @@ readme = "README.md"
 authors = [{ name = "Laura Sarson" }, { name = "Nicolas Schmid" }]
 license = { file = "LICENSE" }
 classifiers = [
-    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",
     "Operating System :: OS Independent",
     "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
 ]
@@ -64,6 +63,15 @@ dev = [
 
 [project.scripts]
 hermes = "hermes.cli:app"
+
+[project.urls]
+Documentation = "https://github.com/swiss-seismological-service/rt-hermes"
+Repository = "https://github.com/swiss-seismological-service/rt-hermes"
+Issues = "https://github.com/swiss-seismological-service/rt-hermes/issues"
+
+
+[tool.setuptools_scm]
+
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]

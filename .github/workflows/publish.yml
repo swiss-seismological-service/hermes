@@ -13,7 +13,7 @@ jobs:
     tests:
         uses: ./.github/workflows/_tests.yml
         with:
-            python-versions: '["3.10", "3.12"]'
+            python-versions: '["3.12", "3.13"]'
 
     docker-image:
         runs-on: ubuntu-latest

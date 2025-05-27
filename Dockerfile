@@ -6,6 +6,7 @@ WORKDIR /web
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RT_HERMES=0.0.0
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential curl libpq-dev git\
