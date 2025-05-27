@@ -2,32 +2,89 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import Field, computed_field, field_validator, model_validator
+from pydantic import ConfigDict, Field, computed_field, field_validator
 from typing_extensions import Self
 
 from hermes.repositories.types import PolygonType, db_to_shapely
-from hermes.schemas import Forecast, ForecastSeries, ModelRun, Project
-from hermes.schemas.base import Model
-from hermes.schemas.result_schemas import GridCell, TimeStep
-from web.mixins import (CreationInfoMixin, RealFloatValueSchema,
-                        real_float_value_mixin)
+from hermes.schemas import ForecastSeries, Project
+from hermes.schemas.base import EResultType, EStatus, Model
 
 
-class ProjectSchema(CreationInfoMixin, Project):
-    pass
+class CreationInfoSchema(Model):
+    author: str | None = None
+    agencyid: str | None = None
+    creationtime: datetime | None = None
+    version: str | None = None
+    copyrightowner: str | None = None
+    licence: str | None = None
+
+
+def creationinfo_factory(obj: Model) -> CreationInfoSchema:
+    return CreationInfoSchema(
+        author=obj.creationinfo_author,
+        agencyid=obj.creationinfo_agencyid,
+        creationtime=obj.creationinfo_creationtime,
+        version=obj.creationinfo_version,
+        copyrightowner=obj.creationinfo_copyrightowner,
+        licence=obj.creationinfo_licence)
+
+
+class CreationInfoMixin(Model):
+    creationinfo_author: str | None = Field(default=None, exclude=True)
+    creationinfo_agencyid: str | None = Field(default=None, exclude=True)
+    creationinfo_creationtime: datetime = Field(default=None, exclude=True)
+    creationinfo_version: str | None = Field(default=None, exclude=True)
+    creationinfo_copyrightowner: str | None = Field(default=None, exclude=True)
+    creationinfo_licence: str | None = Field(default=None, exclude=True)
+
+    @computed_field
+    @property
+    def creationinfo(self) -> CreationInfoSchema:
+        return creationinfo_factory(self)
 
 
 class ModelConfigNameSchema(Model):
-    name: str | None
     oid: UUID
+    name: str
+    result_type: EResultType | None = None
 
 
 class InjectionPlanNameSchema(Model):
-    name: str | None
+    oid: UUID
+    name: str
+
+
+class SeismicityObservationOIDSchema(Model):
     oid: UUID
 
 
-class ForecastSeriesSchema(CreationInfoMixin, ForecastSeries):
+class InjectionObservationOIDSchema(Model):
+    oid: UUID
+
+
+class ModelRunJSON(Model):
+    oid: UUID
+    modelconfig: ModelConfigNameSchema | None = None
+    injectionplan: InjectionPlanNameSchema | None = None
+    status: EStatus | None = None
+
+
+class ForecastJSON(CreationInfoMixin):
+    oid: UUID
+
+    status: EStatus
+
+    starttime: datetime | None = None
+    endtime: datetime | None = None
+
+    forecastseries_oid: UUID = Field(exclude=True)
+    seismicityobservation: SeismicityObservationOIDSchema | None = None
+    injectionobservation: InjectionObservationOIDSchema | None = None
+
+    modelruns: list[ModelRunJSON] = []
+
+
+class ForecastSeriesJSON(CreationInfoMixin, ForecastSeries):
     modelconfigs: list[ModelConfigNameSchema] | None = None
     injectionplans: list[InjectionPlanNameSchema] | None
     bounding_polygon: str | PolygonType | None = None
@@ -38,36 +95,12 @@ class ForecastSeriesSchema(CreationInfoMixin, ForecastSeries):
         return db_to_shapely(value).wkt
 
 
-class ForecastSchema(CreationInfoMixin, Forecast):
+class ProjectJSON(CreationInfoMixin, Project):
     pass
 
 
-class ModelRunDetailSchema(ModelRun):
-    forecast_oid: UUID = Field(exclude=True)
-    modelconfig: ModelConfigNameSchema | None = \
-        Field(default=None, exclude=True)
-    injectionplan: InjectionPlanNameSchema | None = \
-        Field(default=None, exclude=True)
-
-    @computed_field
-    @property
-    def modelconfig_name(self) -> str:
-        return self.modelconfig.name
-
-    @computed_field
-    @property
-    def injectionplan_name(self) -> str:
-        if hasattr(self.injectionplan, 'name'):
-            return self.injectionplan.name
-        return None
-
-
-class ForecastDetailSchema(ForecastSchema):
-    modelruns: list[ModelRunDetailSchema] | None = None
-
-
-class InjectionPlanSchema(InjectionPlanNameSchema):
-    borehole_hydraulics: dict | None = Field(validation_alias="data")
+class InjectionPlanJSON(InjectionPlanNameSchema):
+    borehole_hydraulics: dict | None = Field(validation_alias="template")
 
     @field_validator('borehole_hydraulics', mode='before')
     @classmethod
@@ -75,148 +108,23 @@ class InjectionPlanSchema(InjectionPlanNameSchema):
         return json.loads(v)
 
 
-class ForecastRateSchema(real_float_value_mixin('b', float),
-                         real_float_value_mixin('number_events', float),
-                         real_float_value_mixin('a', float),
-                         real_float_value_mixin('alpha', float),
-                         real_float_value_mixin('mc', float)):
-    pass
+class ModelResultJSON(Model):
+    gridcell_oid: UUID | None = None
+    timestep_oid: UUID | None = None
+    result_type: EResultType
+    starttime: datetime | None = None
+    endtime: datetime | None = None
+    geom: str | PolygonType | None = None
+    depth_min: float | None = None
+    depth_max: float | None = None
+    result_id: int | None = None
 
+    @field_validator('geom', mode='after')
+    @classmethod
+    def validate_geom(cls, value: PolygonType) -> Self:
+        return db_to_shapely(value).wkt
 
-class SeismicEventSchema(real_float_value_mixin('time', datetime),
-                         real_float_value_mixin('longitude', float),
-                         real_float_value_mixin('latitude', float),
-                         real_float_value_mixin('depth', float),
-                         real_float_value_mixin('magnitude', float)):
-    magnitude_type: str | None = None
-
-
-class ResultBinSchema(Model):
-
-    a: RealFloatValueSchema | None = None
-    b: RealFloatValueSchema | None = None
-    number_events: RealFloatValueSchema | None = None
-    alpha: RealFloatValueSchema | None = None
-    mc: RealFloatValueSchema | None = None
-    realization_id: int | None = None
-
-    timestep: TimeStep = Field(exclude=True)
-    gridcell: GridCell = Field(exclude=True)
-
-    @model_validator(mode='before')
-    def hoist_params(cls, data):
-        try:
-            grparams = ForecastRateSchema.model_validate(
-                data.grparameters[0])
-
-            for key in ('a', 'b', 'number_events', 'alpha', 'mc'):
-                setattr(data, key, getattr(grparams, key))
-            return data
-
-        except BaseException:
-            return data
-
-    @computed_field
-    @property
-    def starttime(self) -> datetime:
-        return self.timestep.starttime
-
-    @computed_field
-    @property
-    def endtime(self) -> datetime:
-        return self.timestep.endtime
-
-    @computed_field
-    @property
-    def depth_min(self) -> float:
-        return self.gridcell.depth_min
-
-    @computed_field
-    @property
-    def depth_max(self) -> float:
-        return self.gridcell.depth_max
-
-    @computed_field
-    @property
-    def latitude_min(self) -> float:
-        return self.gridcell.geom.bounds[1]
-
-    @computed_field
-    @property
-    def latitude_max(self) -> float:
-        return self.gridcell.geom.bounds[3]
-
-    @computed_field
-    @property
-    def longitude_min(self) -> float:
-        return self.gridcell.geom.bounds[0]
-
-    @computed_field
-    @property
-    def longitude_max(self) -> float:
-        return self.gridcell.geom.bounds[2]
-
-
-class ModelRunRateGridSchema(ModelRunDetailSchema):
-    rateforecasts: list[ResultBinSchema] | None = Field(
-        validation_alias="modelresults")
-
-
-class ForecastCatalogSchema(Model):
-
-    time: RealFloatValueSchema | None = None
-    longitude: RealFloatValueSchema | None = None
-    latitude: RealFloatValueSchema | None = None
-    depth: RealFloatValueSchema | None = None
-    magnitude: RealFloatValueSchema | None = None
-    magnitude_type: str | None = None
-
-    timestep: TimeStep = Field(exclude=True)
-    gridcell: GridCell = Field(exclude=True)
-    seismicevents: list[SeismicEventSchema] | None = None
-    realization_id: int | None = None
-
-    @computed_field
-    @property
-    def starttime(self) -> datetime:
-        return self.timestep.starttime
-
-    @computed_field
-    @property
-    def endtime(self) -> datetime:
-        return self.timestep.endtime
-
-    @computed_field
-    @property
-    def depth_min(self) -> float:
-        return self.gridcell.depth_min
-
-    @computed_field
-    @property
-    def depth_max(self) -> float:
-        return self.gridcell.depth_max
-
-    @computed_field
-    @property
-    def latitude_min(self) -> float:
-        return self.gridcell.geom.bounds[1]
-
-    @computed_field
-    @property
-    def latitude_max(self) -> float:
-        return self.gridcell.geom.bounds[3]
-
-    @computed_field
-    @property
-    def longitude_min(self) -> float:
-        return self.gridcell.geom.bounds[0]
-
-    @computed_field
-    @property
-    def longitude_max(self) -> float:
-        return self.gridcell.geom.bounds[2]
-
-
-class ModelRunCatalogSchema(ModelRunDetailSchema):
-    catalogs: list[ForecastCatalogSchema] | None = Field(
-        validation_alias="modelresults")
+    model_config = ConfigDict(
+        **Model.model_config,
+        ser_exclude={"gridcell_oid", "timestep_oid"}
+    )

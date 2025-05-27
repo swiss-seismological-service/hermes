@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from hermes.actions.crud_models import read_forecastseries_oid
 from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecastseries_scheduler import ForecastSeriesScheduler
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import ForecastSeriesRepository
 
 app = typer.Typer()
@@ -17,7 +17,7 @@ console = Console()
 
 @app.command(help="Lists existing schedules.")
 def list():
-    with Session() as session:
+    with DatabaseSession() as session:
         fseries = ForecastSeriesRepository.get_all(session)
 
     fs_with_schedule = []

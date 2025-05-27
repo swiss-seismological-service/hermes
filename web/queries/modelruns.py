@@ -8,10 +8,10 @@ WITH grid_cells AS (
                         ) AS grid_geom,
         COUNT(*) AS event_count
     FROM
-        (SELECT modelresult.realization_id, seismicevent.coordinates
+        (SELECT modelresult.realization_id, eventforecast.coordinates
             FROM modelresult
-                JOIN seismicevent
-                    ON modelresult.oid = seismicevent.modelresult_oid
+                JOIN eventforecast
+                    ON modelresult.oid = eventforecast.modelresult_oid
             WHERE modelresult.modelrun_oid = :modelrun_oid
         ) as events
     WHERE ST_Within(

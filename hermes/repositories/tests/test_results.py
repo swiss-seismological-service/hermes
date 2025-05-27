@@ -6,23 +6,24 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pytest
-from seismostats import Catalog, ForecastCatalog
+from seismostats import ForecastCatalog
 from shapely import Polygon
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
-from hermes.repositories.results import (GridCellRepository,
+from hermes.repositories.results import (EventForecastRepository,
+                                         GridCellRepository,
                                          GRParametersRepository,
                                          ModelResultRepository,
                                          ModelRunRepository,
-                                         SeismicEventRepository,
                                          TimeStepRepository)
 from hermes.schemas.base import EResultType
 from hermes.schemas.project_schemas import Forecast, ForecastSeries
-from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
-                                           ModelRun, SeismicEvent, TimeStep)
+from hermes.schemas.result_schemas import (EventForecast, GridCell,
+                                           GRParameters, ModelResult, ModelRun,
+                                           TimeStep)
 
 MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'data')
@@ -214,33 +215,16 @@ class TestModelResult:
         assert len(ids) == 10
 
 
-class TestSeismicEvent:
+class TestEventForecast:
     def test_create(self, session):
-        event = SeismicEvent(longitude_value=1,
-                             latitude_value=2,
-                             depth_value=3,
-                             magnitude_value=4,
-                             time_value=datetime(2021, 1, 1))
+        event = EventForecast(longitude_value=1,
+                              latitude_value=2,
+                              depth_value=3,
+                              magnitude_value=4,
+                              time_value=datetime(2021, 1, 1))
 
-        event = SeismicEventRepository.create(session, event)
+        event = EventForecastRepository.create(session, event)
         assert event.oid is not None
-
-    def test_get_catalog(self, session):
-        catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
-        catalog = Catalog(pd.read_parquet(catalog_path))
-        catalog['catalog_id'] = 0
-
-        modelresult = ModelResult(result_type=EResultType.CATALOG)
-        modelresult_oid = ModelResultRepository.create(
-            session, modelresult).oid
-
-        SeismicEventRepository.create_from_forecast_catalog(
-            session, catalog, [modelresult_oid])
-
-        catalog2 = SeismicEventRepository.get_catalog(session, modelresult_oid)
-
-        assert len(catalog) == len(catalog2)
-        assert isinstance(catalog2, Catalog)
 
     def test_create_from_forecast_catalog(self, session):
         catalog_path = os.path.join(MODULE_LOCATION, 'catalog.parquet.gzip')
@@ -256,17 +240,17 @@ class TestSeismicEvent:
         modelresult_oids = ModelResultRepository.batch_create(
             session, catalog.n_catalogs, EResultType.CATALOG, None, None, None)
 
-        SeismicEventRepository \
+        EventForecastRepository \
             .create_from_forecast_catalog(session, catalog, modelresult_oids)
 
         count = session.execute(
-            text('SELECT COUNT(seismicevent.oid) FROM seismicevent;'))\
+            text('SELECT COUNT(eventforecast.oid) FROM eventforecast;'))\
             .one_or_none()
         assert count is not None
         assert count[0] == len_fc
 
         count = session.execute(
-            text('SELECT COUNT(seismicevent.oid) FROM seismicevent '
+            text('SELECT COUNT(eventforecast.oid) FROM eventforecast '
                  'WHERE modelresult_oid = :modelresult_oid;'),
             {'modelresult_oid': modelresult_oids[0]}
         ).one_or_none()

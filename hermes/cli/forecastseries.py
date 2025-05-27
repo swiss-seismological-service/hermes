@@ -14,7 +14,7 @@ from hermes.actions.crud_models import (create_forecastseries,
 from hermes.cli.utils import console_table, console_tree
 from hermes.flows.forecast_handler import forecast_runner
 from hermes.flows.modelrun_handler import default_model_runner
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import ForecastSeriesRepository
 from hermes.schemas.project_schemas import ForecastSeriesConfig
 
@@ -24,7 +24,7 @@ console = Console()
 
 @app.command(help="Outputs list of ForecastSeries")
 def list():
-    with Session() as session:
+    with DatabaseSession() as session:
         fseries = ForecastSeriesRepository.get_all(session)
     if not fseries:
         console.print("No ForecastSeries found")
@@ -43,7 +43,7 @@ def show(forecastseries:
                    typer.Argument(
                        help="Name or UUID of the ForecastSeries.")]):
 
-    with Session() as session:
+    with DatabaseSession() as session:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         forecast_series = ForecastSeriesRepository.get_by_id(
             session, forecastseries_oid)
@@ -148,7 +148,7 @@ def serve(
     try:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
 
-        with Session() as session:
+        with DatabaseSession() as session:
             forecastseries = ForecastSeriesRepository.get_by_id(
                 session, forecastseries_oid)
 

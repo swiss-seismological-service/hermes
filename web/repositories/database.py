@@ -1,7 +1,9 @@
 import contextlib
 from typing import Annotated, Any, AsyncIterator
 
+import pandas as pd
 from fastapi import Depends
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import (AsyncConnection, AsyncSession,
                                     async_sessionmaker, create_async_engine)
 
@@ -59,3 +61,13 @@ async def get_db():
         yield session
 
 DBSessionDep = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def pandas_read_sql_async(stmt: Select, session: AsyncSession):
+    """
+    Get a pandas dataframe from a SQL statement.
+    """
+    result = await session.execute(stmt)
+    rows = result.fetchall()
+    columns = result.keys()
+    return pd.DataFrame(rows, columns=columns)

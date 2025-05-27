@@ -4,20 +4,21 @@ import numpy as np
 from geoalchemy2.functions import (ST_Envelope, ST_Equals, ST_GeomFromText,
                                    ST_SetSRID)
 from geoalchemy2.shape import from_shape
-from seismostats import Catalog, ForecastCatalog, ForecastGRRateGrid
+from seismostats import ForecastCatalog, ForecastGRRateGrid
 from sqlalchemy import insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
+from hermes.datamodel.result_tables import (EventForecastTable, GridCellTable,
+                                            GRParametersTable,
                                             ModelResultTable, ModelRunTable,
-                                            SeismicEventTable, TimeStepTable)
+                                            TimeStepTable)
 from hermes.io.serialize import (serialize_seismostats_catalog,
                                  serialize_seismostats_grrategrid)
 from hermes.repositories.base import repository_factory
-from hermes.repositories.database import pandas_read_sql
-from hermes.schemas.result_schemas import (GridCell, GRParameters, ModelResult,
-                                           ModelRun, SeismicEvent, TimeStep)
+from hermes.schemas.result_schemas import (EventForecast, GridCell,
+                                           GRParameters, ModelResult, ModelRun,
+                                           TimeStep)
 
 
 class ModelResultRepository(
@@ -150,17 +151,10 @@ class GRParametersRepository(
         session.execute(insert(GRParametersTable), grparameters)
         session.commit()
 
-    @classmethod
-    def get_forecast_grrategrid(
-            cls,
-            session: Session,
-            modelresult_oid: UUID) -> ForecastGRRateGrid:
-        pass
 
-
-class SeismicEventRepository(
-    repository_factory(SeismicEvent,
-                       SeismicEventTable)):
+class EventForecastRepository(
+    repository_factory(EventForecast,
+                       EventForecastTable)):
 
     @classmethod
     def create_from_forecast_catalog(cls,
@@ -181,17 +175,8 @@ class SeismicEventRepository(
         catalog = catalog.rename(columns={'catalog_id': 'modelresult_oid'})
         events = serialize_seismostats_catalog(catalog)
 
-        session.execute(insert(SeismicEventTable), events)
+        session.execute(insert(EventForecastTable), events)
         session.commit()
-
-    @classmethod
-    def get_catalog(cls, session: Session, modelresult_oid: UUID) -> Catalog:
-        q = select(SeismicEventTable).where(
-            SeismicEventTable.modelresult_oid == modelresult_oid)
-
-        df = pandas_read_sql(q, session)
-
-        return Catalog(df)
 
 
 class ModelRunRepository(repository_factory(

@@ -12,7 +12,7 @@ from hermes.actions.crud_models import (archive_modelconfig,
                                         read_modelconfig_oid,
                                         update_modelconfig)
 from hermes.cli.utils import console_table, console_tree
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import ModelConfigRepository
 
 app = typer.Typer()
@@ -21,7 +21,7 @@ console = Console()
 
 @app.command(help="List all ModelConfigs.")
 def list():
-    with Session() as session:
+    with DatabaseSession() as session:
         model_config = ModelConfigRepository.get_all(session)
     if not model_config:
         console.print("No ModelConfigs found")
@@ -38,7 +38,7 @@ def show(
     modelconfig: Annotated[str,
                            typer.Argument(
                                help="Name or UUID of the ModelConfig.")]):
-    with Session() as session:
+    with DatabaseSession() as session:
         modelconfig_oid = read_modelconfig_oid(modelconfig)
         model_config = ModelConfigRepository.get_by_id(
             session, modelconfig_oid)

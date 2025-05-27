@@ -82,10 +82,10 @@ class ModelResultTable(CreationInfoMixin, ORMBase):
     gridcell = relationship('GridCellTable',
                             back_populates='modelresults')
 
-    seismicevents = relationship('SeismicEventTable',
-                                 back_populates='modelresult',
-                                 cascade='all, delete-orphan',
-                                 passive_deletes=True)
+    eventforecasts = relationship('EventForecastTable',
+                                  back_populates='modelresult',
+                                  cascade='all, delete-orphan',
+                                  passive_deletes=True)
 
     grparameters = relationship('GRParametersTable',
                                 back_populates='modelresult',
@@ -97,12 +97,12 @@ class ModelResultTable(CreationInfoMixin, ORMBase):
     )
 
 
-class SeismicEventTable(TimeQuantityMixin('time'),
-                        RealQuantityMixin('latitude'),
-                        RealQuantityMixin('longitude'),
-                        RealQuantityMixin('depth'),
-                        RealQuantityMixin('magnitude'),
-                        ORMBase):
+class EventForecastTable(TimeQuantityMixin('time'),
+                         RealQuantityMixin('latitude'),
+                         RealQuantityMixin('longitude'),
+                         RealQuantityMixin('depth'),
+                         RealQuantityMixin('magnitude'),
+                         ORMBase):
     magnitude_type = Column(String)
     coordinates = Column(Geometry('POINT', srid=4326))
 
@@ -113,7 +113,7 @@ class SeismicEventTable(TimeQuantityMixin('time'),
 
     modelresult = relationship(
         'ModelResultTable',
-        back_populates='seismicevents')
+        back_populates='eventforecasts')
 
 
 class ModelRunTable(ORMBase):

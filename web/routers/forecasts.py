@@ -1,44 +1,32 @@
-from typing import Annotated
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Response
+from seismostats import Catalog
+from sqlalchemy import text
 
-from web import crud
-from web.database import DBSessionDep
-from web.routers import XMLResponse
-from web.schemas import (ForecastDetailSchema, ForecastSchema,
-                         ModelRunRateGridSchema)
+from hermes.schemas.result_schemas import ModelRun
+from web.queries.forecasts import OBSERVED_EVENTS
+from web.repositories.data import AsyncInjectionObservationRepository
+from web.repositories.database import DBSessionDep, pandas_read_sql_async
+from web.repositories.project import AsyncForecastRepository
+from web.repositories.results import AsyncModelRunRepository
+from web.schemas import ForecastJSON
 
-router = APIRouter(tags=['forecast'])
-
-
-@router.get("/forecastseries/{forecastseries_oid}/forecasts",
-            response_model=list[ForecastSchema],
-            response_model_exclude_none=False)
-async def get_all_forecasts(db: DBSessionDep,
-                            forecastseries_oid: UUID):
-    """
-    Returns a list of ForecastSeries
-    """
-
-    db_result = await crud.read_all_forecasts(db, forecastseries_oid)
-
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecastseries found.")
-
-    return db_result
+router = APIRouter(prefix="/forecasts", tags=['forecast'])
 
 
-@router.get("/forecasts/{forecast_oid}",
-            response_model=ForecastDetailSchema,
-            response_model_exclude_none=False)
+@router.get("/{forecast_oid}",
+            response_model=ForecastJSON,
+            response_model_exclude_none=True)
 async def get_forecast(db: DBSessionDep,
                        forecast_oid: UUID):
     """
     Returns a single Forecast
     """
 
-    db_result = await crud.read_forecast_modelruns(db, forecast_oid)
+    db_result = await AsyncForecastRepository.get_by_id_joined(
+        db, forecast_oid)
 
     if not db_result:
         raise HTTPException(status_code=404, detail="No forecast found.")
@@ -46,17 +34,12 @@ async def get_forecast(db: DBSessionDep,
     return db_result
 
 
-@router.get("/forecasts/{forecast_oid}/injectionobservations",
-            responses={
-                200: {
-                    "content": {"application/json": {}},
-                    "description": "Return the HYDWS JSON.",
-                }
-            })
-async def get_forecast_injectionobservation(
+@router.get("/{forecast_oid}/injectionobservations",
+            response_class=Response)
+async def get_injectionobservation_hydjson(
         db: DBSessionDep, forecast_oid: UUID):
 
-    db_result = await crud.read_forecast_injectionobservation(
+    db_result = await AsyncInjectionObservationRepository.get_by_forecast(
         db, forecast_oid)
 
     if not db_result:
@@ -64,54 +47,53 @@ async def get_forecast_injectionobservation(
             status_code=404,
             detail="No Forecast or injectionobservation found.")
 
-    return Response(
-        content=db_result,
-        media_type="application/json")
+    return Response(content=db_result.data,
+                    media_type='application/json')
 
 
-@router.get("/forecasts/{forecast_oid}/seismicityobservations",
-            responses={
-                200: {
-                    "content": {"application/xml": {}},
-                    "description": "Return the seismic catalog as QML.",
-                }
-            },
-            response_class=XMLResponse)
-async def get_forecast_seismicityobservation(db: DBSessionDep,
-                                             forecast_oid: UUID):
-    """
-    Returns the seismic catalog for this project.
-    """
-    db_result = await crud.read_forecast_seismicityobservation(db,
-                                                               forecast_oid)
-
-    if not db_result:
-        raise HTTPException(
-            status_code=404,
-            detail="No Forecast or SeismicityObservation found.")
-
-    return Response(
-        content=db_result,
-        media_type="application/xml")
-
-
-@router.get("/forecasts/{forecast_id}/rates",
-            response_model=list[ModelRunRateGridSchema],
-            response_model_exclude_none=True)
-async def get_forecast_rates(
+@router.get("/{forecast_id}/seismicityobservation",
+            response_class=Response,
+            responses={200: {"content": {"application/xml": {}}}})
+async def get_seismicityobservation(
         db: DBSessionDep,
         forecast_id: UUID,
-        modelconfigs: Annotated[list[str] | None, Query()] = None,
-        injectionplans: Annotated[list[str] | None, Query()] = None):
+        start_time: datetime = datetime.min,
+        min_lon: float = -180,
+        min_lat: float = -90,
+        max_lon: float = 180,
+        max_lat: float = 90,
+        min_mag: float = -10,
+        end_time: datetime = datetime.max):
     """
-    Returns a list of ForecastRateGrids
+    Returns the seismicity observation for a given forecast.
     """
-    db_result = await crud.read_forecast_rates(db,
-                                               forecast_id,
-                                               modelconfigs,
-                                               injectionplans)
+    stmt = text(OBSERVED_EVENTS).bindparams(
+        forecast_id=forecast_id,
+        start_time=start_time,
+        min_lon=min_lon,
+        min_lat=min_lat,
+        max_lon=max_lon,
+        max_lat=max_lat,
+        min_mag=min_mag,
+        end_time=end_time
+    )
 
-    if not db_result:
-        raise HTTPException(status_code=404, detail="No forecast found.")
+    cat = await pandas_read_sql_async(stmt, db)
+    cat = Catalog(cat.rename(columns=lambda col:
+                             col.removesuffix('_value')))
+    qml = cat.to_quakeml()
+    return Response(content=qml,
+                    media_type="application/xml")
+
+
+@router.get("/{forecast_oid}/modelruns",
+            response_model=list[ModelRun])
+async def get_modelruns(db: DBSessionDep,
+                        forecast_oid: UUID):
+    """
+    Returns a list of ModelRuns for this forecast.
+    """
+    db_result = await AsyncModelRunRepository.get_by_forecast(
+        db, forecast_oid)
 
     return db_result

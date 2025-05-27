@@ -12,8 +12,8 @@ MODULE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class TestDefaultModelRun:
     @patch('hermes.io.seismicity.SeismicityDataSource.from_uri')
-    @patch('hermes.flows.forecast_handler.Session')
-    @patch('hermes.flows.modelrun_handler.Session')
+    @patch('hermes.flows.forecast_handler.DatabaseSession')
+    @patch('hermes.flows.modelrun_handler.DatabaseSession')
     def test_full_flow(self,
                        mock_session_m, mock_session_fc, mock_get_catalog,
                        session, forecastseries, model_config,
@@ -33,6 +33,6 @@ class TestDefaultModelRun:
             text('SELECT COUNT(*) FROM modelresult'))
         assert n_modelresult.scalar() == 100
 
-        n_seismicevents = session.execute(
-            text('SELECT COUNT(*) FROM seismicevent'))
-        assert n_seismicevents.scalar() == 344
+        n_eventforecasts = session.execute(
+            text('SELECT COUNT(*) FROM eventforecast'))
+        assert n_eventforecasts.scalar() == 344

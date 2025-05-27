@@ -22,7 +22,7 @@ with open(os.path.join(MODULE_LOCATION, 'quakeml.xml')) as f:
        autocast=True)
 @patch('hermes.io.HydraulicsDataSource.from_uri',
        autocast=True)
-@patch('hermes.flows.forecast_handler.Session')
+@patch('hermes.flows.forecast_handler.DatabaseSession')
 class TestForecastHandler:
     @flow
     def test_full(self,

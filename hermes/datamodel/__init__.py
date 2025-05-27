@@ -9,6 +9,7 @@ from hermes.datamodel.data_tables import (EventObservationTable,
 from hermes.datamodel.project_tables import (ForecastSeriesTable,
                                              ForecastTable, ModelConfigTable,
                                              ProjectTable, TagTable)
-from hermes.datamodel.result_tables import (GridCellTable, GRParametersTable,
+from hermes.datamodel.result_tables import (EventForecastTable, GridCellTable,
+                                            GRParametersTable,
                                             ModelResultTable, ModelRunTable,
-                                            SeismicEventTable, TimeStepTable)
+                                            TimeStepTable)

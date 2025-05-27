@@ -14,7 +14,7 @@ from hermes.actions.save_results import (
 from hermes.repositories.data import (InjectionObservationRepository,
                                       InjectionPlanRepository,
                                       SeismicityObservationRepository)
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.results import ModelRunRepository
 from hermes.schemas.base import EResultType, EStatus
 from hermes.schemas.model_schemas import DBModelRunInfo, ModelConfig
@@ -104,7 +104,7 @@ class ModelRunHandlerInterface:
 class DefaultModelRunHandler(ModelRunHandlerInterface):
 
     def __init__(self, *args, **kwargs) -> None:
-        self.session = Session()
+        self.session = DatabaseSession()
         super().__init__(*args, **kwargs)
 
     @task(name='RunModel', cache_policy=None)

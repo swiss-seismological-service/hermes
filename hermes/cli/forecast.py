@@ -9,7 +9,7 @@ from typing_extensions import Annotated
 from hermes.actions.crud_models import delete_forecast, read_forecastseries_oid
 from hermes.cli.utils import console_table
 from hermes.flows.forecast_handler import forecast_runner
-from hermes.repositories.database import Session
+from hermes.repositories.database import DatabaseSession
 from hermes.repositories.project import (ForecastRepository,
                                          ForecastSeriesRepository)
 
@@ -24,7 +24,7 @@ def list(
                               typer.Argument(
                                   help="Name or UUID of "
                                   "the ForecastSeries.")],):
-    with Session() as session:
+    with DatabaseSession() as session:
         forecastseries_oid = read_forecastseries_oid(forecastseries)
         forecasts = ForecastRepository.get_by_forecastseries(
             session, forecastseries_oid)
@@ -66,7 +66,7 @@ def run(
             forecast_runner(forecastseries_oid, start, end, mode)
         else:
 
-            with Session() as session:
+            with DatabaseSession() as session:
                 forecastseries = ForecastSeriesRepository.get_by_id(
                     session, forecastseries_oid)
 

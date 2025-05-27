@@ -3,10 +3,10 @@ from uuid import UUID
 from seismostats import ForecastCatalog, ForecastGRRateGrid
 from shapely.geometry import box
 
-from hermes.repositories.results import (GridCellRepository,
+from hermes.repositories.results import (EventForecastRepository,
+                                         GridCellRepository,
                                          GRParametersRepository,
                                          ModelResultRepository,
-                                         SeismicEventRepository,
                                          TimeStepRepository)
 from hermes.schemas import GridCell, TimeStep
 from hermes.schemas.base import EResultType
@@ -41,7 +41,7 @@ def save_forecast_catalog_to_repositories(
         modelrun_oid
     )
 
-    SeismicEventRepository.create_from_forecast_catalog(
+    EventForecastRepository.create_from_forecast_catalog(
         session, forecast_catalog, ids)
 
 

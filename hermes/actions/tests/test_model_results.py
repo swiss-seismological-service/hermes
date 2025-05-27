@@ -19,7 +19,7 @@ MODULE_LOCATION = os.path.dirname(os.path.abspath(__file__))
        autospec=True)
 @patch('hermes.actions.save_results.ModelResultRepository.batch_create',
        autospec=True)
-@patch('hermes.actions.save_results.SeismicEventRepository.'
+@patch('hermes.actions.save_results.EventForecastRepository.'
        'create_from_forecast_catalog',
        autospec=True)
 def test_save_forecast_catalog_to_repositories(mock_seismic_event_repo,

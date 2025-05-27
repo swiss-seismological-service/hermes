@@ -50,12 +50,14 @@ class ForecastTable(CreationInfoMixin,
     injectionobservation = relationship('InjectionObservationTable',
                                         back_populates='forecast',
                                         cascade='all, delete-orphan',
-                                        passive_deletes=True)
+                                        passive_deletes=True,
+                                        uselist=False)
 
     seismicityobservation = relationship('SeismicityObservationTable',
                                          back_populates='forecast',
                                          cascade='all, delete-orphan',
-                                         passive_deletes=True)
+                                         passive_deletes=True,
+                                         uselist=False)
     __table_args__ = (
         Index('idx_forecast_starttime', 'starttime',
               postgresql_using='brin'),

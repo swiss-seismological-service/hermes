@@ -147,9 +147,9 @@ class InjectionPlanRepository(repository_factory(
                               session: Session,
                               forecastseries_oid: UUID) -> InjectionPlan:
 
-        stmt = select(InjectionPlanTable).where(
+        q = select(InjectionPlanTable).where(
             InjectionPlanTable.forecastseries_oid == forecastseries_oid)
-        result = session.execute(stmt).scalars().all()
+        result = session.execute(q).scalars().all()
         return [cls.model.model_validate(f) for f in result]
 
     @classmethod
@@ -157,12 +157,12 @@ class InjectionPlanRepository(repository_factory(
                             session: Session,
                             forecast_oid: UUID) -> InjectionPlan:
 
-        stmt = select(InjectionPlanTable.oid) \
+        q = select(InjectionPlanTable.oid) \
             .join(ModelRunTable,
                   ModelRunTable.injectionplan_oid == InjectionPlanTable.oid) \
             .join(ForecastTable,
                   ForecastTable.oid == ModelRunTable.forecast_oid) \
             .where(ForecastTable.oid == forecast_oid)
 
-        result = session.execute(stmt).scalars().all()
+        result = session.execute(q).scalars().all()
         return [f for f in result]

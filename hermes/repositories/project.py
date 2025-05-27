@@ -148,6 +148,7 @@ class ForecastSeriesRepository(repository_factory(
 
 
 class ForecastRepository(repository_factory(Forecast, ForecastTable)):
+
     @classmethod
     def update_status(cls,
                       session: Session,
