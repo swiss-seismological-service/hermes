@@ -1,2 +1,14 @@
 *env*/
 *cache*/
+.git
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+tests/
+docs/
+.env
+*.log
+.tox
+.pytest_cache
