@@ -13,6 +13,7 @@ exclude = ["web"]
     "env.py",
     "script.py.mako",
     "versions/*.py",
+    "versions_utils/*.py",
 ]
 
 [project]
