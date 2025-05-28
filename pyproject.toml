@@ -7,6 +7,14 @@ where = ["."]
 include = ["hermes*"]
 exclude = ["web"]
 
+[tool.setuptools.package-data]
+"hermes.datamodel.alembic" = [
+    "alembic.ini",
+    "env.py",
+    "script.py.mako",
+    "versions/*.py",
+]
+
 [project]
 name = "rt-hermes"
 dynamic = ["version"]

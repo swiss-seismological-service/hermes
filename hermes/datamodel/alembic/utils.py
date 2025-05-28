@@ -1,14 +1,24 @@
-import os
+from importlib.resources import files
 
 import typer
-
 from alembic import script
 from alembic.config import Config
 from alembic.runtime import migration
+
+import hermes.datamodel.alembic
 from hermes.repositories.database import _check_tables_exist, engine
 
-ALEMBIC_CFG = Config(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  '../../../alembic.ini'))
+
+def get_alembic_config() -> Config:
+    ini_path = files(hermes.datamodel.alembic).joinpath("alembic.ini")
+    cfg = Config(str(ini_path))
+
+    cfg.set_main_option("script_location", str(
+        files(hermes.datamodel.alembic)))
+    return cfg
+
+
+ALEMBIC_CFG = get_alembic_config()
 
 
 def check_current_head(alembic_cfg) -> bool:
