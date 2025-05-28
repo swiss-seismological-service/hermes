@@ -1,3 +1,9 @@
+![pypi](https://img.shields.io/pypi/v/rt-hermes)
+[![PyPI - License](https://img.shields.io/pypi/l/rt-hermes)](https://pypi.org/project/rt-hermes/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/rt-hermes.svg)](https://pypi.org/project/rt-hermes/)
+[![test](https://github.com/swiss-seismological-service/rt-hermes/actions/workflows/tests.yml/badge.svg)](https://github.com/swiss-seismological-service/rt-hermes/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/github/swiss-seismological-service/rt-hermes/graph/badge.svg?token=RVJFHYLBKA)](https://codecov.io/github/swiss-seismological-service/rt-hermes)
+
 # RT-HERMES - *RealTime Hub for Earthquake foRecasts ManagEment and Scheduling*
 ©2025 ETH Zurich
 

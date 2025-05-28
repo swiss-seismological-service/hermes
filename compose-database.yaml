@@ -22,7 +22,8 @@ services:
             - POSTGRES_PASSWORD
             - POSTGRES_PORT=5432
             - POSTGRES_HOST=postgres
-        build: .
+        image: ghcr.io/swiss-seismological-service/rt-hermes:v1.0.0
+        # build: .
         depends_on:
             - postgres
         restart: ${DOCKER_RESTART_POLICY:-unless-stopped}
