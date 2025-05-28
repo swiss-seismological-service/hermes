@@ -26,13 +26,13 @@ from web.repositories.results import (AsyncEventForecastRepository,
                                       AsyncGRParametersRepository,
                                       AsyncModelResultRepository,
                                       AsyncModelRunRepository)
-from web.schemas import ForecastJSON, ModelResultJSON
+from web.schemas import ForecastJSON, ModelRunJSON
 
 router = APIRouter(prefix="/modelruns", tags=['modelruns'])
 
 
 @router.get("/{modelrun_oid}",
-            response_model=list[ModelResultJSON],
+            response_model=ModelRunJSON,
             response_model_exclude_none=True)
 async def get_modelrun(db: DBSessionDep,
                        modelrun_oid: UUID):
@@ -59,7 +59,12 @@ async def get_modelrun(db: DBSessionDep,
     else:
         raise NotImplementedError
 
-    return db_result
+    db_modelrun = await AsyncModelRunRepository.get_by_id_joined(
+        db, modelrun_oid)
+
+    db_modelrun.results = db_result
+
+    return db_modelrun
 
 
 @router.get("/{modelrun_oid}/modelconfig",

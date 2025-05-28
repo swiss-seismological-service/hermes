@@ -128,3 +128,11 @@ class ModelResultJSON(Model):
         **Model.model_config,
         ser_exclude={"gridcell_oid", "timestep_oid"}
     )
+
+
+class ModelRunJSON(Model):
+    oid: UUID
+    modelconfig: ModelConfigNameSchema | None = None
+    injectionplan: InjectionPlanNameSchema | None = None
+    status: EStatus | None = None
+    results: list[ModelResultJSON] = []

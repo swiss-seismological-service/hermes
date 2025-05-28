@@ -2,8 +2,10 @@ from uuid import UUID
 
 from seismostats import Catalog, ForecastGRRateGrid
 from sqlalchemy import func, join, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
+from hermes.datamodel.data_tables import InjectionPlanTable
+from hermes.datamodel.project_tables import ModelConfigTable
 from hermes.datamodel.result_tables import (EventForecastTable, GridCellTable,
                                             GRParametersTable,
                                             ModelResultTable, ModelRunTable,
@@ -14,7 +16,7 @@ from hermes.schemas.result_schemas import (EventForecast, GridCell,
                                            GRParameters, ModelResult, ModelRun)
 from web.repositories.base import async_repository_factory
 from web.repositories.database import pandas_read_sql_async
-from web.schemas import ModelResultJSON
+from web.schemas import ModelResultJSON, ModelRunJSON
 
 
 class AsyncModelResultRepository(
@@ -201,3 +203,25 @@ class AsyncModelRunRepository(async_repository_factory(
         result = await session.execute(q)
         result = result.unique().scalars().all()
         return [cls.model.model_validate(r) for r in result]
+
+    @classmethod
+    async def get_by_id_joined(
+            cls,
+            session: Session,
+            modelrun_oid: UUID) -> ModelRun:
+        q = select(ModelRunTable) \
+            .where(ModelRunTable.oid == modelrun_oid) \
+            .options(
+                joinedload(ModelRunTable.injectionplan)
+                .load_only(InjectionPlanTable.name,
+                           InjectionPlanTable.oid),
+                joinedload(ModelRunTable.modelconfig)
+                .load_only(ModelConfigTable.oid,
+                           ModelConfigTable.result_type,
+                           ModelConfigTable.name),
+        )
+
+        result = await session.execute(q)
+        result = result.unique().scalar_one_or_none()
+
+        return ModelRunJSON.model_validate(result) if result else None
