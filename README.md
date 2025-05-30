@@ -7,80 +7,109 @@
 # RT-HERMES - *RealTime Hub for Earthquake foRecasts ManagEment and Scheduling*
 ©2025 ETH Zurich
 
-## Overview
+## 1. Overview
 This project is under active development. The goal is to provide an orchestration and scheduling platform for earthquake forecast models. 
 
 For v0 of the project, see the [gitlab repository](https://gitlab.seismo.ethz.ch/indu/rt-ramsis)
 
-## Installation
+## 2. Installation
 This installation instruction is merely a recommendation for a user of the software. Depending on your preferences and knowledge, you are free to choose a different setup.
 
+To use the software, you need to have a correctly configured Prefect Server installation as well as a PostgreSQL database. You can install them using Docker Compose as described in section [2.1](#21-installation-of-the-services). If there is already such an installation provided, you can skip to section [2.2](#22-install-hermes).
 
-### 1. Install Docker
+
+### 2.1 Installation of the services.
+
+#### 2.1.1 Install Docker
 Follow the instructions [here](https://docs.docker.com/get-docker/)
 
-### 2. Create a working directory with a Python virtual environment
-Required Python version is 3.12
+#### 2.1.2 Clone the repository
+First you need to clone the repository. This will create a folder called `rt-hermes` in your current directory.
+```
+git clone https://github.com/swiss-seismological-service/rt-hermes.git
+cd rt-hermes
+```
+
+#### 2.1.3 Configure environment file
+The `.env` file is used to configure the Prefect Server and the PostgreSQL database. It contains sensitive information such as passwords and connection strings. You can create a copy of the example file with the following command:
+```
+cp .env.example .env
+```
+As a quick test setup, the configuration works as is, but is not secure. Please change the credentials, ports and connection strings in the .env file.
+
+#### 2.1.4 Create the Docker services
+You can now create the Docker services for the Prefect Server and the PostgreSQL database using the following commands:
+```
+docker compose -f compose-prefect.yaml up -d
+docker compose --env-file .env -f compose-database.yaml up -d
+```
+You can now access the Prefect Server at [http://localhost:4200](http://localhost:4200) and the webservice at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+
+### 2.2 Install HERMES
+
+#### 2.2.0 Prerequisites
+If you already followed Section [2.1](#21-installation-of-the-services), you can create a new folder next to the cloned `rt-hermes` repository to create your project.  
+If you have a Service installation provided, but would like to use the examples provided in the repository, you can still clone the repository to get the examples and the template env file:
+```
+git clone https://github.com/swiss-seismological-service/rt-hermes.git
+```
+
+#### 2.2.1 Install Python and a virtual environment
+It is strongly recommended to use a virtual environment. This will ensure that the dependencies are isolated from your system Python installation.
 ```
 mkdir hermes-project && cd hermes-project
-python3 -m venv env
+python3 -m venv env # python3.12 is required
 source env/bin/activate
 pip install -U pip wheel setuptools
 ```
 
-### 3. Clone the repository into a subfolder
+#### 2.2.2 Install HERMES
+Install Hermes from the Python Package Index
 ```
-git clone https://github.com/swiss-seismological-service/hermes.git src/hermes
-```
-
-### 4. Install the required Python packages
-```
-pip install -e src/hermes
+pip install rt-hermes
 ```
 
-### 5. Start the Prefect Service
-After the successful installation of Docker, you can start the Prefect service with the following command:
+### 2.2.3 Configure the environment file
+For HERMES to find the correct Prefect Server and PostgreSQL database, you need to create a `.env` file in the root of your project. You can use the example file provided in the repository:
+
 ```
-docker compose -f src/hermes/compose-prefect.yaml up -d
+# Assuming you have cloned the repository into the current directorys parent
+cp ../rt-hermes/.env.example .env
 ```
-If you want to set a more secure password, you can pass it as an environment variable:
+Use the credentials defined in section [2.1](#21-installation-of-the-services) or the ones provided to you by your admin.
+
+#### 2.2.4 Use the CLI
+The main usage of HERMES is currently via CLI
+
+
+#### 2.2.5 Install the models
+To run models, you need to have them installed locally. You can, for example, clone them into a subdirectory and install from there.
 ```
-PREFECT_PASSWORD=mytopsecretpass docker compose -f src/hermes/compose-prefect.yaml up -d
+git clone https://gitlab.seismo.ethz.ch/indu/em1.git models/em1
+git clone https://github.com/swiss-seismological-service/etas.git models/etas
+
+pip install -e models/em1
+pip install -e models/etas
 ```
 
-### 5. Configure environment file
-```
-cp src/hermes/.env.example .env
-```
-As a quick test setup, the configuration works as is, but is not secure. Please change the credentials, ports and connection strings in the .env file.
+## 3 Run models
+The models can be run using the CLI.
 
-### 6. Start the HERMES database services
+### 3.1 Start with example configuration and data
+You can start with an example configuration and data to get a feel for how HERMES works. The example configuration is located in the `examples/induced` folder. You can copy it to your project directory using the following command, assuming again you have the repository cloned in the parent directory:
 ```
-docker compose --env-file .env -f src/hermes/compose-database.yaml up -d
-```
-
-### 7. Install the models
-```
-git clone https://gitlab.seismo.ethz.ch/indu/em1.git src/em1
-git clone https://github.com/swiss-seismological-service/etas.git src/etas
-
-pip install -e src/em1
-pip install -e src/etas
-```
-
-### 8. Start with example configuration and data
-```
-cp -r src/hermes/examples .
+cp -r ../rt-hermes/examples .
 ```
 Update the absolute path `fdsnws_url` in the `examples/induced/forecastseries.json` file to the path of the `examples/induced` folder.
 
-### 9. Initialize the database
+### 3.2 Initialize the database
 ```
 hermes db init
 ```
 This only needs to be done once. In case you want to delete all data and start from scratch, you can run `hermes db purge` and then `hermes db init` again.
 
-### 10. Load an example configuration
+### 3.3 Load an example configuration
 ```
 hermes projects create project_induced --config examples/induced/project.json
 hermes forecastseries create fs_induced --config examples/induced/forecastseries.json --project project_induced
@@ -94,13 +123,13 @@ Most setting should be self-explanatory, but more information can be found in th
 
 A more detailed of the InjectionPlan configuration can be found [here](https://github.com/swiss-seismological-service/hermes/blob/main/docs/injectionplan.md).
 
-### 11. Run a single forecast using the CLI
+### 3.4 Run a single forecast using the CLI
 ```
 hermes forecasts run fs_induced --start 2022-04-21T15:00:00 --end 2022-04-21T18:00:00 --local
 ```
 This starts a single forecast directly on the local machine. 
 
-### 12. (Optional) Schedule forecasts or execute "replays".
+### 3.5 (Optional) Schedule forecasts or execute "replays".
 To use advanced features like scheduling, it is necessary to start a process which "serves" the forecastseries. 
 ```
 hermes forecastseries serve fs_induced
@@ -129,33 +158,61 @@ hermes schedules catchup fs_induced
 
 __Note__ that a schedule can either lie in the past, the future, or both. The `catchup` command will only execute forecasts in the past, while the service will automatically execute forecasts in the future.
 
-## Debugging
+### 3.6 Debugging
 To view the forecasts and modelruns, currently only the webservice is available. The available endpoints are listed in the [API documentation](http://localhost:8000/docs).
 
-To view the status of the latest forecasts, you can navigate to the following URL: [http://localhost:8000/v2/forecasts](http://localhost:8000/v2/forecasts).
+A quick description of the way to traverse the API is as follows:
+To view the `Projects`, you can navigate to the following URL: [http://localhost:8000/v1/projects](http://localhost:8000/v1/projects). Copy the `oid` of the project you'd like to access.
 
-To more easily debug the models, you can download the exact configuration and input files the modelrun used. You need copy the `oid` of the modelrun you'd like to download and then navigate to the following URL: `http://localhost:8000/v2/modelruns/{oid}/input`
+To find the correct `Forecastseries`, you can navigate to the following URL: [http://localhost:8000/v1/projects/<project_oid>/forecastseries](http://localhost:8000/v1/projects/<project_oid>/forecastseries). Again, copy the `oid` of the `ForecastSeries`.
 
-## Results
+To view the `Forecasts` and `ModelRuns`, you can navigate to the following URL: [http://localhost:8000/v1/forecastseries/<forecastseries_oid>/forecasts](http://localhost:8000/v1/forecastseries/<forecastseries_oid>/forecasts).
 
-The results of the modelruns can be directly downloaded from the webservice. This API is still under development and will be improved in the future. The results can be downloaded from the following URL: `http://localhost:8000/v2/modelruns/{oid}/result`. In the future, a more user-friendly interface will be provided.
+Once you have the `oid` of the models, you can use that to more easily debug the models. You can download the exact configuration and input files the modelrun used. Navigate to the following URL: [http://localhost:8000/v1/modelruns/<modelrun_oid>/input](http://localhost:8000/v1/modelruns/<modelrun_oid>/input) to download the input files.
+
+### 3.7 Results
+
+The results of the modelruns can be directly downloaded from the webservice. This API is still under development and will be improved in the future. The results can be downloaded from the following URL: [http://localhost:8000/v1/modelruns/<modelrun_oid>/results](http://localhost:8000/v1/modelruns/<modelrun_oid>/results).
+
+### 3.8 Python Client
+
+A Python client library is provided for easier access to the RT-HERMES data and results. It can be installed using pip:
+```bash
+pip install hermes-client
+```
+A documentation is available [here](https://github.com/swiss-seismological-service/hermes-client.git)
 
 
-## Reinstall
-If you want to update the project and would like a clean install or/and don't care about the existing data, you can do so by running the following commands:
-
-To update, first go to the `src/hermes` folder and pull the latest changes. Then force-reinstall the dependencies to be sure that the correct versions are installed:
+## 4 Update
+### 4.1 Update the services
+Inside the cloned repository folder, update the prefect docker containers:
 
 ```bash
-cd src/hermes
-git pull
-pip install -e src/hermes --force-reinstall
-cd ../..
+docker compose -f compose-prefect.yaml up -d
+prefect server database upgrade -y
 ```
 
-Optionally do the same for the models.  
+Next you can update the hermes database and webservice:
+```bash
+docker compose -f compose-database.yaml up -d
+hermes db upgrade
+```
 
-Update the prefect docker containers:
+### 4.2 Update the library
+If you want to update the library, you can do so by running the following command inside your virtual environment:
+
+```bash
+pip install -U rt-hermes
+```
+
+If you need to update the hermes database too (if your admin has not done that already), you can run the following command:
+```bash
+hermes db upgrade
+```
+
+### 4.3 Reinstall the services
+
+If you want to update the services and would like a clean install or/and don't care about the existing data, you can do so by completely removing the existing containers and volumes, pulling the latest changes, and then starting the services again.
 
 ```bash
 docker compose -f src/hermes/compose-prefect.yaml down -v
@@ -165,39 +222,8 @@ docker compose -f src/hermes/compose-prefect.yaml up -d
 
 Next you can update the hermes database and webservice:
 ```bash
+docker compose -f src/hermes/compose-database.yaml down -v
 docker compose -f src/hermes/compose-database.yaml pull
-docker compose -f src/hermes/compose-database.yaml build
 docker compose --env-file .env -f src/hermes/compose-database.yaml up -d
 ```
 
-Now update the database:
-```bash
-hermes db upgrade
-```
-
-## Update
-If you want to update the project and would like to keep the existing data, you can do so by running the following commands:
-
-To update, first go to the `src/hermes` folder and pull the latest changes. Then force-reinstall the dependencies to be sure that the correct versions are installed:
-
-```bash
-cd src/hermes
-git pull
-pip install -e src/hermes --force-reinstall
-cd ../..
-```
-
-Optionally do the same for the models.
-
-Update the prefect docker containers:
-
-```bash
-docker compose -f src/hermes/compose-prefect.yaml up -d
-prefect server database upgrade -y
-```
-
-Next you can update the hermes database and webservice:
-```bash
-docker compose -f src/hermes/compose-database.yaml up -d --build
-hermes db upgrade
-```
