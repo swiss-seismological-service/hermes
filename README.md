@@ -10,7 +10,7 @@
 ## Overview
 This project is under active development. The goal is to provide an orchestration and scheduling platform for earthquake forecast models. 
 
-For v1 of the project, see the [gitlab repository](https://gitlab.seismo.ethz.ch/indu/rt-ramsis)
+For v0 of the project, see the [gitlab repository](https://gitlab.seismo.ethz.ch/indu/rt-ramsis)
 
 ## Installation
 This installation instruction is merely a recommendation for a user of the software. Depending on your preferences and knowledge, you are free to choose a different setup.

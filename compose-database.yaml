@@ -22,7 +22,7 @@ services:
             - POSTGRES_PASSWORD
             - POSTGRES_PORT=5432
             - POSTGRES_HOST=postgres
-        image: ghcr.io/swiss-seismological-service/rt-hermes:v1.0.0
+        image: ghcr.io/swiss-seismological-service/rt-hermes:v1.0.2
         # build: .
         depends_on:
             - postgres
